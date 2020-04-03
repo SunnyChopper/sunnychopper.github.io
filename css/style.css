@@ -45,6 +45,8 @@ p {
 }
 
 .skill-box:hover {
+  cursor: pointer;
+  background: #f4f4f4;
   box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.2);
   transform: translateY(-4px);
 }
@@ -81,6 +83,38 @@ p {
   color: #8a8a8a;
   margin-top: 0px;
   margin-bottom: 8px;
+}
+
+.modal-skill-icon {
+  height: 48px;
+  width: auto;
+  display: inline-block;
+}
+
+.modal-skill-title {
+  display: inline-block;
+  margin-left: 16px;
+  color: #007bff;
+  margin-bottom: 0px;
+}
+
+.modal-skill-description {
+  font-family: "Montserrat";
+  color: #2a2a2a; 
+  font-size: 16px; 
+  line-height: 32px; 
+  margin-bottom: 0px;
+}
+
+.even-height-row {
+  display: flex;
+}
+
+.even-height-column {
+  height: fit-content; 
+  margin-top: auto; 
+  margin-bottom: auto; 
+  display: inline-block;
 }
 
 h1, h2, h3, h4, h5,

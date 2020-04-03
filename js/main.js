@@ -360,4 +360,9 @@ jQuery(document).ready(function($) {
 	  return false;
 	});
 
+ 	$('.skill-box').on('click', function() {
+ 		const modalID = $(this).data('modal');
+ 		$('#' + modalID).modal('show');
+ 	});
+
 });
