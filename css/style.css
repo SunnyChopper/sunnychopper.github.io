@@ -117,6 +117,30 @@ p {
   display: inline-block;
 }
 
+.image-card {
+  width: 100%;
+  background: #f0f0f0;
+  border-radius: 8px;
+  box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.2);
+}
+
+.image-card-image {
+  width: 100%;
+  height: 250px;
+  overflow: hidden;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.image-card-image > img {
+  width: 100%;
+  height: auto;
+}
+
+.image-card-info {
+  padding: 24px;
+}
+
 h1, h2, h3, h4, h5,
 .h1, .h2, .h3, .h4, .h5 {
   font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; }
