@@ -27,6 +27,84 @@ p {
   font-family: "Playfair Display";
 }
 
+.experience-card {
+  background-color: #fbfbfb;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.2);
+  margin-top: 8px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.experience-logo {
+  width: auto;
+  height: 72px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.experience-company {
+  font-family: 'Montserrat';
+  text-align: center;
+  margin-top: 12px;
+  margin-bottom: 2px;
+  color: #2a2a2a;
+}
+
+.experience-position {
+  font-family: 'Montserrat';
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.experience-time {
+  font-family: 'Montserrat';
+  text-align: center;
+  font-size: 11px;
+  margin-bottom: 24px;
+}
+
+.experience-subheading {
+  color: #2a2a2a;
+  margin-top: 12px;
+  margin-bottom: 2px;
+}
+
+.experience-company-summary {
+  font-family: 'Montserrat';
+  margin-bottom: 2px;
+  font-size: 14px;
+}
+
+.experience-job-roles {
+  padding-left: 24px;
+}
+
+.experience-job-roles > li {
+  font-family: 'Montserrat';
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.experience-skills {
+  font-family: 'Montserrat';
+  font-size: 14px;
+  margin-bottom: 0px;
+}
+
+.skill-link {
+  transition: 0.25s all;
+}
+
+.skill-link:hover {
+  color: blue;
+  cursor: pointer;
+}
+
 .skill-button {
   display: inline-block; 
   margin-left: 8px; 
@@ -103,6 +181,34 @@ p {
   color: #2a2a2a; 
   font-size: 16px; 
   line-height: 32px; 
+  margin-bottom: 0px;
+}
+
+.contact-box {
+  width: 100%;
+  padding: 24px;
+  background-color: #eaeaea;
+  border-radius: 8px;
+  box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.2);
+  transition: 0.25s all;
+}
+
+.contact-box:hover {
+  background-color: #e0e0e0;
+  cursor: pointer;
+  box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.2);
+  transform: translateY(-4px);
+}
+
+.contact-box > .contact-icon {
+  margin-bottom: 12px;
+  font-size: 48px;
+  text-align: center;
+}
+
+.contact-box > h4 {
+  color: #007bff;
+  text-align: center;
   margin-bottom: 0px;
 }
 

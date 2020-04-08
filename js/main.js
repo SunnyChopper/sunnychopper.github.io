@@ -365,4 +365,9 @@ jQuery(document).ready(function($) {
  		$('#' + modalID).modal('show');
  	});
 
+ 	$('.skill-link').on('click', function() {
+ 		const modalID = $(this).data('modal');
+ 		$('#' + modalID).modal('show');
+ 	});
+
 });
