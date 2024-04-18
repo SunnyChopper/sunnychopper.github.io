@@ -497,6 +497,7 @@
 }
 .icon-twitter:before {
   content: "\f099";
+  font-size: 1.5rem;
 }
 .icon-facebook:before {
   content: "\f09a";
@@ -698,6 +699,7 @@
 }
 .icon-linkedin:before {
   content: "\f0e1";
+  font-size: 1.5rem;
 }
 .icon-rotate-left:before {
   content: "\f0e2";
@@ -1817,6 +1819,7 @@
 }
 .icon-medium:before {
   content: "\f23a";
+  font-size: 1.5em;
 }
 .icon-y-combinator:before {
   content: "\f23b";
