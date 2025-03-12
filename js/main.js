@@ -13,85 +13,123 @@ jQuery(document).ready(function($) {
   $("#overlayer").delay(1000).fadeOut("slow");	
   
 
-	var siteMenuClone = function() {
-
+	var siteMenuClone = function () {
+		// Clone the main menu into the mobile menu
 		$('.js-clone-nav').each(function() {
 			var $this = $(this);
 			$this.clone().attr('class', 'site-nav-wrap').appendTo('.site-mobile-menu-body');
 		});
 
-
+		// Add arrow icons to the mobile menu
 		setTimeout(function() {
-			
 			var counter = 0;
-      $('.site-mobile-menu .has-children').each(function(){
-        var $this = $(this);
-        
-        $this.prepend('<span class="arrow-collapse collapsed">');
+			$('.site-mobile-menu .has-children').each(function(){
+				var $this = $(this);
+				
+				$this.prepend('<span class="arrow-collapse collapsed">');
+	
+				$this.find('.arrow-collapse').attr({
+					'data-toggle' : 'collapse',
+					'data-target' : '#collapseItem' + counter,
+				});
+	
+				$this.find('> ul').attr({
+					'class' : 'collapse',
+					'id' : 'collapseItem' + counter,
+				});
+	
+				counter++;
+			});
+		}, 1000);
 
-        $this.find('.arrow-collapse').attr({
-          'data-toggle' : 'collapse',
-          'data-target' : '#collapseItem' + counter,
-        });
-
-        $this.find('> ul').attr({
-          'class' : 'collapse',
-          'id' : 'collapseItem' + counter,
-        });
-
-        counter++;
-
-      });
-
-    }, 1000);
-
+		// Add functionality to the arrow icons
 		$('body').on('click', '.arrow-collapse', function(e) {
-      var $this = $(this);
-      if ( $this.closest('li').find('.collapse').hasClass('show') ) {
-        $this.removeClass('active');
-      } else {
-        $this.addClass('active');
-      }
-      e.preventDefault();  
-      
-    });
+			var $this = $(this);
+			if ( $this.closest('li').find('.collapse').hasClass('show') ) {
+				$this.removeClass('active');
+			} else {
+				$this.addClass('active');
+			}
+			e.preventDefault();  
+		});
 
-		$(window).resize(function() {
+		// Remove the offcanvas menu if the window is resized to be larger than 768px
+		$(window).resize(function () {
 			var $this = $(this),
 				w = $this.width();
-
-			if ( w > 768 ) {
-				if ( $('body').hasClass('offcanvas-menu') ) {
+	
+			if (w > 768) {
+				if ($('body').hasClass('offcanvas-menu')) {
 					$('body').removeClass('offcanvas-menu');
 				}
 			}
-		})
+		});
 
-		$('body').on('click', '.js-menu-toggle', function(e) {
+		// Add functionality to the menu toggle button
+		$('body').on('click', '.js-menu-toggle', function (e) {
 			var $this = $(this);
 			e.preventDefault();
-
-			if ( $('body').hasClass('offcanvas-menu') ) {
+	
+			if ($('body').hasClass('offcanvas-menu')) {
 				$('body').removeClass('offcanvas-menu');
 				$this.removeClass('active');
 			} else {
 				$('body').addClass('offcanvas-menu');
 				$this.addClass('active');
 			}
-		}) 
+		}); 
 
-		// click outisde offcanvas
+		// Handle click outside of the offcanvas menu
 		$(document).mouseup(function(e) {
-	    var container = $(".site-mobile-menu");
-	    if (!container.is(e.target) && container.has(e.target).length === 0) {
-	      if ( $('body').hasClass('offcanvas-menu') ) {
+			var container = $(".site-mobile-menu");
+			if (!container.is(e.target) && container.has(e.target).length === 0) {
+				if ( $('body').hasClass('offcanvas-menu') ) {
 					$('body').removeClass('offcanvas-menu');
 				}
-	    }
+			}
 		});
-	}; 
-	siteMenuClone();
 
+		// Handle click on menu items
+		$('.site-mobile-menu-body .site-nav-wrap a').on('click', function(e) {
+			var $this = $(this);
+			var href = $this.attr('href');
+			
+			// If it's a hash link (like #home-section)
+			if (href.charAt(0) === '#') {
+				e.preventDefault();
+				var target = $(href);
+				if (target.length) {
+					$('html, body').animate({
+						scrollTop: target.offset().top
+					}, 1000);
+				}
+			} else if (href.indexOf('#') > -1) {
+				// If it's a URL with a hash (like example.com#section)
+				e.preventDefault();
+				var parts = href.split('#');
+				var url = parts[0];
+				var hash = '#' + parts[1];
+				
+				if (window.location.href.indexOf(url) > -1) {
+					// If we're already on the correct page, just scroll to the section
+					var target = $(hash);
+					if (target.length) {
+						$('html, body').animate({
+							scrollTop: target.offset().top
+						}, 1000);
+					}
+				} else {
+					// If it's a different page, navigate to it and then scroll
+					window.location.href = href;
+				}
+			} else {
+				// For regular links, follow through
+				window.location.href = href;
+			}
+		});
+	};
+
+	siteMenuClone();
 
 	var sitePlusMinus = function() {
 		$('.js-btn-minus').on('click', function(e){
