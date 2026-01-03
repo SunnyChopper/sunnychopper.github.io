@@ -1,16 +1,14 @@
-import type { ReactNode } from 'react';
+import { Outlet } from 'react-router-dom';
 import Header from '../organisms/Header';
 import Footer from '../organisms/Footer';
 
-interface MainLayoutProps {
-  children: ReactNode;
-}
-
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-grow">{children}</main>
+      <main className="flex-grow">
+        <Outlet />
+      </main>
       <Footer />
     </div>
   );

@@ -1,9 +1,50 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/templates/MainLayout';
+import AdminLayout from './components/templates/AdminLayout';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
+import NotFoundPage from './pages/NotFoundPage';
+import LoginPage from './pages/admin/LoginPage';
+import DashboardPage from './pages/admin/DashboardPage';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
+import { usePageTracking } from './hooks/usePageTracking';
+
+function AppContent() {
+  usePageTracking();
+
+  return (
+    <Routes>
+      <Route element={<MainLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/products" element={<ProductsPage />} />
+      </Route>
+
+      <Route path="/admin/login" element={<LoginPage />} />
+
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="tasks" element={<div className="p-8">Tasks Page - Coming Soon</div>} />
+        <Route path="habits" element={<div className="p-8">Habits Page - Coming Soon</div>} />
+        <Route path="metrics" element={<div className="p-8">Metrics Page - Coming Soon</div>} />
+        <Route path="goals" element={<div className="p-8">Goals Page - Coming Soon</div>} />
+        <Route path="projects" element={<div className="p-8">Projects Page - Coming Soon</div>} />
+        <Route path="logbook" element={<div className="p-8">Logbook Page - Coming Soon</div>} />
+      </Route>
+
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+}
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -18,12 +59,7 @@ function App() {
     <>
       <Loader isLoading={isLoading} />
       <BrowserRouter>
-        <MainLayout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<ProductsPage />} />
-          </Routes>
-        </MainLayout>
+        <AppContent />
       </BrowserRouter>
     </>
   );

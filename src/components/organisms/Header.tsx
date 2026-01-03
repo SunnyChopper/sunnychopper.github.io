@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,13 +28,21 @@ export default function Header() {
     { label: 'Contact', href: '/#contact' },
   ];
 
-  const handleNavClick = (href: string) => {
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
     setIsMobileMenuOpen(false);
 
     if (href.startsWith('/#')) {
-      const element = document.querySelector(href.substring(1));
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+      const hash = href.substring(1);
+
+      if (location.pathname === '/') {
+        window.location.hash = hash;
+        const element = document.querySelector(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        navigate('/' + hash);
       }
     }
   };
@@ -55,10 +65,7 @@ export default function Header() {
                 <a
                   key={item.label}
                   href={item.href}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick(item.href);
-                  }}
+                  onClick={(e) => handleNavClick(e, item.href)}
                   className="text-gray-700 hover:text-primary transition-colors font-medium"
                 >
                   {item.label}
@@ -98,10 +105,7 @@ export default function Header() {
                   <a
                     key={item.label}
                     href={item.href}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleNavClick(item.href);
-                    }}
+                    onClick={(e) => handleNavClick(e, item.href)}
                     className="text-gray-700 hover:text-primary transition-colors font-medium py-2"
                   >
                     {item.label}
