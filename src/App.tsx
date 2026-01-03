@@ -10,12 +10,14 @@ import DashboardPage from './pages/admin/DashboardPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function AppContent() {
   usePageTracking();
 
   return (
-    <Routes>
+    <ErrorBoundary>
+      <Routes>
       <Route element={<MainLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/products" element={<ProductsPage />} />
@@ -43,6 +45,7 @@ function AppContent() {
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </ErrorBoundary>
   );
 }
 

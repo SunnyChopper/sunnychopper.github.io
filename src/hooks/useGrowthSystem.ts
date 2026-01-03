@@ -28,30 +28,30 @@ export const useTasks = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['tasks', user?.id],
-    queryFn: () => tasksService.getAll(user!.id),
+    queryKey: ['tasks'],
+    queryFn: () => tasksService.getAll(),
     enabled: !!user,
   });
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateTaskInput) => tasksService.create(input, user!.id),
+    mutationFn: (input: CreateTaskInput) => tasksService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateTaskInput }) =>
-      tasksService.update(id, input, user!.id),
+      tasksService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => tasksService.delete(id, user!.id),
+    mutationFn: (id: string) => tasksService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 
@@ -70,38 +70,38 @@ export const useHabits = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['habits', user?.id],
-    queryFn: () => habitsService.getAll(user!.id),
+    queryKey: ['habits'],
+    queryFn: () => habitsService.getAll(),
     enabled: !!user,
   });
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateHabitInput) => habitsService.create(input, user!.id),
+    mutationFn: (input: CreateHabitInput) => habitsService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habits', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateHabitInput }) =>
-      habitsService.update(id, input, user!.id),
+      habitsService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habits', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => habitsService.delete(id, user!.id),
+    mutationFn: (id: string) => habitsService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habits', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
     },
   });
 
   const logCompletionMutation = useMutation({
     mutationFn: ({ habitId, notes }: { habitId: string; notes?: string }) =>
-      habitsService.logCompletion(habitId, user!.id, notes),
+      habitsService.logCompletion(habitId, notes),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habits', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
     },
   });
 
@@ -121,30 +121,30 @@ export const useMetrics = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['metrics', user?.id],
-    queryFn: () => metricsService.getAll(user!.id),
+    queryKey: ['metrics'],
+    queryFn: () => metricsService.getAll(),
     enabled: !!user,
   });
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateMetricInput) => metricsService.create(input, user!.id),
+    mutationFn: (input: CreateMetricInput) => metricsService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metrics', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateMetricInput }) =>
-      metricsService.update(id, input, user!.id),
+      metricsService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metrics', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => metricsService.delete(id, user!.id),
+    mutationFn: (id: string) => metricsService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metrics', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['metrics'] });
     },
   });
 
@@ -163,30 +163,30 @@ export const useGoals = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['goals', user?.id],
-    queryFn: () => goalsService.getAll(user!.id),
+    queryKey: ['goals'],
+    queryFn: () => goalsService.getAll(),
     enabled: !!user,
   });
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateGoalInput) => goalsService.create(input, user!.id),
+    mutationFn: (input: CreateGoalInput) => goalsService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateGoalInput }) =>
-      goalsService.update(id, input, user!.id),
+      goalsService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => goalsService.delete(id, user!.id),
+    mutationFn: (id: string) => goalsService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 
@@ -205,30 +205,30 @@ export const useProjects = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['projects', user?.id],
-    queryFn: () => projectsService.getAll(user!.id),
+    queryKey: ['projects'],
+    queryFn: () => projectsService.getAll(),
     enabled: !!user,
   });
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateProjectInput) => projectsService.create(input, user!.id),
+    mutationFn: (input: CreateProjectInput) => projectsService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateProjectInput }) =>
-      projectsService.update(id, input, user!.id),
+      projectsService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => projectsService.delete(id, user!.id),
+    mutationFn: (id: string) => projectsService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 
@@ -247,30 +247,30 @@ export const useLogbook = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['logbook', user?.id],
-    queryFn: () => logbookService.getAll(user!.id),
+    queryKey: ['logbook'],
+    queryFn: () => logbookService.getAll(),
     enabled: !!user,
   });
 
   const createMutation = useMutation({
-    mutationFn: (input: CreateLogbookEntryInput) => logbookService.create(input, user!.id),
+    mutationFn: (input: CreateLogbookEntryInput) => logbookService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['logbook', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['logbook'] });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateLogbookEntryInput }) =>
-      logbookService.update(id, input, user!.id),
+      logbookService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['logbook', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['logbook'] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => logbookService.delete(id, user!.id),
+    mutationFn: (id: string) => logbookService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['logbook', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['logbook'] });
     },
   });
 

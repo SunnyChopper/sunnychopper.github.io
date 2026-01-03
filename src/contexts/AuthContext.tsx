@@ -3,14 +3,12 @@ import type { ReactNode } from 'react';
 import {
   signIn,
   signOut,
-  signUp,
-  confirmSignUp,
   getCurrentUser,
   fetchAuthSession,
   fetchUserAttributes,
   type SignInInput,
-  type SignUpInput
 } from 'aws-amplify/auth';
+import { apiClient } from '../lib/api-client';
 
 interface User {
   id: string;
@@ -23,9 +21,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  confirmSignUp: (email: string, code: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,8 +51,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setLoading(true);
       const currentUser = await getCurrentUser();
-      await fetchAuthSession();
+      const session = await fetchAuthSession();
       const attributes = await fetchUserAttributes();
+
+      const token = session.tokens?.idToken?.toString();
+      if (token) {
+        apiClient.setAuthToken(token);
+      }
 
       setUser({
         id: currentUser.userId,
@@ -65,6 +66,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
     } catch (err) {
       setUser(null);
+      apiClient.setAuthToken(null);
     } finally {
       setLoading(false);
     }
@@ -91,53 +93,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const handleSignUp = async (email: string, password: string) => {
-    try {
-      setError(null);
-      setLoading(true);
-
-      const signUpInput: SignUpInput = {
-        username: email,
-        password,
-        options: {
-          userAttributes: {
-            email,
-          },
-        },
-      };
-
-      await signUp(signUpInput);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sign up';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSignOut = async () => {
     try {
       setError(null);
       setLoading(true);
       await signOut();
       setUser(null);
+      apiClient.setAuthToken(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign out';
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConfirmSignUp = async (email: string, code: string) => {
-    try {
-      setError(null);
-      setLoading(true);
-      await confirmSignUp({ username: email, confirmationCode: code });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to confirm sign up';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -150,9 +114,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     error,
     signIn: handleSignIn,
-    signUp: handleSignUp,
     signOut: handleSignOut,
-    confirmSignUp: handleConfirmSignUp,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
