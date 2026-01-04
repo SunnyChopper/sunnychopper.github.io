@@ -9,14 +9,6 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
 
-  // TODO: Remove this temporary bypass once backend API is implemented
-  // Currently allowing access to admin pages without authentication for mocked data
-  const BYPASS_AUTH = true;
-
-  if (BYPASS_AUTH) {
-    return <>{children}</>;
-  }
-
   if (loading) {
     return <Loader isLoading={true} />;
   }

@@ -6,6 +6,7 @@ interface DependencyBadgeProps {
   onClick?: () => void;
   size?: 'sm' | 'md';
   className?: string;
+  tooltip?: string;
 }
 
 const sizeClasses = {
@@ -18,7 +19,7 @@ const iconSizes = {
   md: 'w-4 h-4',
 };
 
-export function DependencyBadge({ type, count, onClick, size = 'md', className = '' }: DependencyBadgeProps) {
+export function DependencyBadge({ type, count, onClick, size = 'md', className = '', tooltip }: DependencyBadgeProps) {
   if (count === 0) return null;
 
   const isBlocked = type === 'blocked';
@@ -38,14 +39,23 @@ export function DependencyBadge({ type, count, onClick, size = 'md', className =
   const label = isBlocked ? `Blocked by ${count}` : `Blocking ${count}`;
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!onClick}
-      className={`inline-flex items-center rounded-full font-medium transition-colors ${bgColor} ${textColor} ${hoverColor} ${sizeClasses[size]} ${onClick ? 'cursor-pointer' : 'cursor-default'} ${className}`}
-    >
-      <Icon className={iconSizes[size]} />
-      <span>{label}</span>
-    </button>
+    <div className="relative group inline-block">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={!onClick}
+        className={`inline-flex items-center rounded-full font-medium transition-colors ${bgColor} ${textColor} ${hoverColor} ${sizeClasses[size]} ${onClick ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+        title={tooltip}
+      >
+        <Icon className={iconSizes[size]} />
+        <span>{label}</span>
+      </button>
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none whitespace-pre-line max-w-xs">
+          {tooltip}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+        </div>
+      )}
+    </div>
   );
 }

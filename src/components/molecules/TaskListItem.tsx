@@ -1,4 +1,4 @@
-import { Pencil, Trash2, Calendar, Clock, GitBranch, Folder, Target } from 'lucide-react';
+import { Pencil, Trash2, Calendar, Clock, GitBranch } from 'lucide-react';
 import type { Task } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
@@ -13,6 +13,7 @@ interface TaskListItemProps {
   onClick?: (task: Task) => void;
   dependencyCount?: number;
   blockedByCount?: number;
+  blockedByTasks?: Task[];
   projectCount?: number;
   goalCount?: number;
 }
@@ -24,6 +25,7 @@ export function TaskListItem({
   onClick,
   dependencyCount = 0,
   blockedByCount = 0,
+  blockedByTasks = [],
   projectCount = 0,
   goalCount = 0
 }: TaskListItemProps) {
@@ -81,9 +83,11 @@ export function TaskListItem({
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <AreaBadge area={task.area} />
 
-            {task.subCategory && (
+            {(projectCount > 0 || goalCount > 0) && (
               <span className="text-gray-500 dark:text-gray-400">
-                {task.subCategory}
+                {projectCount > 0 && `Projects: ${projectCount}`}
+                {projectCount > 0 && goalCount > 0 && ' • '}
+                {goalCount > 0 && `Goals: ${goalCount}`}
               </span>
             )}
 
@@ -107,42 +111,36 @@ export function TaskListItem({
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
-                  Due: {dueInfo.text}
+                  {dueInfo.text}
                 </span>
               </div>
             )}
 
-            {scheduledInfo && (
+            {scheduledInfo && !dueInfo && (
               <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
                 <span className="text-gray-500 dark:text-gray-400">
-                  Scheduled: {scheduledInfo.text}
+                  {scheduledInfo.text}
                 </span>
               </div>
             )}
 
             {blockedByCount > 0 && (
-              <DependencyBadge type="blocked" count={blockedByCount} />
+              <DependencyBadge
+                type="blocked"
+                count={blockedByCount}
+                tooltip={
+                  blockedByTasks.length > 0
+                    ? `Blocked by:\n${blockedByTasks.map(t => `• ${t.title}`).join('\n')}`
+                    : undefined
+                }
+              />
             )}
 
             {dependencyCount > 0 && (
               <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                 <GitBranch className="w-4 h-4" />
                 <span>{dependencyCount}</span>
-              </div>
-            )}
-
-            {projectCount > 0 && (
-              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                <Folder className="w-4 h-4" />
-                <span>{projectCount}</span>
-              </div>
-            )}
-
-            {goalCount > 0 && (
-              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                <Target className="w-4 h-4" />
-                <span>{goalCount}</span>
               </div>
             )}
           </div>

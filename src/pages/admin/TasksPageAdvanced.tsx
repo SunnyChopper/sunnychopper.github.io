@@ -67,6 +67,7 @@ export default function TasksPageAdvanced() {
     const depMap = new Map<string, string[]>();
     const blockedMap = new Map<string, string[]>();
     const deps: TaskDependency[] = [];
+    const taskMap = new Map(taskList.map(t => [t.id, t]));
 
     await Promise.all(
       taskList.map(async (task) => {
@@ -76,9 +77,14 @@ export default function TasksPageAdvanced() {
           const depIds = depsResponse.data.map(d => d.dependsOnTaskId);
           depMap.set(task.id, depIds);
 
-          depIds.forEach(depId => {
-            const current = blockedMap.get(depId) || [];
-            blockedMap.set(depId, [...current, task.id]);
+          const incompleteDeps = depIds.filter(depId => {
+            const depTask = taskMap.get(depId);
+            return depTask && depTask.status !== 'Done';
+          });
+
+          incompleteDeps.forEach(depId => {
+            const current = blockedMap.get(task.id) || [];
+            blockedMap.set(task.id, [...current, depId]);
           });
         }
       })
@@ -389,6 +395,7 @@ export default function TasksPageAdvanced() {
                       onDelete={handleDeleteTask}
                       dependencyCount={taskDependencies.get(task.id)?.length || 0}
                       blockedByCount={taskBlockedBy.get(task.id)?.length || 0}
+                      blockedByTasks={getTaskBlockedBy(task.id)}
                       projectCount={taskProjects.get(task.id)?.length || 0}
                       goalCount={taskGoals.get(task.id)?.length || 0}
                     />
