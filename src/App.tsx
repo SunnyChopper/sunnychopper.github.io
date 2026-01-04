@@ -7,6 +7,8 @@ import ProductsPage from './pages/ProductsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './pages/admin/LoginPage';
 import DashboardPage from './pages/admin/DashboardPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import GrowthSystemPage from './pages/admin/GrowthSystemPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
@@ -35,12 +37,14 @@ function AppContent() {
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="growth-system" element={<GrowthSystemPage />} />
         <Route path="tasks" element={<div className="p-8">Tasks Page - Coming Soon</div>} />
         <Route path="habits" element={<div className="p-8">Habits Page - Coming Soon</div>} />
         <Route path="metrics" element={<div className="p-8">Metrics Page - Coming Soon</div>} />
         <Route path="goals" element={<div className="p-8">Goals Page - Coming Soon</div>} />
         <Route path="projects" element={<div className="p-8">Projects Page - Coming Soon</div>} />
         <Route path="logbook" element={<div className="p-8">Logbook Page - Coming Soon</div>} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
