@@ -1,6 +1,6 @@
 import { Sparkles, X, Check } from 'lucide-react';
-import Button from './Button';
-import { AIConfidenceIndicator } from './AIConfidenceIndicator';
+import Button from '../atoms/Button';
+import { AIConfidenceIndicator } from '../atoms/AIConfidenceIndicator';
 
 interface AISuggestionCardProps {
   title: string;

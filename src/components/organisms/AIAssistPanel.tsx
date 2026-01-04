@@ -1,5 +1,5 @@
 import { X, Sparkles } from 'lucide-react';
-import { AIThinkingIndicator } from './AIThinkingIndicator';
+import { AIThinkingIndicator } from '../atoms/AIThinkingIndicator';
 
 interface AIAssistPanelProps {
   isOpen: boolean;
