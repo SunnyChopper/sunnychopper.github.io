@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
+import { initializeMockData } from '../mocks/seed-data';
+
+const AUTH_STORAGE_KEY = 'gs_auth_user';
 
 interface User {
   id: string;
@@ -38,39 +40,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            attributes: session.user.user_metadata,
-          });
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
   }, []);
 
   const checkUser = async () => {
     try {
       setLoading(true);
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
 
-      if (session) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          attributes: session.user.user_metadata,
-        });
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       } else {
         setUser(null);
       }
@@ -82,25 +60,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const handleSignIn = async (email: string, password: string) => {
+  const handleSignIn = async (email: string, _password: string) => {
     try {
       setError(null);
       setLoading(true);
 
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const mockUser: User = {
+        id: 'user-1',
         email,
-        password,
-      });
+      };
 
-      if (signInError) throw signInError;
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
+      setUser(mockUser);
 
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          attributes: data.user.user_metadata,
-        });
-      }
+      initializeMockData();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
       setError(errorMessage);
@@ -110,25 +83,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const handleSignUp = async (email: string, password: string) => {
+  const handleSignUp = async (email: string, _password: string) => {
     try {
       setError(null);
       setLoading(true);
 
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const mockUser: User = {
+        id: 'user-1',
         email,
-        password,
-      });
+      };
 
-      if (signUpError) throw signUpError;
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
+      setUser(mockUser);
 
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          attributes: data.user.user_metadata,
-        });
-      }
+      initializeMockData();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign up';
       setError(errorMessage);
@@ -142,8 +110,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setError(null);
       setLoading(true);
-      const { error: signOutError } = await supabase.auth.signOut();
-      if (signOutError) throw signOutError;
+      localStorage.removeItem(AUTH_STORAGE_KEY);
       setUser(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign out';
