@@ -25,6 +25,12 @@ import { chatbotService } from '../../services/chatbot.service';
 import { findBestResponse } from '../../data/chatbot-responses';
 import type { ChatThread, ChatMessage } from '../../types/chatbot';
 
+interface MessageBranch {
+  content: string;
+  response?: string;
+  responseThinking?: string;
+}
+
 export default function ChatbotPage() {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [activeThread, setActiveThread] = useState<ChatThread | null>(null);
@@ -42,10 +48,9 @@ export default function ChatbotPage() {
   const [thinkingComplete, setThinkingComplete] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [messageBranches, setMessageBranches] = useState<{ [key: string]: ChatMessage[] }>({});
+  const [messageBranches, setMessageBranches] = useState<{ [key: string]: MessageBranch[] }>({});
   const [currentBranchIndex, setCurrentBranchIndex] = useState<{ [key: string]: number }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadThreads();
@@ -127,7 +132,7 @@ export default function ChatbotPage() {
     }
   };
 
-  const handleSendMessage = async (messageContent?: string) => {
+  const handleSendMessage = async (messageContent?: string, isEdit: boolean = false, editedMessageId?: string) => {
     const userMessage = messageContent || inputValue.trim();
     if (!userMessage || !activeThread || isLoading) return;
 
@@ -136,13 +141,21 @@ export default function ChatbotPage() {
     setEditingMessageId(null);
 
     try {
-      const userMsg = await chatbotService.createMessage({
-        thread_id: activeThread.id,
-        role: 'user',
-        content: userMessage,
-      });
+      let userMsg;
 
-      await loadMessages(activeThread.id);
+      if (isEdit && editedMessageId) {
+        await chatbotService.updateMessage(editedMessageId, userMessage);
+        await chatbotService.deleteMessagesAfter(editedMessageId, activeThread.id);
+        await loadMessages(activeThread.id);
+        userMsg = { id: editedMessageId };
+      } else {
+        userMsg = await chatbotService.createMessage({
+          thread_id: activeThread.id,
+          role: 'user',
+          content: userMessage,
+        });
+        await loadMessages(activeThread.id);
+      }
 
       const responseData = findBestResponse(userMessage);
 
@@ -209,32 +222,40 @@ export default function ChatbotPage() {
       const originalMessage = messages[messageIndex];
       const branchKey = `${messageId}`;
 
-      if (!messageBranches[branchKey]) {
-        messageBranches[branchKey] = [{ ...originalMessage }];
-        setMessageBranches({ ...messageBranches });
-      }
+      const updatedBranches = messageBranches[branchKey] || [];
 
-      if (originalMessage.content !== newContent) {
-        messageBranches[branchKey].push({ ...originalMessage, content: newContent });
-        setMessageBranches({ ...messageBranches });
-        setCurrentBranchIndex({
-          ...currentBranchIndex,
-          [branchKey]: messageBranches[branchKey].length - 1,
+      if (updatedBranches.length === 0) {
+        updatedBranches.push({
+          content: originalMessage.content,
+          response: messageIndex < messages.length - 1 ? messages[messageIndex + 1].content : undefined,
+          responseThinking: messageIndex < messages.length - 1 ? messages[messageIndex + 1].thinking : undefined,
         });
       }
 
-      await chatbotService.deleteMessagesAfter(messageId, activeThread.id);
-      await chatbotService.updateMessage(messageId, newContent);
-      await loadMessages(activeThread.id);
+      if (originalMessage.content !== newContent) {
+        updatedBranches.push({
+          content: newContent,
+        });
+
+        setMessageBranches({
+          ...messageBranches,
+          [branchKey]: updatedBranches,
+        });
+
+        setCurrentBranchIndex({
+          ...currentBranchIndex,
+          [branchKey]: updatedBranches.length - 1,
+        });
+      }
 
       setEditingMessageId(null);
-      await handleSendMessage(newContent);
+      await handleSendMessage(newContent, true, messageId);
     } catch (error) {
       console.error('Error editing message:', error);
     }
   };
 
-  const switchBranch = (messageId: string, direction: 'prev' | 'next') => {
+  const switchBranch = async (messageId: string, direction: 'prev' | 'next') => {
     const branchKey = `${messageId}`;
     const branches = messageBranches[branchKey] || [];
     const currentIndex = currentBranchIndex[branchKey] || 0;
@@ -246,18 +267,56 @@ export default function ChatbotPage() {
       newIndex = currentIndex + 1;
     }
 
+    if (newIndex === currentIndex) return;
+
     setCurrentBranchIndex({ ...currentBranchIndex, [branchKey]: newIndex });
 
-    const messageIndex = messages.findIndex((m) => m.id === messageId);
-    if (messageIndex !== -1) {
-      const updatedMessages = [...messages];
-      updatedMessages[messageIndex] = { ...updatedMessages[messageIndex], content: branches[newIndex].content };
-      setMessages(updatedMessages);
+    const branch = branches[newIndex];
+    if (!activeThread) return;
+
+    try {
+      await chatbotService.updateMessage(messageId, branch.content);
+      await chatbotService.deleteMessagesAfter(messageId, activeThread.id);
+
+      if (branch.response) {
+        await chatbotService.createMessage({
+          thread_id: activeThread.id,
+          role: 'assistant',
+          content: branch.response,
+          thinking: branch.responseThinking,
+          parent_id: messageId,
+        });
+      }
+
+      await loadMessages(activeThread.id);
+    } catch (error) {
+      console.error('Error switching branch:', error);
     }
   };
 
   const countTokens = (text: string) => {
     return text.split(' ').length;
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes}m ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours}h ago`;
+    } else if (diffInSeconds < 604800) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days}d ago`;
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
   };
 
   return (
@@ -435,7 +494,7 @@ export default function ChatbotPage() {
                                 <ChevronDown size={16} />
                               )}
                               <span className="font-medium">
-                                {countTokens(message.thinking)} tokens
+                                Show Thinking ({countTokens(message.thinking)} tokens)
                               </span>
                             </button>
                             {thinkingExpanded[message.id] && (
@@ -455,7 +514,6 @@ export default function ChatbotPage() {
 
                         {editingMessageId === message.id ? (
                           <input
-                            ref={editInputRef}
                             type="text"
                             defaultValue={message.content}
                             onBlur={(e) => {
@@ -476,66 +534,75 @@ export default function ChatbotPage() {
                             autoFocus
                           />
                         ) : (
-                          <div
-                            className={`rounded-lg px-4 py-3 ${
-                              message.role === 'user'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                            }`}
-                          >
-                            {message.role === 'assistant' ? (
-                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkGfm]}
-                                  components={{
-                                    a: ({ node, ...props }) => {
-                                      const href = props.href || '';
-                                      if (href.startsWith('/')) {
+                          <>
+                            <div
+                              className={`rounded-lg px-4 py-3 ${
+                                message.role === 'user'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                              }`}
+                            >
+                              {message.role === 'assistant' ? (
+                                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-3 prose-ul:my-2 prose-li:my-1">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                                      ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>,
+                                      ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-3">{children}</ol>,
+                                      li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                                      a: ({ node, ...props }) => {
+                                        const href = props.href || '';
+                                        if (href.startsWith('/')) {
+                                          return (
+                                            <Link
+                                              to={href}
+                                              className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                            >
+                                              {props.children}
+                                            </Link>
+                                          );
+                                        }
                                         return (
-                                          <Link
-                                            to={href}
-                                            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                                          >
-                                            {props.children}
-                                          </Link>
+                                          <a
+                                            {...props}
+                                            className="text-blue-600 dark:text-blue-400 hover:underline"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          />
                                         );
-                                      }
-                                      return (
-                                        <a
-                                          {...props}
-                                          className="text-blue-600 dark:text-blue-400 hover:underline"
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                        />
-                                      );
-                                    },
-                                    code: ({ className, children, ...props }) => {
-                                      const isInline = !className?.includes('language-');
-                                      return isInline ? (
-                                        <code
-                                          className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm"
-                                          {...props}
-                                        >
-                                          {children}
-                                        </code>
-                                      ) : (
-                                        <code
-                                          className="block bg-gray-200 dark:bg-gray-600 p-2 rounded text-sm overflow-x-auto"
-                                          {...props}
-                                        >
-                                          {children}
-                                        </code>
-                                      );
-                                    },
-                                  }}
-                                >
-                                  {message.content}
-                                </ReactMarkdown>
-                              </div>
-                            ) : (
-                              message.content
-                            )}
-                          </div>
+                                      },
+                                      code: ({ className, children, ...props }) => {
+                                        const isInline = !className?.includes('language-');
+                                        return isInline ? (
+                                          <code
+                                            className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm"
+                                            {...props}
+                                          >
+                                            {children}
+                                          </code>
+                                        ) : (
+                                          <code
+                                            className="block bg-gray-200 dark:bg-gray-600 p-2 rounded text-sm overflow-x-auto"
+                                            {...props}
+                                          >
+                                            {children}
+                                          </code>
+                                        );
+                                      },
+                                    }}
+                                  >
+                                    {message.content}
+                                  </ReactMarkdown>
+                                </div>
+                              ) : (
+                                message.content
+                              )}
+                            </div>
+                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-500">
+                              {formatTimestamp(message.created_at)}
+                            </div>
+                          </>
                         )}
 
                         {message.role === 'user' && index === messages.length - 2 && (
@@ -598,17 +665,29 @@ export default function ChatbotPage() {
                   <div className="flex-1 max-w-[80%]">
                     {streamingThinking && !thinkingComplete && (
                       <div className="mb-2">
-                        <button className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <ChevronDown size={16} />
+                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <Loader2 className="animate-spin" size={16} />
                           <span className="font-medium">
-                            {countTokens(streamingThinking)} tokens
+                            Thinking... ({countTokens(streamingThinking)} tokens)
                           </span>
-                        </button>
+                        </div>
                       </div>
                     )}
                     {streamingContent && (
-                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-                        {streamingContent}
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100">
+                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-3 prose-ul:my-2 prose-li:my-1">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                              ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-3">{children}</ol>,
+                              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                            }}
+                          >
+                            {streamingContent}
+                          </ReactMarkdown>
+                        </div>
                         <span className="inline-block w-1 h-4 bg-blue-600 dark:bg-blue-400 ml-1 animate-pulse" />
                       </div>
                     )}
