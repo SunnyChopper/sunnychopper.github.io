@@ -90,8 +90,10 @@ export const chatbotService = {
       thread_id: request.thread_id,
       role: request.role,
       content: request.content,
+      thinking: request.thinking,
       metadata: request.metadata,
       created_at: new Date().toISOString(),
+      parent_id: request.parent_id,
     };
     messages.push(newMessage);
     saveMessages(messages);
@@ -104,5 +106,27 @@ export const chatbotService = {
     }
 
     return newMessage;
+  },
+
+  async updateMessage(id: string, content: string): Promise<ChatMessage> {
+    const messages = getMessages();
+    const index = messages.findIndex(m => m.id === id);
+    if (index === -1) {
+      throw new Error('Message not found');
+    }
+    messages[index].content = content;
+    saveMessages(messages);
+    return messages[index];
+  },
+
+  async deleteMessagesAfter(messageId: string, threadId: string): Promise<void> {
+    const messages = getMessages();
+    const targetIndex = messages.findIndex(m => m.id === messageId && m.thread_id === threadId);
+    if (targetIndex === -1) return;
+
+    const filtered = messages.filter((m, idx) =>
+      m.thread_id !== threadId || idx <= targetIndex
+    );
+    saveMessages(filtered);
   },
 };
