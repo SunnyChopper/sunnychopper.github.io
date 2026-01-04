@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import ProjectCard from '../molecules/ProjectCard';
+import PortfolioProjectCard from '../molecules/PortfolioProjectCard';
 import { projects } from '../../data/projects';
 
 export default function PortfolioSection() {
@@ -19,7 +19,7 @@ export default function PortfolioSection() {
 
         <div className="max-w-6xl mx-auto">
           {projects.map((project, index) => (
-            <ProjectCard key={project.id} project={project} index={index} />
+            <PortfolioProjectCard key={project.id} project={project} index={index} />
           ))}
         </div>
       </div>
