@@ -39,7 +39,7 @@ export default function ChatbotPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [thinkingExpanded, setThinkingExpanded] = useState<{ [key: string]: boolean }>({});
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
@@ -54,6 +54,18 @@ export default function ChatbotPage() {
 
   useEffect(() => {
     loadThreads();
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarCollapsed(false);
+      } else {
+        setSidebarCollapsed(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -321,10 +333,16 @@ export default function ChatbotPage() {
 
   return (
     <div className="fixed inset-0 lg:left-64 top-0 flex">
+      {!sidebarCollapsed && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
       <div
-        className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ${
-          sidebarCollapsed ? 'w-0' : 'w-64'
-        } overflow-hidden`}
+        className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 absolute lg:relative z-30 h-full ${
+          sidebarCollapsed ? '-left-64 w-64' : 'left-0 w-64'
+        } lg:left-0 overflow-hidden`}
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <button
@@ -345,7 +363,12 @@ export default function ChatbotPage() {
                   ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800'
                   : 'hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
-              onClick={() => setActiveThread(thread)}
+              onClick={() => {
+                setActiveThread(thread);
+                if (window.innerWidth < 1024) {
+                  setSidebarCollapsed(true);
+                }
+              }}
             >
               {editingThreadId === thread.id ? (
                 <input
@@ -395,8 +418,8 @@ export default function ChatbotPage() {
 
       <button
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-r-lg shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-        style={{ left: sidebarCollapsed ? '0' : '16rem' }}
+        className="fixed lg:absolute left-4 lg:left-0 top-4 lg:top-1/2 lg:-translate-y-1/2 z-40 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg lg:rounded-r-lg shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+        style={{ left: sidebarCollapsed ? undefined : '17rem' }}
       >
         {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
       </button>
