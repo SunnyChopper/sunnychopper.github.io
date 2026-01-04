@@ -3,10 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureAmplify } from './lib/aws-config';
 import { AuthProvider } from './contexts/AuthContext';
+import { initializeMockData } from './mocks/seed-data';
 import './index.css';
 import App from './App.tsx';
 
 configureAmplify();
+initializeMockData();
 
 const queryClient = new QueryClient({
   defaultOptions: {

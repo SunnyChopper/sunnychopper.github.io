@@ -1,7 +1,7 @@
 import { apiClient } from '../../lib/api-client';
 import type {
   Metric,
-  MetricHistory,
+  MetricLog,
   CreateMetricInput,
   UpdateMetricInput,
 } from '../../types/growth-system';
@@ -30,7 +30,7 @@ export const metricsService = {
     return apiClient.delete<void>(`/metrics/${id}`);
   },
 
-  async getHistory(metricId: string): Promise<ApiListResponse<MetricHistory>> {
-    return apiClient.get<MetricHistory[]>(`/metrics/${metricId}/history`);
+  async getHistory(metricId: string): Promise<ApiListResponse<MetricLog>> {
+    return apiClient.get<MetricLog[]>(`/metrics/${metricId}/history`);
   },
 };

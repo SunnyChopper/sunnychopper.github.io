@@ -38,10 +38,10 @@ export default function DashboardPage() {
   const { projects } = useProjects();
   const { entries } = useLogbook();
 
-  const activeTasks = tasks.filter((t) => t.status !== 'completed' && t.status !== 'cancelled');
-  const activeHabits = habits.filter((h) => h.streak > 0);
-  const activeGoals = goals.filter((g) => g.status === 'active');
-  const activeProjects = projects.filter((p) => p.status === 'active');
+  const activeTasks = tasks.filter((t) => t.status !== 'Done' && t.status !== 'Cancelled');
+  const activeHabits = habits.filter((h) => h.frequency === 'Daily');
+  const activeGoals = goals.filter((g) => g.status === 'Active');
+  const activeProjects = projects.filter((p) => p.status === 'Active');
 
   return (
     <div>
@@ -105,9 +105,9 @@ export default function DashboardPage() {
               {activeTasks.slice(0, 5).map((task) => (
                 <div key={task.id} className="flex items-start gap-3 p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <div className={`w-2 h-2 rounded-full mt-2 ${
-                    task.priority === 'urgent' ? 'bg-red-500' :
-                    task.priority === 'high' ? 'bg-orange-500' :
-                    task.priority === 'medium' ? 'bg-yellow-500' :
+                    task.priority === 'P1' ? 'bg-red-500' :
+                    task.priority === 'P2' ? 'bg-orange-500' :
+                    task.priority === 'P3' ? 'bg-yellow-500' :
                     'bg-green-500'
                   }`} />
                   <div className="flex-1">
@@ -128,15 +128,9 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {activeProjects.slice(0, 5).map((project) => (
                 <div key={project.id} className="p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between">
                     <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{project.name}</p>
-                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{project.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
-                    <div
-                      className="bg-blue-600 dark:bg-blue-500 h-1.5 rounded-full transition-all"
-                      style={{ width: `${project.progress}%` }}
-                    />
+                    <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">{project.status}</span>
                   </div>
                 </div>
               ))}

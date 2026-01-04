@@ -62,7 +62,7 @@ export const useTasks = () => {
   return {
     tasks: data?.data || [],
     isLoading,
-    error: error || data?.error,
+    error: error,
     createTask: createMutation.mutateAsync,
     updateTask: updateMutation.mutateAsync,
     deleteTask: deleteMutation.mutateAsync,
