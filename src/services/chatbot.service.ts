@@ -1,103 +1,108 @@
-import { createClient } from '@supabase/supabase-js';
 import type { ChatThread, ChatMessage, CreateThreadRequest, CreateMessageRequest, UpdateThreadRequest } from '../types/chatbot';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const STORAGE_KEYS = {
+  THREADS: 'chatbot_threads',
+  MESSAGES: 'chatbot_messages',
+};
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function getThreads(): ChatThread[] {
+  const data = localStorage.getItem(STORAGE_KEYS.THREADS);
+  return data ? JSON.parse(data) : [];
+}
+
+function saveThreads(threads: ChatThread[]): void {
+  localStorage.setItem(STORAGE_KEYS.THREADS, JSON.stringify(threads));
+}
+
+function getMessages(): ChatMessage[] {
+  const data = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+  return data ? JSON.parse(data) : [];
+}
+
+function saveMessages(messages: ChatMessage[]): void {
+  localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
+}
 
 export const chatbotService = {
   async getThreads(): Promise<ChatThread[]> {
-    const { data, error } = await supabase
-      .from('chat_threads')
-      .select('*')
-      .order('updated_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
+    return getThreads().sort((a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
   },
 
   async getThread(id: string): Promise<ChatThread | null> {
-    const { data, error } = await supabase
-      .from('chat_threads')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data;
+    const threads = getThreads();
+    return threads.find(t => t.id === id) || null;
   },
 
   async createThread(request: CreateThreadRequest): Promise<ChatThread> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-
-    const { data, error } = await supabase
-      .from('chat_threads')
-      .insert({
-        user_id: user.id,
-        title: request.title || 'New Chat',
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const threads = getThreads();
+    const newThread: ChatThread = {
+      id: generateId(),
+      user_id: 'local-user',
+      title: request.title || 'New Chat',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    threads.push(newThread);
+    saveThreads(threads);
+    return newThread;
   },
 
   async updateThread(request: UpdateThreadRequest): Promise<ChatThread> {
-    const { data, error } = await supabase
-      .from('chat_threads')
-      .update({
-        title: request.title,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', request.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    const threads = getThreads();
+    const index = threads.findIndex(t => t.id === request.id);
+    if (index === -1) {
+      throw new Error('Thread not found');
+    }
+    threads[index] = {
+      ...threads[index],
+      title: request.title,
+      updated_at: new Date().toISOString(),
+    };
+    saveThreads(threads);
+    return threads[index];
   },
 
   async deleteThread(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('chat_threads')
-      .delete()
-      .eq('id', id);
+    const threads = getThreads().filter(t => t.id !== id);
+    saveThreads(threads);
 
-    if (error) throw error;
+    const messages = getMessages().filter(m => m.thread_id !== id);
+    saveMessages(messages);
   },
 
   async getMessages(threadId: string): Promise<ChatMessage[]> {
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('thread_id', threadId)
-      .order('created_at', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
+    const messages = getMessages();
+    return messages
+      .filter(m => m.thread_id === threadId)
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   },
 
   async createMessage(request: CreateMessageRequest): Promise<ChatMessage> {
-    const { data, error } = await supabase
-      .from('chat_messages')
-      .insert({
-        thread_id: request.thread_id,
-        role: request.role,
-        content: request.content,
-        metadata: request.metadata || {},
-      })
-      .select()
-      .single();
+    const messages = getMessages();
+    const newMessage: ChatMessage = {
+      id: generateId(),
+      thread_id: request.thread_id,
+      role: request.role,
+      content: request.content,
+      metadata: request.metadata,
+      created_at: new Date().toISOString(),
+    };
+    messages.push(newMessage);
+    saveMessages(messages);
 
-    if (error) throw error;
+    const threads = getThreads();
+    const threadIndex = threads.findIndex(t => t.id === request.thread_id);
+    if (threadIndex !== -1) {
+      threads[threadIndex].updated_at = new Date().toISOString();
+      saveThreads(threads);
+    }
 
-    await supabase
-      .from('chat_threads')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', request.thread_id);
-
-    return data;
+    return newMessage;
   },
 };

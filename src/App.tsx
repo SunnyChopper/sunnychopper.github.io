@@ -14,7 +14,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
 import { useThemeInitializer } from './hooks/useTheme';
-import ErrorBoundary from './components/ErrorBoundary';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 
 function AppContent() {
   usePageTracking();

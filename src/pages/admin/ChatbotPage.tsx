@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Plus, Edit2, Trash2, Send, Loader2, Sparkles, CheckSquare, Target, BarChart3 } from 'lucide-react';
 import { chatbotService } from '../../services/chatbot.service';
+import { findBestResponse } from '../../data/chatbot-responses';
 import type { ChatThread, ChatMessage } from '../../types/chatbot';
 
 export default function ChatbotPage() {
@@ -82,31 +83,6 @@ export default function ChatbotPage() {
     }
   };
 
-  const generateMockResponse = (userMessage: string): string => {
-    const lower = userMessage.toLowerCase();
-
-    if (lower.includes('task') && (lower.includes('create') || lower.includes('add'))) {
-      return `I can help you create a task! Based on your message, I'll add this to your task list. Tasks in Personal OS connect to your projects and goals, helping you break down strategic objectives into actionable steps.\n\nWould you like me to:\n1. Create this as a high-priority task\n2. Link it to an existing project\n3. Set a specific deadline`;
-    }
-
-    if (lower.includes('goal') && (lower.includes('progress') || lower.includes('how'))) {
-      return `Let me check your goals progress. In Personal OS, goals are part of the Strategic Layer, driving your projects and daily actions.\n\nYour active goals show:\n- Goal completion tracking\n- Linked projects and their status\n- Key metrics aligned with each goal\n\nWould you like me to show detailed progress on a specific goal?`;
-    }
-
-    if (lower.includes('metric') || lower.includes('progress') || lower.includes('performance')) {
-      return `Your metrics dashboard provides data-driven insights. The Measurement Layer tracks KPIs tied to your goals and projects.\n\nI can help you:\n- View current metric values\n- Analyze trends over time\n- Identify what's working well\n- Suggest areas for improvement\n\nWhich metrics would you like to review?`;
-    }
-
-    if (lower.includes('habit') || lower.includes('routine')) {
-      return `Habits are part of the Tactical Layer, turning your strategy into consistent daily action. I can help you:\n\n- Review your current habits and streaks\n- Create new habits aligned with your goals\n- Analyze habit completion patterns\n- Suggest optimal times for habits\n\nWhat habit would you like to work on?`;
-    }
-
-    if (lower.includes('project') && lower.includes('status')) {
-      return `Let me pull up your project statuses. Projects bridge strategy and execution, breaking down goals into manageable milestones.\n\nI can show you:\n- Active project progress percentages\n- Upcoming milestones\n- Tasks per project\n- Blocked items needing attention\n\nWhich project would you like details on?`;
-    }
-
-    return `I'm your Personal OS Assistant! I have access to all your Growth System data and can help you:\n\n📋 **Tasks**: Create, update, or review your tasks\n🎯 **Goals**: Track progress and align actions\n📊 **Metrics**: Analyze performance data\n📅 **Habits**: Build consistent routines\n📁 **Projects**: Manage complex initiatives\n📖 **Logbook**: Reflect on your journey\n\nI can create items, provide insights, and help you understand how everything connects. What would you like to work on?`;
-  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !activeThread || isLoading) return;
@@ -125,7 +101,7 @@ export default function ChatbotPage() {
       await loadMessages(activeThread.id);
 
       setTimeout(async () => {
-        const aiResponse = generateMockResponse(userMessage);
+        const aiResponse = findBestResponse(userMessage);
         await chatbotService.createMessage({
           thread_id: activeThread.id,
           role: 'assistant',
