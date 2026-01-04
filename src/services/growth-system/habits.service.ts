@@ -4,6 +4,7 @@ import type {
   HabitLog,
   CreateHabitInput,
   UpdateHabitInput,
+  CreateHabitLogInput,
 } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
 
@@ -30,11 +31,11 @@ export const habitsService = {
     return apiClient.delete<void>(`/habits/${id}`);
   },
 
-  async logCompletion(habitId: string, notes?: string): Promise<ApiResponse<HabitLog>> {
-    return apiClient.post<HabitLog>(`/habits/${habitId}/log`, { notes });
+  async logCompletion(input: CreateHabitLogInput): Promise<ApiResponse<HabitLog>> {
+    return apiClient.post<HabitLog>(`/habits/${input.habitId}/log`, input);
   },
 
-  async getHabitLogs(habitId: string): Promise<ApiListResponse<HabitLog>> {
+  async getLogsByHabit(habitId: string): Promise<ApiListResponse<HabitLog>> {
     return apiClient.get<HabitLog[]>(`/habits/${habitId}/logs`);
   },
 };

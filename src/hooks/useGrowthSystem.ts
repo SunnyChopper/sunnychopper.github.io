@@ -103,8 +103,7 @@ export const useHabits = () => {
   });
 
   const logCompletionMutation = useMutation({
-    mutationFn: ({ habitId, notes }: { habitId: string; notes?: string }) =>
-      habitsService.logCompletion(habitId, notes),
+    mutationFn: habitsService.logCompletion,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
     },

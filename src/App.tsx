@@ -15,6 +15,8 @@ import TasksPage from './pages/admin/TasksPageAdvanced';
 import ProjectsPage from './pages/admin/ProjectsPage';
 import GoalsPage from './pages/admin/GoalsPage';
 import MetricsPage from './pages/admin/MetricsPage';
+import HabitsPage from './pages/admin/HabitsPage';
+import LogbookPage from './pages/admin/LogbookPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
@@ -47,11 +49,11 @@ function AppContent() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="growth-system" element={<GrowthSystemPage />} />
         <Route path="tasks" element={<TasksPage />} />
-        <Route path="habits" element={<div className="p-8">Habits Page - Coming Soon</div>} />
+        <Route path="habits" element={<HabitsPage />} />
         <Route path="metrics" element={<MetricsPage />} />
         <Route path="goals" element={<GoalsPage />} />
         <Route path="projects" element={<ProjectsPage />} />
-        <Route path="logbook" element={<div className="p-8">Logbook Page - Coming Soon</div>} />
+        <Route path="logbook" element={<LogbookPage />} />
         <Route path="assistant" element={<ChatbotPage />} />
         <Route path="components-demo" element={<ComponentsDemoPage />} />
         <Route path="settings" element={<SettingsPage />} />

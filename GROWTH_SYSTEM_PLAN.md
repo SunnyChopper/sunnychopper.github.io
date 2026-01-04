@@ -39,8 +39,8 @@
 | 5 | Projects Page | ✅ COMPLETED | 2026-01-04 | Full Projects page with card grid, detail view, filters, create/edit/delete operations. Components: ProjectCard, ProjectCreateForm, ProjectEditForm, ProjectsPage. Displays linked tasks and goals, progress calculation, timeline visualization. Route added to /admin/projects |
 | 6 | Goals Page | ✅ COMPLETED | 2026-01-04 | Full Goals page with vision board layout, grouped by Time Horizon and Area views. Components: GoalCard, GoalCreateForm, GoalEditForm, GoalsPage. Success criteria management, progress tracking from completed criteria, linked projects display. 10 diverse seed goals added covering all time horizons and statuses. Route added to /admin/goals |
 | 7 | Metrics Page | ✅ COMPLETED | 2026-01-04 | Full Metrics dashboard with card grid, detail view, filters, quick logging. Components: MetricCard with trend indicators, MetricLogForm, MetricCreateForm, MetricEditForm, MetricsPage. Log history display, on-track status indicators, target tracking. 8 diverse seed metrics added covering multiple areas and units with log history. Route added to /admin/metrics |
-| 8 | Habits Page | 🔲 NOT STARTED | - | - |
-| 9 | Logbook Page | 🔲 NOT STARTED | - | - |
+| 8 | Habits Page | ✅ COMPLETED | 2026-01-04 | Full Habits page with today-focused tracker, habit loop visualization, streak tracking, and quick logging. Components: HabitCard with streak counter, HabitLogWidget for completion tracking, HabitCreateForm, HabitEditForm, HabitsPage with type grouping. 5 diverse seed habits added (Build/Maintain/Reduce/Quit types). Route added to /admin/habits |
+| 9 | Logbook Page | ✅ COMPLETED | 2026-01-04 | Full Logbook page with list view, mood tracking (High/Steady/Low), energy slider (1-10), and rich editor. Components: LogbookEntryCard with mood-based coloring, LogbookEditor with mood picker and energy slider, LogbookPage with list view. 5 seed entries added with different moods and energy levels. Route added to /admin/logbook |
 | 10 | Dependency Graph | 🔲 NOT STARTED | - | - |
 | 11 | LLM - Tasks & Projects | 🔲 NOT STARTED | - | - |
 | 12 | LLM - Goals & Metrics | 🔲 NOT STARTED | - | - |
@@ -373,7 +373,7 @@ Build the Metrics page with dashboard and logging interface.
 ---
 
 ### Strafing Run 8: Habits Page
-**Status:** 🔲 NOT STARTED
+**Status:** ✅ COMPLETED (2026-01-04)
 **Dependencies:** Run 7
 **Estimated Effort:** 3-4 hours
 
@@ -418,7 +418,7 @@ Create the Habits page with daily tracker and habit design interface.
 ---
 
 ### Strafing Run 9: Logbook Page
-**Status:** 🔲 NOT STARTED
+**Status:** ✅ COMPLETED (2026-01-04)
 **Dependencies:** Run 8
 **Estimated Effort:** 3-4 hours
 

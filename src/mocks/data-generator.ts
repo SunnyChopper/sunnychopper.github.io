@@ -784,6 +784,78 @@ export function generateSeedData() {
   };
   habits.push(habit3);
 
+  const habit4: Habit = {
+    id: generateId(),
+    name: 'Drink 8 Glasses of Water',
+    description: 'Stay hydrated throughout the day',
+    area: 'Health',
+    subCategory: 'Nutrition',
+    habitType: 'Maintain',
+    frequency: 'Daily',
+    dailyTarget: 8,
+    weeklyTarget: null,
+    intent: 'Maintain proper hydration for health and energy',
+    trigger: 'Every time I finish a task',
+    action: 'Drink one glass of water',
+    reward: 'Feel refreshed and energized',
+    frictionUp: null,
+    frictionDown: 'Keep water bottle on desk at all times',
+    notes: null,
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -25)),
+    updatedAt: formatDate(now),
+  };
+  habits.push(habit4);
+
+  for (let i = 0; i < 10; i++) {
+    habitLogs.push({
+      id: generateId(),
+      habitId: habit4.id,
+      completedAt: formatDate(addDays(now, -10 + i)),
+      amount: 6 + Math.floor(Math.random() * 3),
+      notes: null,
+      userId: USER_ID,
+      createdAt: formatDate(addDays(now, -10 + i)),
+    });
+  }
+
+  const habit5: Habit = {
+    id: generateId(),
+    name: 'Evening Screen-Free Time',
+    description: 'No screens 1 hour before bed',
+    area: 'Health',
+    subCategory: 'Sleep',
+    habitType: 'Quit',
+    frequency: 'Daily',
+    dailyTarget: 1,
+    weeklyTarget: 7,
+    intent: 'Improve sleep quality by reducing blue light exposure',
+    trigger: '9 PM alarm',
+    action: 'Put all devices in another room',
+    reward: 'Better sleep and more time for reading',
+    frictionUp: 'Use app blockers, set devices to grayscale mode',
+    frictionDown: null,
+    notes: null,
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -14)),
+    updatedAt: formatDate(now),
+  };
+  habits.push(habit5);
+
+  for (let i = 0; i < 8; i++) {
+    if (i % 3 !== 0) {
+      habitLogs.push({
+        id: generateId(),
+        habitId: habit5.id,
+        completedAt: formatDate(addDays(now, -8 + i)),
+        amount: 1,
+        notes: null,
+        userId: USER_ID,
+        createdAt: formatDate(addDays(now, -8 + i)),
+      });
+    }
+  }
+
   const logbook1: LogbookEntry = {
     id: generateId(),
     date: formatDate(addDays(now, -1)),
@@ -814,6 +886,51 @@ export function generateSeedData() {
   };
   logbookEntries.push(logbook2);
   logbookHabits.push({ logbookEntryId: logbook2.id, habitId: habit2.id, createdAt: formatDate(now) });
+
+  const logbook3: LogbookEntry = {
+    id: generateId(),
+    date: formatDate(addDays(now, -3)),
+    title: 'Challenges with API Design',
+    notes: 'Struggled with the authentication flow today. Spent too much time debugging. Need to ask for help sooner. Did complete my morning run which helped clear my head.',
+    mood: 'Low',
+    energy: 5,
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -3)),
+    updatedAt: formatDate(addDays(now, -3)),
+  };
+  logbookEntries.push(logbook3);
+  logbookTasks.push({ logbookEntryId: logbook3.id, taskId: task2.id, createdAt: formatDate(now) });
+  logbookHabits.push({ logbookEntryId: logbook3.id, habitId: habit1.id, createdAt: formatDate(now) });
+
+  const logbook4: LogbookEntry = {
+    id: generateId(),
+    date: formatDate(addDays(now, -5)),
+    title: 'Great Family Weekend',
+    notes: 'Spent quality time with family. Went hiking and had a picnic. Feeling grateful for these moments. Work can wait - balance is important.',
+    mood: 'High',
+    energy: 9,
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -5)),
+    updatedAt: formatDate(addDays(now, -5)),
+  };
+  logbookEntries.push(logbook4);
+
+  const logbook5: LogbookEntry = {
+    id: generateId(),
+    date: formatDate(addDays(now, -7)),
+    title: 'Week in Review',
+    notes: 'Solid week of progress. Completed database schema design, made good progress on auth system. Running streak at 12 days! Feeling strong and energized. Ready to tackle the API endpoints next week.',
+    mood: 'High',
+    energy: 8,
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -7)),
+    updatedAt: formatDate(addDays(now, -7)),
+  };
+  logbookEntries.push(logbook5);
+  logbookTasks.push({ logbookEntryId: logbook5.id, taskId: task1.id, createdAt: formatDate(now) });
+  logbookProjects.push({ logbookEntryId: logbook5.id, projectId: project1.id, createdAt: formatDate(now) });
+  logbookHabits.push({ logbookEntryId: logbook5.id, habitId: habit1.id, createdAt: formatDate(now) });
+  logbookHabits.push({ logbookEntryId: logbook5.id, habitId: habit2.id, createdAt: formatDate(now) });
 
   return {
     tasks,
