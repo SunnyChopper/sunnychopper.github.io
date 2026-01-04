@@ -11,7 +11,7 @@ import SettingsPage from './pages/admin/SettingsPage';
 import GrowthSystemPage from './pages/admin/GrowthSystemPage';
 import ChatbotPage from './pages/admin/ChatbotPage';
 import ComponentsDemoPage from './pages/admin/ComponentsDemoPage';
-import TasksPage from './pages/admin/TasksPage';
+import TasksPage from './pages/admin/TasksPageAdvanced';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';

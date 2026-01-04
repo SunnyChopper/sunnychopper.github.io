@@ -1,8 +1,9 @@
-import { Pencil, Trash2, Calendar, Clock } from 'lucide-react';
+import { Pencil, Trash2, Calendar, Clock, GitBranch, Folder, Target } from 'lucide-react';
 import type { Task } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
 import { StatusBadge } from '../atoms/StatusBadge';
+import { DependencyBadge } from '../atoms/DependencyBadge';
 import Button from '../atoms/Button';
 
 interface TaskListItemProps {
@@ -10,9 +11,22 @@ interface TaskListItemProps {
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
   onClick?: (task: Task) => void;
+  dependencyCount?: number;
+  blockedByCount?: number;
+  projectCount?: number;
+  goalCount?: number;
 }
 
-export function TaskListItem({ task, onEdit, onDelete, onClick }: TaskListItemProps) {
+export function TaskListItem({
+  task,
+  onEdit,
+  onDelete,
+  onClick,
+  dependencyCount = 0,
+  blockedByCount = 0,
+  projectCount = 0,
+  goalCount = 0
+}: TaskListItemProps) {
   const handleClick = () => {
     if (onClick) {
       onClick(task);
@@ -104,6 +118,31 @@ export function TaskListItem({ task, onEdit, onDelete, onClick }: TaskListItemPr
                 <span className="text-gray-500 dark:text-gray-400">
                   Scheduled: {scheduledInfo.text}
                 </span>
+              </div>
+            )}
+
+            {blockedByCount > 0 && (
+              <DependencyBadge type="blocked" count={blockedByCount} />
+            )}
+
+            {dependencyCount > 0 && (
+              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                <GitBranch className="w-4 h-4" />
+                <span>{dependencyCount}</span>
+              </div>
+            )}
+
+            {projectCount > 0 && (
+              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                <Folder className="w-4 h-4" />
+                <span>{projectCount}</span>
+              </div>
+            )}
+
+            {goalCount > 0 && (
+              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                <Target className="w-4 h-4" />
+                <span>{goalCount}</span>
               </div>
             )}
           </div>

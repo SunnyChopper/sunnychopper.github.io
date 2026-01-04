@@ -35,7 +35,7 @@
 | 1 | Foundation & Types | ✅ COMPLETED | 2026-01-04 | Complete TypeScript types, API contracts, mock storage infrastructure, and sample data seeded |
 | 2 | Shared UI Components | ✅ COMPLETED | 2026-01-04 | All entity display, interactive, and LLM components created with demo page at /admin/components-demo. Components reorganized into proper atomic design hierarchy (Dialog, AIAssistPanel, RelationshipPicker moved to organisms; AISuggestionCard, AIInsightBanner moved to molecules) |
 | 3 | Tasks Page - Basic CRUD | ✅ COMPLETED | 2026-01-04 | Full Tasks page implemented with list view, create/edit/delete operations, filtering by area/status/priority, search functionality, and responsive UI. Components: TaskListItem, TaskFilters, TaskCreateForm, TaskEditPanel, TasksPage. Route added to /admin/tasks |
-| 4 | Tasks Page - Advanced Features | 🔲 NOT STARTED | - | - |
+| 4 | Tasks Page - Advanced Features | ✅ COMPLETED | 2026-01-04 | Kanban board with drag-and-drop, calendar view, dependency management, relationship linking to Projects and Goals, view toggles (List/Kanban/Calendar), enhanced TaskEditPanel with dependencies and relationships sections. Components: TaskKanbanBoard, TaskCalendarView, TaskEditPanelAdvanced, TasksPageAdvanced. All three views working with persistence |
 | 5 | Projects Page | 🔲 NOT STARTED | - | - |
 | 6 | Goals Page | 🔲 NOT STARTED | - | - |
 | 7 | Metrics Page | 🔲 NOT STARTED | - | - |
