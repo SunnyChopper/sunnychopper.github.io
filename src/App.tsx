@@ -11,6 +11,7 @@ import SettingsPage from './pages/admin/SettingsPage';
 import GrowthSystemPage from './pages/admin/GrowthSystemPage';
 import ChatbotPage from './pages/admin/ChatbotPage';
 import ComponentsDemoPage from './pages/admin/ComponentsDemoPage';
+import TasksPage from './pages/admin/TasksPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
@@ -42,7 +43,7 @@ function AppContent() {
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="growth-system" element={<GrowthSystemPage />} />
-        <Route path="tasks" element={<div className="p-8">Tasks Page - Coming Soon</div>} />
+        <Route path="tasks" element={<TasksPage />} />
         <Route path="habits" element={<div className="p-8">Habits Page - Coming Soon</div>} />
         <Route path="metrics" element={<div className="p-8">Metrics Page - Coming Soon</div>} />
         <Route path="goals" element={<div className="p-8">Goals Page - Coming Soon</div>} />
