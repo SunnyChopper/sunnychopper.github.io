@@ -13,6 +13,8 @@ import ChatbotPage from './pages/admin/ChatbotPage';
 import ComponentsDemoPage from './pages/admin/ComponentsDemoPage';
 import TasksPage from './pages/admin/TasksPageAdvanced';
 import ProjectsPage from './pages/admin/ProjectsPage';
+import GoalsPage from './pages/admin/GoalsPage';
+import MetricsPage from './pages/admin/MetricsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
@@ -46,8 +48,8 @@ function AppContent() {
         <Route path="growth-system" element={<GrowthSystemPage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="habits" element={<div className="p-8">Habits Page - Coming Soon</div>} />
-        <Route path="metrics" element={<div className="p-8">Metrics Page - Coming Soon</div>} />
-        <Route path="goals" element={<div className="p-8">Goals Page - Coming Soon</div>} />
+        <Route path="metrics" element={<MetricsPage />} />
+        <Route path="goals" element={<GoalsPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="logbook" element={<div className="p-8">Logbook Page - Coming Soon</div>} />
         <Route path="assistant" element={<ChatbotPage />} />

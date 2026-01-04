@@ -119,6 +119,173 @@ export function generateSeedData() {
   };
   goals.push(goal3);
 
+  const goal4: Goal = {
+    id: generateId(),
+    title: 'Strengthen Family Relationships',
+    description: 'Spend quality time with family and improve communication',
+    area: 'Love',
+    subCategory: 'Family',
+    timeHorizon: 'Monthly',
+    priority: 'P2',
+    status: 'OnTrack',
+    targetDate: formatDate(addDays(now, 30)),
+    completedDate: null,
+    successCriteria: [
+      'Have weekly family dinners',
+      'Plan and execute one family outing',
+      'Call parents twice per week',
+      '✓ Start monthly family game night',
+    ],
+    notes: 'Focus on being present and engaged during family time',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -15)),
+    updatedAt: formatDate(now),
+  };
+  goals.push(goal4);
+
+  const goal5: Goal = {
+    id: generateId(),
+    title: 'This Week: Complete Sprint Tasks',
+    description: 'Finish all committed sprint work items',
+    area: 'DayJob',
+    subCategory: 'Projects',
+    timeHorizon: 'Weekly',
+    priority: 'P1',
+    status: 'Active',
+    targetDate: formatDate(addDays(now, 5)),
+    completedDate: null,
+    successCriteria: [
+      '✓ Complete user authentication feature',
+      '✓ Write unit tests for API endpoints',
+      'Deploy to staging environment',
+      'Code review for team members',
+    ],
+    notes: null,
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -2)),
+    updatedAt: formatDate(now),
+  };
+  goals.push(goal5);
+
+  const goal6: Goal = {
+    id: generateId(),
+    title: 'Daily Meditation Practice',
+    description: 'Build a consistent meditation habit',
+    area: 'Health',
+    subCategory: 'Mental',
+    timeHorizon: 'Daily',
+    priority: 'P2',
+    status: 'Active',
+    targetDate: null,
+    completedDate: null,
+    successCriteria: [
+      '✓ Meditate for 10 minutes',
+      '✓ Practice mindful breathing',
+      'Journal after meditation',
+    ],
+    notes: 'Best time is early morning before work',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -30)),
+    updatedAt: formatDate(now),
+  };
+  goals.push(goal6);
+
+  const goal7: Goal = {
+    id: generateId(),
+    title: 'Learn Spanish',
+    description: 'Achieve conversational fluency in Spanish',
+    area: 'Happiness',
+    subCategory: 'Purpose',
+    timeHorizon: 'Yearly',
+    priority: 'P3',
+    status: 'Planning',
+    targetDate: formatDate(addDays(now, 365)),
+    completedDate: null,
+    successCriteria: [
+      'Complete Duolingo Spanish course',
+      'Have 50 conversation sessions with native speakers',
+      'Watch 10 Spanish movies without subtitles',
+      'Pass DELE A2 exam',
+    ],
+    notes: 'Planning to start after Q1 work commitments ease up',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -5)),
+    updatedAt: formatDate(now),
+  };
+  goals.push(goal7);
+
+  const goal8: Goal = {
+    id: generateId(),
+    title: 'Reduce Credit Card Debt',
+    description: 'Pay off high-interest credit card balance',
+    area: 'Wealth',
+    subCategory: 'Debt',
+    timeHorizon: 'Quarterly',
+    priority: 'P1',
+    status: 'AtRisk',
+    targetDate: formatDate(addDays(now, 90)),
+    completedDate: null,
+    successCriteria: [
+      '✓ Create debt payoff plan',
+      'Pay $2,000 per month toward balance',
+      'Reduce total debt by 50%',
+      'Avoid new credit card purchases',
+    ],
+    notes: 'Behind schedule due to unexpected expenses. Need to cut discretionary spending.',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -45)),
+    updatedAt: formatDate(now),
+  };
+  goals.push(goal8);
+
+  const goal9: Goal = {
+    id: generateId(),
+    title: 'Organize Home Office',
+    description: 'Create an efficient and inspiring workspace',
+    area: 'Operations',
+    subCategory: 'Organization',
+    timeHorizon: 'Monthly',
+    priority: 'P3',
+    status: 'Active',
+    targetDate: formatDate(addDays(now, 20)),
+    completedDate: null,
+    successCriteria: [
+      '✓ Declutter desk and shelves',
+      '✓ Install better lighting',
+      'Set up ergonomic monitor stand',
+      'Create filing system for documents',
+    ],
+    notes: null,
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -10)),
+    updatedAt: formatDate(now),
+  };
+  goals.push(goal9);
+
+  const goal10: Goal = {
+    id: generateId(),
+    title: 'Achieve Work-Life Balance',
+    description: 'Establish boundaries and maintain healthy work habits',
+    area: 'Happiness',
+    subCategory: 'Peace',
+    timeHorizon: 'Quarterly',
+    priority: 'P2',
+    status: 'Achieved',
+    targetDate: formatDate(addDays(now, -15)),
+    completedDate: formatDate(addDays(now, -15)),
+    successCriteria: [
+      '✓ No work emails after 6 PM',
+      '✓ Take all vacation days',
+      '✓ Exercise 3x per week',
+      '✓ Have one hobby activity per week',
+    ],
+    notes: 'Successfully implemented boundaries. Feeling much better!',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -90)),
+    updatedAt: formatDate(addDays(now, -15)),
+  };
+  goals.push(goal10);
+
   const project1: Project = {
     id: generateId(),
     name: 'SaaS MVP Development',
@@ -325,6 +492,196 @@ export function generateSeedData() {
     metricId: metric2.id,
     value: 0,
     notes: 'Pre-launch',
+    loggedAt: formatDate(addDays(now, -30)),
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -30)),
+  });
+
+  const metric3: Metric = {
+    id: generateId(),
+    name: 'Body Weight',
+    description: 'Track body weight to monitor health',
+    area: 'Health',
+    subCategory: 'Physical',
+    unit: 'pounds',
+    customUnit: null,
+    direction: 'Lower',
+    targetValue: 175,
+    thresholdLow: 170,
+    thresholdHigh: 180,
+    source: 'Device',
+    status: 'Active',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -60)),
+    updatedAt: formatDate(now),
+  };
+  metrics.push(metric3);
+
+  for (let i = 0; i < 8; i++) {
+    metricLogs.push({
+      id: generateId(),
+      metricId: metric3.id,
+      value: 183 - i * 0.5,
+      notes: null,
+      loggedAt: formatDate(addDays(now, -56 + i * 7)),
+      userId: USER_ID,
+      createdAt: formatDate(addDays(now, -56 + i * 7)),
+    });
+  }
+
+  const metric4: Metric = {
+    id: generateId(),
+    name: 'Daily Meditation',
+    description: 'Minutes of meditation practice',
+    area: 'Health',
+    subCategory: 'Mental',
+    unit: 'minutes',
+    customUnit: null,
+    direction: 'Higher',
+    targetValue: 20,
+    thresholdLow: 10,
+    thresholdHigh: 30,
+    source: 'Manual',
+    status: 'Active',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -30)),
+    updatedAt: formatDate(now),
+  };
+  metrics.push(metric4);
+
+  for (let i = 0; i < 5; i++) {
+    metricLogs.push({
+      id: generateId(),
+      metricId: metric4.id,
+      value: 8 + i * 2,
+      notes: i === 4 ? 'Starting to feel the benefits' : null,
+      loggedAt: formatDate(addDays(now, -4 + i)),
+      userId: USER_ID,
+      createdAt: formatDate(addDays(now, -4 + i)),
+    });
+  }
+
+  const metric5: Metric = {
+    id: generateId(),
+    name: 'Time with Family',
+    description: 'Quality hours spent with family per week',
+    area: 'Love',
+    subCategory: 'Family',
+    unit: 'hours',
+    customUnit: null,
+    direction: 'Higher',
+    targetValue: 15,
+    thresholdLow: 10,
+    thresholdHigh: 20,
+    source: 'Manual',
+    status: 'Active',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -20)),
+    updatedAt: formatDate(now),
+  };
+  metrics.push(metric5);
+
+  for (let i = 0; i < 3; i++) {
+    metricLogs.push({
+      id: generateId(),
+      metricId: metric5.id,
+      value: 12 + i * 1.5,
+      notes: null,
+      loggedAt: formatDate(addDays(now, -14 + i * 7)),
+      userId: USER_ID,
+      createdAt: formatDate(addDays(now, -14 + i * 7)),
+    });
+  }
+
+  const metric6: Metric = {
+    id: generateId(),
+    name: 'Sleep Quality',
+    description: 'Subjective sleep quality rating',
+    area: 'Health',
+    subCategory: 'Sleep',
+    unit: 'rating',
+    customUnit: null,
+    direction: 'Higher',
+    targetValue: 8,
+    thresholdLow: 6,
+    thresholdHigh: 10,
+    source: 'Manual',
+    status: 'Active',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -45)),
+    updatedAt: formatDate(now),
+  };
+  metrics.push(metric6);
+
+  for (let i = 0; i < 7; i++) {
+    metricLogs.push({
+      id: generateId(),
+      metricId: metric6.id,
+      value: 5 + Math.floor(Math.random() * 3),
+      notes: null,
+      loggedAt: formatDate(addDays(now, -6 + i)),
+      userId: USER_ID,
+      createdAt: formatDate(addDays(now, -6 + i)),
+    });
+  }
+
+  const metric7: Metric = {
+    id: generateId(),
+    name: 'Emergency Fund',
+    description: 'Savings reserved for emergencies',
+    area: 'Wealth',
+    subCategory: 'NetWorth',
+    unit: 'dollars',
+    customUnit: null,
+    direction: 'Higher',
+    targetValue: 10000,
+    thresholdLow: 5000,
+    thresholdHigh: 15000,
+    source: 'App',
+    status: 'Active',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -120)),
+    updatedAt: formatDate(now),
+  };
+  metrics.push(metric7);
+
+  for (let i = 0; i < 4; i++) {
+    metricLogs.push({
+      id: generateId(),
+      metricId: metric7.id,
+      value: 6000 + i * 800,
+      notes: i === 3 ? 'On track to hit goal!' : null,
+      loggedAt: formatDate(addDays(now, -90 + i * 30)),
+      userId: USER_ID,
+      createdAt: formatDate(addDays(now, -90 + i * 30)),
+    });
+  }
+
+  const metric8: Metric = {
+    id: generateId(),
+    name: 'Focus Score',
+    description: 'Daily productivity and focus rating',
+    area: 'Operations',
+    subCategory: 'Productivity',
+    unit: 'rating',
+    customUnit: null,
+    direction: 'Higher',
+    targetValue: 8,
+    thresholdLow: 5,
+    thresholdHigh: 10,
+    source: 'Manual',
+    status: 'Paused',
+    userId: USER_ID,
+    createdAt: formatDate(addDays(now, -100)),
+    updatedAt: formatDate(now),
+  };
+  metrics.push(metric8);
+
+  metricLogs.push({
+    id: generateId(),
+    metricId: metric8.id,
+    value: 6,
+    notes: 'Pausing this metric to focus on others',
     loggedAt: formatDate(addDays(now, -30)),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -30)),

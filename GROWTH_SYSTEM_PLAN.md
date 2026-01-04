@@ -37,8 +37,8 @@
 | 3 | Tasks Page - Basic CRUD | ✅ COMPLETED | 2026-01-04 | Full Tasks page implemented with list view, create/edit/delete operations, filtering by area/status/priority, search functionality, and responsive UI. Components: TaskListItem, TaskFilters, TaskCreateForm, TaskEditPanel, TasksPage. Route added to /admin/tasks |
 | 4 | Tasks Page - Advanced Features | ✅ COMPLETED | 2026-01-04 | Kanban board with drag-and-drop, calendar view, dependency management, relationship linking to Projects and Goals, view toggles (List/Kanban/Calendar), enhanced TaskEditPanel with dependencies and relationships sections. Components: TaskKanbanBoard, TaskCalendarView, TaskEditPanelAdvanced, TasksPageAdvanced. All three views working with persistence |
 | 5 | Projects Page | ✅ COMPLETED | 2026-01-04 | Full Projects page with card grid, detail view, filters, create/edit/delete operations. Components: ProjectCard, ProjectCreateForm, ProjectEditForm, ProjectsPage. Displays linked tasks and goals, progress calculation, timeline visualization. Route added to /admin/projects |
-| 6 | Goals Page | 🔲 NOT STARTED | - | - |
-| 7 | Metrics Page | 🔲 NOT STARTED | - | - |
+| 6 | Goals Page | ✅ COMPLETED | 2026-01-04 | Full Goals page with vision board layout, grouped by Time Horizon and Area views. Components: GoalCard, GoalCreateForm, GoalEditForm, GoalsPage. Success criteria management, progress tracking from completed criteria, linked projects display. 10 diverse seed goals added covering all time horizons and statuses. Route added to /admin/goals |
+| 7 | Metrics Page | ✅ COMPLETED | 2026-01-04 | Full Metrics dashboard with card grid, detail view, filters, quick logging. Components: MetricCard with trend indicators, MetricLogForm, MetricCreateForm, MetricEditForm, MetricsPage. Log history display, on-track status indicators, target tracking. 8 diverse seed metrics added covering multiple areas and units with log history. Route added to /admin/metrics |
 | 8 | Habits Page | 🔲 NOT STARTED | - | - |
 | 9 | Logbook Page | 🔲 NOT STARTED | - | - |
 | 10 | Dependency Graph | 🔲 NOT STARTED | - | - |
@@ -287,7 +287,7 @@ Build the Projects page with card grid and detail views.
 ---
 
 ### Strafing Run 6: Goals Page
-**Status:** 🔲 NOT STARTED
+**Status:** ✅ COMPLETED (2026-01-04)
 **Dependencies:** Run 5
 **Estimated Effort:** 3-4 hours
 
@@ -330,7 +330,7 @@ Create the Goals page with vision board layout and cascade visualization.
 ---
 
 ### Strafing Run 7: Metrics Page
-**Status:** 🔲 NOT STARTED
+**Status:** ✅ COMPLETED (2026-01-04)
 **Dependencies:** Run 6
 **Estimated Effort:** 3-4 hours
 

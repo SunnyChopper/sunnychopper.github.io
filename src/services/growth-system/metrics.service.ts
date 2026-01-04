@@ -4,6 +4,7 @@ import type {
   MetricLog,
   CreateMetricInput,
   UpdateMetricInput,
+  CreateMetricLogInput,
 } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
 
@@ -32,5 +33,9 @@ export const metricsService = {
 
   async getHistory(metricId: string): Promise<ApiListResponse<MetricLog>> {
     return apiClient.get<MetricLog[]>(`/metrics/${metricId}/history`);
+  },
+
+  async logValue(input: CreateMetricLogInput): Promise<ApiResponse<MetricLog>> {
+    return apiClient.post<MetricLog>(`/metrics/${input.metricId}/logs`, input);
   },
 };
