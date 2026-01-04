@@ -7,6 +7,8 @@ import type {
 } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
 
+// TODO: These service calls will connect to backend API once implemented
+// For now, expects mocked responses or will fail until backend is ready
 export const metricsService = {
   async getAll(): Promise<ApiListResponse<Metric>> {
     return apiClient.get<Metric[]>('/metrics');

@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const session = await fetchAuthSession();
       const attributes = await fetchUserAttributes();
 
+      // TODO: This JWT token will be sent to backend API via axios interceptors
       const token = session.tokens?.idToken?.toString();
       if (token) {
         apiClient.setAuthToken(token);

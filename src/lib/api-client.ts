@@ -21,6 +21,8 @@ class ApiClient {
   }
 
   private setupInterceptors() {
+    // TODO: This interceptor automatically attaches Cognito JWT to all API requests
+    // The backend API Gateway will validate this JWT before forwarding to your backend
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         if (this.authToken && config.headers) {

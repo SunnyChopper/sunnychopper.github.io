@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../contexts/AuthContext';
 import {
   tasksService,
   habitsService,
@@ -23,14 +22,19 @@ import type {
   UpdateLogbookEntryInput,
 } from '../types/growth-system';
 
+// TODO: These hooks use React Query to fetch data from backend API
+// Currently will fail until backend is implemented or mock data is provided
+// Auth requirement is temporarily bypassed (see ProtectedRoute component)
+
 export const useTasks = () => {
-  const { user } = useAuth();
+  // TODO: Temporarily not checking user authentication (bypassed in ProtectedRoute)
   const queryClient = useQueryClient();
 
+  // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => tasksService.getAll(),
-    enabled: !!user,
+    enabled: true,
   });
 
   const createMutation = useMutation({
@@ -66,13 +70,14 @@ export const useTasks = () => {
 };
 
 export const useHabits = () => {
-  const { user } = useAuth();
+  // TODO: Temporarily not checking user authentication (bypassed in ProtectedRoute)
   const queryClient = useQueryClient();
 
+  // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error } = useQuery({
     queryKey: ['habits'],
     queryFn: () => habitsService.getAll(),
-    enabled: !!user,
+    enabled: true,
   });
 
   const createMutation = useMutation({
@@ -117,13 +122,14 @@ export const useHabits = () => {
 };
 
 export const useMetrics = () => {
-  const { user } = useAuth();
+  // TODO: Temporarily not checking user authentication (bypassed in ProtectedRoute)
   const queryClient = useQueryClient();
 
+  // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error } = useQuery({
     queryKey: ['metrics'],
     queryFn: () => metricsService.getAll(),
-    enabled: !!user,
+    enabled: true,
   });
 
   const createMutation = useMutation({
@@ -159,13 +165,14 @@ export const useMetrics = () => {
 };
 
 export const useGoals = () => {
-  const { user } = useAuth();
+  // TODO: Temporarily not checking user authentication (bypassed in ProtectedRoute)
   const queryClient = useQueryClient();
 
+  // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error } = useQuery({
     queryKey: ['goals'],
     queryFn: () => goalsService.getAll(),
-    enabled: !!user,
+    enabled: true,
   });
 
   const createMutation = useMutation({
@@ -201,13 +208,14 @@ export const useGoals = () => {
 };
 
 export const useProjects = () => {
-  const { user } = useAuth();
+  // TODO: Temporarily not checking user authentication (bypassed in ProtectedRoute)
   const queryClient = useQueryClient();
 
+  // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error } = useQuery({
     queryKey: ['projects'],
     queryFn: () => projectsService.getAll(),
-    enabled: !!user,
+    enabled: true,
   });
 
   const createMutation = useMutation({
@@ -243,13 +251,14 @@ export const useProjects = () => {
 };
 
 export const useLogbook = () => {
-  const { user } = useAuth();
+  // TODO: Temporarily not checking user authentication (bypassed in ProtectedRoute)
   const queryClient = useQueryClient();
 
+  // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error } = useQuery({
     queryKey: ['logbook'],
     queryFn: () => logbookService.getAll(),
-    enabled: !!user,
+    enabled: true,
   });
 
   const createMutation = useMutation({
