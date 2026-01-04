@@ -41,7 +41,7 @@
 | 7 | Metrics Page | ✅ COMPLETED | 2026-01-04 | Full Metrics dashboard with card grid, detail view, filters, quick logging. Components: MetricCard with trend indicators, MetricLogForm, MetricCreateForm, MetricEditForm, MetricsPage. Log history display, on-track status indicators, target tracking. 8 diverse seed metrics added covering multiple areas and units with log history. Route added to /admin/metrics |
 | 8 | Habits Page | ✅ COMPLETED | 2026-01-04 | Full Habits page with today-focused tracker, habit loop visualization, streak tracking, and quick logging. Components: HabitCard with streak counter, HabitLogWidget for completion tracking, HabitCreateForm, HabitEditForm, HabitsPage with type grouping. 5 diverse seed habits added (Build/Maintain/Reduce/Quit types). Route added to /admin/habits |
 | 9 | Logbook Page | ✅ COMPLETED | 2026-01-04 | Full Logbook page with list view, mood tracking (High/Steady/Low), energy slider (1-10), and rich editor. Components: LogbookEntryCard with mood-based coloring, LogbookEditor with mood picker and energy slider, LogbookPage with list view. 5 seed entries added with different moods and energy levels. Route added to /admin/logbook |
-| 10 | Dependency Graph | 🔲 NOT STARTED | - | - |
+| 10 | Dependency Graph | ✅ COMPLETED | 2026-01-04 | Interactive dependency graph visualization using SVG. Components: DependencyGraph organism with hierarchical layout algorithm. Added 'graph' view mode to TasksPageAdvanced with Network icon button. Visualizes task dependencies with color-coded nodes by status, interactive click handlers, and automatic layout calculation |
 | 11 | LLM - Tasks & Projects | 🔲 NOT STARTED | - | - |
 | 12 | LLM - Goals & Metrics | 🔲 NOT STARTED | - | - |
 | 13 | LLM - Habits & Logbook | 🔲 NOT STARTED | - | - |
@@ -463,7 +463,7 @@ Build the Logbook page with calendar view and reflective journaling.
 ---
 
 ### Strafing Run 10: Dependency Graph
-**Status:** 🔲 NOT STARTED
+**Status:** ✅ COMPLETED (2026-01-04)
 **Dependencies:** Run 4
 **Estimated Effort:** 4-5 hours
 

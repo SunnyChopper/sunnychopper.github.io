@@ -1,14 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import {
-  signIn,
-  signOut,
-  getCurrentUser,
-  fetchAuthSession,
-  fetchUserAttributes,
-  type SignInInput,
-} from 'aws-amplify/auth';
-import { apiClient } from '../lib/api-client';
+import { supabase } from '../lib/supabase';
 
 interface User {
   id: string;
@@ -22,6 +14,7 @@ interface AuthContextType {
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,29 +38,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            attributes: session.user.user_metadata,
+          });
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const checkUser = async () => {
     try {
       setLoading(true);
-      const currentUser = await getCurrentUser();
-      const session = await fetchAuthSession();
-      const attributes = await fetchUserAttributes();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      // TODO: This JWT token will be sent to backend API via axios interceptors
-      const token = session.tokens?.idToken?.toString();
-      if (token) {
-        apiClient.setAuthToken(token);
+      if (session) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          attributes: session.user.user_metadata,
+        });
+      } else {
+        setUser(null);
       }
-
-      setUser({
-        id: currentUser.userId,
-        email: attributes.email || '',
-        attributes: attributes as Record<string, string>,
-      });
     } catch (err) {
+      console.error('Error checking user:', err);
       setUser(null);
-      apiClient.setAuthToken(null);
     } finally {
       setLoading(false);
     }
@@ -78,15 +87,50 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setError(null);
       setLoading(true);
 
-      const signInInput: SignInInput = {
-        username: email,
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
         password,
-      };
+      });
 
-      await signIn(signInInput);
-      await checkUser();
+      if (signInError) throw signInError;
+
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          attributes: data.user.user_metadata,
+        });
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async (email: string, password: string) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError) throw signUpError;
+
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email || '',
+          attributes: data.user.user_metadata,
+        });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign up';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -98,9 +142,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setError(null);
       setLoading(true);
-      await signOut();
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) throw signOutError;
       setUser(null);
-      apiClient.setAuthToken(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign out';
       setError(errorMessage);
@@ -116,6 +160,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     error,
     signIn: handleSignIn,
     signOut: handleSignOut,
+    signUp: handleSignUp,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

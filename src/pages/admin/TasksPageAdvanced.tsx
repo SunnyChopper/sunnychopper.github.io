@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, List, Kanban, Calendar as CalendarIcon } from 'lucide-react';
-import type { Task, CreateTaskInput, UpdateTaskInput, Area, Priority, TaskStatus, EntitySummary } from '../../types/growth-system';
+import { Plus, Search, List, Kanban, Calendar as CalendarIcon, Network } from 'lucide-react';
+import type { Task, CreateTaskInput, UpdateTaskInput, Area, Priority, TaskStatus, EntitySummary, TaskDependency } from '../../types/growth-system';
 import { tasksService } from '../../services/growth-system/tasks.service';
 import { projectsService } from '../../services/growth-system/projects.service';
 import { goalsService } from '../../services/growth-system/goals.service';
@@ -11,10 +11,11 @@ import { TaskCreateForm } from '../../components/organisms/TaskCreateForm';
 import { TaskEditPanelAdvanced } from '../../components/organisms/TaskEditPanelAdvanced';
 import { TaskKanbanBoard } from '../../components/organisms/TaskKanbanBoard';
 import { TaskCalendarView } from '../../components/organisms/TaskCalendarView';
+import DependencyGraph from '../../components/organisms/DependencyGraph';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 
-type ViewMode = 'list' | 'kanban' | 'calendar';
+type ViewMode = 'list' | 'kanban' | 'calendar' | 'graph';
 
 export default function TasksPageAdvanced() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -39,6 +40,7 @@ export default function TasksPageAdvanced() {
   const [taskBlockedBy, setTaskBlockedBy] = useState<Map<string, string[]>>(new Map());
   const [taskProjects] = useState<Map<string, string[]>>(new Map());
   const [taskGoals] = useState<Map<string, string[]>>(new Map());
+  const [allDependencies, setAllDependencies] = useState<TaskDependency[]>([]);
 
   const loadTasks = async () => {
     setIsLoading(true);
@@ -64,11 +66,13 @@ export default function TasksPageAdvanced() {
   const loadRelationships = async (taskList: Task[]) => {
     const depMap = new Map<string, string[]>();
     const blockedMap = new Map<string, string[]>();
+    const deps: TaskDependency[] = [];
 
     await Promise.all(
       taskList.map(async (task) => {
         const depsResponse = await tasksService.getDependencies(task.id);
         if (depsResponse.success && depsResponse.data) {
+          deps.push(...depsResponse.data);
           const depIds = depsResponse.data.map(d => d.dependsOnTaskId);
           depMap.set(task.id, depIds);
 
@@ -82,6 +86,7 @@ export default function TasksPageAdvanced() {
 
     setTaskDependencies(depMap);
     setTaskBlockedBy(blockedMap);
+    setAllDependencies(deps);
   };
 
   const loadProjects = async () => {
@@ -325,6 +330,16 @@ export default function TasksPageAdvanced() {
             >
               <CalendarIcon className="w-5 h-5" />
             </button>
+            <button
+              onClick={() => setViewMode('graph')}
+              className={`p-2 rounded transition-colors ${
+                viewMode === 'graph'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              <Network className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -400,6 +415,17 @@ export default function TasksPageAdvanced() {
           <TaskCalendarView
             tasks={filteredTasks}
             onTaskClick={handleEditTask}
+          />
+        )}
+
+        {viewMode === 'graph' && (
+          <DependencyGraph
+            tasks={filteredTasks}
+            dependencies={allDependencies}
+            onTaskClick={(taskId) => {
+              const task = filteredTasks.find(t => t.id === taskId);
+              if (task) handleEditTask(task);
+            }}
           />
         )}
       </div>
