@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   MessageCircle,
   Plus,
@@ -16,9 +18,8 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
-  GitBranch,
-  X,
-  Check,
+  ArrowLeft,
+  ArrowRight,
 } from 'lucide-react';
 import { chatbotService } from '../../services/chatbot.service';
 import { findBestResponse } from '../../data/chatbot-responses';
@@ -35,12 +36,16 @@ export default function ChatbotPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [thinkingExpanded, setThinkingExpanded] = useState<{ [key: string]: boolean }>({});
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editingMessageContent, setEditingMessageContent] = useState('');
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [streamingContent, setStreamingContent] = useState('');
+  const [streamingThinking, setStreamingThinking] = useState('');
+  const [thinkingComplete, setThinkingComplete] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [messageBranches, setMessageBranches] = useState<{ [key: string]: ChatMessage[] }>({});
+  const [currentBranchIndex, setCurrentBranchIndex] = useState<{ [key: string]: number }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadThreads();
@@ -122,12 +127,13 @@ export default function ChatbotPage() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || !activeThread || isLoading) return;
+  const handleSendMessage = async (messageContent?: string) => {
+    const userMessage = messageContent || inputValue.trim();
+    if (!userMessage || !activeThread || isLoading) return;
 
-    const userMessage = inputValue.trim();
     setInputValue('');
     setIsLoading(true);
+    setEditingMessageId(null);
 
     try {
       const userMsg = await chatbotService.createMessage({
@@ -150,16 +156,16 @@ export default function ChatbotPage() {
       const tempMessageId = `temp-${Date.now()}`;
       setStreamingMessageId(tempMessageId);
       setStreamingContent('');
+      setStreamingThinking('');
+      setThinkingComplete(false);
 
       if (responseData.thinking) {
         await streamText(responseData.thinking, (chunk) => {
-          setStreamingContent(chunk);
+          setStreamingThinking(chunk);
         });
-
+        setThinkingComplete(true);
         await new Promise((resolve) => setTimeout(resolve, 300));
       }
-
-      setStreamingContent('');
 
       await streamText(responseData.content, (chunk) => {
         setStreamingContent(chunk);
@@ -179,6 +185,8 @@ export default function ChatbotPage() {
 
       setStreamingMessageId(null);
       setStreamingContent('');
+      setStreamingThinking('');
+      setThinkingComplete(false);
       await loadMessages(activeThread.id);
       setIsLoading(false);
     } catch (error) {
@@ -186,61 +194,70 @@ export default function ChatbotPage() {
       setIsLoading(false);
       setStreamingMessageId(null);
       setStreamingContent('');
+      setStreamingThinking('');
+      setThinkingComplete(false);
     }
   };
 
-  const handleEditMessage = async (messageId: string) => {
-    if (!editingMessageContent.trim() || !activeThread) return;
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    if (!newContent.trim() || !activeThread) return;
 
     try {
+      const messageIndex = messages.findIndex((m) => m.id === messageId);
+      if (messageIndex === -1) return;
+
+      const originalMessage = messages[messageIndex];
+      const branchKey = `${messageId}`;
+
+      if (!messageBranches[branchKey]) {
+        messageBranches[branchKey] = [{ ...originalMessage }];
+        setMessageBranches({ ...messageBranches });
+      }
+
+      if (originalMessage.content !== newContent) {
+        messageBranches[branchKey].push({ ...originalMessage, content: newContent });
+        setMessageBranches({ ...messageBranches });
+        setCurrentBranchIndex({
+          ...currentBranchIndex,
+          [branchKey]: messageBranches[branchKey].length - 1,
+        });
+      }
+
       await chatbotService.deleteMessagesAfter(messageId, activeThread.id);
+      await chatbotService.updateMessage(messageId, newContent);
       await loadMessages(activeThread.id);
 
-      setInputValue(editingMessageContent);
       setEditingMessageId(null);
-      setEditingMessageContent('');
+      await handleSendMessage(newContent);
     } catch (error) {
       console.error('Error editing message:', error);
     }
   };
 
-  const parseMessageContent = (content: string) => {
-    const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const parts: Array<{ type: 'text' | 'link'; content: string; href?: string }> = [];
-    let lastIndex = 0;
-    let match;
+  const switchBranch = (messageId: string, direction: 'prev' | 'next') => {
+    const branchKey = `${messageId}`;
+    const branches = messageBranches[branchKey] || [];
+    const currentIndex = currentBranchIndex[branchKey] || 0;
 
-    while ((match = linkRegex.exec(content)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push({ type: 'text', content: content.slice(lastIndex, match.index) });
-      }
-      parts.push({ type: 'link', content: match[1], href: match[2] });
-      lastIndex = match.index + match[0].length;
+    let newIndex = currentIndex;
+    if (direction === 'prev' && currentIndex > 0) {
+      newIndex = currentIndex - 1;
+    } else if (direction === 'next' && currentIndex < branches.length - 1) {
+      newIndex = currentIndex + 1;
     }
 
-    if (lastIndex < content.length) {
-      parts.push({ type: 'text', content: content.slice(lastIndex) });
-    }
+    setCurrentBranchIndex({ ...currentBranchIndex, [branchKey]: newIndex });
 
-    return parts;
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    if (messageIndex !== -1) {
+      const updatedMessages = [...messages];
+      updatedMessages[messageIndex] = { ...updatedMessages[messageIndex], content: branches[newIndex].content };
+      setMessages(updatedMessages);
+    }
   };
 
-  const renderMessageContent = (content: string) => {
-    const parts = parseMessageContent(content);
-    return parts.map((part, index) => {
-      if (part.type === 'link') {
-        return (
-          <Link
-            key={index}
-            to={part.href!}
-            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-          >
-            {part.content}
-          </Link>
-        );
-      }
-      return <span key={index}>{part.content}</span>;
-    });
+  const countTokens = (text: string) => {
+    return text.split(' ').length;
   };
 
   return (
@@ -383,118 +400,181 @@ export default function ChatbotPage() {
                 </div>
               )}
 
-              {messages.map((message, index) => (
-                <div key={message.id}>
-                  <div
-                    className={`flex gap-3 ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    {message.role === 'assistant' && (
-                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Sparkles size={16} className="text-blue-600 dark:text-blue-400" />
-                      </div>
-                    )}
-                    <div className="flex-1 max-w-[80%]">
-                      {message.role === 'assistant' && message.thinking && (
-                        <div className="mb-2">
-                          <button
-                            onClick={() =>
-                              setThinkingExpanded({
-                                ...thinkingExpanded,
-                                [message.id]: !thinkingExpanded[message.id],
-                              })
-                            }
-                            className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition"
-                          >
-                            {thinkingExpanded[message.id] ? (
-                              <ChevronUp size={16} />
-                            ) : (
-                              <ChevronDown size={16} />
-                            )}
-                            <span className="font-medium">Thinking...</span>
-                          </button>
-                          {thinkingExpanded[message.id] && (
-                            <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap border-l-2 border-gray-300 dark:border-gray-600">
-                              {message.thinking}
-                            </div>
-                          )}
+              {messages.map((message, index) => {
+                const branchKey = `${message.id}`;
+                const branches = messageBranches[branchKey] || [];
+                const currentIndex = currentBranchIndex[branchKey] || 0;
+
+                return (
+                  <div key={message.id}>
+                    <div
+                      className={`flex gap-3 ${
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {message.role === 'assistant' && (
+                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Sparkles size={16} className="text-blue-600 dark:text-blue-400" />
                         </div>
                       )}
-
-                      {message.metadata?.web_search && (
-                        <div className="mb-2 flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
-                          <Search size={14} />
-                          <span>Searched: {message.metadata.search_query}</span>
-                        </div>
-                      )}
-
-                      <div
-                        className={`rounded-lg px-4 py-3 ${
-                          message.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                        }`}
-                      >
-                        {message.role === 'assistant'
-                          ? renderMessageContent(message.content)
-                          : message.content}
-                      </div>
-
-                      {message.role === 'user' && index === messages.length - 2 && (
-                        <div className="mt-2 flex items-center gap-2">
-                          {editingMessageId === message.id ? (
-                            <div className="flex items-center gap-2 w-full">
-                              <input
-                                type="text"
-                                value={editingMessageContent}
-                                onChange={(e) => setEditingMessageContent(e.target.value)}
-                                className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
-                                onKeyDown={(e) =>
-                                  e.key === 'Enter' && handleEditMessage(message.id)
-                                }
-                                autoFocus
-                              />
-                              <button
-                                onClick={() => handleEditMessage(message.id)}
-                                className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
-                              >
-                                <Check size={14} />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditingMessageId(null);
-                                  setEditingMessageContent('');
-                                }}
-                                className="p-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ) : (
+                      <div className="flex-1 max-w-[80%]">
+                        {message.role === 'assistant' && message.thinking && (
+                          <div className="mb-2">
                             <button
-                              onClick={() => {
-                                setEditingMessageId(message.id);
-                                setEditingMessageContent(message.content);
-                              }}
+                              onClick={() =>
+                                setThinkingExpanded({
+                                  ...thinkingExpanded,
+                                  [message.id]: !thinkingExpanded[message.id],
+                                })
+                              }
+                              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition"
+                            >
+                              {thinkingExpanded[message.id] ? (
+                                <ChevronUp size={16} />
+                              ) : (
+                                <ChevronDown size={16} />
+                              )}
+                              <span className="font-medium">
+                                {countTokens(message.thinking)} tokens
+                              </span>
+                            </button>
+                            {thinkingExpanded[message.id] && (
+                              <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap border-l-2 border-gray-300 dark:border-gray-600">
+                                {message.thinking}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {message.metadata?.web_search && (
+                          <div className="mb-2 flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                            <Search size={14} />
+                            <span>Searched: {message.metadata.search_query}</span>
+                          </div>
+                        )}
+
+                        {editingMessageId === message.id ? (
+                          <input
+                            ref={editInputRef}
+                            type="text"
+                            defaultValue={message.content}
+                            onBlur={(e) => {
+                              if (e.target.value !== message.content) {
+                                handleEditMessage(message.id, e.target.value);
+                              } else {
+                                setEditingMessageId(null);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleEditMessage(message.id, e.currentTarget.value);
+                              } else if (e.key === 'Escape') {
+                                setEditingMessageId(null);
+                              }
+                            }}
+                            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoFocus
+                          />
+                        ) : (
+                          <div
+                            className={`rounded-lg px-4 py-3 ${
+                              message.role === 'user'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                            }`}
+                          >
+                            {message.role === 'assistant' ? (
+                              <div className="prose prose-sm dark:prose-invert max-w-none">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  components={{
+                                    a: ({ node, ...props }) => {
+                                      const href = props.href || '';
+                                      if (href.startsWith('/')) {
+                                        return (
+                                          <Link
+                                            to={href}
+                                            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                                          >
+                                            {props.children}
+                                          </Link>
+                                        );
+                                      }
+                                      return (
+                                        <a
+                                          {...props}
+                                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        />
+                                      );
+                                    },
+                                    code: ({ className, children, ...props }) => {
+                                      const isInline = !className?.includes('language-');
+                                      return isInline ? (
+                                        <code
+                                          className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm"
+                                          {...props}
+                                        >
+                                          {children}
+                                        </code>
+                                      ) : (
+                                        <code
+                                          className="block bg-gray-200 dark:bg-gray-600 p-2 rounded text-sm overflow-x-auto"
+                                          {...props}
+                                        >
+                                          {children}
+                                        </code>
+                                      );
+                                    },
+                                  }}
+                                >
+                                  {message.content}
+                                </ReactMarkdown>
+                              </div>
+                            ) : (
+                              message.content
+                            )}
+                          </div>
+                        )}
+
+                        {message.role === 'user' && index === messages.length - 2 && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              onClick={() => setEditingMessageId(message.id)}
                               className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition"
                             >
                               <Edit2 size={12} />
                               <span>Edit</span>
                             </button>
-                          )}
-                          {message.branches && message.branches.length > 0 && (
-                            <button className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition">
-                              <GitBranch size={12} />
-                              <span>{message.branches.length} branches</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
+                            {branches.length > 0 && (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => switchBranch(message.id, 'prev')}
+                                  disabled={currentIndex === 0}
+                                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <ArrowLeft size={12} />
+                                </button>
+                                <span className="text-xs text-gray-600 dark:text-gray-400">
+                                  {currentIndex + 1} / {branches.length}
+                                </span>
+                                <button
+                                  onClick={() => switchBranch(message.id, 'next')}
+                                  disabled={currentIndex === branches.length - 1}
+                                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <ArrowRight size={12} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {isSearching && (
                 <div className="flex gap-3 justify-start">
@@ -515,9 +595,23 @@ export default function ChatbotPage() {
                   <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
                     <Sparkles size={16} className="text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
-                    {streamingContent}
-                    <span className="inline-block w-1 h-4 bg-blue-600 dark:bg-blue-400 ml-1 animate-pulse" />
+                  <div className="flex-1 max-w-[80%]">
+                    {streamingThinking && !thinkingComplete && (
+                      <div className="mb-2">
+                        <button className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          <ChevronDown size={16} />
+                          <span className="font-medium">
+                            {countTokens(streamingThinking)} tokens
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                    {streamingContent && (
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                        {streamingContent}
+                        <span className="inline-block w-1 h-4 bg-blue-600 dark:bg-blue-400 ml-1 animate-pulse" />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -548,7 +642,7 @@ export default function ChatbotPage() {
                   disabled={isLoading}
                 />
                 <button
-                  onClick={handleSendMessage}
+                  onClick={() => handleSendMessage()}
                   disabled={!inputValue.trim() || isLoading}
                   className="px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-lg transition"
                 >
