@@ -33,7 +33,7 @@
 | Run | Name | Status | Completed | Notes |
 |-----|------|--------|-----------|-------|
 | 1 | Foundation & Types | ✅ COMPLETED | 2026-01-04 | Complete TypeScript types, API contracts, mock storage infrastructure, and sample data seeded |
-| 2 | Shared UI Components | 🔲 NOT STARTED | - | - |
+| 2 | Shared UI Components | ✅ COMPLETED | 2026-01-04 | All entity display, interactive, and LLM components created with demo page at /admin/components-demo |
 | 3 | Tasks Page - Basic CRUD | 🔲 NOT STARTED | - | - |
 | 4 | Tasks Page - Advanced Features | 🔲 NOT STARTED | - | - |
 | 5 | Projects Page | 🔲 NOT STARTED | - | - |
@@ -72,7 +72,7 @@ AI is not a chatbot on the side—it's woven into every interaction:
 ## 📋 Detailed Strafing Runs
 
 ### Strafing Run 1: Foundation & Types
-**Status:** 🔲 NOT STARTED
+**Status:** ✅ COMPLETED
 **Dependencies:** None
 **Estimated Effort:** 2-3 hours
 
@@ -112,7 +112,7 @@ Set up the complete type system and mock data infrastructure that all other runs
 ---
 
 ### Strafing Run 2: Shared UI Components
-**Status:** 🔲 NOT STARTED
+**Status:** ✅ COMPLETED
 **Dependencies:** Run 1
 **Estimated Effort:** 3-4 hours
 
