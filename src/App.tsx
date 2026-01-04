@@ -9,13 +9,16 @@ import LoginPage from './pages/admin/LoginPage';
 import DashboardPage from './pages/admin/DashboardPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import GrowthSystemPage from './pages/admin/GrowthSystemPage';
+import ChatbotPage from './pages/admin/ChatbotPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
+import { useThemeInitializer } from './hooks/useTheme';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function AppContent() {
   usePageTracking();
+  useThemeInitializer();
 
   return (
     <ErrorBoundary>
@@ -44,6 +47,7 @@ function AppContent() {
         <Route path="goals" element={<div className="p-8">Goals Page - Coming Soon</div>} />
         <Route path="projects" element={<div className="p-8">Projects Page - Coming Soon</div>} />
         <Route path="logbook" element={<div className="p-8">Logbook Page - Coming Soon</div>} />
+        <Route path="assistant" element={<ChatbotPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 
