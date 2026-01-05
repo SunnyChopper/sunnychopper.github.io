@@ -1,6 +1,8 @@
 import { useTasks, useHabits, useMetrics, useGoals, useProjects, useLogbook } from '../../hooks/useGrowthSystem';
 import { CheckSquare, Calendar, TrendingUp, Target, FolderKanban, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AIInsightsWidget } from '../../components/organisms/AIInsightsWidget';
+import { DailyPlanningAssistant } from '../../components/organisms/DailyPlanningAssistant';
 
 interface StatCardProps {
   title: string;
@@ -95,6 +97,11 @@ export default function DashboardPage() {
           link="/admin/logbook"
           description="Daily reflections"
         />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <DailyPlanningAssistant />
+        <AIInsightsWidget />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -17,6 +17,7 @@ import GoalsPage from './pages/admin/GoalsPage';
 import MetricsPage from './pages/admin/MetricsPage';
 import HabitsPage from './pages/admin/HabitsPage';
 import LogbookPage from './pages/admin/LogbookPage';
+import WeeklyReviewPage from './pages/admin/WeeklyReviewPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
@@ -54,6 +55,7 @@ function AppContent() {
         <Route path="goals" element={<GoalsPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="logbook" element={<LogbookPage />} />
+        <Route path="weekly-review" element={<WeeklyReviewPage />} />
         <Route path="assistant" element={<ChatbotPage />} />
         <Route path="components-demo" element={<ComponentsDemoPage />} />
         <Route path="settings" element={<SettingsPage />} />

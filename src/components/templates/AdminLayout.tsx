@@ -17,8 +17,10 @@ import {
   ChevronRight,
   Info,
   MessageCircle,
+  Command,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { CommandPalette } from '../organisms/CommandPalette';
 
 interface NavItem {
   name: string;
@@ -42,6 +44,7 @@ const navigation: NavItem[] = [
       { name: 'Logbook', href: '/admin/logbook', icon: BookOpen },
     ],
   },
+  { name: 'Weekly Review', href: '/admin/weekly-review', icon: Calendar },
   { name: 'Assistant', href: '/admin/assistant', icon: MessageCircle },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
@@ -51,6 +54,7 @@ export default function AdminLayout() {
   const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['Growth System']);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -70,16 +74,42 @@ export default function AdminLayout() {
     return false;
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
+
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-        >
-          {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCommandPaletteOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            title="Search (Cmd+K)"
+          >
+            <Command size={20} />
+          </button>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          >
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       <div
@@ -91,6 +121,14 @@ export default function AdminLayout() {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user?.email}</p>
+            <button
+              onClick={() => setCommandPaletteOpen(true)}
+              className="w-full mt-3 flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+            >
+              <Command size={16} />
+              <span className="flex-1 text-left">Quick Search</span>
+              <kbd className="px-1.5 py-0.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">⌘K</kbd>
+            </button>
           </div>
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
