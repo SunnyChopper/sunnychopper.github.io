@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, TrendingUp, Calendar } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Edit2, Trash2, TrendingUp, Calendar, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Metric, MetricLog, CreateMetricInput, UpdateMetricInput, CreateMetricLogInput, FilterOptions } from '../../types/growth-system';
 import { metricsService } from '../../services/growth-system/metrics.service';
 import Button from '../../components/atoms/Button';
@@ -11,6 +11,8 @@ import { MetricEditForm } from '../../components/organisms/MetricEditForm';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { AreaBadge } from '../../components/atoms/AreaBadge';
+import { AIMetricAssistPanel } from '../../components/molecules/AIMetricAssistPanel';
+import { llmConfig } from '../../lib/llm';
 
 const STATUSES = ['Active', 'Paused', 'Archived'];
 
@@ -28,6 +30,10 @@ export default function MetricsPage() {
   const [metricToLog, setMetricToLog] = useState<Metric | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [metricToDelete, setMetricToDelete] = useState<Metric | null>(null);
+
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiMode, setAIMode] = useState<'patterns' | 'anomalies' | 'correlations' | 'targets' | 'health'>('patterns');
+  const isAIConfigured = llmConfig.isConfigured();
 
   const loadMetrics = async () => {
     setIsLoading(true);
@@ -233,6 +239,48 @@ export default function MetricsPage() {
                 </div>
               )}
             </div>
+
+            {isAIConfigured && (
+              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setShowAIAssist(!showAIAssist)}
+                  className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                >
+                  <Sparkles size={18} />
+                  <span>AI Metric Tools</span>
+                  {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showAIAssist && (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => setAIMode('patterns')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Pattern Recognition
+                      </button>
+                      <button onClick={() => setAIMode('anomalies')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'anomalies' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Anomaly Detection
+                      </button>
+                      <button onClick={() => setAIMode('correlations')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'correlations' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Correlations
+                      </button>
+                      <button onClick={() => setAIMode('targets')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'targets' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Target Recommendations
+                      </button>
+                      <button onClick={() => setAIMode('health')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'health' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Health Analysis
+                      </button>
+                    </div>
+
+                    <AIMetricAssistPanel
+                      mode={aiMode}
+                      metric={selectedMetric}
+                      logs={logs}
+                      onClose={() => setShowAIAssist(false)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">

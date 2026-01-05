@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, Repeat, Calendar } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Edit2, Trash2, Repeat, Calendar, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Habit, HabitLog, CreateHabitInput, UpdateHabitInput, CreateHabitLogInput, HabitType } from '../../types/growth-system';
 import { habitsService } from '../../services/growth-system/habits.service';
 import Button from '../../components/atoms/Button';
@@ -10,6 +10,8 @@ import { HabitEditForm } from '../../components/organisms/HabitEditForm';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { AreaBadge } from '../../components/atoms/AreaBadge';
+import { AIHabitAssistPanel } from '../../components/molecules/AIHabitAssistPanel';
+import { llmConfig } from '../../lib/llm';
 
 type ViewMode = 'today' | 'all';
 
@@ -29,6 +31,10 @@ export default function HabitsPage() {
   const [habitToLog, setHabitToLog] = useState<Habit | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiMode, setAIMode] = useState<'design' | 'stack' | 'recovery' | 'patterns' | 'triggers' | 'alignment'>('design');
+  const isAIConfigured = llmConfig.isConfigured();
 
   const loadHabits = async () => {
     setIsLoading(true);
@@ -303,6 +309,51 @@ export default function HabitsPage() {
               <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <div className="text-sm font-medium text-green-700 dark:text-green-400 mb-1">Make it Easier</div>
                 <p className="text-gray-900 dark:text-white">{selectedHabit.frictionDown}</p>
+              </div>
+            )}
+
+            {isAIConfigured && (
+              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setShowAIAssist(!showAIAssist)}
+                  className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                >
+                  <Sparkles size={18} />
+                  <span>AI Habit Tools</span>
+                  {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showAIAssist && (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => setAIMode('design')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'design' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Habit Design
+                      </button>
+                      <button onClick={() => setAIMode('stack')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'stack' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Habit Stacking
+                      </button>
+                      <button onClick={() => setAIMode('recovery')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'recovery' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Streak Recovery
+                      </button>
+                      <button onClick={() => setAIMode('patterns')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Pattern Analysis
+                      </button>
+                      <button onClick={() => setAIMode('triggers')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'triggers' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Trigger Optimization
+                      </button>
+                      <button onClick={() => setAIMode('alignment')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'alignment' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Goal Alignment
+                      </button>
+                    </div>
+
+                    <AIHabitAssistPanel
+                      mode={aiMode}
+                      habit={selectedHabit}
+                      logs={logs}
+                      onClose={() => setShowAIAssist(false)}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

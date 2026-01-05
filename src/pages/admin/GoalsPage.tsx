@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, Target, FolderKanban, LayoutGrid, Layers } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Edit2, Trash2, Target, FolderKanban, LayoutGrid, Layers, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Goal, CreateGoalInput, UpdateGoalInput, GoalStatus, TimeHorizon, EntitySummary, FilterOptions } from '../../types/growth-system';
 import { goalsService } from '../../services/growth-system/goals.service';
 import { projectsService } from '../../services/growth-system/projects.service';
@@ -15,6 +15,8 @@ import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
 import { ProgressRing } from '../../components/atoms/ProgressRing';
 import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
 import { RelationshipPicker } from '../../components/organisms/RelationshipPicker';
+import { AIGoalAssistPanel } from '../../components/molecules/AIGoalAssistPanel';
+import { llmConfig } from '../../lib/llm';
 
 const STATUSES: GoalStatus[] = ['Planning', 'Active', 'OnTrack', 'AtRisk', 'Achieved', 'Abandoned'];
 const TIME_HORIZONS: TimeHorizon[] = ['Yearly', 'Quarterly', 'Monthly', 'Weekly', 'Daily'];
@@ -38,6 +40,10 @@ export default function GoalsPage() {
   const [allProjects, setAllProjects] = useState<EntitySummary[]>([]);
   const [isProjectPickerOpen, setIsProjectPickerOpen] = useState(false);
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
+
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiMode, setAIMode] = useState<'refine' | 'criteria' | 'metrics' | 'cascade' | 'forecast' | 'conflicts' | 'progress'>('refine');
+  const isAIConfigured = llmConfig.isConfigured();
 
   const loadGoals = async () => {
     setIsLoading(true);
@@ -294,6 +300,50 @@ export default function GoalsPage() {
               <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{selectedGoal.notes}</p>
+              </div>
+            )}
+
+            {isAIConfigured && (
+              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setShowAIAssist(!showAIAssist)}
+                  className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                >
+                  <Sparkles size={18} />
+                  <span>AI Goal Tools</span>
+                  {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showAIAssist && (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => setAIMode('refine')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'refine' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Refine Goal
+                      </button>
+                      <button onClick={() => setAIMode('criteria')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'criteria' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Success Criteria
+                      </button>
+                      <button onClick={() => setAIMode('metrics')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'metrics' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Suggest Metrics
+                      </button>
+                      <button onClick={() => setAIMode('forecast')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'forecast' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Forecast Achievement
+                      </button>
+                      <button onClick={() => setAIMode('conflicts')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'conflicts' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Check Conflicts
+                      </button>
+                      <button onClick={() => setAIMode('progress')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'progress' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Progress Analysis
+                      </button>
+                    </div>
+
+                    <AIGoalAssistPanel
+                      mode={aiMode}
+                      goal={selectedGoal}
+                      onClose={() => setShowAIAssist(false)}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

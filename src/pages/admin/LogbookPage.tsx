@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, BookOpen, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Edit2, Trash2, BookOpen, Calendar as CalendarIcon, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import type { LogbookEntry, CreateLogbookEntryInput, UpdateLogbookEntryInput } from '../../types/growth-system';
 import { logbookService } from '../../services/growth-system/logbook.service';
 import Button from '../../components/atoms/Button';
@@ -7,6 +7,8 @@ import { LogbookEntryCard } from '../../components/molecules/LogbookEntryCard';
 import { LogbookEditor } from '../../components/organisms/LogbookEditor';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
+import { AILogbookAssistPanel } from '../../components/molecules/AILogbookAssistPanel';
+import { llmConfig } from '../../lib/llm';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -21,6 +23,10 @@ export default function LogbookPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<LogbookEntry | null>(null);
+
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiMode, setAIMode] = useState<'prompts' | 'digest' | 'patterns' | 'sentiment' | 'review' | 'connections'>('prompts');
+  const isAIConfigured = llmConfig.isConfigured();
 
   const loadEntries = async () => {
     setIsLoading(true);
@@ -204,6 +210,51 @@ export default function LogbookPage() {
                 <div className="text-gray-900 dark:text-white whitespace-pre-wrap">
                   {selectedEntry.notes}
                 </div>
+              </div>
+            )}
+
+            {isAIConfigured && (
+              <div className="pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
+                <button
+                  onClick={() => setShowAIAssist(!showAIAssist)}
+                  className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                >
+                  <Sparkles size={18} />
+                  <span>AI Logbook Tools</span>
+                  {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showAIAssist && (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button onClick={() => setAIMode('prompts')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'prompts' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Reflection Prompts
+                      </button>
+                      <button onClick={() => setAIMode('digest')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'digest' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Daily Digest
+                      </button>
+                      <button onClick={() => setAIMode('patterns')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Pattern Insights
+                      </button>
+                      <button onClick={() => setAIMode('sentiment')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'sentiment' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Sentiment Analysis
+                      </button>
+                      <button onClick={() => setAIMode('review')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'review' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Weekly Review
+                      </button>
+                      <button onClick={() => setAIMode('connections')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'connections' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        Connection Suggestions
+                      </button>
+                    </div>
+
+                    <AILogbookAssistPanel
+                      mode={aiMode}
+                      entry={selectedEntry}
+                      entries={entries}
+                      onClose={() => setShowAIAssist(false)}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
