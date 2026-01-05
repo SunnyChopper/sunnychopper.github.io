@@ -1,0 +1,320 @@
+import { useState } from 'react';
+import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import type { CreateTaskInput, Area, SubCategory, Priority, TaskStatus } from '../../types/growth-system';
+import Button from '../atoms/Button';
+import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
+import { llmConfig } from '../../lib/llm';
+
+interface TaskCreateFormProps {
+  onSubmit: (input: CreateTaskInput) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}
+
+const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
+const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
+const STATUSES: TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold', 'Done', 'Cancelled'];
+
+const SUBCATEGORIES: Record<Area, SubCategory[]> = {
+  Health: ['Physical', 'Mental', 'Spiritual', 'Nutrition', 'Sleep', 'Exercise'],
+  Wealth: ['Income', 'Expenses', 'Investments', 'Debt', 'NetWorth'],
+  Love: ['Romantic', 'Family', 'Friends', 'Social'],
+  Happiness: ['Joy', 'Gratitude', 'Purpose', 'Peace'],
+  Operations: ['Productivity', 'Organization', 'Systems', 'Habits'],
+  DayJob: ['Career', 'Skills', 'Projects', 'Performance'],
+};
+
+export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateFormProps) {
+  const [formData, setFormData] = useState<CreateTaskInput>({
+    title: '',
+    description: '',
+    extendedDescription: '',
+    area: 'Operations',
+    subCategory: undefined,
+    priority: 'P3',
+    status: 'NotStarted',
+    size: undefined,
+    dueDate: '',
+    scheduledDate: '',
+    notes: '',
+    isRecurring: false,
+  });
+
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiMode, setAIMode] = useState<'parse' | 'categorize' | 'estimate'>('parse');
+  const isAIConfigured = llmConfig.isConfigured();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const input: CreateTaskInput = {
+      ...formData,
+      description: formData.description || undefined,
+      extendedDescription: formData.extendedDescription || undefined,
+      notes: formData.notes || undefined,
+      dueDate: formData.dueDate || undefined,
+      scheduledDate: formData.scheduledDate || undefined,
+      size: formData.size || undefined,
+    };
+    onSubmit(input);
+  };
+
+  const availableSubCategories = SUBCATEGORIES[formData.area];
+
+  const handleApplyParsed = (task: Partial<CreateTaskInput>) => {
+    setFormData({
+      ...formData,
+      title: task.title || formData.title,
+      description: task.description || formData.description,
+      area: task.area || formData.area,
+      subCategory: task.subCategory || formData.subCategory,
+      priority: task.priority || formData.priority,
+      dueDate: task.dueDate || formData.dueDate,
+      scheduledDate: task.scheduledDate || formData.scheduledDate,
+      size: task.size ?? formData.size,
+    });
+  };
+
+  const handleApplyCategory = (area: string, subCategory?: string) => {
+    setFormData({
+      ...formData,
+      area: area as Area,
+      subCategory: subCategory as SubCategory | undefined,
+    });
+  };
+
+  const handleApplyEffort = (size: number) => {
+    setFormData({ ...formData, size });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {isAIConfigured && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setShowAIAssist(!showAIAssist)}
+            className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+          >
+            <Sparkles size={16} />
+            <span>AI Assist</span>
+            {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {showAIAssist && (
+            <div className="mt-3 space-y-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAIMode('parse')}
+                  className={`px-3 py-1 text-sm rounded-full transition ${
+                    aiMode === 'parse'
+                      ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Smart Parse
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAIMode('categorize')}
+                  className={`px-3 py-1 text-sm rounded-full transition ${
+                    aiMode === 'categorize'
+                      ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Auto-Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAIMode('estimate')}
+                  className={`px-3 py-1 text-sm rounded-full transition ${
+                    aiMode === 'estimate'
+                      ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Estimate Effort
+                </button>
+              </div>
+
+              <AITaskAssistPanel
+                mode={aiMode}
+                onClose={() => setShowAIAssist(false)}
+                onApplyParsed={handleApplyParsed}
+                onApplyCategory={handleApplyCategory}
+                onApplyEffort={handleApplyEffort}
+                title={formData.title}
+                description={formData.description}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Title *
+        </label>
+        <input
+          type="text"
+          required
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter task title"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Description
+        </label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Brief description"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Area *
+          </label>
+          <select
+            required
+            value={formData.area}
+            onChange={(e) => setFormData({ ...formData, area: e.target.value as Area, subCategory: undefined })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {AREAS.map((area) => (
+              <option key={area} value={area}>
+                {area}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Sub-Category
+          </label>
+          <select
+            value={formData.subCategory || ''}
+            onChange={(e) => setFormData({ ...formData, subCategory: e.target.value as SubCategory || undefined })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">None</option>
+            {availableSubCategories.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Priority
+          </label>
+          <select
+            value={formData.priority}
+            onChange={(e) => setFormData({ ...formData, priority: e.target.value as Priority })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {PRIORITIES.map((priority) => (
+              <option key={priority} value={priority}>
+                {priority}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Status
+          </label>
+          <select
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Due Date
+          </label>
+          <input
+            type="date"
+            value={formData.dueDate}
+            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Scheduled Date
+          </label>
+          <input
+            type="date"
+            value={formData.scheduledDate}
+            onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Size (Story Points / Hours)
+        </label>
+        <input
+          type="number"
+          min="0"
+          step="0.5"
+          value={formData.size || ''}
+          onChange={(e) => setFormData({ ...formData, size: e.target.value ? parseFloat(e.target.value) : undefined })}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="e.g., 2.5"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Notes
+        </label>
+        <textarea
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Additional notes"
+        />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary" disabled={isLoading}>
+          {isLoading ? 'Creating...' : 'Create Task'}
+        </Button>
+      </div>
+    </form>
+  );
+}
