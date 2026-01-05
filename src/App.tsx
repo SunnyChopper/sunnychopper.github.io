@@ -11,7 +11,7 @@ import SettingsPage from './pages/admin/SettingsPage';
 import GrowthSystemPage from './pages/admin/GrowthSystemPage';
 import ChatbotPage from './pages/admin/ChatbotPage';
 import ComponentsDemoPage from './pages/admin/ComponentsDemoPage';
-import TasksPage from './pages/admin/TasksPageAdvanced';
+import TasksPage from './pages/admin/TasksPageAdvancedV2';
 import ProjectsPage from './pages/admin/ProjectsPage';
 import GoalsPage from './pages/admin/GoalsPage';
 import MetricsPage from './pages/admin/MetricsPage';
