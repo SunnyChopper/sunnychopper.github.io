@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X, Link2, GitBranch } from 'lucide-react';
-import type { Task, UpdateTaskInput, Area, SubCategory, Priority, TaskStatus, EntitySummary } from '../../types/growth-system';
+import { X, Link2, GitBranch, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import type { Task, UpdateTaskInput, Area, SubCategory, Priority, TaskStatus, EntitySummary, CreateTaskInput } from '../../types/growth-system';
 import Button from '../atoms/Button';
 import { EntityLinkChip } from '../atoms/EntityLinkChip';
 import { DependencyBadge } from '../atoms/DependencyBadge';
 import { RelationshipPicker } from './RelationshipPicker';
+import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
+import { llmConfig } from '../../lib/llm';
 
 interface TaskEditPanelAdvancedProps {
   task: Task;
@@ -25,6 +27,7 @@ interface TaskEditPanelAdvancedProps {
   onProjectUnlink: (taskId: string, projectId: string) => void;
   onGoalLink: (taskId: string, goalId: string) => void;
   onGoalUnlink: (taskId: string, goalId: string) => void;
+  onCreateSubtasks?: (subtasks: CreateTaskInput[]) => void;
 }
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
@@ -59,6 +62,7 @@ export function TaskEditPanelAdvanced({
   onProjectUnlink,
   onGoalLink,
   onGoalUnlink,
+  onCreateSubtasks,
 }: TaskEditPanelAdvancedProps) {
   const [formData, setFormData] = useState<UpdateTaskInput>({
     title: task.title,
@@ -80,6 +84,10 @@ export function TaskEditPanelAdvanced({
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiMode, setAIMode] = useState<'breakdown' | 'priority' | 'estimate' | 'dependencies'>('breakdown');
+  const isAIConfigured = llmConfig.isConfigured();
 
   useEffect(() => {
     setFormData({
@@ -163,6 +171,27 @@ export function TaskEditPanelAdvanced({
         onGoalLink(task.id, id);
       }
     });
+  };
+
+  const handleApplyPriority = (priority: string) => {
+    setFormData({ ...formData, priority: priority as Priority });
+  };
+
+  const handleApplyEffort = (size: number) => {
+    setFormData({ ...formData, size });
+  };
+
+  const handleApplyBreakdown = (subtasks: CreateTaskInput[]) => {
+    onCreateSubtasks?.(subtasks);
+  };
+
+  const handleApplyDependencies = (taskIds: string[]) => {
+    taskIds.forEach(id => {
+      if (!selectedDependencies.includes(id)) {
+        onDependencyAdd(task.id, id);
+      }
+    });
+    setSelectedDependencies([...new Set([...selectedDependencies, ...taskIds])]);
   };
 
   const availableSubCategories = SUBCATEGORIES[formData.area || task.area];
@@ -323,6 +352,82 @@ export function TaskEditPanelAdvanced({
               />
             </div>
           </div>
+
+          {isAIConfigured && (
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <button
+                type="button"
+                onClick={() => setShowAIAssist(!showAIAssist)}
+                className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+              >
+                <Sparkles size={18} />
+                <span>AI Tools</span>
+                {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+
+              {showAIAssist && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAIMode('breakdown')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${
+                        aiMode === 'breakdown'
+                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Break Down
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAIMode('priority')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${
+                        aiMode === 'priority'
+                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Priority Advisor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAIMode('estimate')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${
+                        aiMode === 'estimate'
+                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Estimate Effort
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAIMode('dependencies')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${
+                        aiMode === 'dependencies'
+                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      Find Dependencies
+                    </button>
+                  </div>
+
+                  <AITaskAssistPanel
+                    mode={aiMode}
+                    onClose={() => setShowAIAssist(false)}
+                    onApplyPriority={handleApplyPriority}
+                    onApplyEffort={handleApplyEffort}
+                    onApplyBreakdown={handleApplyBreakdown}
+                    onApplyDependencies={handleApplyDependencies}
+                    currentTask={task}
+                    allTasks={availableTasks}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">

@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import type { CreateTaskInput, Area, SubCategory, Priority, TaskStatus } from '../../types/growth-system';
 import Button from '../atoms/Button';
+import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
+import { llmConfig } from '../../lib/llm';
 
 interface TaskCreateFormProps {
   onSubmit: (input: CreateTaskInput) => void;
@@ -37,6 +40,10 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
     isRecurring: false,
   });
 
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiMode, setAIMode] = useState<'parse' | 'categorize' | 'estimate'>('parse');
+  const isAIConfigured = llmConfig.isConfigured();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const input: CreateTaskInput = {
@@ -53,8 +60,98 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
 
   const availableSubCategories = SUBCATEGORIES[formData.area];
 
+  const handleApplyParsed = (task: Partial<CreateTaskInput>) => {
+    setFormData({
+      ...formData,
+      title: task.title || formData.title,
+      description: task.description || formData.description,
+      area: task.area || formData.area,
+      subCategory: task.subCategory || formData.subCategory,
+      priority: task.priority || formData.priority,
+      dueDate: task.dueDate || formData.dueDate,
+      scheduledDate: task.scheduledDate || formData.scheduledDate,
+      size: task.size ?? formData.size,
+    });
+  };
+
+  const handleApplyCategory = (area: string, subCategory?: string) => {
+    setFormData({
+      ...formData,
+      area: area as Area,
+      subCategory: subCategory as SubCategory | undefined,
+    });
+  };
+
+  const handleApplyEffort = (size: number) => {
+    setFormData({ ...formData, size });
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {isAIConfigured && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setShowAIAssist(!showAIAssist)}
+            className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+          >
+            <Sparkles size={16} />
+            <span>AI Assist</span>
+            {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {showAIAssist && (
+            <div className="mt-3 space-y-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAIMode('parse')}
+                  className={`px-3 py-1 text-sm rounded-full transition ${
+                    aiMode === 'parse'
+                      ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Smart Parse
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAIMode('categorize')}
+                  className={`px-3 py-1 text-sm rounded-full transition ${
+                    aiMode === 'categorize'
+                      ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Auto-Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAIMode('estimate')}
+                  className={`px-3 py-1 text-sm rounded-full transition ${
+                    aiMode === 'estimate'
+                      ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  Estimate Effort
+                </button>
+              </div>
+
+              <AITaskAssistPanel
+                mode={aiMode}
+                onClose={() => setShowAIAssist(false)}
+                onApplyParsed={handleApplyParsed}
+                onApplyCategory={handleApplyCategory}
+                onApplyEffort={handleApplyEffort}
+                title={formData.title}
+                description={formData.description}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Title *

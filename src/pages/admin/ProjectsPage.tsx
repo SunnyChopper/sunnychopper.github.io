@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, Target, CheckSquare } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Edit2, Trash2, Target, CheckSquare, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Project, CreateProjectInput, UpdateProjectInput, ProjectStatus, Task, EntitySummary, FilterOptions } from '../../types/growth-system';
 import { projectsService } from '../../services/growth-system/projects.service';
 import { tasksService } from '../../services/growth-system/tasks.service';
@@ -17,6 +17,9 @@ import { ProgressRing } from '../../components/atoms/ProgressRing';
 import { TaskListItem } from '../../components/molecules/TaskListItem';
 import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
 import { RelationshipPicker } from '../../components/organisms/RelationshipPicker';
+import { AIProjectAssistPanel } from '../../components/molecules/AIProjectAssistPanel';
+import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
+import { llmConfig } from '../../lib/llm';
 
 const STATUSES: ProjectStatus[] = ['Planning', 'Active', 'OnHold', 'Completed', 'Cancelled'];
 
@@ -37,6 +40,10 @@ export default function ProjectsPage() {
   const [allGoals, setAllGoals] = useState<EntitySummary[]>([]);
   const [isGoalPickerOpen, setIsGoalPickerOpen] = useState(false);
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
+
+  const [showAIAssist, setShowAIAssist] = useState(false);
+  const [aiMode, setAIMode] = useState<'health' | 'generate' | 'risks'>('health');
+  const isAIConfigured = llmConfig.isConfigured();
 
   const loadProjects = async () => {
     setIsLoading(true);
@@ -183,6 +190,19 @@ export default function ProjectsPage() {
     });
   };
 
+  const handleCreateTasksFromAI = async (newTasks: import('../../types/growth-system').CreateTaskInput[]) => {
+    if (!selectedProject) return;
+
+    for (const task of newTasks) {
+      const taskInput = {
+        ...task,
+        area: selectedProject.area,
+      };
+      await tasksService.create(taskInput);
+    }
+    loadProjectTasks(selectedProject.id);
+  };
+
   const filteredProjects = projects.filter((project) => {
     const matchesSearch = !searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase()) || (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesArea = !filters.area || project.area === filters.area;
@@ -304,6 +324,64 @@ export default function ProjectsPage() {
               <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{selectedProject.notes}</p>
+              </div>
+            )}
+
+            {isAIConfigured && (
+              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setShowAIAssist(!showAIAssist)}
+                  className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                >
+                  <Sparkles size={18} />
+                  <span>AI Project Tools</span>
+                  {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+
+                {showAIAssist && (
+                  <div className="mt-4 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setAIMode('health')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${
+                          aiMode === 'health'
+                            ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Health Analysis
+                      </button>
+                      <button
+                        onClick={() => setAIMode('generate')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${
+                          aiMode === 'generate'
+                            ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Generate Tasks
+                      </button>
+                      <button
+                        onClick={() => setAIMode('risks')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${
+                          aiMode === 'risks'
+                            ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        Risk Assessment
+                      </button>
+                    </div>
+
+                    <AIProjectAssistPanel
+                      mode={aiMode}
+                      project={selectedProject}
+                      tasks={tasks}
+                      onClose={() => setShowAIAssist(false)}
+                      onCreateTasks={handleCreateTasksFromAI}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -432,6 +510,8 @@ export default function ProjectsPage() {
             />
           </div>
         </div>
+
+        <AISuggestionBanner entityType="project" />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">

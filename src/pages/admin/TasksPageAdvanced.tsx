@@ -14,6 +14,7 @@ import { TaskCalendarView } from '../../components/organisms/TaskCalendarView';
 import DependencyGraph from '../../components/organisms/DependencyGraph';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
+import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
 
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'graph';
 
@@ -348,6 +349,8 @@ export default function TasksPageAdvanced() {
             </button>
           </div>
         </div>
+
+        <AISuggestionBanner entityType="task" />
 
         {viewMode === 'list' && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
