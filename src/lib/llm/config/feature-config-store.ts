@@ -68,6 +68,30 @@ export function resetAllFeatureConfigs(): void {
     'projectHealth',
     'projectTaskGen',
     'projectRisk',
+    'goalRefinement',
+    'successCriteriaGen',
+    'metricSuggestions',
+    'goalCascade',
+    'achievementForecast',
+    'goalConflict',
+    'goalProgress',
+    'metricPatterns',
+    'metricAnomalies',
+    'metricCorrelations',
+    'metricTargets',
+    'metricHealth',
+    'habitDesign',
+    'habitStack',
+    'streakRecovery',
+    'habitPatterns',
+    'triggerOptimization',
+    'habitGoalAlignment',
+    'reflectionPrompts',
+    'dailyDigest',
+    'logbookPatterns',
+    'sentimentAnalysis',
+    'weeklyReview',
+    'connectionSuggestions',
   ];
 
   features.forEach((feature) => resetFeatureConfig(feature));
@@ -84,6 +108,30 @@ export function setAllFeaturesToProvider(provider: LLMProvider): void {
     'projectHealth',
     'projectTaskGen',
     'projectRisk',
+    'goalRefinement',
+    'successCriteriaGen',
+    'metricSuggestions',
+    'goalCascade',
+    'achievementForecast',
+    'goalConflict',
+    'goalProgress',
+    'metricPatterns',
+    'metricAnomalies',
+    'metricCorrelations',
+    'metricTargets',
+    'metricHealth',
+    'habitDesign',
+    'habitStack',
+    'streakRecovery',
+    'habitPatterns',
+    'triggerOptimization',
+    'habitGoalAlignment',
+    'reflectionPrompts',
+    'dailyDigest',
+    'logbookPatterns',
+    'sentimentAnalysis',
+    'weeklyReview',
+    'connectionSuggestions',
   ];
 
   const defaultModel = getDefaultModel(provider);
@@ -103,4 +151,28 @@ export function setCostOptimizedMix(): void {
   setFeatureConfig('projectHealth', 'anthropic', 'claude-3-5-sonnet-20241022');
   setFeatureConfig('projectTaskGen', 'anthropic', 'claude-3-5-sonnet-20241022');
   setFeatureConfig('projectRisk', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('goalRefinement', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('successCriteriaGen', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('metricSuggestions', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('goalCascade', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('achievementForecast', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('goalConflict', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('goalProgress', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('metricPatterns', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('metricAnomalies', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('metricCorrelations', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('metricTargets', 'anthropic', 'claude-3-5-haiku-20241022');
+  setFeatureConfig('metricHealth', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('habitDesign', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('habitStack', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('streakRecovery', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('habitPatterns', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('triggerOptimization', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('habitGoalAlignment', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('reflectionPrompts', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('dailyDigest', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('logbookPatterns', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('sentimentAnalysis', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('weeklyReview', 'anthropic', 'claude-3-5-sonnet-20241022');
+  setFeatureConfig('connectionSuggestions', 'anthropic', 'claude-3-5-haiku-20241022');
 }

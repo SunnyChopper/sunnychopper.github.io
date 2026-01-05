@@ -9,7 +9,31 @@ export type AIFeature =
   | 'dependencyDetection'
   | 'projectHealth'
   | 'projectTaskGen'
-  | 'projectRisk';
+  | 'projectRisk'
+  | 'goalRefinement'
+  | 'successCriteriaGen'
+  | 'metricSuggestions'
+  | 'goalCascade'
+  | 'achievementForecast'
+  | 'goalConflict'
+  | 'goalProgress'
+  | 'metricPatterns'
+  | 'metricAnomalies'
+  | 'metricCorrelations'
+  | 'metricTargets'
+  | 'metricHealth'
+  | 'habitDesign'
+  | 'habitStack'
+  | 'streakRecovery'
+  | 'habitPatterns'
+  | 'triggerOptimization'
+  | 'habitGoalAlignment'
+  | 'reflectionPrompts'
+  | 'dailyDigest'
+  | 'logbookPatterns'
+  | 'sentimentAnalysis'
+  | 'weeklyReview'
+  | 'connectionSuggestions';
 
 export interface FeatureProviderConfig {
   provider: LLMProvider;
@@ -26,6 +50,30 @@ export const AI_FEATURE_DISPLAY_NAMES: Record<AIFeature, string> = {
   projectHealth: 'Project Health Analysis',
   projectTaskGen: 'Project Task Generation',
   projectRisk: 'Project Risk Assessment',
+  goalRefinement: 'Goal Refinement',
+  successCriteriaGen: 'Success Criteria Generation',
+  metricSuggestions: 'Metric Suggestions',
+  goalCascade: 'Goal Cascade Planning',
+  achievementForecast: 'Achievement Forecasting',
+  goalConflict: 'Goal Conflict Detection',
+  goalProgress: 'Goal Progress Analysis',
+  metricPatterns: 'Metric Pattern Recognition',
+  metricAnomalies: 'Anomaly Detection',
+  metricCorrelations: 'Correlation Discovery',
+  metricTargets: 'Target Recommendations',
+  metricHealth: 'Metric Health Analysis',
+  habitDesign: 'Habit Design Assistant',
+  habitStack: 'Habit Stack Suggestions',
+  streakRecovery: 'Streak Recovery Coach',
+  habitPatterns: 'Habit Pattern Analysis',
+  triggerOptimization: 'Trigger Optimization',
+  habitGoalAlignment: 'Habit-Goal Alignment',
+  reflectionPrompts: 'Reflection Prompts',
+  dailyDigest: 'Daily Digest Generation',
+  logbookPatterns: 'Journal Pattern Insights',
+  sentimentAnalysis: 'Sentiment Analysis',
+  weeklyReview: 'Weekly Review Generator',
+  connectionSuggestions: 'Connection Suggestions',
 };
 
 export const DEFAULT_FEATURE_PROVIDERS: Record<AIFeature, FeatureProviderConfig> = {
@@ -38,4 +86,28 @@ export const DEFAULT_FEATURE_PROVIDERS: Record<AIFeature, FeatureProviderConfig>
   projectHealth: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
   projectTaskGen: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
   projectRisk: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  goalRefinement: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  successCriteriaGen: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  metricSuggestions: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  goalCascade: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  achievementForecast: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  goalConflict: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  goalProgress: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  metricPatterns: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  metricAnomalies: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  metricCorrelations: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  metricTargets: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
+  metricHealth: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  habitDesign: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  habitStack: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  streakRecovery: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  habitPatterns: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  triggerOptimization: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  habitGoalAlignment: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  reflectionPrompts: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  dailyDigest: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  logbookPatterns: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  sentimentAnalysis: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  weeklyReview: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  connectionSuggestions: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
 };
