@@ -1,5 +1,5 @@
 import type { ILLMAdapter, LLMAdapterType } from '../../types/llm';
-import { DirectLLMAdapter } from './direct-llm-adapter';
+import { DirectLLMAdapterV2 } from './direct-llm-adapter-v2';
 import { APILLMAdapter } from './api-llm-adapter';
 
 const LLM_ADAPTER_TYPE_KEY = 'gs_llm_adapter_type';
@@ -8,13 +8,13 @@ export class LLMConfig {
   private static instance: LLMConfig;
   private currentAdapter: ILLMAdapter;
   private currentType: LLMAdapterType;
-  private directAdapter: DirectLLMAdapter;
+  private directAdapter: DirectLLMAdapterV2;
   private apiAdapter: APILLMAdapter;
 
   private constructor() {
     const savedType = (localStorage.getItem(LLM_ADAPTER_TYPE_KEY) as LLMAdapterType) || 'direct';
     this.currentType = savedType;
-    this.directAdapter = new DirectLLMAdapter();
+    this.directAdapter = new DirectLLMAdapterV2();
     this.apiAdapter = new APILLMAdapter();
     this.currentAdapter = this.createAdapter(savedType);
   }
@@ -41,7 +41,7 @@ export class LLMConfig {
     return this.currentAdapter;
   }
 
-  getDirectAdapter(): DirectLLMAdapter {
+  getDirectAdapter(): DirectLLMAdapterV2 {
     return this.directAdapter;
   }
 
