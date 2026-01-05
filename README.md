@@ -210,10 +210,42 @@ All AI features can work with:
 
 ### GitHub Pages
 
-This project is configured for GitHub Pages deployment with a custom domain.
+This project is configured for automatic GitHub Pages deployment with a custom domain.
 
-1. Make sure you have the `gh-pages` branch set up in your repository
-2. Deploy with:
+#### Automatic Deployment (Recommended)
+
+The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that automatically deploys your site whenever you push to the `master` branch.
+
+**Setup Steps:**
+
+1. **Enable GitHub Pages in your repository:**
+   - Go to your repository on GitHub
+   - Navigate to **Settings** → **Pages**
+   - Under **Source**, select **GitHub Actions**
+   - Save the settings
+
+2. **Configure your custom domain (sunnysingh.tech):**
+   - In the same Pages settings, enter your custom domain: `sunnysingh.tech`
+   - GitHub will automatically create/update the CNAME file
+   - Update your DNS records to point to GitHub Pages:
+     - Add a CNAME record: `sunnysingh.tech` → `yourusername.github.io`
+     - Or add A records pointing to GitHub's IP addresses
+
+3. **Push to main branch:**
+   ```bash
+   git add .
+   git commit -m "Deploy to GitHub Pages"
+   git push origin master
+   ```
+
+4. **Monitor deployment:**
+   - Go to the **Actions** tab in your GitHub repository
+   - Watch the deployment workflow run
+   - Once complete, your site will be live at `https://sunnysingh.tech`
+
+#### Manual Deployment (Alternative)
+
+If you prefer manual deployment using `gh-pages`:
 
 ```bash
 npm run deploy
@@ -224,7 +256,13 @@ This will:
 - Deploy to the `gh-pages` branch
 - Preserve the CNAME file for custom domain
 
-The site will be available at your custom domain (sunnysingh.tech).
+**Note:** The manual method requires the `gh-pages` package (already installed) and will deploy to the `gh-pages` branch. For automatic deployments, use the GitHub Actions workflow instead.
+
+#### Important Notes
+
+- The `404.html` file ensures that React Router works correctly with GitHub Pages (handles client-side routing)
+- The CNAME file is automatically copied to the `dist` folder during build
+- Make sure your default branch is `main` (or update the workflow file if using `master`)
 
 ## Customization
 
