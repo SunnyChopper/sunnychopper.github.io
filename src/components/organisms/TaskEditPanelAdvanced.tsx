@@ -7,7 +7,7 @@ import { DependencyBadge } from '../atoms/DependencyBadge';
 import { RelationshipPicker } from './RelationshipPicker';
 import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
 import { llmConfig } from '../../lib/llm';
-import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES } from '../../constants/growth-system';
+import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES, AREA_LABELS, TASK_STATUS_LABELS } from '../../constants/growth-system';
 
 interface TaskEditPanelAdvancedProps {
   task: Task;
@@ -252,7 +252,7 @@ export function TaskEditPanelAdvanced({
               >
                 {AREAS.map((area) => (
                   <option key={area} value={area}>
-                    {area}
+                    {AREA_LABELS[area]}
                   </option>
                 ))}
               </select>
@@ -306,7 +306,7 @@ export function TaskEditPanelAdvanced({
               >
                 {TASK_STATUSES.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {TASK_STATUS_LABELS[status]}
                   </option>
                 ))}
               </select>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { Task, UpdateTaskInput, Area, SubCategory, Priority, TaskStatus } from '../../types/growth-system';
 import Button from '../atoms/Button';
-import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES } from '../../constants/growth-system';
+import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES, AREA_LABELS, TASK_STATUS_LABELS } from '../../constants/growth-system';
 
 interface TaskEditPanelProps {
   task: Task;
@@ -130,7 +130,7 @@ export function TaskEditPanel({ task, isOpen, onClose, onSave, isLoading }: Task
               >
                 {AREAS.map((area) => (
                   <option key={area} value={area}>
-                    {area}
+                    {AREA_LABELS[area]}
                   </option>
                 ))}
               </select>
@@ -184,7 +184,7 @@ export function TaskEditPanel({ task, isOpen, onClose, onSave, isLoading }: Task
               >
                 {TASK_STATUSES.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {TASK_STATUS_LABELS[status]}
                   </option>
                 ))}
               </select>

@@ -4,7 +4,7 @@ import type { CreateTaskInput, Area, SubCategory, Priority, TaskStatus } from '.
 import Button from '../atoms/Button';
 import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
 import { llmConfig } from '../../lib/llm';
-import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES } from '../../constants/growth-system';
+import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES, AREA_LABELS, TASK_STATUS_LABELS } from '../../constants/growth-system';
 
 interface TaskCreateFormProps {
   onSubmit: (input: CreateTaskInput) => void;
@@ -180,7 +180,7 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
           >
             {AREAS.map((area) => (
               <option key={area} value={area}>
-                {area}
+                {AREA_LABELS[area]}
               </option>
             ))}
           </select>
@@ -234,7 +234,7 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
           >
             {TASK_STATUSES.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {TASK_STATUS_LABELS[status]}
               </option>
             ))}
           </select>
