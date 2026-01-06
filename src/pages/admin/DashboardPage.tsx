@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useTasks, useHabits, useMetrics, useGoals, useProjects, useLogbook } from '../../hooks/useGrowthSystem';
 import { CheckSquare, Calendar, TrendingUp, Target, FolderKanban, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AIInsightsWidget } from '../../components/organisms/AIInsightsWidget';
 import { DailyPlanningAssistant } from '../../components/organisms/DailyPlanningAssistant';
+import { MorningLaunchpad } from '../../components/organisms/MorningLaunchpad';
 import { ROUTES } from '../../routes';
 
 interface StatCardProps {
@@ -34,6 +36,8 @@ const StatCard = ({ title, value, icon, link, description }: StatCardProps) => {
 };
 
 export default function DashboardPage() {
+  const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
+
   const { tasks } = useTasks();
   const { habits } = useHabits();
   const { metrics } = useMetrics();
@@ -101,9 +105,11 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <DailyPlanningAssistant />
+        <DailyPlanningAssistant onStartDay={() => setIsLaunchpadOpen(true)} />
         <AIInsightsWidget />
       </div>
+
+      <MorningLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">

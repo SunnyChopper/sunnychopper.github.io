@@ -8,6 +8,7 @@ export const ROUTES = {
     base: ADMIN_BASE,
     login: `${ADMIN_BASE}/login` as const,
     dashboard: `${ADMIN_BASE}/dashboard` as const,
+    focus: `${ADMIN_BASE}/focus` as const,
     growthSystem: `${ADMIN_BASE}/growth-system` as const,
     tasks: `${ADMIN_BASE}/tasks` as const,
     habits: `${ADMIN_BASE}/habits` as const,
@@ -24,6 +25,7 @@ export const ROUTES = {
 
 export const ADMIN_CHILD_ROUTES = {
   dashboard: 'dashboard' as const,
+  focus: 'focus' as const,
   growthSystem: 'growth-system' as const,
   tasks: 'tasks' as const,
   habits: 'habits' as const,
