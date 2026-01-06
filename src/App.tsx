@@ -7,6 +7,7 @@ import ProductsPage from './pages/ProductsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './pages/admin/LoginPage';
 import DashboardPage from './pages/admin/DashboardPage';
+import FocusModePage from './pages/admin/FocusModePage';
 import SettingsPage from './pages/admin/SettingsPage';
 import GrowthSystemPage from './pages/admin/GrowthSystemPage';
 import ChatbotPage from './pages/admin/ChatbotPage';
@@ -48,6 +49,15 @@ function AppContent() {
       </Route>
 
       <Route path={ROUTES.admin.login} element={<LoginPage />} />
+
+      <Route
+        path={ROUTES.admin.focus}
+        element={
+          <ProtectedRoute>
+            <FocusModePage />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path={ROUTES.admin.base}

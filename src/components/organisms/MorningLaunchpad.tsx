@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Calendar, Target, CheckCircle2, ArrowRight, Sparkles, Flame, Rocket } from 'lucide-react';
+import { X, Clock, Calendar, Target, CheckCircle2, ArrowRight, Sparkles, Flame, Rocket, ChevronUp, ChevronDown } from 'lucide-react';
 import { useTasks, useHabits, useGoals } from '../../hooks/useGrowthSystem';
 import type { Task } from '../../types/growth-system';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,11 +18,12 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
   const { goals } = useGoals();
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [briefing, setBriefing] = useState<string>('');
+  const [orderedTasks, setOrderedTasks] = useState<Task[]>([]);
 
   const handleEngage = () => {
     onClose();
     setTimeout(() => {
-      navigate(ROUTES.admin.tasks);
+      navigate(ROUTES.admin.focus, { state: { sessionTasks: orderedTasks } });
     }, 300);
   };
 
@@ -63,6 +64,26 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
 
     return activeTasks;
   }, [tasks]);
+
+  useEffect(() => {
+    if (filteredAndSortedTasks.length > 0) {
+      setOrderedTasks(filteredAndSortedTasks);
+    }
+  }, [filteredAndSortedTasks]);
+
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    const newOrder = [...orderedTasks];
+    [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+    setOrderedTasks(newOrder);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index === orderedTasks.length - 1) return;
+    const newOrder = [...orderedTasks];
+    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+    setOrderedTasks(newOrder);
+  };
 
   const handleMarkAsDone = async (task: Task) => {
     setCompletingTaskId(task.id);
@@ -113,8 +134,8 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
     if (hour >= 12 && hour < 18) greeting = 'Good afternoon';
     else if (hour >= 18) greeting = 'Good evening';
 
-    const taskCount = filteredAndSortedTasks.length;
-    const highPriorityCount = filteredAndSortedTasks.filter(t => t.priority === 'P1' || t.priority === 'P2').length;
+    const taskCount = orderedTasks.length;
+    const highPriorityCount = orderedTasks.filter(t => t.priority === 'P1' || t.priority === 'P2').length;
     const dailyHabits = habits.filter(h => h.frequency === 'Daily');
     const activeGoals = goals.filter(g => g.status === 'Active');
 
@@ -160,10 +181,10 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
   }, [tasks]);
 
   const completionRate = useMemo(() => {
-    const total = filteredAndSortedTasks.length + completedToday;
+    const total = orderedTasks.length + completedToday;
     if (total === 0) return 100;
     return Math.round((completedToday / total) * 100);
-  }, [filteredAndSortedTasks, completedToday]);
+  }, [orderedTasks, completedToday]);
 
   useEffect(() => {
     if (isOpen) {
@@ -175,7 +196,7 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, filteredAndSortedTasks, habits, goals]);
+  }, [isOpen, orderedTasks, habits, goals]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -219,11 +240,11 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                       <Target className="w-10 h-10 text-blue-400" />
                       <div>
                         <h2 className="text-4xl font-bold">Mission Control</h2>
-                        <p className="text-gray-400 text-lg">Your priority tasks for today</p>
+                        <p className="text-gray-400 text-lg">Build your session playlist</p>
                       </div>
                     </div>
 
-                    {filteredAndSortedTasks.length > 0 ? (
+                    {orderedTasks.length > 0 ? (
                       <motion.div
                         className="space-y-4"
                         initial="hidden"
@@ -236,7 +257,7 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                           },
                         }}
                       >
-                        {filteredAndSortedTasks.map((task) => (
+                        {orderedTasks.map((task, index) => (
                           <motion.div
                             key={task.id}
                             variants={{
@@ -248,6 +269,36 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                             }`}
                           >
                             <div className="flex items-start gap-4">
+                              <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                                <div className="w-12 h-12 rounded-full bg-blue-500/20 border-2 border-blue-500 flex items-center justify-center">
+                                  <span className="text-xl font-bold text-blue-300">{index + 1}</span>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    onClick={() => handleMoveUp(index)}
+                                    disabled={index === 0}
+                                    className={`p-1 rounded transition-colors ${
+                                      index === 0
+                                        ? 'text-gray-700 cursor-not-allowed'
+                                        : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    <ChevronUp className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleMoveDown(index)}
+                                    disabled={index === orderedTasks.length - 1}
+                                    className={`p-1 rounded transition-colors ${
+                                      index === orderedTasks.length - 1
+                                        ? 'text-gray-700 cursor-not-allowed'
+                                        : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    <ChevronDown className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+
                               <button
                                 onClick={() => handleMarkAsDone(task)}
                                 disabled={completingTaskId === task.id}
@@ -395,7 +446,7 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                         </div>
                         <p className="text-3xl font-bold">{completionRate}%</p>
                         <p className="text-sm text-cyan-200 mt-1">
-                          {completedToday} of {filteredAndSortedTasks.length + completedToday} tasks
+                          {completedToday} of {orderedTasks.length + completedToday} tasks
                         </p>
                       </div>
 
