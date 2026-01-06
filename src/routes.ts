@@ -20,6 +20,8 @@ export const ROUTES = {
     assistant: `${ADMIN_BASE}/assistant` as const,
     settings: `${ADMIN_BASE}/settings` as const,
     componentsDemo: `${ADMIN_BASE}/components-demo` as const,
+    mediaBacklog: `${ADMIN_BASE}/media-backlog` as const,
+    hobbyQuests: `${ADMIN_BASE}/hobby-quests` as const,
   },
 } as const;
 
@@ -37,6 +39,8 @@ export const ADMIN_CHILD_ROUTES = {
   assistant: 'assistant' as const,
   settings: 'settings' as const,
   componentsDemo: 'components-demo' as const,
+  mediaBacklog: 'media-backlog' as const,
+  hobbyQuests: 'hobby-quests' as const,
 } as const;
 
 

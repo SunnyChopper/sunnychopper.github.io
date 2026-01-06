@@ -19,11 +19,14 @@ import MetricsPage from './pages/admin/MetricsPage';
 import HabitsPage from './pages/admin/HabitsPage';
 import LogbookPage from './pages/admin/LogbookPage';
 import WeeklyReviewPage from './pages/admin/WeeklyReviewPage';
+import MediaBacklogPage from './pages/admin/MediaBacklogPage';
+import HobbyQuestsPage from './pages/admin/HobbyQuestsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
 import { useThemeInitializer } from './hooks/useTheme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import { ModeProvider } from './contexts/ModeContext';
 import { ADMIN_CHILD_ROUTES, ROUTES } from './routes';
 
 function AppContent() {
@@ -80,6 +83,8 @@ function AppContent() {
         <Route path={ADMIN_CHILD_ROUTES.assistant} element={<ChatbotPage />} />
         <Route path={ADMIN_CHILD_ROUTES.componentsDemo} element={<ComponentsDemoPage />} />
         <Route path={ADMIN_CHILD_ROUTES.settings} element={<SettingsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.mediaBacklog} element={<MediaBacklogPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.hobbyQuests} element={<HobbyQuestsPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
@@ -100,9 +105,11 @@ function App() {
   return (
     <>
       <Loader isLoading={isLoading} />
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <ModeProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </ModeProvider>
     </>
   );
 }
