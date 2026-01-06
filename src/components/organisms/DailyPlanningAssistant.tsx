@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, CheckSquare, Repeat, TrendingUp, Sparkles, ChevronRight } from 'lucide-react';
+import { Sun, CheckSquare, Repeat, TrendingUp, Sparkles, ChevronRight, Rocket } from 'lucide-react';
 import { useTasks, useHabits, useMetrics } from '../../hooks/useGrowthSystem';
 import type { Task, Habit, Metric } from '../../types/growth-system';
 import Button from '../atoms/Button';
@@ -14,7 +14,11 @@ interface DailyPlan {
   briefing: string;
 }
 
-export function DailyPlanningAssistant() {
+interface DailyPlanningAssistantProps {
+  onStartDay?: () => void;
+}
+
+export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantProps) {
   const [plan, setPlan] = useState<DailyPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -119,18 +123,29 @@ export function DailyPlanningAssistant() {
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-          <Sun className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+            <Sun className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Daily Planning</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {plan.energyLevel === 'morning' && 'Start your day right'}
+              {plan.energyLevel === 'afternoon' && 'Maintain momentum'}
+              {plan.energyLevel === 'evening' && 'Finish strong'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Daily Planning</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {plan.energyLevel === 'morning' && 'Start your day right'}
-            {plan.energyLevel === 'afternoon' && 'Maintain momentum'}
-            {plan.energyLevel === 'evening' && 'Finish strong'}
-          </p>
-        </div>
+        {onStartDay && (
+          <Button
+            onClick={onStartDay}
+            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+          >
+            <Rocket className="w-4 h-4" />
+            Start Day
+          </Button>
+        )}
       </div>
 
       <div className="mb-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg">
