@@ -2,35 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/images/Sunny-Singh-Tech-Favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sunny Singh - Full Stack Developer</title>
-    <meta name="description" content="Full Stack Web and Mobile App Developer specializing in React, React Native, Laravel, Python, and AWS." />
-
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN1LQN7MER"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-XN1LQN7MER');
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <title>Redirecting...</title>
     <script>
       // GitHub Pages SPA redirect - redirects all 404s to index.html
       // This allows React Router to handle client-side routing
-      var pathSegmentsToKeep = 0;
-      var l = window.location;
-      l.replace(
-        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-        l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-        l.pathname.slice(1).split('/').slice(pathSegmentsToKeep).join('/').replace(/&/g, '~and~') +
-        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-        l.hash
-      );
+      // Store the original path so React Router can navigate to it
+      var path = window.location.pathname;
+      var search = window.location.search;
+      var hash = window.location.hash;
+      sessionStorage.setItem('redirectPath', path + search + hash);
+      window.location.replace(window.location.origin + '/index.html');
     </script>
+  </head>
+  <body>
+    <p>Redirecting...</p>
   </body>
 </html>
 

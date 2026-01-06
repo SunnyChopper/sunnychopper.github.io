@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import MainLayout from './components/templates/MainLayout';
 import AdminLayout from './components/templates/AdminLayout';
 import HomePage from './pages/HomePage';
@@ -27,6 +27,16 @@ import ErrorBoundary from './components/shared/ErrorBoundary';
 function AppContent() {
   usePageTracking();
   useThemeInitializer();
+  const navigate = useNavigate();
+
+  // Handle GitHub Pages 404 redirect
+  useEffect(() => {
+    const redirectPath = sessionStorage.getItem('redirectPath');
+    if (redirectPath) {
+      sessionStorage.removeItem('redirectPath');
+      navigate(redirectPath, { replace: true });
+    }
+  }, [navigate]);
 
   return (
     <ErrorBoundary>
