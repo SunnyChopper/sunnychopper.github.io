@@ -1,6 +1,7 @@
 import { Check, Target, Flame, Calendar } from 'lucide-react';
 import type { Habit } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
+import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
 
 interface HabitCardProps {
   habit: Habit;
@@ -58,8 +59,8 @@ export function HabitCard({ habit, streak = 0, todayCompleted = false, onClick, 
         <div className="flex items-center gap-2 mb-4 ml-11">
           <AreaBadge area={habit.area} />
           {habit.subCategory && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {habit.subCategory}
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+              {SUBCATEGORY_LABELS[habit.subCategory]}
             </span>
           )}
           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getHabitTypeColor(habit.habitType)}`}>

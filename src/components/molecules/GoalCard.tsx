@@ -1,8 +1,10 @@
 import { Target, Calendar, TrendingUp } from 'lucide-react';
 import type { Goal } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
+import { StatusBadge } from '../atoms/StatusBadge';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
 import { ProgressRing } from '../atoms/ProgressRing';
+import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
 
 interface GoalCardProps {
   goal: Goal;
@@ -11,22 +13,6 @@ interface GoalCardProps {
 }
 
 export function GoalCard({ goal, onClick, progress = 0 }: GoalCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Achieved':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
-      case 'OnTrack':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
-      case 'Active':
-        return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400';
-      case 'AtRisk':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
-      case 'Abandoned':
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400';
-      default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
-    }
-  };
 
   const completedCriteria = goal.successCriteria.filter(c => c.includes('✓')).length;
   const totalCriteria = goal.successCriteria.length;
@@ -65,16 +51,14 @@ export function GoalCard({ goal, onClick, progress = 0 }: GoalCardProps) {
       <div className="flex items-center gap-2 mb-4">
         <AreaBadge area={goal.area} />
         {goal.subCategory && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {goal.subCategory}
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+            {SUBCATEGORY_LABELS[goal.subCategory]}
           </span>
         )}
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(goal.status)}`}>
-          {goal.status}
-        </span>
+        <StatusBadge status={goal.status} size="sm" />
 
         <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
           {totalCriteria > 0 && (

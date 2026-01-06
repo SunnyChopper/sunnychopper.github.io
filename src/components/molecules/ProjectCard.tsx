@@ -3,6 +3,7 @@ import type { Project } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
 import { ProgressRing } from '../atoms/ProgressRing';
+import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
 
 interface ProjectCardProps {
   project: Project;
@@ -66,8 +67,8 @@ export function ProjectCard({
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <AreaBadge area={project.area} />
         {project.subCategory && (
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {project.subCategory}
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+            {SUBCATEGORY_LABELS[project.subCategory]}
           </span>
         )}
       </div>

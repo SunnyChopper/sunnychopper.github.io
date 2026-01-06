@@ -1,6 +1,7 @@
 import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
 import type { Metric, MetricLog } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
+import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
 
 interface MetricCardProps {
   metric: Metric;
@@ -80,8 +81,8 @@ export function MetricCard({ metric, recentLogs = [], onClick, onQuickLog }: Met
         <div className="flex items-center gap-2 mb-4">
           <AreaBadge area={metric.area} />
           {metric.subCategory && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {metric.subCategory}
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+              {SUBCATEGORY_LABELS[metric.subCategory]}
             </span>
           )}
         </div>
