@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, List, Kanban, Calendar as CalendarIcon, Network, Filter, X } from 'lucide-react';
 import type { Task, CreateTaskInput, UpdateTaskInput, Area, Priority, TaskStatus, EntitySummary, TaskDependency } from '../../types/growth-system';
 import { tasksService } from '../../services/growth-system/tasks.service';
@@ -14,12 +14,13 @@ import DependencyGraph from '../../components/organisms/DependencyGraph';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
+import { AREAS, PRIORITIES, TASK_STATUSES } from '../../constants/growth-system';
 
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'graph';
 
-const AREA_OPTIONS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-const STATUS_OPTIONS: TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold', 'Done', 'Cancelled'];
-const PRIORITY_OPTIONS: Priority[] = ['P1', 'P2', 'P3', 'P4'];
+const AREA_OPTIONS: Area[] = [...AREAS];
+const STATUS_OPTIONS: TaskStatus[] = [...TASK_STATUSES];
+const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 
 export default function TasksPageAdvanced() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -47,28 +48,7 @@ export default function TasksPageAdvanced() {
   const [taskGoals] = useState<Map<string, string[]>>(new Map());
   const [allDependencies, setAllDependencies] = useState<TaskDependency[]>([]);
 
-  const loadTasks = async () => {
-    setIsLoading(true);
-    try {
-      const response = await tasksService.getAll({
-        search: searchQuery || undefined,
-        area: selectedArea,
-        status: selectedStatus,
-        priority: selectedPriority,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      });
-      setTasks(response.data);
-      setFilteredTasks(response.data);
-      await loadRelationships(response.data);
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadRelationships = async (taskList: Task[]) => {
+  const loadRelationships = useCallback(async (taskList: Task[]) => {
     const depMap = new Map<string, string[]>();
     const blockedMap = new Map<string, string[]>();
     const deps: TaskDependency[] = [];
@@ -98,9 +78,30 @@ export default function TasksPageAdvanced() {
     setTaskDependencies(depMap);
     setTaskBlockedBy(blockedMap);
     setAllDependencies(deps);
-  };
+  }, []);
 
-  const loadProjects = async () => {
+  const loadTasks = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await tasksService.getAll({
+        search: searchQuery || undefined,
+        area: selectedArea,
+        status: selectedStatus,
+        priority: selectedPriority,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      });
+      setTasks(response.data);
+      setFilteredTasks(response.data);
+      await loadRelationships(response.data);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadRelationships, searchQuery, selectedArea, selectedPriority, selectedStatus]);
+
+  const loadProjects = useCallback(async () => {
     try {
       const response = await projectsService.getAll();
       if (response.success && response.data) {
@@ -115,9 +116,9 @@ export default function TasksPageAdvanced() {
     } catch (error) {
       console.error('Failed to load projects:', error);
     }
-  };
+  }, []);
 
-  const loadGoals = async () => {
+  const loadGoals = useCallback(async () => {
     try {
       const response = await goalsService.getAll();
       if (response.success && response.data) {
@@ -132,13 +133,13 @@ export default function TasksPageAdvanced() {
     } catch (error) {
       console.error('Failed to load goals:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadTasks();
     loadProjects();
     loadGoals();
-  }, [searchQuery, selectedArea, selectedStatus, selectedPriority]);
+  }, [loadGoals, loadProjects, loadTasks]);
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     setIsSubmitting(true);
