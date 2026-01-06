@@ -17,8 +17,10 @@ import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
 import { RelationshipPicker } from '../../components/organisms/RelationshipPicker';
 import { AIGoalAssistPanel } from '../../components/molecules/AIGoalAssistPanel';
 import { llmConfig } from '../../lib/llm';
+import { GOAL_STATUSES } from '../../constants/growth-system';
 
-const STATUSES: GoalStatus[] = ['Planning', 'Active', 'OnTrack', 'AtRisk', 'Achieved', 'Abandoned'];
+const STATUSES: GoalStatus[] = [...GOAL_STATUSES];
+// Keep UI grouping order from broad -> narrow.
 const TIME_HORIZONS: TimeHorizon[] = ['Yearly', 'Quarterly', 'Monthly', 'Weekly', 'Daily'];
 
 type ViewMode = 'timeHorizon' | 'area';

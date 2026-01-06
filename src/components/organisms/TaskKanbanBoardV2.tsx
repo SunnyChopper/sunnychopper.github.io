@@ -3,6 +3,7 @@ import type { Task, TaskStatus, UpdateTaskInput } from '../../types/growth-syste
 import { AreaBadge } from '../atoms/AreaBadge';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
 import { Pencil, Plus, MoreVertical } from 'lucide-react';
+import { TASK_STATUS_LABELS } from '../../constants/growth-system';
 
 interface TaskKanbanBoardProps {
   tasks: Task[];
@@ -12,15 +13,6 @@ interface TaskKanbanBoardProps {
 }
 
 const STATUSES: TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold'];
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  NotStarted: 'Not Started',
-  InProgress: 'In Progress',
-  Blocked: 'Blocked',
-  OnHold: 'On Hold',
-  Done: 'Done',
-  Cancelled: 'Cancelled',
-};
 
 const STATUS_HEADER_COLORS: Record<TaskStatus, string> = {
   NotStarted: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
@@ -92,7 +84,7 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
               <div className={`${STATUS_HEADER_COLORS[status]} px-4 py-3 rounded-t-lg shadow-sm`}>
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="font-bold text-sm uppercase tracking-wide">
-                    {STATUS_LABELS[status]}
+                    {TASK_STATUS_LABELS[status]}
                   </h3>
                   <div className="flex items-center gap-1">
                     <button

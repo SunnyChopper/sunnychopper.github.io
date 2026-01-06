@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import type { Goal, UpdateGoalInput, Area, SubCategory, TimeHorizon, Priority, GoalStatus } from '../../types/growth-system';
 import Button from '../atoms/Button';
+import { AREAS, GOAL_STATUSES, GOAL_TIME_HORIZONS, PRIORITIES } from '../../constants/growth-system';
 
 interface GoalEditFormProps {
   goal: Goal;
@@ -9,11 +10,6 @@ interface GoalEditFormProps {
   onCancel: () => void;
   isLoading?: boolean;
 }
-
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-const TIME_HORIZONS: TimeHorizon[] = ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'];
-const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
-const STATUSES: GoalStatus[] = ['Planning', 'Active', 'OnTrack', 'AtRisk', 'Achieved', 'Abandoned'];
 
 export function GoalEditForm({ goal, onSubmit, onCancel, isLoading }: GoalEditFormProps) {
   const [formData, setFormData] = useState<UpdateGoalInput>({
@@ -126,7 +122,7 @@ export function GoalEditForm({ goal, onSubmit, onCancel, isLoading }: GoalEditFo
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
-            {TIME_HORIZONS.map((horizon) => (
+            {GOAL_TIME_HORIZONS.map((horizon) => (
               <option key={horizon} value={horizon}>
                 {horizon}
               </option>
@@ -163,7 +159,7 @@ export function GoalEditForm({ goal, onSubmit, onCancel, isLoading }: GoalEditFo
             onChange={(e) => setFormData({ ...formData, status: e.target.value as GoalStatus })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {STATUSES.map((status) => (
+            {GOAL_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {status}
               </option>

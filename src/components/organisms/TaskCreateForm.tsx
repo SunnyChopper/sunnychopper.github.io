@@ -4,25 +4,13 @@ import type { CreateTaskInput, Area, SubCategory, Priority, TaskStatus } from '.
 import Button from '../atoms/Button';
 import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
 import { llmConfig } from '../../lib/llm';
+import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES } from '../../constants/growth-system';
 
 interface TaskCreateFormProps {
   onSubmit: (input: CreateTaskInput) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
-
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
-const STATUSES: TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold', 'Done', 'Cancelled'];
-
-const SUBCATEGORIES: Record<Area, SubCategory[]> = {
-  Health: ['Physical', 'Mental', 'Spiritual', 'Nutrition', 'Sleep', 'Exercise'],
-  Wealth: ['Income', 'Expenses', 'Investments', 'Debt', 'NetWorth'],
-  Love: ['Romantic', 'Family', 'Friends', 'Social'],
-  Happiness: ['Joy', 'Gratitude', 'Purpose', 'Peace'],
-  Operations: ['Productivity', 'Organization', 'Systems', 'Habits'],
-  DayJob: ['Career', 'Skills', 'Projects', 'Performance'],
-};
 
 export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateFormProps) {
   const [formData, setFormData] = useState<CreateTaskInput>({
@@ -58,7 +46,7 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
     onSubmit(input);
   };
 
-  const availableSubCategories = SUBCATEGORIES[formData.area];
+  const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area];
 
   const handleApplyParsed = (task: Partial<CreateTaskInput>) => {
     setFormData({
@@ -244,7 +232,7 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
             onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {STATUSES.map((status) => (
+            {TASK_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {status}
               </option>

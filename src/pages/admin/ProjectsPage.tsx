@@ -20,8 +20,9 @@ import { RelationshipPicker } from '../../components/organisms/RelationshipPicke
 import { AIProjectAssistPanel } from '../../components/molecules/AIProjectAssistPanel';
 import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
 import { llmConfig } from '../../lib/llm';
+import { PROJECT_STATUSES } from '../../constants/growth-system';
 
-const STATUSES: ProjectStatus[] = ['Planning', 'Active', 'OnHold', 'Completed', 'Cancelled'];
+const STATUSES: ProjectStatus[] = [...PROJECT_STATUSES];
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -162,13 +163,17 @@ export default function ProjectsPage() {
     setSelectedProject(null);
   };
 
-  const handleGoalLink = async (_projectId: string, _goalId: string) => {
+  const handleGoalLink = async (projectId: string, goalId: string) => {
     // TODO: Implement linkToGoal in projectsService
+    void projectId;
+    void goalId;
     console.log('Goal linking not yet implemented');
   };
 
-  const handleGoalUnlink = async (_projectId: string, _goalId: string) => {
+  const handleGoalUnlink = async (projectId: string, goalId: string) => {
     // TODO: Implement unlinkFromGoal in projectsService
+    void projectId;
+    void goalId;
     console.log('Goal unlinking not yet implemented');
   };
 
@@ -461,6 +466,7 @@ export default function ProjectsPage() {
           className="max-w-2xl"
         >
           <ProjectEditForm
+            key={selectedProject.id}
             project={selectedProject}
             onSubmit={handleUpdateProject}
             onCancel={() => setIsEditDialogOpen(false)}

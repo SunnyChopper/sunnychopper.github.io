@@ -1,25 +1,13 @@
 import { useState } from 'react';
 import type { CreateProjectInput, Area, SubCategory, Priority, ProjectStatus } from '../../types/growth-system';
 import Button from '../atoms/Button';
+import { AREAS, PRIORITIES, PROJECT_STATUSES, SUBCATEGORIES_BY_AREA } from '../../constants/growth-system';
 
 interface ProjectCreateFormProps {
   onSubmit: (input: CreateProjectInput) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
-
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
-const STATUSES: ProjectStatus[] = ['Planning', 'Active', 'OnHold', 'Completed', 'Cancelled'];
-
-const SUBCATEGORIES: Record<Area, SubCategory[]> = {
-  Health: ['Physical', 'Mental', 'Spiritual', 'Nutrition', 'Sleep', 'Exercise'],
-  Wealth: ['Income', 'Expenses', 'Investments', 'Debt', 'NetWorth'],
-  Love: ['Romantic', 'Family', 'Friends', 'Social'],
-  Happiness: ['Joy', 'Gratitude', 'Purpose', 'Peace'],
-  Operations: ['Productivity', 'Organization', 'Systems', 'Habits'],
-  DayJob: ['Career', 'Skills', 'Projects', 'Performance'],
-};
 
 export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCreateFormProps) {
   const [formData, setFormData] = useState<CreateProjectInput>({
@@ -52,7 +40,7 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
     onSubmit(input);
   };
 
-  const availableSubCategories = SUBCATEGORIES[formData.area];
+  const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -148,7 +136,7 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
             onChange={(e) => setFormData({ ...formData, status: e.target.value as ProjectStatus })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {STATUSES.map((status) => (
+            {PROJECT_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {status}
               </option>

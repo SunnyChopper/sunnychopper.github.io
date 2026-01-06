@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import type { CreateHabitInput, Area, SubCategory, HabitType, HabitFrequency } from '../../types/growth-system';
 import Button from '../atoms/Button';
+import { AREAS, HABIT_FREQUENCIES, HABIT_TYPES } from '../../constants/growth-system';
 
 interface HabitCreateFormProps {
   onSubmit: (input: CreateHabitInput) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
-
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-const HABIT_TYPES: HabitType[] = ['Build', 'Maintain', 'Reduce', 'Quit'];
-const FREQUENCIES: HabitFrequency[] = ['Daily', 'Weekly', 'Monthly', 'Custom'];
 
 export function HabitCreateForm({ onSubmit, onCancel, isLoading }: HabitCreateFormProps) {
   const [formData, setFormData] = useState<CreateHabitInput>({
@@ -117,7 +114,7 @@ export function HabitCreateForm({ onSubmit, onCancel, isLoading }: HabitCreateFo
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
-            {FREQUENCIES.map((freq) => (
+            {HABIT_FREQUENCIES.map((freq) => (
               <option key={freq} value={freq}>
                 {freq}
               </option>

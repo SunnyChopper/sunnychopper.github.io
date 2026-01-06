@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { Task, UpdateTaskInput, Area, SubCategory, Priority, TaskStatus } from '../../types/growth-system';
 import Button from '../atoms/Button';
+import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES } from '../../constants/growth-system';
 
 interface TaskEditPanelProps {
   task: Task;
@@ -10,19 +11,6 @@ interface TaskEditPanelProps {
   onSave: (id: string, input: UpdateTaskInput) => void;
   isLoading?: boolean;
 }
-
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
-const STATUSES: TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold', 'Done', 'Cancelled'];
-
-const SUBCATEGORIES: Record<Area, SubCategory[]> = {
-  Health: ['Physical', 'Mental', 'Spiritual', 'Nutrition', 'Sleep', 'Exercise'],
-  Wealth: ['Income', 'Expenses', 'Investments', 'Debt', 'NetWorth'],
-  Love: ['Romantic', 'Family', 'Friends', 'Social'],
-  Happiness: ['Joy', 'Gratitude', 'Purpose', 'Peace'],
-  Operations: ['Productivity', 'Organization', 'Systems', 'Habits'],
-  DayJob: ['Career', 'Skills', 'Projects', 'Performance'],
-};
 
 export function TaskEditPanel({ task, isOpen, onClose, onSave, isLoading }: TaskEditPanelProps) {
   const [formData, setFormData] = useState<UpdateTaskInput>({
@@ -69,7 +57,7 @@ export function TaskEditPanel({ task, isOpen, onClose, onSave, isLoading }: Task
     onSave(task.id, input);
   };
 
-  const availableSubCategories = SUBCATEGORIES[formData.area || task.area];
+  const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area || task.area];
 
   if (!isOpen) return null;
 
@@ -194,7 +182,7 @@ export function TaskEditPanel({ task, isOpen, onClose, onSave, isLoading }: Task
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {STATUSES.map((status) => (
+                {TASK_STATUSES.map((status) => (
                   <option key={status} value={status}>
                     {status}
                   </option>

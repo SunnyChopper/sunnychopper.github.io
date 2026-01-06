@@ -3,6 +3,7 @@ import type { Task, TaskStatus, UpdateTaskInput } from '../../types/growth-syste
 import { AreaBadge } from '../atoms/AreaBadge';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
 import { Pencil, Plus } from 'lucide-react';
+import { TASK_STATUSES, TASK_STATUS_LABELS } from '../../constants/growth-system';
 
 interface TaskKanbanBoardProps {
   tasks: Task[];
@@ -10,17 +11,6 @@ interface TaskKanbanBoardProps {
   onTaskEdit: (task: Task) => void;
   onTaskCreate: (status: TaskStatus) => void;
 }
-
-const STATUSES: TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold', 'Done', 'Cancelled'];
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  NotStarted: 'Not Started',
-  InProgress: 'In Progress',
-  Blocked: 'Blocked',
-  OnHold: 'On Hold',
-  Done: 'Done',
-  Cancelled: 'Cancelled',
-};
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
   NotStarted: 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600',
@@ -67,7 +57,7 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
-      {STATUSES.map((status) => {
+      {TASK_STATUSES.map((status) => {
         const statusTasks = getTasksByStatus(status);
         const totalEffort = getTotalEffort(status);
 
@@ -82,7 +72,7 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
-                    {STATUS_LABELS[status]}
+                    {TASK_STATUS_LABELS[status]}
                   </h3>
                   <button
                     onClick={() => onTaskCreate(status)}

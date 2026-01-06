@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import type { Area, Priority, TaskStatus } from '../../types/growth-system';
 import Button from '../atoms/Button';
+import { AREAS, PRIORITIES, TASK_STATUSES, TASK_STATUS_LABELS } from '../../constants/growth-system';
 
 interface TaskFiltersProps {
   selectedArea?: Area;
@@ -11,19 +12,6 @@ interface TaskFiltersProps {
   onPriorityChange: (priority?: Priority) => void;
   onClearAll: () => void;
 }
-
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-const STATUSES: TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold', 'Done', 'Cancelled'];
-const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  NotStarted: 'Not Started',
-  InProgress: 'In Progress',
-  Blocked: 'Blocked',
-  OnHold: 'On Hold',
-  Done: 'Done',
-  Cancelled: 'Cancelled',
-};
 
 export function TaskFilters({
   selectedArea,
@@ -75,7 +63,7 @@ export function TaskFilters({
             Status
           </label>
           <div className="flex flex-wrap gap-2">
-            {STATUSES.map((status) => (
+            {TASK_STATUSES.map((status) => (
               <button
                 key={status}
                 onClick={() => onStatusChange(selectedStatus === status ? undefined : status)}
@@ -85,7 +73,7 @@ export function TaskFilters({
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
-                {STATUS_LABELS[status]}
+                {TASK_STATUS_LABELS[status]}
               </button>
             ))}
           </div>

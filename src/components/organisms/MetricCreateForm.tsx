@@ -1,17 +1,13 @@
 import { useState } from 'react';
 import type { CreateMetricInput, Area, SubCategory, MetricUnit, MetricDirection, MetricSource } from '../../types/growth-system';
 import Button from '../atoms/Button';
+import { AREAS, METRIC_DIRECTIONS, METRIC_SOURCES, METRIC_UNITS } from '../../constants/growth-system';
 
 interface MetricCreateFormProps {
   onSubmit: (input: CreateMetricInput) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
-
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-const UNITS: MetricUnit[] = ['count', 'hours', 'minutes', 'dollars', 'pounds', 'kg', 'percent', 'rating', 'custom'];
-const DIRECTIONS: MetricDirection[] = ['Higher', 'Lower', 'Target'];
-const SOURCES: MetricSource[] = ['Manual', 'App', 'Device'];
 
 export function MetricCreateForm({ onSubmit, onCancel, isLoading }: MetricCreateFormProps) {
   const [formData, setFormData] = useState<CreateMetricInput>({
@@ -101,7 +97,7 @@ export function MetricCreateForm({ onSubmit, onCancel, isLoading }: MetricCreate
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
-            {UNITS.map((unit) => (
+            {METRIC_UNITS.map((unit) => (
               <option key={unit} value={unit}>
                 {unit}
               </option>
@@ -136,7 +132,7 @@ export function MetricCreateForm({ onSubmit, onCancel, isLoading }: MetricCreate
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              {DIRECTIONS.map((direction) => (
+              {METRIC_DIRECTIONS.map((direction) => (
                 <option key={direction} value={direction}>
                   {direction}
                 </option>
@@ -171,7 +167,7 @@ export function MetricCreateForm({ onSubmit, onCancel, isLoading }: MetricCreate
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
-            {SOURCES.map((source) => (
+            {METRIC_SOURCES.map((source) => (
               <option key={source} value={source}>
                 {source}
               </option>
