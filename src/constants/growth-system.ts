@@ -38,6 +38,68 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   Cancelled: 'Cancelled',
 };
 
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  Planning: 'Planning',
+  Active: 'Active',
+  OnHold: 'On Hold',
+  Completed: 'Completed',
+  Cancelled: 'Cancelled',
+};
+
+export const GOAL_STATUS_LABELS: Record<GoalStatus, string> = {
+  Planning: 'Planning',
+  Active: 'Active',
+  OnTrack: 'On Track',
+  AtRisk: 'At Risk',
+  Achieved: 'Achieved',
+  Abandoned: 'Abandoned',
+};
+
+export const AREA_LABELS: Record<Area, string> = {
+  Health: 'Health',
+  Wealth: 'Wealth',
+  Love: 'Love',
+  Happiness: 'Happiness',
+  Operations: 'Operations',
+  DayJob: 'Day Job',
+};
+
+export const SUBCATEGORY_LABELS: Record<SubCategory, string> = {
+  // Health
+  Physical: 'Physical',
+  Mental: 'Mental',
+  Spiritual: 'Spiritual',
+  Nutrition: 'Nutrition',
+  Sleep: 'Sleep',
+  Exercise: 'Exercise',
+  // Wealth
+  Income: 'Income',
+  Expenses: 'Expenses',
+  Investments: 'Investments',
+  Debt: 'Debt',
+  NetWorth: 'Net Worth',
+  // Love
+  Romantic: 'Romantic',
+  Family: 'Family',
+  Friends: 'Friends',
+  Social: 'Social',
+  // Happiness
+  Joy: 'Joy',
+  Gratitude: 'Gratitude',
+  Purpose: 'Purpose',
+  Peace: 'Peace',
+  // Operations
+  Productivity: 'Productivity',
+  Organization: 'Organization',
+  Systems: 'Systems',
+  Habits: 'Habits',
+  // DayJob
+  Career: 'Career',
+  Skills: 'Skills',
+  Projects: 'Projects',
+  Performance: 'Performance',
+};
+
 export const GOAL_TIME_HORIZONS: readonly TimeHorizon[] = ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'];
 export const GOAL_STATUSES: readonly GoalStatus[] = ['Planning', 'Active', 'OnTrack', 'AtRisk', 'Achieved', 'Abandoned'];
 
