@@ -12,8 +12,10 @@ import { ProjectEditForm } from '../../components/organisms/ProjectEditForm';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { AreaBadge } from '../../components/atoms/AreaBadge';
+import { StatusBadge } from '../../components/atoms/StatusBadge';
 import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
 import { ProgressRing } from '../../components/atoms/ProgressRing';
+import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
 import { TaskListItem } from '../../components/molecules/TaskListItem';
 import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
 import { RelationshipPicker } from '../../components/organisms/RelationshipPicker';
@@ -256,18 +258,11 @@ export default function ProjectsPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <AreaBadge area={selectedProject.area} />
                   {selectedProject.subCategory && (
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {selectedProject.subCategory}
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      {SUBCATEGORY_LABELS[selectedProject.subCategory]}
                     </span>
                   )}
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    selectedProject.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                    selectedProject.status === 'Active' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                    selectedProject.status === 'OnHold' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
-                    'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}>
-                    {selectedProject.status}
-                  </span>
+                  <StatusBadge status={selectedProject.status} size="sm" />
                 </div>
                 {selectedProject.description && (
                   <p className="text-gray-700 dark:text-gray-300 mb-4">

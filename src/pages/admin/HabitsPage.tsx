@@ -12,6 +12,7 @@ import { EmptyState } from '../../components/molecules/EmptyState';
 import { AreaBadge } from '../../components/atoms/AreaBadge';
 import { AIHabitAssistPanel } from '../../components/molecules/AIHabitAssistPanel';
 import { llmConfig } from '../../lib/llm';
+import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
 
 type ViewMode = 'today' | 'all';
 
@@ -228,8 +229,8 @@ export default function HabitsPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <AreaBadge area={selectedHabit.area} />
                   {selectedHabit.subCategory && (
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {selectedHabit.subCategory}
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      {SUBCATEGORY_LABELS[selectedHabit.subCategory]}
                     </span>
                   )}
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${

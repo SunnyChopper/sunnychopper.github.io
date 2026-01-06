@@ -11,8 +11,10 @@ import { MetricEditForm } from '../../components/organisms/MetricEditForm';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { AreaBadge } from '../../components/atoms/AreaBadge';
+import { StatusBadge } from '../../components/atoms/StatusBadge';
 import { AIMetricAssistPanel } from '../../components/molecules/AIMetricAssistPanel';
 import { llmConfig } from '../../lib/llm';
+import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
 
 const STATUSES = ['Active', 'Paused', 'Archived'];
 
@@ -181,17 +183,11 @@ export default function MetricsPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <AreaBadge area={selectedMetric.area} />
                   {selectedMetric.subCategory && (
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {selectedMetric.subCategory}
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      {SUBCATEGORY_LABELS[selectedMetric.subCategory]}
                     </span>
                   )}
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    selectedMetric.status === 'Active' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                    selectedMetric.status === 'Paused' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
-                    'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}>
-                    {selectedMetric.status}
-                  </span>
+                  <StatusBadge status={selectedMetric.status} size="sm" />
                 </div>
                 {selectedMetric.description && (
                   <p className="text-gray-700 dark:text-gray-300 mb-4">

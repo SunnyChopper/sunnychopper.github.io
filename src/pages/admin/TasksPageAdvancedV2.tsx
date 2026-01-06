@@ -14,7 +14,7 @@ import DependencyGraph from '../../components/organisms/DependencyGraph';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
-import { AREAS, PRIORITIES, TASK_STATUSES } from '../../constants/growth-system';
+import { AREAS, PRIORITIES, TASK_STATUSES, AREA_LABELS, TASK_STATUS_LABELS } from '../../constants/growth-system';
 
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'graph';
 
@@ -397,7 +397,7 @@ export default function TasksPageAdvanced() {
               >
                 <option value="">All Areas</option>
                 {AREA_OPTIONS.map(area => (
-                  <option key={area} value={area}>{area}</option>
+                  <option key={area} value={area}>{AREA_LABELS[area]}</option>
                 ))}
               </select>
             </div>
@@ -412,7 +412,7 @@ export default function TasksPageAdvanced() {
               >
                 <option value="">All Statuses</option>
                 {STATUS_OPTIONS.map(status => (
-                  <option key={status} value={status}>{status}</option>
+                  <option key={status} value={status}>{TASK_STATUS_LABELS[status]}</option>
                 ))}
               </select>
             </div>

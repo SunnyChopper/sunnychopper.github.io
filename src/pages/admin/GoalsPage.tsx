@@ -11,13 +11,14 @@ import { GoalEditForm } from '../../components/organisms/GoalEditForm';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { AreaBadge } from '../../components/atoms/AreaBadge';
+import { StatusBadge } from '../../components/atoms/StatusBadge';
 import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
 import { ProgressRing } from '../../components/atoms/ProgressRing';
 import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
 import { RelationshipPicker } from '../../components/organisms/RelationshipPicker';
 import { AIGoalAssistPanel } from '../../components/molecules/AIGoalAssistPanel';
 import { llmConfig } from '../../lib/llm';
-import { GOAL_STATUSES } from '../../constants/growth-system';
+import { GOAL_STATUSES, SUBCATEGORY_LABELS } from '../../constants/growth-system';
 
 const STATUSES: GoalStatus[] = [...GOAL_STATUSES];
 // Keep UI grouping order from broad -> narrow.
@@ -225,22 +226,14 @@ export default function GoalsPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <AreaBadge area={selectedGoal.area} />
                   {selectedGoal.subCategory && (
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {selectedGoal.subCategory}
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      {SUBCATEGORY_LABELS[selectedGoal.subCategory]}
                     </span>
                   )}
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                     {selectedGoal.timeHorizon}
                   </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    selectedGoal.status === 'Achieved' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                    selectedGoal.status === 'OnTrack' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                    selectedGoal.status === 'Active' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400' :
-                    selectedGoal.status === 'AtRisk' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
-                    'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                  }`}>
-                    {selectedGoal.status}
-                  </span>
+                  <StatusBadge status={selectedGoal.status} size="sm" />
                 </div>
                 {selectedGoal.description && (
                   <p className="text-gray-700 dark:text-gray-300 mb-4">
