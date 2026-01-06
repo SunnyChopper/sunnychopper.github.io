@@ -1,4 +1,5 @@
 import type { TaskStatus, ProjectStatus, GoalStatus } from '../../types/growth-system';
+import { TASK_STATUS_LABELS, PROJECT_STATUS_LABELS, GOAL_STATUS_LABELS } from '../../constants/growth-system';
 
 interface StatusBadgeProps {
   status: TaskStatus | ProjectStatus | GoalStatus | string;
@@ -35,12 +36,26 @@ export function StatusBadge({ status, size = 'md', className = '' }: StatusBadge
   const isCompleted = status === 'Done' || status === 'Completed' || status === 'Achieved';
   const isCancelled = status === 'Cancelled' || status === 'Abandoned';
 
+  // Get the formatted label with proper spacing
+  const getLabel = (status: string): string => {
+    if (status in TASK_STATUS_LABELS) {
+      return TASK_STATUS_LABELS[status as TaskStatus];
+    }
+    if (status in PROJECT_STATUS_LABELS) {
+      return PROJECT_STATUS_LABELS[status as ProjectStatus];
+    }
+    if (status in GOAL_STATUS_LABELS) {
+      return GOAL_STATUS_LABELS[status as GoalStatus];
+    }
+    return status;
+  };
+
   return (
     <span
       className={`inline-flex items-center rounded-full font-medium ${colors.bg} ${colors.text} ${sizeClasses[size]} ${isCancelled ? 'line-through' : ''} ${className}`}
     >
       {isCompleted && <span className="mr-1">✓</span>}
-      {status}
+      {getLabel(status)}
     </span>
   );
 }

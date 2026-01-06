@@ -1,4 +1,5 @@
 import type { Area } from '../../types/growth-system';
+import { AREA_LABELS } from '../../constants/growth-system';
 
 interface AreaBadgeProps {
   area: Area;
@@ -23,12 +24,13 @@ const sizeClasses = {
 
 export function AreaBadge({ area, size = 'md', className = '' }: AreaBadgeProps) {
   const colors = areaColors[area];
+  const label = AREA_LABELS[area];
 
   return (
     <span
       className={`inline-flex items-center rounded-full font-medium ${colors.bg} ${colors.text} ${sizeClasses[size]} ${className}`}
     >
-      {area}
+      {label}
     </span>
   );
 }
