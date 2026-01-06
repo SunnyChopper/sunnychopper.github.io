@@ -3,6 +3,7 @@ import { CheckSquare, Calendar, TrendingUp, Target, FolderKanban, BookOpen } fro
 import { Link } from 'react-router-dom';
 import { AIInsightsWidget } from '../../components/organisms/AIInsightsWidget';
 import { DailyPlanningAssistant } from '../../components/organisms/DailyPlanningAssistant';
+import { ROUTES } from '../../routes';
 
 interface StatCardProps {
   title: string;
@@ -59,42 +60,42 @@ export default function DashboardPage() {
           title="Active Tasks"
           value={activeTasks.length}
           icon={<CheckSquare size={24} />}
-          link="/admin/tasks"
+          link={ROUTES.admin.tasks}
           description={`${tasks.length} total tasks`}
         />
         <StatCard
           title="Active Habits"
           value={activeHabits.length}
           icon={<Calendar size={24} />}
-          link="/admin/habits"
+          link={ROUTES.admin.habits}
           description={`${habits.length} total habits`}
         />
         <StatCard
           title="Metrics Tracked"
           value={metrics.length}
           icon={<TrendingUp size={24} />}
-          link="/admin/metrics"
+          link={ROUTES.admin.metrics}
           description="Key performance indicators"
         />
         <StatCard
           title="Active Goals"
           value={activeGoals.length}
           icon={<Target size={24} />}
-          link="/admin/goals"
+          link={ROUTES.admin.goals}
           description={`${goals.length} total goals`}
         />
         <StatCard
           title="Active Projects"
           value={activeProjects.length}
           icon={<FolderKanban size={24} />}
-          link="/admin/projects"
+          link={ROUTES.admin.projects}
           description={`${projects.length} total projects`}
         />
         <StatCard
           title="Journal Entries"
           value={entries.length}
           icon={<BookOpen size={24} />}
-          link="/admin/logbook"
+          link={ROUTES.admin.logbook}
           description="Daily reflections"
         />
       </div>

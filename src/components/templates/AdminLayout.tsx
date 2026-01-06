@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CommandPalette } from '../organisms/CommandPalette';
+import { ROUTES } from '../../routes';
 
 interface NavItem {
   name: string;
@@ -30,23 +31,23 @@ interface NavItem {
 }
 
 const navigation: NavItem[] = [
-  { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { name: 'Dashboard', href: ROUTES.admin.dashboard, icon: LayoutDashboard },
   {
     name: 'Growth System',
-    href: '/admin/growth-system',
+    href: ROUTES.admin.growthSystem,
     icon: Brain,
     children: [
-      { name: 'Tasks', href: '/admin/tasks', icon: CheckSquare },
-      { name: 'Habits', href: '/admin/habits', icon: Calendar },
-      { name: 'Metrics', href: '/admin/metrics', icon: TrendingUp },
-      { name: 'Goals', href: '/admin/goals', icon: Target },
-      { name: 'Projects', href: '/admin/projects', icon: FolderKanban },
-      { name: 'Logbook', href: '/admin/logbook', icon: BookOpen },
+      { name: 'Tasks', href: ROUTES.admin.tasks, icon: CheckSquare },
+      { name: 'Habits', href: ROUTES.admin.habits, icon: Calendar },
+      { name: 'Metrics', href: ROUTES.admin.metrics, icon: TrendingUp },
+      { name: 'Goals', href: ROUTES.admin.goals, icon: Target },
+      { name: 'Projects', href: ROUTES.admin.projects, icon: FolderKanban },
+      { name: 'Logbook', href: ROUTES.admin.logbook, icon: BookOpen },
     ],
   },
-  { name: 'Weekly Review', href: '/admin/weekly-review', icon: Calendar },
-  { name: 'Assistant', href: '/admin/assistant', icon: MessageCircle },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
+  { name: 'Weekly Review', href: ROUTES.admin.weeklyReview, icon: Calendar },
+  { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
+  { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
 ];
 
 export default function AdminLayout() {

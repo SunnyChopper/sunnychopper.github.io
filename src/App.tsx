@@ -23,6 +23,7 @@ import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
 import { useThemeInitializer } from './hooks/useTheme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import { ADMIN_CHILD_ROUTES, ROUTES } from './routes';
 
 function AppContent() {
   usePageTracking();
@@ -42,33 +43,33 @@ function AppContent() {
     <ErrorBoundary>
       <Routes>
       <Route element={<MainLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/products" element={<ProductsPage />} />
+        <Route path={ROUTES.home} element={<HomePage />} />
+        <Route path={ROUTES.products} element={<ProductsPage />} />
       </Route>
 
-      <Route path="/admin/login" element={<LoginPage />} />
+      <Route path={ROUTES.admin.login} element={<LoginPage />} />
 
       <Route
-        path="/admin"
+        path={ROUTES.admin.base}
         element={
           <ProtectedRoute>
             <AdminLayout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="growth-system" element={<GrowthSystemPage />} />
-        <Route path="tasks" element={<TasksPage />} />
-        <Route path="habits" element={<HabitsPage />} />
-        <Route path="metrics" element={<MetricsPage />} />
-        <Route path="goals" element={<GoalsPage />} />
-        <Route path="projects" element={<ProjectsPage />} />
-        <Route path="logbook" element={<LogbookPage />} />
-        <Route path="weekly-review" element={<WeeklyReviewPage />} />
-        <Route path="assistant" element={<ChatbotPage />} />
-        <Route path="components-demo" element={<ComponentsDemoPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route index element={<Navigate to={ROUTES.admin.dashboard} replace />} />
+        <Route path={ADMIN_CHILD_ROUTES.dashboard} element={<DashboardPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.growthSystem} element={<GrowthSystemPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.tasks} element={<TasksPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.habits} element={<HabitsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.metrics} element={<MetricsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.goals} element={<GoalsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.projects} element={<ProjectsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.logbook} element={<LogbookPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.weeklyReview} element={<WeeklyReviewPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.assistant} element={<ChatbotPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.componentsDemo} element={<ComponentsDemoPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.settings} element={<SettingsPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/atoms/Button';
+import { ROUTES } from '../../routes';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('test@example.com');
@@ -24,7 +25,7 @@ export default function LoginPage() {
       } else {
         await signIn(email, password);
       }
-      navigate('/admin/dashboard');
+      navigate(ROUTES.admin.dashboard);
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

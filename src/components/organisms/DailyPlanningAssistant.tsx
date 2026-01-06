@@ -4,6 +4,7 @@ import { useTasks, useHabits, useMetrics } from '../../hooks/useGrowthSystem';
 import type { Task, Habit, Metric } from '../../types/growth-system';
 import Button from '../atoms/Button';
 import { Link } from 'react-router-dom';
+import { ROUTES } from '../../routes';
 
 interface DailyPlan {
   topTasks: Task[];
@@ -146,7 +147,7 @@ export function DailyPlanningAssistant() {
               <CheckSquare className="w-4 h-4" />
               Top 3 Tasks for Today
             </h3>
-            <Link to="/admin/tasks" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <Link to={ROUTES.admin.tasks} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
               View All
             </Link>
           </div>
@@ -193,7 +194,7 @@ export function DailyPlanningAssistant() {
                   <Repeat className="w-4 h-4" />
                   Habits to Complete
                 </h3>
-                <Link to="/admin/habits" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <Link to={ROUTES.admin.habits} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                   View All
                 </Link>
               </div>
@@ -225,7 +226,7 @@ export function DailyPlanningAssistant() {
                   <TrendingUp className="w-4 h-4" />
                   Metrics to Log
                 </h3>
-                <Link to="/admin/metrics" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <Link to={ROUTES.admin.metrics} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                   View All
                 </Link>
               </div>

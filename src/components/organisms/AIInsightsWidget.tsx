@@ -3,6 +3,7 @@ import { Sparkles, TrendingUp, AlertTriangle, Target, Zap, X, RefreshCw } from '
 import { llmConfig } from '../../lib/llm';
 import { useTasks, useHabits, useMetrics, useGoals, useProjects } from '../../hooks/useGrowthSystem';
 import Button from '../atoms/Button';
+import { ROUTES } from '../../routes';
 
 interface Insight {
   id: string;
@@ -45,7 +46,7 @@ export function AIInsightsWidget() {
         description: 'Review dependencies and remove blockers to keep momentum',
         action: {
           label: 'View Tasks',
-          link: '/admin/tasks'
+          link: ROUTES.admin.tasks
         },
         priority: 'high'
       });
@@ -60,7 +61,7 @@ export function AIInsightsWidget() {
         description: 'Review your goals and ensure they have clear success criteria',
         action: {
           label: 'Review Goals',
-          link: '/admin/goals'
+          link: ROUTES.admin.goals
         },
         priority: 'medium'
       });
@@ -77,7 +78,7 @@ export function AIInsightsWidget() {
         description: 'Build consistency by maintaining your habit streaks',
         action: {
           label: 'Log Habits',
-          link: '/admin/habits'
+          link: ROUTES.admin.habits
         },
         priority: 'high'
       });
@@ -95,7 +96,7 @@ export function AIInsightsWidget() {
         description: 'Focus on completing critical tasks first',
         action: {
           label: 'View Tasks',
-          link: '/admin/tasks'
+          link: ROUTES.admin.tasks
         },
         priority: 'high'
       });
@@ -110,7 +111,7 @@ export function AIInsightsWidget() {
         description: 'Review and adjust strategy to get back on track',
         action: {
           label: 'Review Goals',
-          link: '/admin/goals'
+          link: ROUTES.admin.goals
         },
         priority: 'high'
       });
@@ -125,7 +126,7 @@ export function AIInsightsWidget() {
         description: 'Regular tracking ensures accurate progress monitoring',
         action: {
           label: 'Log Metrics',
-          link: '/admin/metrics'
+          link: ROUTES.admin.metrics
         },
         priority: 'medium'
       });

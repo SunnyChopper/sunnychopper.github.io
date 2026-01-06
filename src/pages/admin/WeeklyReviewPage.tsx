@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, CheckSquare, Target, Repeat, ArrowRight, Sparkles } from 'lucide-react';
 import { useTasks, useHabits, useMetrics, useGoals, useLogbook } from '../../hooks/useGrowthSystem';
 import Button from '../../components/atoms/Button';
+import { ROUTES } from '../../routes';
 
 interface WeeklyStats {
   tasksCompleted: number;
@@ -346,7 +347,7 @@ export default function WeeklyReviewPage() {
             <Button variant="secondary" onClick={handleRestart}>
               Start Another Review
             </Button>
-            <Button variant="primary" onClick={() => window.location.href = '/admin/dashboard'}>
+            <Button variant="primary" onClick={() => window.location.href = ROUTES.admin.dashboard}>
               Back to Dashboard
             </Button>
           </div>

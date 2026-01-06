@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Search, Command, CheckSquare, Target, FolderKanban, TrendingUp, Repeat, BookOpen, Calendar, Settings, Sparkles, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTasks, useGoals, useProjects, useMetrics, useHabits, useLogbook } from '../../hooks/useGrowthSystem';
+import { ROUTES } from '../../routes';
 
 interface CommandItem {
   id: string;
@@ -39,7 +40,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'View overview and insights',
         icon: <Command size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/dashboard'),
+        action: () => navigate(ROUTES.admin.dashboard),
         keywords: ['dashboard', 'home', 'overview']
       },
       {
@@ -48,7 +49,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Manage your tasks',
         icon: <CheckSquare size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/tasks'),
+        action: () => navigate(ROUTES.admin.tasks),
         keywords: ['tasks', 'todos', 'work']
       },
       {
@@ -57,7 +58,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Track your goals',
         icon: <Target size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/goals'),
+        action: () => navigate(ROUTES.admin.goals),
         keywords: ['goals', 'objectives', 'targets']
       },
       {
@@ -66,7 +67,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Manage projects',
         icon: <FolderKanban size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/projects'),
+        action: () => navigate(ROUTES.admin.projects),
         keywords: ['projects', 'work']
       },
       {
@@ -75,7 +76,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Track metrics',
         icon: <TrendingUp size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/metrics'),
+        action: () => navigate(ROUTES.admin.metrics),
         keywords: ['metrics', 'tracking', 'kpi', 'data']
       },
       {
@@ -84,7 +85,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Build habits',
         icon: <Repeat size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/habits'),
+        action: () => navigate(ROUTES.admin.habits),
         keywords: ['habits', 'routine', 'streak']
       },
       {
@@ -93,7 +94,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Daily journal',
         icon: <BookOpen size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/logbook'),
+        action: () => navigate(ROUTES.admin.logbook),
         keywords: ['logbook', 'journal', 'diary', 'reflect']
       },
       {
@@ -102,7 +103,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Review and plan',
         icon: <Calendar size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/weekly-review'),
+        action: () => navigate(ROUTES.admin.weeklyReview),
         keywords: ['weekly', 'review', 'planning', 'reflection']
       },
       {
@@ -111,7 +112,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Configure AI and preferences',
         icon: <Settings size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/settings'),
+        action: () => navigate(ROUTES.admin.settings),
         keywords: ['settings', 'config', 'ai', 'preferences']
       },
       {
@@ -120,7 +121,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         subtitle: 'Chat with AI',
         icon: <Sparkles size={18} />,
         type: 'navigation',
-        action: () => navigate('/admin/assistant'),
+        action: () => navigate(ROUTES.admin.assistant),
         keywords: ['ai', 'assistant', 'chat', 'help']
       }
     ];
@@ -133,7 +134,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <CheckSquare size={18} />,
         type: 'entity',
         action: () => {
-          navigate('/admin/tasks');
+          navigate(ROUTES.admin.tasks);
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('selectTask', { detail: task.id }));
           }, 100);
@@ -150,7 +151,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <Target size={18} />,
         type: 'entity',
         action: () => {
-          navigate('/admin/goals');
+          navigate(ROUTES.admin.goals);
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('selectGoal', { detail: goal.id }));
           }, 100);
@@ -167,7 +168,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <FolderKanban size={18} />,
         type: 'entity',
         action: () => {
-          navigate('/admin/projects');
+          navigate(ROUTES.admin.projects);
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('selectProject', { detail: project.id }));
           }, 100);
@@ -184,7 +185,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <TrendingUp size={18} />,
         type: 'entity',
         action: () => {
-          navigate('/admin/metrics');
+          navigate(ROUTES.admin.metrics);
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('selectMetric', { detail: metric.id }));
           }, 100);
@@ -201,7 +202,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <Repeat size={18} />,
         type: 'entity',
         action: () => {
-          navigate('/admin/habits');
+          navigate(ROUTES.admin.habits);
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('selectHabit', { detail: habit.id }));
           }, 100);
@@ -218,7 +219,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <BookOpen size={18} />,
         type: 'entity',
         action: () => {
-          navigate('/admin/logbook');
+          navigate(ROUTES.admin.logbook);
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('selectEntry', { detail: entry.id }));
           }, 100);
