@@ -40,6 +40,8 @@ import CourseDetailPage from './pages/admin/CourseDetailPage';
 import SkillTreePage from './pages/admin/SkillTreePage';
 import StudySessionPage from './pages/admin/StudySessionPage';
 import StudyStatisticsPage from './pages/admin/StudyStatisticsPage';
+import FlashcardsPage from './pages/admin/FlashcardsPage';
+import ConceptColliderPage from './pages/admin/ConceptColliderPage';
 
 function AppContent() {
   usePageTracking();
@@ -107,6 +109,8 @@ function AppContent() {
         <Route path="knowledge-vault/courses/:courseId" element={<CourseDetailPage />} />
         <Route path="knowledge-vault/courses/:courseId/:lessonId" element={<CourseDetailPage />} />
         <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultSkillTree} element={<SkillTreePage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultFlashcards} element={<FlashcardsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultCollider} element={<ConceptColliderPage />} />
         <Route path="knowledge-vault/study" element={<StudySessionPage />} />
         <Route path="knowledge-vault/statistics" element={<StudyStatisticsPage />} />
       </Route>
