@@ -44,6 +44,8 @@ export interface Task {
   notes: string | null;
   isRecurring: boolean;
   recurrenceRule: RecurrenceRule | null;
+  pointValue: number | null;
+  pointsAwarded: boolean | null;
   userId: string;
   createdAt: string;
   updatedAt: string;

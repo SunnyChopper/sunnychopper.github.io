@@ -116,6 +116,8 @@ export const tasksService = {
       notes: input.notes || null,
       isRecurring: input.isRecurring || false,
       recurrenceRule: input.recurrenceRule || null,
+      pointValue: null,
+      pointsAwarded: null,
       userId: USER_ID,
       createdAt: now,
       updatedAt: now,
