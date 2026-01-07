@@ -40,8 +40,22 @@
     transition: background-color 500ms ease-in-out;
   }
 
+  .leisure-mode body {
+    @apply bg-stone-50 dark:bg-slate-900;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif;
+  }
+
+  .leisure-mode h1,
+  .leisure-mode h2,
+  .leisure-mode h3,
+  .leisure-mode h4,
+  .leisure-mode h5,
+  .leisure-mode h6 {
+    font-weight: 300;
+    letter-spacing: 0.02em;
   }
 
   * {

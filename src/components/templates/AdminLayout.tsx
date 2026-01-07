@@ -21,6 +21,7 @@ import {
   Command,
   Film,
   Star,
+  Coffee,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CommandPalette } from '../organisms/CommandPalette';
@@ -36,24 +37,31 @@ interface NavItem {
   hideInWork?: boolean;
 }
 
-const navigation: NavItem[] = [
+const workNavigation: NavItem[] = [
   { name: 'Dashboard', href: ROUTES.admin.dashboard, icon: LayoutDashboard },
   {
     name: 'Growth System',
     href: ROUTES.admin.growthSystem,
     icon: Brain,
     children: [
-      { name: 'Tasks', href: ROUTES.admin.tasks, icon: CheckSquare, hideInLeisure: true },
+      { name: 'Tasks', href: ROUTES.admin.tasks, icon: CheckSquare },
       { name: 'Habits', href: ROUTES.admin.habits, icon: Calendar },
-      { name: 'Metrics', href: ROUTES.admin.metrics, icon: TrendingUp, hideInLeisure: true },
-      { name: 'Goals', href: ROUTES.admin.goals, icon: Target, hideInLeisure: true },
-      { name: 'Projects', href: ROUTES.admin.projects, icon: FolderKanban, hideInLeisure: true },
+      { name: 'Metrics', href: ROUTES.admin.metrics, icon: TrendingUp },
+      { name: 'Goals', href: ROUTES.admin.goals, icon: Target },
+      { name: 'Projects', href: ROUTES.admin.projects, icon: FolderKanban },
       { name: 'Logbook', href: ROUTES.admin.logbook, icon: BookOpen },
     ],
   },
-  { name: 'Media Backlog', href: ROUTES.admin.mediaBacklog, icon: Film, hideInWork: true },
-  { name: 'Hobby Quests', href: ROUTES.admin.hobbyQuests, icon: Star, hideInWork: true },
   { name: 'Weekly Review', href: ROUTES.admin.weeklyReview, icon: Calendar },
+  { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
+  { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
+];
+
+const leisureNavigation: NavItem[] = [
+  { name: 'Zen Dashboard', href: ROUTES.admin.zenDashboard, icon: Coffee },
+  { name: 'Logbook', href: ROUTES.admin.logbook, icon: BookOpen },
+  { name: 'Media Backlog', href: ROUTES.admin.mediaBacklog, icon: Film },
+  { name: 'Hobby Quests', href: ROUTES.admin.hobbyQuests, icon: Star },
   { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
   { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
 ];
@@ -66,11 +74,7 @@ export default function AdminLayout() {
   const [expandedItems, setExpandedItems] = useState<string[]>(['Growth System']);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
-  const filteredNavigation = navigation.filter(item => {
-    if (isLeisureMode && item.hideInLeisure) return false;
-    if (!isLeisureMode && item.hideInWork) return false;
-    return true;
-  });
+  const navigation = isLeisureMode ? leisureNavigation : workNavigation;
 
   const handleSignOut = async () => {
     await signOut();
@@ -148,16 +152,11 @@ export default function AdminLayout() {
           </div>
 
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {filteredNavigation.map((item) => {
+            {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = isItemActive(item);
               const isExpanded = expandedItems.includes(item.name);
-              const filteredChildren = item.children?.filter(child => {
-                if (isLeisureMode && child.hideInLeisure) return false;
-                if (!isLeisureMode && child.hideInWork) return false;
-                return true;
-              });
-              const hasChildren = filteredChildren && filteredChildren.length > 0;
+              const hasChildren = item.children && item.children.length > 0;
 
               return (
                 <div key={item.name}>
@@ -175,7 +174,7 @@ export default function AdminLayout() {
                         <span className="flex-1 text-left">{item.name}</span>
                         {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                       </button>
-                      {isExpanded && filteredChildren && (
+                      {isExpanded && item.children && (
                         <div className="ml-4 mt-1 space-y-1">
                           <Link
                             to={item.href}
@@ -189,7 +188,7 @@ export default function AdminLayout() {
                             <Info size={18} />
                             <span>Overview</span>
                           </Link>
-                          {filteredChildren.map((child) => {
+                          {item.children.map((child) => {
                             const ChildIcon = child.icon;
                             return (
                               <Link
