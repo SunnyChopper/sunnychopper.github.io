@@ -24,6 +24,11 @@ import {
   Coffee,
   Store,
   Palette,
+  Library,
+  GraduationCap,
+  Network,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CommandPalette } from '../organisms/CommandPalette';
@@ -55,6 +60,18 @@ const workNavigation: NavItem[] = [
       { name: 'Logbook', href: ROUTES.admin.logbook, icon: BookOpen },
     ],
   },
+  {
+    name: 'Knowledge Vault',
+    href: ROUTES.admin.knowledgeVault,
+    icon: Library,
+    children: [
+      { name: 'Library', href: ROUTES.admin.knowledgeVaultLibrary, icon: BookOpen },
+      { name: 'Courses', href: ROUTES.admin.knowledgeVaultCourses, icon: GraduationCap },
+      { name: 'Skill Tree', href: ROUTES.admin.knowledgeVaultSkillTree, icon: Network },
+      { name: 'Flashcards', href: ROUTES.admin.knowledgeVaultFlashcards, icon: Layers },
+      { name: 'Concept Collider', href: ROUTES.admin.knowledgeVaultCollider, icon: Sparkles },
+    ],
+  },
   { name: 'Weekly Review', href: ROUTES.admin.weeklyReview, icon: Calendar },
   { name: 'Reward Studio', href: ROUTES.admin.rewardStudio, icon: Palette },
   { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
@@ -76,7 +93,7 @@ export default function AdminLayout() {
   const { user, signOut } = useAuth();
   const { isLeisureMode } = useMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Growth System']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Growth System', 'Knowledge Vault']);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   const navigation = isLeisureMode ? leisureNavigation : workNavigation;

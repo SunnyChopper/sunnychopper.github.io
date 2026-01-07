@@ -30,8 +30,10 @@ import { usePageTracking } from './hooks/usePageTracking';
 import { useThemeInitializer } from './hooks/useTheme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import { ModeProvider } from './contexts/ModeContext';
+import { KnowledgeVaultProvider } from './contexts/KnowledgeVaultContext';
 import DashboardRedirect from './components/routing/DashboardRedirect';
 import { ADMIN_CHILD_ROUTES, ROUTES } from './routes';
+import KnowledgeVaultPage from './pages/admin/KnowledgeVaultPage';
 
 function AppContent() {
   usePageTracking();
@@ -92,6 +94,8 @@ function AppContent() {
         <Route path={ADMIN_CHILD_ROUTES.hobbyQuests} element={<HobbyQuestsPage />} />
         <Route path={ADMIN_CHILD_ROUTES.rewardsStore} element={<RewardsStorePage />} />
         <Route path={ADMIN_CHILD_ROUTES.rewardStudio} element={<RewardStudioPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVault} element={<KnowledgeVaultPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultLibrary} element={<KnowledgeVaultPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
@@ -113,9 +117,11 @@ function App() {
     <>
       <Loader isLoading={isLoading} />
       <ModeProvider>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <KnowledgeVaultProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </KnowledgeVaultProvider>
       </ModeProvider>
     </>
   );
