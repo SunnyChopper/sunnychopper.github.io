@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  ArrowLeft,
-  BookOpen,
-  Clock,
-  CheckCircle2,
-  Circle,
-  ChevronRight,
-  Sparkles,
-  Play,
-} from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, CircleCheck as CheckCircle2, Circle, ChevronRight, Sparkles, Play } from 'lucide-react';
 import { coursesService, vaultItemsService, aiCourseGeneratorService } from '../../services/knowledge-vault';
 import type { CourseWithDetails } from '../../services/knowledge-vault/courses.service';
 import type { CourseLesson } from '../../types/knowledge-vault';
