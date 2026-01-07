@@ -21,6 +21,7 @@ import type {
 
 interface KnowledgeVaultContextType {
   vaultItems: VaultItem[];
+  flashcards: Flashcard[];
   courses: Course[];
   loading: boolean;
   error: string | null;
@@ -362,8 +363,11 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
     }
   }, []);
 
+  const flashcards = vaultItems.filter((item): item is Flashcard => item.type === 'flashcard');
+
   const value: KnowledgeVaultContextType = {
     vaultItems,
+    flashcards,
     courses,
     loading,
     error,

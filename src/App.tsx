@@ -38,6 +38,8 @@ import CoursesPage from './pages/admin/CoursesPage';
 import CourseGeneratorPage from './pages/admin/CourseGeneratorPage';
 import CourseDetailPage from './pages/admin/CourseDetailPage';
 import SkillTreePage from './pages/admin/SkillTreePage';
+import StudySessionPage from './pages/admin/StudySessionPage';
+import StudyStatisticsPage from './pages/admin/StudyStatisticsPage';
 
 function AppContent() {
   usePageTracking();
@@ -105,6 +107,8 @@ function AppContent() {
         <Route path="knowledge-vault/courses/:courseId" element={<CourseDetailPage />} />
         <Route path="knowledge-vault/courses/:courseId/:lessonId" element={<CourseDetailPage />} />
         <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultSkillTree} element={<SkillTreePage />} />
+        <Route path="knowledge-vault/study" element={<StudySessionPage />} />
+        <Route path="knowledge-vault/statistics" element={<StudyStatisticsPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

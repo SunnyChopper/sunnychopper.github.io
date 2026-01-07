@@ -159,6 +159,10 @@ export interface UpdateFlashcardInput {
   area?: Area;
   status?: VaultItemStatus;
   sourceItemId?: string;
+  nextReviewDate?: string;
+  interval?: number;
+  easeFactor?: number;
+  repetitions?: number;
 }
 
 export interface CreateCourseInput {
