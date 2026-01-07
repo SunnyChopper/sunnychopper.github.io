@@ -1,5 +1,6 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useMode } from '../../contexts/ModeContext';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -18,9 +19,13 @@ import {
   Info,
   MessageCircle,
   Command,
+  Film,
+  Star,
+  Coffee,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CommandPalette } from '../organisms/CommandPalette';
+import LeisureModeToggle from '../atoms/LeisureModeToggle';
 import { ROUTES } from '../../routes';
 
 interface NavItem {
@@ -28,9 +33,11 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ size?: number }>;
   children?: NavItem[];
+  hideInLeisure?: boolean;
+  hideInWork?: boolean;
 }
 
-const navigation: NavItem[] = [
+const workNavigation: NavItem[] = [
   { name: 'Dashboard', href: ROUTES.admin.dashboard, icon: LayoutDashboard },
   {
     name: 'Growth System',
@@ -50,12 +57,24 @@ const navigation: NavItem[] = [
   { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
 ];
 
+const leisureNavigation: NavItem[] = [
+  { name: 'Zen Dashboard', href: ROUTES.admin.zenDashboard, icon: Coffee },
+  { name: 'Logbook', href: ROUTES.admin.logbook, icon: BookOpen },
+  { name: 'Media Backlog', href: ROUTES.admin.mediaBacklog, icon: Film },
+  { name: 'Hobby Quests', href: ROUTES.admin.hobbyQuests, icon: Star },
+  { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
+  { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
+];
+
 export default function AdminLayout() {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { isLeisureMode } = useMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>(['Growth System']);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  const navigation = isLeisureMode ? leisureNavigation : workNavigation;
 
   const handleSignOut = async () => {
     await signOut();
@@ -147,7 +166,7 @@ export default function AdminLayout() {
                         onClick={() => toggleExpanded(item.name)}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                           isActive
-                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium'
+                            ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -162,7 +181,7 @@ export default function AdminLayout() {
                             onClick={() => setSidebarOpen(false)}
                             className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
                               location.pathname === item.href
-                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium'
+                                ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
                                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                             }`}
                           >
@@ -178,7 +197,7 @@ export default function AdminLayout() {
                                 onClick={() => setSidebarOpen(false)}
                                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
                                   location.pathname === child.href
-                                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium'
+                                    ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
                               >
@@ -196,7 +215,7 @@ export default function AdminLayout() {
                       onClick={() => setSidebarOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                         isActive
-                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium'
+                          ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
@@ -208,6 +227,8 @@ export default function AdminLayout() {
               );
             })}
           </nav>
+
+          <LeisureModeToggle />
 
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <button

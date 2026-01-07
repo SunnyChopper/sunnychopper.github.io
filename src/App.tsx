@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import MainLayout from './components/templates/MainLayout';
 import AdminLayout from './components/templates/AdminLayout';
 import HomePage from './pages/HomePage';
@@ -7,6 +7,7 @@ import ProductsPage from './pages/ProductsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './pages/admin/LoginPage';
 import DashboardPage from './pages/admin/DashboardPage';
+import ZenDashboardPage from './pages/admin/ZenDashboardPage';
 import FocusModePage from './pages/admin/FocusModePage';
 import SettingsPage from './pages/admin/SettingsPage';
 import GrowthSystemPage from './pages/admin/GrowthSystemPage';
@@ -19,11 +20,15 @@ import MetricsPage from './pages/admin/MetricsPage';
 import HabitsPage from './pages/admin/HabitsPage';
 import LogbookPage from './pages/admin/LogbookPage';
 import WeeklyReviewPage from './pages/admin/WeeklyReviewPage';
+import MediaBacklogPage from './pages/admin/MediaBacklogPage';
+import HobbyQuestsPage from './pages/admin/HobbyQuestsPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
 import { useThemeInitializer } from './hooks/useTheme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import { ModeProvider } from './contexts/ModeContext';
+import DashboardRedirect from './components/routing/DashboardRedirect';
 import { ADMIN_CHILD_ROUTES, ROUTES } from './routes';
 
 function AppContent() {
@@ -67,8 +72,9 @@ function AppContent() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to={ROUTES.admin.dashboard} replace />} />
+        <Route index element={<DashboardRedirect />} />
         <Route path={ADMIN_CHILD_ROUTES.dashboard} element={<DashboardPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.zenDashboard} element={<ZenDashboardPage />} />
         <Route path={ADMIN_CHILD_ROUTES.growthSystem} element={<GrowthSystemPage />} />
         <Route path={ADMIN_CHILD_ROUTES.tasks} element={<TasksPage />} />
         <Route path={ADMIN_CHILD_ROUTES.habits} element={<HabitsPage />} />
@@ -80,6 +86,8 @@ function AppContent() {
         <Route path={ADMIN_CHILD_ROUTES.assistant} element={<ChatbotPage />} />
         <Route path={ADMIN_CHILD_ROUTES.componentsDemo} element={<ComponentsDemoPage />} />
         <Route path={ADMIN_CHILD_ROUTES.settings} element={<SettingsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.mediaBacklog} element={<MediaBacklogPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.hobbyQuests} element={<HobbyQuestsPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
@@ -100,9 +108,11 @@ function App() {
   return (
     <>
       <Loader isLoading={isLoading} />
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <ModeProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </ModeProvider>
     </>
   );
 }
