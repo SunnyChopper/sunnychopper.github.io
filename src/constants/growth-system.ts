@@ -123,4 +123,16 @@ export const METRIC_DIRECTIONS: readonly MetricDirection[] = ['Higher', 'Lower',
 export const METRIC_SOURCES: readonly MetricSource[] = ['Manual', 'App', 'Device'];
 export const METRIC_STATUSES: readonly MetricStatus[] = ['Active', 'Paused', 'Archived'];
 
+export function getAreaColor(area: Area): string {
+  const colors: Record<Area, string> = {
+    Health: '#10b981',
+    Wealth: '#f59e0b',
+    Love: '#ec4899',
+    Happiness: '#f97316',
+    Operations: '#6b7280',
+    DayJob: '#3b82f6',
+  };
+  return colors[area];
+}
+
 
