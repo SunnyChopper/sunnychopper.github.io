@@ -1,0 +1,157 @@
+---
+description: "Standards for organism-level components in the atomic design system."
+globs: "src/components/organisms/**/*.tsx"
+alwaysApply: false
+---
+
+# Atomic Design: Organisms
+
+Organisms are complex UI sections composed of molecules and atoms.
+
+## What Qualifies as an Organism
+
+- Distinct section of UI
+- Combines multiple molecules/atoms
+- May contain local state and logic
+- Self-contained functionality
+- Examples: Header, Form, DataTable, Sidebar, Dashboard section
+
+## Organism Requirements
+
+1. **Complete functionality** - works as a standalone unit
+2. **Props for data** - receive data, don't fetch it (usually)
+3. **Emit events** - notify parent of user actions
+4. **Loading/error states** - handle async gracefully
+5. **Accessible** - proper structure and navigation
+
+## Standard Organism Structure
+
+```tsx
+import { useState, useMemo } from 'react';
+import TaskListItem from '../molecules/TaskListItem';
+import FilterPanel from '../molecules/FilterPanel';
+import EmptyState from '../molecules/EmptyState';
+import Button from '../atoms/Button';
+import type { Task, Status, Area } from '../../types/growth-system';
+
+interface TaskListProps {
+  tasks: Task[];
+  isLoading?: boolean;
+  error?: Error | null;
+  onTaskSelect?: (task: Task) => void;
+  onTaskCreate?: () => void;
+  onTaskStatusChange?: (taskId: string, status: Status) => void;
+}
+
+export default function TaskList({
+  tasks,
+  isLoading = false,
+  error = null,
+  onTaskSelect,
+  onTaskCreate,
+  onTaskStatusChange,
+}: TaskListProps) {
+  const [filters, setFilters] = useState<{
+    status?: Status;
+    area?: Area;
+    search?: string;
+  }>({});
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (filters.status && task.status !== filters.status) return false;
+      if (filters.area && task.area !== filters.area) return false;
+      if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
+      return true;
+    });
+  }, [tasks, filters]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
+        <p className="text-red-600 dark:text-red-400">Failed to load tasks</p>
+        <Button variant="ghost" className="mt-2">Retry</Button>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (filteredTasks.length === 0) {
+    return (
+      <EmptyState
+        title="No tasks found"
+        description="Create your first task to get started"
+        action={<Button onClick={onTaskCreate}>Create Task</Button>}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <FilterPanel
+          filters={filters}
+          onChange={setFilters}
+        />
+        <Button onClick={onTaskCreate}>New Task</Button>
+      </div>
+
+      <div className="space-y-2">
+        {filteredTasks.map(task => (
+          <TaskListItem
+            key={task.id}
+            task={task}
+            onSelect={onTaskSelect}
+            onStatusChange={onTaskStatusChange}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Organisms in This Codebase
+
+- `Header` / `Footer` - app shell
+- `TaskEditPanel` - task editing interface
+- `GoalCreateForm` / `GoalEditForm` - goal management
+- `StudyDashboard` - flashcard study interface
+- `CommandPalette` - global search/actions
+- `ForceDirectedGraph` - visualization
+- `ConceptSynthesisModal` - AI synthesis UI
+
+## State Management in Organisms
+
+```tsx
+// Local UI state is OK
+const [isExpanded, setIsExpanded] = useState(false);
+const [selectedId, setSelectedId] = useState<string | null>(null);
+
+// Filter/sort state is OK
+const [filters, setFilters] = useState({});
+const [sortBy, setSortBy] = useState<SortKey>('createdAt');
+
+// Data state should come from props or hooks
+const { data, isLoading } = useQuery(...); // From parent or hook
+```
+
+## Do Not
+
+- Make organisms too large (>300 lines - split it)
+- Skip loading/error/empty states
+- Hardcode data fetching logic (prefer hooks)
+- Forget keyboard navigation
+- Mix unrelated functionality in one organism

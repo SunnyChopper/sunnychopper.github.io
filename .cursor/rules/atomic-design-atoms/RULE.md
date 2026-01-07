@@ -1,0 +1,115 @@
+---
+description: "Standards for atom-level components in the atomic design system."
+globs: "src/components/atoms/**/*.tsx"
+alwaysApply: false
+---
+
+# Atomic Design: Atoms
+
+Atoms are the smallest, most fundamental UI building blocks.
+
+## What Qualifies as an Atom
+
+- Single-purpose UI elements
+- No business logic
+- Highly reusable across the app
+- Examples: Button, Badge, Input, Icon, Avatar, Spinner
+
+## Atom Requirements
+
+1. **Zero business logic** - only presentational
+2. **Fully controlled** - behavior via props only
+3. **Self-contained styling** - no external dependencies
+4. **Comprehensive variants** - cover all use cases via props
+5. **Accessible by default** - proper ARIA, roles, labels
+
+## Standard Atom Structure
+
+```tsx
+import { forwardRef } from 'react';
+import { cn } from '../../lib/utils';
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  isLoading?: boolean;
+}
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({
+    variant = 'primary',
+    size = 'md',
+    isLoading = false,
+    disabled,
+    className,
+    children,
+    ...props
+  }, ref) => {
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || isLoading}
+        className={cn(
+          // Base styles
+          'inline-flex items-center justify-center font-medium rounded-lg transition',
+          // Size variants
+          size === 'sm' && 'px-3 py-1.5 text-sm',
+          size === 'md' && 'px-4 py-2 text-sm',
+          size === 'lg' && 'px-6 py-3 text-base',
+          // Color variants
+          variant === 'primary' && 'bg-blue-600 text-white hover:bg-blue-700',
+          variant === 'secondary' && 'bg-gray-100 text-gray-900 hover:bg-gray-200',
+          variant === 'ghost' && 'text-gray-700 hover:bg-gray-100',
+          variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700',
+          // Disabled state
+          (disabled || isLoading) && 'opacity-50 cursor-not-allowed',
+          className
+        )}
+        {...props}
+      >
+        {isLoading && <Spinner className="mr-2" />}
+        {children}
+      </button>
+    );
+  }
+);
+
+Button.displayName = 'Button';
+export default Button;
+```
+
+## Atoms in This Codebase
+
+- `Button` - action triggers
+- `StatusBadge` - status indicators
+- `AreaBadge` - category labels
+- `PriorityIndicator` - priority visualization
+- `ProgressRing` - circular progress
+- `ThemeToggle` - theme switching
+- `DateDisplay` - formatted dates
+
+## Atom Prop Patterns
+
+```tsx
+// Variants for visual styles
+variant?: 'primary' | 'secondary' | 'ghost';
+
+// Sizes for scale
+size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
+// States
+isLoading?: boolean;
+isDisabled?: boolean;
+isSelected?: boolean;
+
+// Always allow className override
+className?: string;
+```
+
+## Do Not
+
+- Include data fetching in atoms
+- Hard-code content (pass via props/children)
+- Create atoms with more than 3-4 prop categories
+- Skip dark mode support
+- Forget to forward refs for interactive elements

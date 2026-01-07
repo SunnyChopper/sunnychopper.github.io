@@ -1,0 +1,192 @@
+---
+description: "USE WHEN organizing files, folders, and module structure in React projects."
+globs: ""
+alwaysApply: false
+---
+
+# File Organization
+
+Standards for organizing React project files and folders.
+
+## Directory Structure
+
+```
+src/
+  components/
+    atoms/           # Basic UI elements (Button, Input, Badge)
+    molecules/       # Combinations of atoms (SearchInput, UserCard)
+    organisms/       # Complex components (Header, TaskList, Form)
+    templates/       # Page layouts (MainLayout, AdminLayout)
+    shared/          # Cross-cutting components (ErrorBoundary)
+
+  pages/             # Route-level components
+    HomePage.tsx
+    admin/
+      DashboardPage.tsx
+      SettingsPage.tsx
+
+  hooks/             # Custom React hooks
+    useDebounce.ts
+    useLocalStorage.ts
+
+  contexts/          # React Context providers
+    AuthContext.tsx
+    ThemeContext.tsx
+
+  services/          # Data access and business logic
+    tasks.service.ts
+    auth.service.ts
+
+  lib/               # Utilities and configurations
+    utils.ts
+    api-client.ts
+
+  types/             # TypeScript type definitions
+    index.ts
+    task.ts
+
+  constants/         # Static values and configurations
+    routes.ts
+    config.ts
+
+  assets/            # Static assets (images, fonts)
+```
+
+## Component File Structure
+
+```tsx
+// Single component per file
+// components/atoms/Button.tsx
+
+import { cn } from '@/lib/utils';
+import type { ButtonProps } from './Button.types';
+
+export function Button({ variant, size, children, ...props }: ButtonProps) {
+  return (
+    <button className={cn(/* styles */)} {...props}>
+      {children}
+    </button>
+  );
+}
+```
+
+## Complex Component Organization
+
+```
+components/
+  organisms/
+    TaskList/
+      index.ts           # Re-exports
+      TaskList.tsx       # Main component
+      TaskListItem.tsx   # Sub-component (if complex)
+      useTaskList.ts     # Hook (if needed)
+```
+
+## Naming Conventions
+
+### Files
+- Components: `PascalCase.tsx` (Button.tsx, TaskCard.tsx)
+- Hooks: `camelCase.ts` with `use` prefix (useDebounce.ts)
+- Services: `kebab-case.service.ts` (tasks.service.ts)
+- Types: `kebab-case.ts` (task-types.ts) or `index.ts`
+- Utilities: `kebab-case.ts` (date-utils.ts)
+- Constants: `kebab-case.ts` or `SCREAMING_SNAKE.ts`
+
+### Folders
+- All lowercase with hyphens (kebab-case)
+- Plural for collections (components, hooks, services)
+
+## Import Organization
+
+```tsx
+// Order imports consistently
+// 1. React and framework imports
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+// 2. Third-party libraries
+import { motion } from 'framer-motion';
+import { format } from 'date-fns';
+
+// 3. Internal absolute imports (@/)
+import { Button } from '@/components/atoms/Button';
+import { tasksService } from '@/services/tasks.service';
+import { cn } from '@/lib/utils';
+
+// 4. Relative imports
+import { TaskListItem } from './TaskListItem';
+
+// 5. Types (often last)
+import type { Task } from '@/types';
+```
+
+## Index Files (Barrel Exports)
+
+```tsx
+// components/atoms/index.ts
+export { Button } from './Button';
+export { Input } from './Input';
+export { Badge } from './Badge';
+
+// Usage elsewhere
+import { Button, Input, Badge } from '@/components/atoms';
+```
+
+## Path Aliases
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  }
+}
+```
+
+```tsx
+// Use aliases for cleaner imports
+import { Button } from '@/components/atoms/Button';
+import { useAuth } from '@/hooks/useAuth';
+import { tasksService } from '@/services/tasks.service';
+
+// Avoid deep relative paths
+// Bad:
+import { Button } from '../../../../components/atoms/Button';
+```
+
+## File Size Guidelines
+
+- Components: 100-300 lines ideal, max ~500 lines
+- If larger, split into sub-components or hooks
+- Services: Group related operations, split by domain
+- Types: Group related types, split if file grows large
+
+## When to Split Files
+
+Split a component when:
+- It exceeds 300 lines
+- It has multiple distinct responsibilities
+- Sub-sections could be reused elsewhere
+- Testing becomes difficult
+
+```tsx
+// Before: Large monolithic component
+// TaskList.tsx (500 lines)
+
+// After: Split into focused files
+// TaskList.tsx (150 lines) - orchestration
+// TaskListHeader.tsx (80 lines) - header with filters
+// TaskListItem.tsx (100 lines) - individual item
+// useTaskFilters.ts (70 lines) - filter logic
+```
+
+## Co-location Principle
+
+Keep related files close together:
+- Component + its types
+- Component + its tests
+- Feature-specific hooks with the feature
+- Page-specific components with the page
