@@ -44,6 +44,8 @@ export interface Task {
   notes: string | null;
   isRecurring: boolean;
   recurrenceRule: RecurrenceRule | null;
+  pointValue: number | null;
+  pointsAwarded: boolean | null;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -272,6 +274,7 @@ export interface CreateTaskInput {
   notes?: string;
   isRecurring?: boolean;
   recurrenceRule?: RecurrenceRule;
+  pointValue?: number;
 }
 
 export interface UpdateTaskInput {
@@ -289,6 +292,7 @@ export interface UpdateTaskInput {
   notes?: string;
   isRecurring?: boolean;
   recurrenceRule?: RecurrenceRule;
+  pointValue?: number;
 }
 
 export interface CreateProjectInput {

@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureAmplify } from './lib/aws-config';
 import { AuthProvider } from './contexts/AuthContext';
+import { WalletProvider } from './contexts/WalletContext';
+import { RewardsProvider } from './contexts/RewardsContext';
 import { initializeMockData } from './mocks/seed-data';
 import './index.css';
 import App from './App.tsx';
@@ -24,7 +26,11 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <App />
+        <WalletProvider>
+          <RewardsProvider>
+            <App />
+          </RewardsProvider>
+        </WalletProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

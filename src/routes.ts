@@ -23,6 +23,8 @@ export const ROUTES = {
     componentsDemo: `${ADMIN_BASE}/components-demo` as const,
     mediaBacklog: `${ADMIN_BASE}/media-backlog` as const,
     hobbyQuests: `${ADMIN_BASE}/hobby-quests` as const,
+    rewardsStore: `${ADMIN_BASE}/rewards-store` as const,
+    rewardStudio: `${ADMIN_BASE}/reward-studio` as const,
   },
 } as const;
 
@@ -43,6 +45,8 @@ export const ADMIN_CHILD_ROUTES = {
   componentsDemo: 'components-demo' as const,
   mediaBacklog: 'media-backlog' as const,
   hobbyQuests: 'hobby-quests' as const,
+  rewardsStore: 'rewards-store' as const,
+  rewardStudio: 'reward-studio' as const,
 } as const;
 
 

@@ -22,10 +22,13 @@ import {
   Film,
   Star,
   Coffee,
+  Store,
+  Palette,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { CommandPalette } from '../organisms/CommandPalette';
 import LeisureModeToggle from '../atoms/LeisureModeToggle';
+import { WalletWidget } from '../molecules/WalletWidget';
 import { ROUTES } from '../../routes';
 
 interface NavItem {
@@ -53,6 +56,7 @@ const workNavigation: NavItem[] = [
     ],
   },
   { name: 'Weekly Review', href: ROUTES.admin.weeklyReview, icon: Calendar },
+  { name: 'Reward Studio', href: ROUTES.admin.rewardStudio, icon: Palette },
   { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
   { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
 ];
@@ -62,6 +66,7 @@ const leisureNavigation: NavItem[] = [
   { name: 'Logbook', href: ROUTES.admin.logbook, icon: BookOpen },
   { name: 'Media Backlog', href: ROUTES.admin.mediaBacklog, icon: Film },
   { name: 'Hobby Quests', href: ROUTES.admin.hobbyQuests, icon: Star },
+  { name: 'Rewards Store', href: ROUTES.admin.rewardsStore, icon: Store },
   { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
   { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
 ];
@@ -116,6 +121,7 @@ export default function AdminLayout() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
         <div className="flex items-center gap-2">
+          <WalletWidget />
           <button
             onClick={() => setCommandPaletteOpen(true)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
@@ -141,6 +147,9 @@ export default function AdminLayout() {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user?.email}</p>
+            <div className="mt-3 flex justify-center">
+              <WalletWidget />
+            </div>
             <button
               onClick={() => setCommandPaletteOpen(true)}
               className="w-full mt-3 flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 transition"

@@ -26,6 +26,7 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
     scheduledDate: '',
     notes: '',
     isRecurring: false,
+    pointValue: undefined,
   });
 
   const [showAIAssist, setShowAIAssist] = useState(false);
@@ -42,6 +43,7 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
       dueDate: formData.dueDate || undefined,
       scheduledDate: formData.scheduledDate || undefined,
       size: formData.size || undefined,
+      pointValue: formData.pointValue || undefined,
     };
     onSubmit(input);
   };
@@ -280,6 +282,35 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="e.g., 2.5"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Point Value (Optional)
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min="0"
+            value={formData.pointValue || ''}
+            onChange={(e) => setFormData({ ...formData, pointValue: e.target.value ? parseFloat(e.target.value) : undefined })}
+            placeholder="AI will calculate if left empty"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {isAIConfigured && (
+            <button
+              type="button"
+              onClick={() => setAIMode('estimate')}
+              className="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-md hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+              title="Calculate with AI"
+            >
+              <Sparkles size={18} />
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Reward points for completing this task
+        </p>
       </div>
 
       <div>

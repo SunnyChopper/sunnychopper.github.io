@@ -1,4 +1,4 @@
-import { Pencil, Trash2, Calendar, Clock, GitBranch } from 'lucide-react';
+import { Pencil, Trash2, Calendar, Clock, GitBranch, Coins } from 'lucide-react';
 import type { Task } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
@@ -95,6 +95,15 @@ export function TaskListItem({
               <span className="text-gray-500 dark:text-gray-400 text-xs font-medium">
                 Size: {task.size}
               </span>
+            )}
+
+            {task.pointValue && (
+              <div className="flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-500" />
+                <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
+                  {task.pointValue} pts
+                </span>
+              </div>
             )}
 
             {dueInfo && (

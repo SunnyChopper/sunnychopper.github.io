@@ -22,6 +22,8 @@ import LogbookPage from './pages/admin/LogbookPage';
 import WeeklyReviewPage from './pages/admin/WeeklyReviewPage';
 import MediaBacklogPage from './pages/admin/MediaBacklogPage';
 import HobbyQuestsPage from './pages/admin/HobbyQuestsPage';
+import RewardsStorePage from './pages/admin/RewardsStorePage';
+import RewardStudioPage from './pages/admin/RewardStudioPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
@@ -88,6 +90,8 @@ function AppContent() {
         <Route path={ADMIN_CHILD_ROUTES.settings} element={<SettingsPage />} />
         <Route path={ADMIN_CHILD_ROUTES.mediaBacklog} element={<MediaBacklogPage />} />
         <Route path={ADMIN_CHILD_ROUTES.hobbyQuests} element={<HobbyQuestsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.rewardsStore} element={<RewardsStorePage />} />
+        <Route path={ADMIN_CHILD_ROUTES.rewardStudio} element={<RewardStudioPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
