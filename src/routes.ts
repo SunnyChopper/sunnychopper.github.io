@@ -25,6 +25,12 @@ export const ROUTES = {
     hobbyQuests: `${ADMIN_BASE}/hobby-quests` as const,
     rewardsStore: `${ADMIN_BASE}/rewards-store` as const,
     rewardStudio: `${ADMIN_BASE}/reward-studio` as const,
+    knowledgeVault: `${ADMIN_BASE}/knowledge-vault` as const,
+    knowledgeVaultLibrary: `${ADMIN_BASE}/knowledge-vault/library` as const,
+    knowledgeVaultCourses: `${ADMIN_BASE}/knowledge-vault/courses` as const,
+    knowledgeVaultSkillTree: `${ADMIN_BASE}/knowledge-vault/skill-tree` as const,
+    knowledgeVaultFlashcards: `${ADMIN_BASE}/knowledge-vault/flashcards` as const,
+    knowledgeVaultCollider: `${ADMIN_BASE}/knowledge-vault/collider` as const,
   },
 } as const;
 
@@ -47,6 +53,12 @@ export const ADMIN_CHILD_ROUTES = {
   hobbyQuests: 'hobby-quests' as const,
   rewardsStore: 'rewards-store' as const,
   rewardStudio: 'reward-studio' as const,
+  knowledgeVault: 'knowledge-vault' as const,
+  knowledgeVaultLibrary: 'knowledge-vault/library' as const,
+  knowledgeVaultCourses: 'knowledge-vault/courses' as const,
+  knowledgeVaultSkillTree: 'knowledge-vault/skill-tree' as const,
+  knowledgeVaultFlashcards: 'knowledge-vault/flashcards' as const,
+  knowledgeVaultCollider: 'knowledge-vault/collider' as const,
 } as const;
 
 

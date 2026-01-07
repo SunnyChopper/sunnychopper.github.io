@@ -30,8 +30,18 @@ import { usePageTracking } from './hooks/usePageTracking';
 import { useThemeInitializer } from './hooks/useTheme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import { ModeProvider } from './contexts/ModeContext';
+import { KnowledgeVaultProvider } from './contexts/KnowledgeVaultContext';
 import DashboardRedirect from './components/routing/DashboardRedirect';
 import { ADMIN_CHILD_ROUTES, ROUTES } from './routes';
+import KnowledgeVaultPage from './pages/admin/KnowledgeVaultPage';
+import CoursesPage from './pages/admin/CoursesPage';
+import CourseGeneratorPage from './pages/admin/CourseGeneratorPage';
+import CourseDetailPage from './pages/admin/CourseDetailPage';
+import SkillTreePage from './pages/admin/SkillTreePage';
+import StudySessionPage from './pages/admin/StudySessionPage';
+import StudyStatisticsPage from './pages/admin/StudyStatisticsPage';
+import FlashcardsPage from './pages/admin/FlashcardsPage';
+import ConceptColliderPage from './pages/admin/ConceptColliderPage';
 
 function AppContent() {
   usePageTracking();
@@ -92,6 +102,17 @@ function AppContent() {
         <Route path={ADMIN_CHILD_ROUTES.hobbyQuests} element={<HobbyQuestsPage />} />
         <Route path={ADMIN_CHILD_ROUTES.rewardsStore} element={<RewardsStorePage />} />
         <Route path={ADMIN_CHILD_ROUTES.rewardStudio} element={<RewardStudioPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVault} element={<KnowledgeVaultPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultLibrary} element={<KnowledgeVaultPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultCourses} element={<CoursesPage />} />
+        <Route path="knowledge-vault/courses/new" element={<CourseGeneratorPage />} />
+        <Route path="knowledge-vault/courses/:courseId" element={<CourseDetailPage />} />
+        <Route path="knowledge-vault/courses/:courseId/:lessonId" element={<CourseDetailPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultSkillTree} element={<SkillTreePage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultFlashcards} element={<FlashcardsPage />} />
+        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultCollider} element={<ConceptColliderPage />} />
+        <Route path="knowledge-vault/study" element={<StudySessionPage />} />
+        <Route path="knowledge-vault/statistics" element={<StudyStatisticsPage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
@@ -113,9 +134,11 @@ function App() {
     <>
       <Loader isLoading={isLoading} />
       <ModeProvider>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <KnowledgeVaultProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </KnowledgeVaultProvider>
       </ModeProvider>
     </>
   );
