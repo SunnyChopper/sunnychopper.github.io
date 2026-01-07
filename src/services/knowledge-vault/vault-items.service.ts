@@ -5,6 +5,7 @@ import type {
   Note,
   Document,
   Flashcard,
+  CourseLesson,
   VaultItemType,
   VaultItemStatus,
   VaultItemFilters,
@@ -16,6 +17,18 @@ import type {
   UpdateFlashcardInput,
   ApiResponse,
 } from '../../types/knowledge-vault';
+import type { Area } from '../../types/growth-system';
+
+interface CreateCourseLessonInput {
+  title: string;
+  courseId: string;
+  moduleId: string;
+  lessonIndex: number;
+  estimatedMinutes: number;
+  area: Area;
+  tags: string[];
+  content?: string;
+}
 
 const USER_ID = 'user-1';
 const COLLECTION = 'vault_items';
@@ -252,6 +265,54 @@ export const vaultItemsService = {
 
     if (!updated) {
       return { data: null, error: 'Item not found', success: false };
+    }
+
+    return { data: updated, error: null, success: true };
+  },
+
+  async createCourseLesson(input: CreateCourseLessonInput): Promise<ApiResponse<CourseLesson>> {
+    await randomDelay();
+    const storage = getStorageAdapter();
+
+    const now = new Date().toISOString();
+    const lesson: CourseLesson = {
+      id: generateId(),
+      type: 'course_lesson',
+      title: input.title,
+      content: input.content || null,
+      tags: input.tags,
+      area: input.area,
+      status: 'active',
+      searchableText: '',
+      courseId: input.courseId,
+      moduleId: input.moduleId,
+      lessonIndex: input.lessonIndex,
+      estimatedMinutes: input.estimatedMinutes,
+      completedAt: null,
+      aiGenerated: true,
+      userId: USER_ID,
+      createdAt: now,
+      updatedAt: now,
+      lastAccessedAt: null,
+    };
+
+    lesson.searchableText = generateSearchableText(lesson);
+
+    const created = await storage.create<CourseLesson>(COLLECTION, lesson.id, lesson);
+    return { data: created, error: null, success: true };
+  },
+
+  async markLessonComplete(lessonId: string): Promise<ApiResponse<CourseLesson>> {
+    await randomDelay();
+    const storage = getStorageAdapter();
+
+    const updated = await storage.update<CourseLesson>(COLLECTION, lessonId, {
+      completedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    if (!updated) {
+      return { data: null, error: 'Lesson not found', success: false };
     }
 
     return { data: updated, error: null, success: true };
