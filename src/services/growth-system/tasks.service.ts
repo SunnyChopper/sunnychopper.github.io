@@ -1,5 +1,7 @@
 import { getStorageAdapter } from '../../lib/storage';
 import { generateId, randomDelay } from '../../mocks/storage';
+import { llmConfig } from '../../lib/llm';
+import { taskPointsAIService } from '../ai/task-points.service';
 import type {
   Task,
   CreateTaskInput,
@@ -100,6 +102,24 @@ export const tasksService = {
     await randomDelay();
     const storage = getStorageAdapter();
     const now = new Date().toISOString();
+
+    let pointValue = input.pointValue || null;
+
+    if (pointValue === null && llmConfig.isConfigured()) {
+      try {
+        const calculation = await taskPointsAIService.calculateTaskPoints({
+          title: input.title,
+          description: input.description,
+          area: input.area,
+          priority: input.priority || 'P3',
+          size: input.size,
+        });
+        pointValue = calculation.pointValue;
+      } catch (error) {
+        console.warn('Failed to calculate task points with AI:', error);
+      }
+    }
+
     const task: Task = {
       id: generateId(),
       title: input.title,
@@ -116,7 +136,7 @@ export const tasksService = {
       notes: input.notes || null,
       isRecurring: input.isRecurring || false,
       recurrenceRule: input.recurrenceRule || null,
-      pointValue: null,
+      pointValue,
       pointsAwarded: null,
       userId: USER_ID,
       createdAt: now,

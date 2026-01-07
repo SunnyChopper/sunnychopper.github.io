@@ -33,8 +33,8 @@ export const WalletWidget = () => {
             className="fixed inset-0 z-40"
             onClick={() => setShowHistory(false)}
           />
-          <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden max-h-[80vh] flex flex-col">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
                 Wallet Balance
               </h3>
@@ -60,11 +60,11 @@ export const WalletWidget = () => {
               </div>
             </div>
 
-            <div className="p-4">
+            <div className="p-4 overflow-y-auto flex-1">
               <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
                 Recent Transactions
               </h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-2">
                 {transactions.length === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
                     No transactions yet
@@ -84,7 +84,7 @@ export const WalletWidget = () => {
                         </p>
                       </div>
                       <span
-                        className={`text-sm font-semibold ml-2 ${
+                        className={`text-sm font-semibold ml-2 flex-shrink-0 ${
                           transaction.amount > 0
                             ? 'text-green-600 dark:text-green-500'
                             : 'text-red-600 dark:text-red-500'

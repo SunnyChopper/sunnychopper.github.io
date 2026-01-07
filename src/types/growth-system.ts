@@ -274,6 +274,7 @@ export interface CreateTaskInput {
   notes?: string;
   isRecurring?: boolean;
   recurrenceRule?: RecurrenceRule;
+  pointValue?: number;
 }
 
 export interface UpdateTaskInput {
@@ -291,6 +292,7 @@ export interface UpdateTaskInput {
   notes?: string;
   isRecurring?: boolean;
   recurrenceRule?: RecurrenceRule;
+  pointValue?: number;
 }
 
 export interface CreateProjectInput {
