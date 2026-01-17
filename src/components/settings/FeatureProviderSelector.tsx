@@ -92,6 +92,15 @@ export function FeatureProviderSelector() {
     'sentimentAnalysis',
     'weeklyReview',
     'connectionSuggestions',
+    'noteExpand',
+    'noteSummarize',
+    'noteImprove',
+    'noteTagSuggest',
+    'noteAreaSuggest',
+    'noteLinkSuggest',
+    'noteGenerate',
+    'noteExtract',
+    'noteAnalyze',
   ];
 
   const availableModels = getModelsForProvider(selectedProvider);

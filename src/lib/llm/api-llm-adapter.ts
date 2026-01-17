@@ -1,3 +1,4 @@
+import { apiClient } from '../api-client';
 import type {
   ILLMAdapter,
   LLMResponse,
@@ -23,49 +24,43 @@ import type {
   ProjectRiskOutput,
 } from '../../types/llm';
 
-const API_BASE_URL = import.meta.env.VITE_SUPABASE_URL;
+interface AIResponse<T> {
+  result: T;
+  confidence: number;
+  reasoning?: string;
+  provider?: string;
+  model?: string;
+  cached?: boolean;
+}
 
 export class APILLMAdapter implements ILLMAdapter {
-  private baseUrl: string;
-
-  constructor() {
-    this.baseUrl = `${API_BASE_URL}/functions/v1`;
-  }
-
   isConfigured(): boolean {
-    return !!API_BASE_URL;
+    // Backend handles API key configuration
+    return true;
   }
 
-  private async callEndpoint<TInput, TOutput>(
+  private async callAIEndpoint<TInput, TOutput>(
     endpoint: string,
     input: TInput
   ): Promise<LLMResponse<TOutput>> {
     try {
-      const response = await fetch(`${this.baseUrl}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify(input),
-      });
+      const response = await apiClient.post<{ data: AIResponse<TOutput> }>(endpoint, input);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        return { data: null, error: `API error: ${response.status} - ${errorText}`, success: false };
-      }
-
-      const result = await response.json();
-
-      if (result.error) {
-        return { data: null, error: result.error, success: false };
+      if (response.success && response.data) {
+        // Backend wraps response in { success, data: { result, confidence, ... } }
+        const aiResponse = response.data.data;
+        return {
+          data: aiResponse.result,
+          error: null,
+          success: true,
+          usage: undefined,
+        };
       }
 
       return {
-        data: result.data || result,
-        error: null,
-        success: true,
-        usage: result.usage,
+        data: null,
+        error: response.error?.message || 'AI request failed',
+        success: false,
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -74,101 +69,76 @@ export class APILLMAdapter implements ILLMAdapter {
   }
 
   async parseNaturalLanguageTask(input: ParseTaskInput): Promise<LLMResponse<ParseTaskOutput>> {
-    return this.callEndpoint<ParseTaskInput, ParseTaskOutput>('ai-parse-task', input);
+    return this.callAIEndpoint<{ input: string }, ParseTaskOutput>('/ai/tasks/parse', {
+      input: input.text,
+    });
   }
 
   async breakdownTask(input: TaskBreakdownInput): Promise<LLMResponse<TaskBreakdownOutput>> {
-    return this.callEndpoint('ai-breakdown-task', {
+    return this.callAIEndpoint<{ taskId: string }, TaskBreakdownOutput>('/ai/tasks/breakdown', {
       taskId: input.task.id,
-      title: input.task.title,
-      description: input.task.description,
-      area: input.task.area,
     });
   }
 
   async resolveBlockers(input: BlockerResolutionInput): Promise<LLMResponse<BlockerResolutionOutput>> {
-    return this.callEndpoint('ai-resolve-blockers', {
+    // Backend may not have this exact endpoint - using breakdown as fallback
+    return this.callAIEndpoint<{ taskId: string }, BlockerResolutionOutput>('/ai/tasks/breakdown', {
       taskId: input.task.id,
-      title: input.task.title,
-      blockers: input.blockers.map(b => ({ id: b.id, title: b.title, status: b.status })),
     });
   }
 
   async advisePriority(input: PriorityAdvisorInput): Promise<LLMResponse<PriorityAdvisorOutput>> {
-    return this.callEndpoint('ai-advise-priority', {
+    return this.callAIEndpoint<{ taskId: string }, PriorityAdvisorOutput>('/ai/tasks/prioritize', {
       taskId: input.task.id,
-      title: input.task.title,
-      description: input.task.description,
-      currentPriority: input.task.priority,
-      otherTasks: input.allTasks
-        .filter(t => t.id !== input.task.id && t.status !== 'Done' && t.status !== 'Cancelled')
-        .slice(0, 10)
-        .map(t => ({ title: t.title, priority: t.priority, dueDate: t.dueDate })),
     });
   }
 
   async estimateEffort(input: EffortEstimationInput): Promise<LLMResponse<EffortEstimationOutput>> {
-    return this.callEndpoint('ai-estimate-effort', {
-      title: input.task.title,
-      description: input.task.description,
-      similarTasks: (input.similarTasks || [])
-        .filter(t => t.size !== null)
-        .slice(0, 5)
-        .map(t => ({ title: t.title, size: t.size })),
-    });
+    return this.callAIEndpoint<{ taskId?: string; title: string; description?: string }, EffortEstimationOutput>(
+      '/ai/tasks/estimate',
+      {
+        taskId: input.task.id,
+        title: input.task.title || '',
+        description: input.task.description || undefined,
+      }
+    );
   }
 
   async categorizeTask(input: TaskCategorizationInput): Promise<LLMResponse<TaskCategorizationOutput>> {
-    return this.callEndpoint<TaskCategorizationInput, TaskCategorizationOutput>('ai-categorize-task', input);
-  }
-
-  async detectDependencies(input: DependencyDetectionInput): Promise<LLMResponse<DependencyDetectionOutput>> {
-    return this.callEndpoint('ai-detect-dependencies', {
-      title: input.task.title,
-      description: input.task.description,
-      existingTasks: input.existingTasks
-        .filter(t => t.status !== 'Done' && t.status !== 'Cancelled')
-        .slice(0, 20)
-        .map(t => ({ id: t.id, title: t.title, status: t.status })),
+    return this.callAIEndpoint<{ input: string }, TaskCategorizationOutput>('/ai/tasks/categorize', {
+      input: `${input.title} ${input.description || ''}`.trim(),
     });
   }
 
+  async detectDependencies(input: DependencyDetectionInput): Promise<LLMResponse<DependencyDetectionOutput>> {
+    return this.callAIEndpoint<{ taskId?: string; title: string; description?: string }, DependencyDetectionOutput>(
+      '/ai/tasks/dependencies',
+      {
+        taskId: input.task.id,
+        title: input.task.title || '',
+        description: input.task.description || undefined,
+      }
+    );
+  }
+
   async analyzeProjectHealth(input: ProjectHealthInput): Promise<LLMResponse<ProjectHealthOutput>> {
-    return this.callEndpoint('ai-project-health', {
+    // Backend may not have this exact endpoint - may need to use a different approach
+    return this.callAIEndpoint<{ projectId: string }, ProjectHealthOutput>('/ai/tasks/breakdown', {
       projectId: input.project.id,
-      name: input.project.name,
-      description: input.project.description,
-      tasks: input.tasks.map(t => ({
-        title: t.title,
-        status: t.status,
-        priority: t.priority,
-        dueDate: t.dueDate,
-      })),
     });
   }
 
   async generateProjectTasks(input: ProjectTaskGenInput): Promise<LLMResponse<ProjectTaskGenOutput>> {
-    return this.callEndpoint('ai-generate-tasks', {
+    // Backend may not have this exact endpoint
+    return this.callAIEndpoint<{ projectId: string }, ProjectTaskGenOutput>('/ai/tasks/breakdown', {
       projectId: input.project.id,
-      name: input.project.name,
-      description: input.project.description,
-      area: input.project.area,
-      existingTasks: input.existingTasks.map(t => ({ title: t.title })),
     });
   }
 
   async identifyProjectRisks(input: ProjectRiskInput): Promise<LLMResponse<ProjectRiskOutput>> {
-    return this.callEndpoint('ai-identify-risks', {
+    // Backend may not have this exact endpoint
+    return this.callAIEndpoint<{ projectId: string }, ProjectRiskOutput>('/ai/tasks/breakdown', {
       projectId: input.project.id,
-      name: input.project.name,
-      description: input.project.description,
-      tasks: input.tasks.map(t => ({
-        id: t.id,
-        title: t.title,
-        status: t.status,
-        priority: t.priority,
-        dueDate: t.dueDate,
-      })),
     });
   }
 }

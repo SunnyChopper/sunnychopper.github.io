@@ -13,7 +13,7 @@ import SettingsPage from './pages/admin/SettingsPage';
 import GrowthSystemPage from './pages/admin/GrowthSystemPage';
 import ChatbotPage from './pages/admin/ChatbotPage';
 import ComponentsDemoPage from './pages/admin/ComponentsDemoPage';
-import TasksPage from './pages/admin/TasksPageAdvancedV2';
+import TasksPage from './pages/admin/TasksPage';
 import ProjectsPage from './pages/admin/ProjectsPage';
 import GoalsPage from './pages/admin/GoalsPage';
 import MetricsPage from './pages/admin/MetricsPage';
@@ -29,8 +29,9 @@ import Loader from './components/molecules/Loader';
 import { usePageTracking } from './hooks/usePageTracking';
 import { useThemeInitializer } from './hooks/useTheme';
 import ErrorBoundary from './components/shared/ErrorBoundary';
-import { ModeProvider } from './contexts/ModeContext';
-import { KnowledgeVaultProvider } from './contexts/KnowledgeVaultContext';
+import { ModeProvider } from './contexts/Mode';
+import { KnowledgeVaultProvider } from './contexts/KnowledgeVault';
+import { BackendStatusProvider } from './contexts/BackendStatusContext';
 import DashboardRedirect from './components/routing/DashboardRedirect';
 import { ADMIN_CHILD_ROUTES, ROUTES } from './routes';
 import KnowledgeVaultPage from './pages/admin/KnowledgeVaultPage';
@@ -133,13 +134,15 @@ function App() {
   return (
     <>
       <Loader isLoading={isLoading} />
-      <ModeProvider>
-        <KnowledgeVaultProvider>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </KnowledgeVaultProvider>
-      </ModeProvider>
+      <BackendStatusProvider>
+        <ModeProvider>
+          <KnowledgeVaultProvider>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </KnowledgeVaultProvider>
+        </ModeProvider>
+      </BackendStatusProvider>
     </>
   );
 }

@@ -89,6 +89,33 @@
   .accent-text-700 {
     color: rgb(var(--accent-700));
   }
+}
+
+/* Prism.js syntax highlighting - Dark mode support */
+@layer components {
+  /* Override Prism styles for dark mode compatibility */
+  .dark pre[class*="language-"] {
+    background: rgb(17 24 39) !important; /* gray-900 */
+  }
+  
+  .dark code[class*="language-"] {
+    color: rgb(243 244 246) !important; /* gray-100 */
+  }
+  
+  /* Ensure code blocks have proper contrast */
+  pre code {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  /* KaTeX math rendering - ensure proper dark mode colors */
+  .dark .katex {
+    color: rgb(243 244 246);
+  }
+  
+  .dark .katex .mathnormal {
+    color: rgb(243 244 246);
+  }
 
   .accent-border-300 {
     border-color: rgb(var(--accent-300));
@@ -96,5 +123,59 @@
 
   .accent-border-600 {
     border-color: rgb(var(--accent-600));
+  }
+
+  /* Markdown list rendering improvements */
+  .prose ul,
+  .prose ol {
+    list-style-position: outside;
+    padding-left: 1.5rem;
+  }
+
+  .prose ul {
+    list-style-type: disc;
+  }
+
+  .prose ol {
+    list-style-type: decimal;
+  }
+
+  .prose ul ul,
+  .prose ol ol,
+  .prose ul ol,
+  .prose ol ul {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .prose li {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .prose li > p {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .prose li > p + p {
+    margin-top: 0.5rem;
+  }
+
+  /* Ensure nested lists have proper indentation */
+  .prose ul ul {
+    list-style-type: circle;
+  }
+
+  .prose ul ul ul {
+    list-style-type: square;
+  }
+
+  .prose ol ol {
+    list-style-type: lower-alpha;
+  }
+
+  .prose ol ol ol {
+    list-style-type: lower-roman;
   }
 }

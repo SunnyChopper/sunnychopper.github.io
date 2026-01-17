@@ -33,7 +33,16 @@ export type AIFeature =
   | 'logbookPatterns'
   | 'sentimentAnalysis'
   | 'weeklyReview'
-  | 'connectionSuggestions';
+  | 'connectionSuggestions'
+  | 'noteExpand'
+  | 'noteSummarize'
+  | 'noteImprove'
+  | 'noteTagSuggest'
+  | 'noteAreaSuggest'
+  | 'noteLinkSuggest'
+  | 'noteGenerate'
+  | 'noteExtract'
+  | 'noteAnalyze';
 
 export interface FeatureProviderConfig {
   provider: LLMProvider;
@@ -74,6 +83,15 @@ export const AI_FEATURE_DISPLAY_NAMES: Record<AIFeature, string> = {
   sentimentAnalysis: 'Sentiment Analysis',
   weeklyReview: 'Weekly Review Generator',
   connectionSuggestions: 'Connection Suggestions',
+  noteExpand: 'Note Content Expansion',
+  noteSummarize: 'Note Summarization',
+  noteImprove: 'Note Clarity Improvement',
+  noteTagSuggest: 'Note Tag Suggestions',
+  noteAreaSuggest: 'Note Area Categorization',
+  noteLinkSuggest: 'Note Link Suggestions',
+  noteGenerate: 'Note Content Generation',
+  noteExtract: 'Note Content Extraction',
+  noteAnalyze: 'Note Content Analysis',
 };
 
 export const DEFAULT_FEATURE_PROVIDERS: Record<AIFeature, FeatureProviderConfig> = {
@@ -110,4 +128,13 @@ export const DEFAULT_FEATURE_PROVIDERS: Record<AIFeature, FeatureProviderConfig>
   sentimentAnalysis: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
   weeklyReview: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
   connectionSuggestions: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
+  noteExpand: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
+  noteSummarize: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
+  noteImprove: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  noteTagSuggest: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
+  noteAreaSuggest: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
+  noteLinkSuggest: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
+  noteGenerate: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+  noteExtract: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },
+  noteAnalyze: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
 };

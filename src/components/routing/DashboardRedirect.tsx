@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useMode } from '../../contexts/ModeContext';
+import { useMode } from '../../contexts/Mode';
 import { ROUTES } from '../../routes';
 
 export default function DashboardRedirect() {
