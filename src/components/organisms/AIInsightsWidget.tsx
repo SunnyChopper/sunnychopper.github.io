@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sparkles,
   TrendingUp,
@@ -36,6 +36,7 @@ export function AIInsightsWidget() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const [hasGenerated, setHasGenerated] = useState(false);
 
   const { tasks, isError: tasksError } = useTasks();
   const { habits, isError: habitsError } = useHabits();
@@ -46,7 +47,45 @@ export function AIInsightsWidget() {
   const isAIConfigured = llmConfig.isConfigured();
   const hasNetworkError = tasksError || habitsError || metricsError || goalsError || projectsError;
 
+  // Use refs to track previous values and only regenerate when data actually changes
+  const prevDataRef = useRef<{
+    tasksLength: number;
+    habitsLength: number;
+    metricsLength: number;
+    goalsLength: number;
+    projectsLength: number;
+    tasksDone: number;
+    goalsActive: number;
+    goalsAtRisk: number;
+  } | null>(null);
+
   const generateInsights = useCallback(async () => {
+    // Calculate data signatures to detect actual changes
+    const tasksDone = tasks.filter((t) => t.status === 'Done').length;
+    const goalsActive = goals.filter((g) => g.status === 'Active').length;
+    const goalsAtRisk = goals.filter((g) => g.status === 'AtRisk').length;
+
+    const currentData = {
+      tasksLength: tasks.length,
+      habitsLength: habits.length,
+      metricsLength: metrics.length,
+      goalsLength: goals.length,
+      projectsLength: projects.length,
+      tasksDone,
+      goalsActive,
+      goalsAtRisk,
+    };
+
+    // Only regenerate if data actually changed (not just array reference)
+    if (
+      prevDataRef.current &&
+      JSON.stringify(prevDataRef.current) === JSON.stringify(currentData) &&
+      hasGenerated
+    ) {
+      return; // Data hasn't changed, skip regeneration (don't set loading state)
+    }
+
+    prevDataRef.current = currentData;
     setIsLoading(true);
 
     await new Promise((resolve) => setTimeout(resolve, 800));
@@ -161,11 +200,15 @@ export function AIInsightsWidget() {
 
     setInsights(newInsights.filter((i) => !dismissedIds.includes(i.id)));
     setIsLoading(false);
-  }, [tasks, habits, metrics, goals, projects, dismissedIds]);
+    setHasGenerated(true);
+  }, [tasks, habits, metrics, goals, projects, dismissedIds, hasGenerated]);
 
   useEffect(() => {
-    generateInsights();
-  }, [generateInsights]);
+    // Only generate once data is loaded (not in error state) or after initial load
+    if (!hasNetworkError || hasGenerated) {
+      generateInsights();
+    }
+  }, [generateInsights, hasNetworkError, hasGenerated]);
 
   const handleDismiss = (insightId: string) => {
     setDismissedIds((prev) => [...prev, insightId]);

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { vaultItemsService, coursesService } from '../../services/knowledge-vault';
 import {
@@ -30,6 +30,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
 
   const refreshVaultItems = useCallback(async () => {
     try {
@@ -41,11 +42,19 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
       if (response.success && response.data) {
         setVaultItems(response.data);
       } else {
-        setError(response.error);
+        // Only set error if it's not a 404 (endpoint might not exist yet)
+        const is404 = response.error?.includes('404') || response.error?.includes('Not Found');
+        if (!is404) {
+          setError(response.error);
+        }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load vault items';
-      setError(errorMessage);
+      // Only set error if it's not a 404
+      const is404 = errorMessage.includes('404') || errorMessage.includes('Not Found');
+      if (!is404) {
+        setError(errorMessage);
+      }
       console.error('Error loading vault items:', err);
     } finally {
       setLoading(false);
@@ -61,18 +70,30 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
       if (response.success && response.data) {
         setCourses(response.data);
       } else {
-        setError(response.error);
+        // Only set error if it's not a 404 (endpoint might not exist yet)
+        const is404 = response.error?.includes('404') || response.error?.includes('Not Found');
+        if (!is404) {
+          setError(response.error);
+        }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load courses';
-      setError(errorMessage);
+      // Only set error if it's not a 404
+      const is404 = errorMessage.includes('404') || errorMessage.includes('Not Found');
+      if (!is404) {
+        setError(errorMessage);
+      }
       console.error('Error loading courses:', err);
     }
   }, []);
 
   useEffect(() => {
-    refreshVaultItems();
-    refreshCourses();
+    // Only initialize once
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      refreshVaultItems();
+      refreshCourses();
+    }
   }, [refreshVaultItems, refreshCourses]);
 
   const searchItems = useCallback(async (query: string): Promise<VaultItem[]> => {
