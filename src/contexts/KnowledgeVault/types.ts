@@ -15,7 +15,7 @@ import type {
   UpdateFlashcardInput,
   CreateCourseInput,
   UpdateCourseInput,
-} from '../../types/knowledge-vault';
+} from '@/types/knowledge-vault';
 
 export interface KnowledgeVaultContextType {
   vaultItems: VaultItem[];

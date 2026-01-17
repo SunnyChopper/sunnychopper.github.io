@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { AuthContext, type User } from './types';
-import { authService } from '../../lib/auth/auth.service';
-import { apiClient } from '../../lib/api-client';
+import { authService } from '@/lib/auth/auth.service';
+import { apiClient } from '@/lib/api-client';
 
 interface AuthProviderProps {
   children: ReactNode;

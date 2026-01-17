@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { vaultItemsService, coursesService } from '../../services/knowledge-vault';
+import { vaultItemsService, coursesService } from '@/services/knowledge-vault';
 import {
   KnowledgeVaultContext,
   type KnowledgeVaultContextType,

@@ -1,17 +1,38 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ModeContext, MODE_STORAGE_KEY } from './types';
+import { ModeContext } from './types';
+import { apiClient } from '@/lib/api-client';
 
 interface ModeProviderProps {
   children: ReactNode;
 }
 
 export const ModeProvider = ({ children }: ModeProviderProps) => {
-  const [isLeisureMode, setIsLeisureMode] = useState(() => {
-    const storedMode =
-      typeof window !== 'undefined' ? localStorage.getItem(MODE_STORAGE_KEY) : null;
-    return storedMode === 'leisure';
-  });
+  const [isLeisureMode, setIsLeisureMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load mode preference from backend
+  useEffect(() => {
+    const loadMode = async () => {
+      try {
+        const response = await apiClient.getModePreference();
+        if (response.success && response.data) {
+          setIsLeisureMode(response.data === 'leisure');
+        } else {
+          // Default to work mode if API fails
+          setIsLeisureMode(false);
+        }
+      } catch (error) {
+        console.error('Failed to load mode preference:', error);
+        // Default to work mode on error
+        setIsLeisureMode(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMode();
+  }, []);
 
   // Sync HTML class with current mode
   useEffect(() => {
@@ -22,18 +43,28 @@ export const ModeProvider = ({ children }: ModeProviderProps) => {
     }
   }, [isLeisureMode]);
 
-  const toggleMode = () => {
-    setIsLeisureMode((prev) => {
-      const newMode = !prev;
-      localStorage.setItem(MODE_STORAGE_KEY, newMode ? 'leisure' : 'work');
-      return newMode;
-    });
+  const toggleMode = async () => {
+    const newMode = !isLeisureMode;
+    setIsLeisureMode(newMode);
+
+    try {
+      await apiClient.setModePreference(newMode ? 'leisure' : 'work');
+    } catch (error) {
+      console.error('Failed to save mode preference:', error);
+      // Revert on error
+      setIsLeisureMode(!newMode);
+    }
   };
 
   const value = {
     isLeisureMode,
     toggleMode,
   };
+
+  // Don't render children until mode is loaded to avoid flash
+  if (isLoading) {
+    return null;
+  }
 
   return <ModeContext.Provider value={value}>{children}</ModeContext.Provider>;
 };

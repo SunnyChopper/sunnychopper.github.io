@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { apiClient } from '../../lib/api-client';
-import type { ApiError } from '../../types/api-contracts';
+import { apiClient } from '@/lib/api-client';
+import type { ApiError } from '@/types/api-contracts';
 import { BackendStatusContext, type BackendStatus, type BackendStatusContextValue } from './types';
 
 interface BackendStatusProviderProps {

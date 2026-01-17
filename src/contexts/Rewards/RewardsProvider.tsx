@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { rewardsService } from '../../services/rewards';
-import { useWallet } from '../Wallet';
+import { rewardsService } from '@/services/rewards';
+import { useWallet } from '@/contexts/Wallet';
 import {
   RewardsContext,
   type RewardsContextType,
@@ -32,7 +32,7 @@ export const RewardsProvider = ({ children }: RewardsProviderProps) => {
       if (response.success && response.data) {
         setRewards(response.data);
       } else {
-        setError(response.error);
+        setError(response.error?.message || 'Failed to load rewards');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load rewards';
@@ -64,7 +64,7 @@ export const RewardsProvider = ({ children }: RewardsProviderProps) => {
           await refreshRewards();
           return response.data;
         } else {
-          throw new Error(response.error || 'Failed to create reward');
+          throw new Error(response.error?.message || 'Failed to create reward');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to create reward';
@@ -85,7 +85,7 @@ export const RewardsProvider = ({ children }: RewardsProviderProps) => {
           await refreshRewards();
           return response.data;
         } else {
-          throw new Error(response.error || 'Failed to update reward');
+          throw new Error(response.error?.message || 'Failed to update reward');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to update reward';
@@ -105,7 +105,7 @@ export const RewardsProvider = ({ children }: RewardsProviderProps) => {
         if (response.success) {
           await refreshRewards();
         } else {
-          throw new Error(response.error || 'Failed to delete reward');
+          throw new Error(response.error?.message || 'Failed to delete reward');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to delete reward';
@@ -133,7 +133,7 @@ export const RewardsProvider = ({ children }: RewardsProviderProps) => {
         const redemptionResponse = await rewardsService.redeem({ rewardId, notes });
 
         if (!redemptionResponse.success || !redemptionResponse.data) {
-          throw new Error(redemptionResponse.error || 'Failed to redeem reward');
+          throw new Error(redemptionResponse.error?.message || 'Failed to redeem reward');
         }
 
         await spendPoints(

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { walletService } from '../../services/rewards';
+import { walletService } from '@/services/rewards';
 import {
   WalletContext,
   type WalletContextType,
@@ -31,7 +31,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
       if (balanceResponse.success && balanceResponse.data) {
         setBalance(balanceResponse.data);
       } else {
-        setError(balanceResponse.error);
+        setError(balanceResponse.error?.message || 'Failed to load wallet');
       }
 
       if (transactionsResponse.success && transactionsResponse.data) {
@@ -72,8 +72,8 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
           setBalance(response.data.balance);
           setTransactions((prev) => [response.data!.transaction, ...prev]);
         } else {
-          setError(response.error);
-          throw new Error(response.error || 'Failed to add points');
+          setError(response.error?.message || 'Failed to add points');
+          throw new Error(response.error?.message || 'Failed to add points');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to add points';
@@ -106,8 +106,8 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
           setBalance(response.data.balance);
           setTransactions((prev) => [response.data!.transaction, ...prev]);
         } else {
-          setError(response.error);
-          throw new Error(response.error || 'Failed to spend points');
+          setError(response.error?.message || 'Failed to spend points');
+          throw new Error(response.error?.message || 'Failed to spend points');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to spend points';

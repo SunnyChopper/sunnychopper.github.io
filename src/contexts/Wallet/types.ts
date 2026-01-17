@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { WalletBalance, WalletTransaction } from '../../types/rewards';
+import type { WalletBalance, WalletTransaction } from '@/types/rewards';
 
 export interface WalletContextType {
   balance: WalletBalance | null;

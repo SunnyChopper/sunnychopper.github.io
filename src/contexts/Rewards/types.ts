@@ -5,7 +5,7 @@ import type {
   CreateRewardInput,
   UpdateRewardInput,
   RewardCategory,
-} from '../../types/rewards';
+} from '@/types/rewards';
 
 export interface RewardsContextType {
   rewards: RewardWithRedemptions[];
