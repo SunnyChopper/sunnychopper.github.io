@@ -1,6 +1,6 @@
 import type { Metric, MetricLog } from '@/types/growth-system';
 import type { ApiResponse } from '@/types/api-contracts';
-import { predictTrajectory, getTrendData } from '@/utils/metric-analytics';
+import { predictTrajectory, getTrendData, calculateProgress } from '@/utils/metric-analytics';
 
 export interface PredictionResult {
   futureValue: number;
@@ -26,15 +26,18 @@ export const metricPredictionsService = {
    * Predict future value
    */
   async predictValue(
-    metric: Metric,
+    _metric: Metric,
     logs: MetricLog[],
     daysAhead: number = 30
   ): Promise<ApiResponse<PredictionResult>> {
     try {
       if (logs.length < 3) {
         return {
-          data: null,
-          error: 'Insufficient data for prediction (need at least 3 data points)',
+          data: undefined,
+          error: {
+            message: 'Insufficient data for prediction (need at least 3 data points)',
+            code: 'INSUFFICIENT_DATA',
+          },
           success: false,
         };
       }
@@ -42,8 +45,11 @@ export const metricPredictionsService = {
       const prediction = predictTrajectory(logs, daysAhead);
       if (!prediction) {
         return {
-          data: null,
-          error: 'Failed to generate prediction',
+          data: undefined,
+          error: {
+            message: 'Failed to generate prediction',
+            code: 'PREDICTION_ERROR',
+          },
           success: false,
         };
       }
@@ -74,14 +80,16 @@ export const metricPredictionsService = {
           projectedDate: projectedDate.toISOString(),
           riskLevel,
         },
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error predicting value:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to predict value',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to predict value',
+          code: 'PREDICTION_ERROR',
+        },
         success: false,
       };
     }
@@ -97,16 +105,22 @@ export const metricPredictionsService = {
     try {
       if (!metric.targetValue) {
         return {
-          data: null,
-          error: 'Metric has no target value',
+          data: undefined,
+          error: {
+            message: 'Metric has no target value',
+            code: 'NO_TARGET_VALUE',
+          },
           success: false,
         };
       }
 
       if (logs.length < 3) {
         return {
-          data: null,
-          error: 'Insufficient data for prediction',
+          data: undefined,
+          error: {
+            message: 'Insufficient data for prediction',
+            code: 'INSUFFICIENT_DATA',
+          },
           success: false,
         };
       }
@@ -122,7 +136,6 @@ export const metricPredictionsService = {
             riskFactors: [],
             onTrack: true,
           },
-          error: null,
           success: true,
         };
       }
@@ -136,7 +149,6 @@ export const metricPredictionsService = {
             riskFactors: ['No clear trend detected'],
             onTrack: false,
           },
-          error: null,
           success: true,
         };
       }
@@ -166,14 +178,16 @@ export const metricPredictionsService = {
           riskFactors,
           onTrack: daysToTarget < 90 && trend.isImproving,
         },
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error predicting target date:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to predict target date',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to predict target date',
+          code: 'TARGET_DATE_PREDICTION_ERROR',
+        },
         success: false,
       };
     }
@@ -196,8 +210,11 @@ export const metricPredictionsService = {
     try {
       if (!metric.targetValue) {
         return {
-          data: null,
-          error: 'Metric has no target value',
+          data: undefined,
+          error: {
+            message: 'Metric has no target value',
+            code: 'NO_TARGET_VALUE',
+          },
           success: false,
         };
       }
@@ -211,7 +228,6 @@ export const metricPredictionsService = {
             recommendations: ['Start logging values'],
             confidence: 1.0,
           },
-          error: null,
           success: true,
         };
       }
@@ -254,14 +270,16 @@ export const metricPredictionsService = {
           recommendations,
           confidence: 0.8,
         },
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error predicting risk:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to predict risk',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to predict risk',
+          code: 'RISK_PREDICTION_ERROR',
+        },
         success: false,
       };
     }

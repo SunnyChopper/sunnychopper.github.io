@@ -20,11 +20,10 @@ export const walletService = {
         lifetimeSpent: response.data.lifetimeSpent,
         updatedAt: new Date().toISOString(),
       };
-      return { data: balance, error: null, success: true };
+      return { data: balance, success: true };
     }
     return {
-      data: null,
-      error: response.error?.message || 'Failed to fetch wallet balance',
+      error: response.error || { message: 'Failed to fetch wallet balance', code: 'FETCH_ERROR' },
       success: false,
     };
   },
@@ -35,11 +34,10 @@ export const walletService = {
       const transactions = limit
         ? response.data.recentTransactions.slice(0, limit)
         : response.data.recentTransactions;
-      return { data: transactions, error: null, success: true };
+      return { data: transactions, success: true };
     }
     return {
-      data: null,
-      error: response.error?.message || 'Failed to fetch transactions',
+      error: response.error || { message: 'Failed to fetch transactions', code: 'FETCH_ERROR' },
       success: false,
     };
   },
@@ -62,11 +60,10 @@ export const walletService = {
       sourceEntityId,
     });
     if (response.success && response.data) {
-      return { data: response.data, error: null, success: true };
+      return { data: response.data, success: true };
     }
     return {
-      data: null,
-      error: response.error?.message || 'Failed to add points',
+      error: response.error || { message: 'Failed to add points', code: 'ADD_POINTS_ERROR' },
       success: false,
     };
   },
@@ -83,16 +80,14 @@ export const walletService = {
     const balanceResponse = await this.getBalance();
     if (!balanceResponse.success || !balanceResponse.data) {
       return {
-        data: null,
-        error: 'Failed to get current balance',
+        error: { message: 'Failed to get current balance', code: 'BALANCE_ERROR' },
         success: false,
       };
     }
 
     if (balanceResponse.data.totalPoints < amount) {
       return {
-        data: null,
-        error: 'Insufficient points',
+        error: { message: 'Insufficient points', code: 'INSUFFICIENT_POINTS' },
         success: false,
       };
     }
@@ -100,8 +95,10 @@ export const walletService = {
     // Backend handles point deduction via redemption endpoint
     // This is a fallback - actual spending should go through reward redemption
     return {
-      data: null,
-      error: 'Use reward redemption endpoint to spend points',
+      error: {
+        message: 'Use reward redemption endpoint to spend points',
+        code: 'USE_REDEMPTION_ENDPOINT',
+      },
       success: false,
     };
   },
@@ -112,8 +109,8 @@ export const walletService = {
     sourceEntityType?: 'task' | 'reward' | null,
     sourceEntityId?: string | null
   ): Promise<ApiResponse<{ balance: WalletBalance; transaction: WalletTransaction }>> {
-    // Refund via addPoints with source='refund'
-    return this.addPoints(amount, 'refund', description, sourceEntityType, sourceEntityId);
+    // Refund via addPoints with source='system' (refunds are system-initiated)
+    return this.addPoints(amount, 'system', description, sourceEntityType, sourceEntityId);
   },
 
   async adjustPoints(

@@ -7,6 +7,7 @@ import type {
   RedeemRewardInput,
   RewardWithRedemptions,
   RewardCategory,
+  WalletTransaction,
 } from '@/types/rewards';
 import type { ApiResponse } from '@/types/api-contracts';
 
@@ -18,7 +19,8 @@ interface BackendPaginatedResponse<T> {
   hasMore: boolean;
 }
 
-function _canRedeemReward(
+// Exported for potential future use
+export function _canRedeemReward(
   reward: Reward,
   redemptions: RewardRedemption[]
 ): { canRedeem: boolean; cooldownMessage: string | null } {
@@ -62,11 +64,10 @@ export const rewardsService = {
   async getAll(): Promise<ApiResponse<Reward[]>> {
     const response = await apiClient.get<BackendPaginatedResponse<Reward>>('/rewards');
     if (response.success && response.data) {
-      return { data: response.data.data, error: null, success: true };
+      return { data: response.data.data, success: true };
     }
     return {
-      data: null,
-      error: response.error?.message || 'Failed to fetch rewards',
+      error: response.error || { message: 'Failed to fetch rewards', code: 'FETCH_ERROR' },
       success: false,
     };
   },
@@ -74,11 +75,10 @@ export const rewardsService = {
   async getById(id: string): Promise<ApiResponse<Reward>> {
     const response = await apiClient.get<Reward>(`/rewards/${id}`);
     if (response.success && response.data) {
-      return { data: response.data, error: null, success: true };
+      return { data: response.data, success: true };
     }
     return {
-      data: null,
-      error: response.error?.message || 'Reward not found',
+      error: response.error || { message: 'Reward not found', code: 'NOT_FOUND' },
       success: false,
     };
   },
@@ -88,8 +88,7 @@ export const rewardsService = {
     const rewardResponse = await this.getById(id);
     if (!rewardResponse.success || !rewardResponse.data) {
       return {
-        data: null,
-        error: rewardResponse.error || 'Reward not found',
+        error: rewardResponse.error || { message: 'Reward not found', code: 'NOT_FOUND' },
         success: false,
       };
     }
@@ -104,7 +103,7 @@ export const rewardsService = {
       cooldownMessage: null,
     };
 
-    return { data: rewardWithRedemptions, error: null, success: true };
+    return { data: rewardWithRedemptions, success: true };
   },
 
   async getAllWithRedemptions(): Promise<ApiResponse<RewardWithRedemptions[]>> {
@@ -121,7 +120,7 @@ export const rewardsService = {
       cooldownMessage: null,
     }));
 
-    return { data: rewardsWithRedemptions, error: null, success: true };
+    return { data: rewardsWithRedemptions, success: true };
   },
 
   async getByCategory(category: RewardCategory): Promise<ApiResponse<RewardWithRedemptions[]>> {
@@ -131,17 +130,16 @@ export const rewardsService = {
     }
 
     const filtered = response.data.filter((r) => r.category === category);
-    return { data: filtered, error: null, success: true };
+    return { data: filtered, success: true };
   },
 
   async create(input: CreateRewardInput): Promise<ApiResponse<Reward>> {
     const response = await apiClient.post<Reward>('/rewards', input);
     if (response.success && response.data) {
-      return { data: response.data, error: null, success: true };
+      return { data: response.data, success: true };
     }
     return {
-      data: null,
-      error: response.error?.message || 'Failed to create reward',
+      error: response.error || { message: 'Failed to create reward', code: 'CREATE_ERROR' },
       success: false,
     };
   },
@@ -149,11 +147,10 @@ export const rewardsService = {
   async update(id: string, input: UpdateRewardInput): Promise<ApiResponse<Reward>> {
     const response = await apiClient.patch<Reward>(`/rewards/${id}`, input);
     if (response.success && response.data) {
-      return { data: response.data, error: null, success: true };
+      return { data: response.data, success: true };
     }
     return {
-      data: null,
-      error: response.error?.message || 'Failed to update reward',
+      error: response.error || { message: 'Failed to update reward', code: 'UPDATE_ERROR' },
       success: false,
     };
   },
@@ -161,8 +158,7 @@ export const rewardsService = {
   async delete(id: string): Promise<ApiResponse<void>> {
     const response = await apiClient.delete<void>(`/rewards/${id}`);
     return {
-      data: undefined,
-      error: response.error?.message || null,
+      error: response.error,
       success: response.success,
     };
   },
@@ -172,30 +168,44 @@ export const rewardsService = {
       notes: input.notes,
     });
     if (response.success && response.data) {
-      return { data: response.data, error: null, success: true };
+      return { data: response.data, success: true };
     }
     return {
-      data: null,
-      error: response.error?.message || 'Failed to redeem reward',
+      error: response.error || { message: 'Failed to redeem reward', code: 'REDEEM_ERROR' },
       success: false,
     };
   },
 
   async getRedemptionHistory(): Promise<ApiResponse<RewardRedemption[]>> {
     // Backend may provide this via wallet transactions
-    const walletResponse = await apiClient.get<{ recentTransactions: RewardRedemption[] }>(
+    const walletResponse = await apiClient.get<{ recentTransactions: WalletTransaction[] }>(
       '/wallet'
     );
     if (walletResponse.success && walletResponse.data) {
+      // Filter transactions that are reward redemptions (spend type with reward source)
+      const redemptionTransactions = walletResponse.data.recentTransactions.filter(
+        (t) => t.type === 'spend' && t.source === 'reward_redemption'
+      );
+      // Convert WalletTransaction to RewardRedemption format
+      // Note: This is a simplified conversion - backend should provide proper RewardRedemption[]
+      const redemptions: RewardRedemption[] = redemptionTransactions.map((t) => ({
+        id: t.id,
+        rewardId: t.sourceEntityId || '',
+        userId: t.userId,
+        pointsSpent: Math.abs(t.amount),
+        redeemedAt: t.createdAt,
+        notes: null,
+      }));
       return {
-        data: walletResponse.data.recentTransactions.filter((t) => t.type === 'spend'),
-        error: null,
+        data: redemptions,
         success: true,
       };
     }
     return {
-      data: null,
-      error: walletResponse.error?.message || 'Failed to fetch redemption history',
+      error: walletResponse.error || {
+        message: 'Failed to fetch redemption history',
+        code: 'FETCH_ERROR',
+      },
       success: false,
     };
   },

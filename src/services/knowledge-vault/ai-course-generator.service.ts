@@ -126,12 +126,12 @@ export const aiCourseGeneratorService = {
     input: GeneratePreAssessmentInput
   ): Promise<ApiResponse<PreAssessmentResult>> {
     try {
-      const featureConfig = getFeatureConfig('goalRefinement');
+      const featureConfig = await getFeatureConfig('goalRefinement');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error('LLM not configured. Please configure in Settings.');
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error('API key not found');
       }
@@ -283,7 +283,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
     input: GenerateCourseSkeletonInput
   ): Promise<ApiResponse<CourseSkeletonResult>> {
     try {
-      this._validateLLMConfiguration();
+      await this._validateLLMConfiguration();
       this._setupProgressCallback(input.onProgress);
 
       const courseInput = this._prepareCourseInput(input);
@@ -315,8 +315,8 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
     }
   },
 
-  _validateLLMConfiguration(): void {
-    const featureConfig = getFeatureConfig('goalRefinement');
+  async _validateLLMConfiguration(): Promise<void> {
+    const featureConfig = await getFeatureConfig('goalRefinement');
     if (!featureConfig || !hasApiKey(featureConfig.provider)) {
       throw new Error('LLM not configured. Please configure in Settings.');
     }
@@ -446,12 +446,12 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
 
   async generateLessonContent(input: GenerateLessonContentInput): Promise<ApiResponse<string>> {
     try {
-      const featureConfig = getFeatureConfig('goalRefinement');
+      const featureConfig = await getFeatureConfig('goalRefinement');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error('LLM not configured. Please configure in Settings.');
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error('API key not found');
       }

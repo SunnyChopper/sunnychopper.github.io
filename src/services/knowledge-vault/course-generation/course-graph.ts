@@ -132,7 +132,8 @@ const getDefaultState = (): CourseGenerationState => ({
 });
 
 // Helper functions to reduce reducer complexity
-function handleInitialState(y: CourseGenerationStateUpdate): CourseGenerationState | null {
+// Exported for potential future use
+export function _handleInitialState(y: CourseGenerationStateUpdate): CourseGenerationState | null {
   const yKeys = Object.keys(y);
   const hasStateProperties =
     yKeys.length > 0 &&
@@ -185,7 +186,8 @@ function handleInitialState(y: CourseGenerationStateUpdate): CourseGenerationSta
   return initialState;
 }
 
-function recoverPrevState(x: CourseGenerationState | undefined): CourseGenerationState {
+// Exported for potential future use
+export function _recoverPrevState(x: CourseGenerationState | undefined): CourseGenerationState {
   let prevState = x ?? getDefaultState();
 
   if (prevState && Object.keys(prevState).length === 0) {
@@ -291,7 +293,8 @@ function mergeAlignment(
   };
 }
 
-function finalizeState(mergedState: CourseGenerationState): CourseGenerationState {
+// Exported for potential future use
+export function finalizeState(mergedState: CourseGenerationState): CourseGenerationState {
   if (!Array.isArray(mergedState.modules)) {
     const prevState = getGlobalStateCache();
     if (prevState && Array.isArray(prevState.modules)) {
@@ -453,7 +456,7 @@ function recoverStateFromInput(): CourseGenerationState {
 }
 
 async function handleMissingMetadata(
-  validatedState: CourseGenerationState
+  _validatedState: CourseGenerationState
 ): Promise<CourseGenerationStateUpdate | null> {
   const storedInput = getStoredInput();
   if (!storedInput) {
@@ -1001,19 +1004,19 @@ export function buildCourseGenerationGraph() {
   workflow.addNode('refinement_agent', refinementAgentNode);
   workflow.addNode('content_generator', contentGeneratorNode);
 
-  workflow.addEdge(START, 'course_strategist');
-  workflow.addEdge('course_strategist', 'module_architect');
-  workflow.addEdge('module_architect', 'concept_mapper');
-  workflow.addEdge('concept_mapper', 'flow_validator');
+  workflow.addEdge(START, 'course_strategist' as any);
+  workflow.addEdge('course_strategist' as any, 'module_architect' as any);
+  workflow.addEdge('module_architect' as any, 'concept_mapper' as any);
+  workflow.addEdge('concept_mapper' as any, 'flow_validator' as any);
 
   // Conditional edge for refinement loop
-  workflow.addConditionalEdges('flow_validator', shouldRefine, {
-    refine: 'refinement_agent',
-    generate_content: 'content_generator',
+  workflow.addConditionalEdges('flow_validator' as any, shouldRefine, {
+    refine: 'refinement_agent' as any,
+    generate_content: 'content_generator' as any,
   });
 
-  workflow.addEdge('refinement_agent', 'flow_validator');
-  workflow.addEdge('content_generator', END);
+  workflow.addEdge('refinement_agent' as any, 'flow_validator' as any);
+  workflow.addEdge('content_generator' as any, END);
 
   return workflow.compile();
 }
