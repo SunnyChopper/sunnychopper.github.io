@@ -1,0 +1,151 @@
+---
+description: "Standards for molecule-level components in the atomic design system."
+globs: "src/components/molecules/**/*.tsx"
+alwaysApply: false
+---
+
+# Atomic Design: Molecules
+
+Molecules are combinations of atoms that form functional UI units.
+
+## What Qualifies as a Molecule
+
+- Composed of multiple atoms
+- Represents a single functional unit
+- May have minimal local state (UI state only)
+- Examples: Card, FormField, ListItem, SearchInput, Alert
+
+## Molecule Requirements
+
+1. **Composed of atoms** - reuse existing atoms
+2. **Single responsibility** - one clear purpose
+3. **Props over state** - minimize internal state
+4. **Slot pattern** - allow content injection
+5. **Consistent API** - similar molecules have similar props
+
+## Standard Molecule Structure
+
+```tsx
+import { useState } from 'react';
+import StatusBadge from '../atoms/StatusBadge';
+import Button from '../atoms/Button';
+import type { Task, Status } from '../../types/growth-system';
+
+interface TaskListItemProps {
+  task: Task;
+  isSelected?: boolean;
+  onSelect?: (task: Task) => void;
+  onStatusChange?: (taskId: string, status: Status) => void;
+}
+
+export default function TaskListItem({
+  task,
+  isSelected = false,
+  onSelect,
+  onStatusChange,
+}: TaskListItemProps) {
+  const handleClick = () => {
+    onSelect?.(task);
+  };
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+      className={cn(
+        'flex items-center gap-4 p-4 rounded-lg border transition cursor-pointer',
+        'bg-white dark:bg-gray-800',
+        'border-gray-200 dark:border-gray-700',
+        'hover:bg-gray-50 dark:hover:bg-gray-700',
+        isSelected && 'ring-2 ring-blue-500 border-blue-500'
+      )}
+    >
+      <div className="flex-1 min-w-0">
+        <h4 className="font-medium text-gray-900 dark:text-white truncate">
+          {task.title}
+        </h4>
+        {task.description && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            {task.description}
+          </p>
+        )}
+      </div>
+
+      <StatusBadge status={task.status} />
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          onStatusChange?.(task.id, 'Done');
+        }}
+      >
+        Complete
+      </Button>
+    </div>
+  );
+}
+```
+
+## Molecules in This Codebase
+
+- `TaskListItem` - task display in lists
+- `GoalCard` - goal summary cards
+- `HabitCard` - habit tracking cards
+- `MetricCard` - metric display
+- `BlogCard` - blog post preview
+- `FilterPanel` - filtering controls
+- `EmptyState` - no-data display
+- `WalletWidget` - points display
+
+## Molecule Prop Patterns
+
+```tsx
+// Entity prop (primary data)
+task: Task;
+goal: Goal;
+habit: Habit;
+
+// Selection state
+isSelected?: boolean;
+isActive?: boolean;
+
+// Event callbacks
+onSelect?: (item: T) => void;
+onClick?: () => void;
+onEdit?: () => void;
+onDelete?: () => void;
+
+// Render slots
+header?: React.ReactNode;
+footer?: React.ReactNode;
+actions?: React.ReactNode;
+```
+
+## Composition Pattern
+
+```tsx
+// Molecules should compose atoms, not recreate them
+<Card>
+  <CardHeader>
+    <StatusBadge status={status} />
+  </CardHeader>
+  <CardBody>
+    {children}
+  </CardBody>
+  <CardFooter>
+    <Button onClick={onAction}>Action</Button>
+  </CardFooter>
+</Card>
+```
+
+## Do Not
+
+- Fetch data inside molecules
+- Include complex business logic
+- Create molecules larger than ~100 lines
+- Skip keyboard accessibility
+- Hardcode text content
