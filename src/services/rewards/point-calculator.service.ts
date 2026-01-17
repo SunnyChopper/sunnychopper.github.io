@@ -1,5 +1,5 @@
-import type { Task, Area, Priority } from '../../types/growth-system';
-import type { TaskPointValuation } from '../../types/rewards';
+import type { Task, Area, Priority } from '@/types/growth-system';
+import type { TaskPointValuation } from '@/types/rewards';
 
 const BASE_POINTS_PER_MINUTE = 10;
 

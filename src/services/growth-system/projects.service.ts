@@ -1,11 +1,6 @@
-import { apiClient } from '../../lib/api-client';
-import type {
-  Project,
-  CreateProjectInput,
-  UpdateProjectInput,
-  Task,
-} from '../../types/growth-system';
-import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
+import { apiClient } from '@/lib/api-client';
+import type { Project, CreateProjectInput, UpdateProjectInput, Task } from '@/types/growth-system';
+import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 
 interface BackendPaginatedResponse<T> {
   data: T[];

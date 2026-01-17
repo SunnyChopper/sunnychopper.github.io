@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import type {
   Course,
   CourseModule,
@@ -6,7 +6,7 @@ import type {
   CreateCourseInput,
   UpdateCourseInput,
   ApiResponse,
-} from '../../types/knowledge-vault';
+} from '@/types/knowledge-vault';
 
 interface BackendPaginatedResponse<T> {
   data: T[];

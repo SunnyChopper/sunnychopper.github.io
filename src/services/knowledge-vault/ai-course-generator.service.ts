@@ -1,16 +1,16 @@
 import { coursesService } from './courses.service';
 import { vaultItemsService } from './vault-items.service';
-import { generateId } from '../../mocks/storage';
-import { getFeatureConfig } from '../../lib/llm/config/feature-config-store';
-import { getApiKey, hasApiKey } from '../../lib/llm/config/api-key-store';
-import { createProvider } from '../../lib/llm/providers/provider-factory';
+import { generateId } from '@/mocks/storage';
+import { getFeatureConfig } from '@/lib/llm/config/feature-config-store';
+import { getApiKey, hasApiKey } from '@/lib/llm/config/api-key-store';
+import { createProvider } from '@/lib/llm/providers/provider-factory';
 import type {
   Course,
   CourseModule,
   PreAssessmentQuestion,
   DifficultyLevel,
   ApiResponse,
-} from '../../types/knowledge-vault';
+} from '@/types/knowledge-vault';
 import {
   buildCourseGenerationGraph,
   initializeState,
@@ -26,7 +26,7 @@ import type {
   CourseGenerationInput,
   ConceptNode,
 } from './course-generation/types';
-import { PreAssessmentSchema } from '../../lib/llm/schemas/course-ai-schemas';
+import { PreAssessmentSchema } from '@/lib/llm/schemas/course-ai-schemas';
 
 interface GeneratePreAssessmentInput {
   topic: string;

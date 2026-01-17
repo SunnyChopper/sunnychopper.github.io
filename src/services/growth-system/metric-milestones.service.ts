@@ -1,8 +1,8 @@
-import { getStorageAdapter } from '../../lib/storage';
-import { generateId, randomDelay } from '../../mocks/storage';
-import type { Metric, MetricLog, MetricMilestone } from '../../types/growth-system';
-import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
-import { calculateProgress, calculateStreaks } from '../../utils/metric-analytics';
+import { getStorageAdapter } from '@/lib/storage';
+import { generateId, randomDelay } from '@/mocks/storage';
+import type { Metric, MetricLog, MetricMilestone } from '@/types/growth-system';
+import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
+import { calculateProgress, calculateStreaks } from '@/utils/metric-analytics';
 import { walletService } from '../rewards/wallet.service';
 
 // Milestone point values

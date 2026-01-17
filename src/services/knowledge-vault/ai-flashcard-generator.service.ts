@@ -1,9 +1,9 @@
-import { getFeatureConfig } from '../../lib/llm/config/feature-config-store';
-import { getApiKey, hasApiKey } from '../../lib/llm/config/api-key-store';
-import { createProvider } from '../../lib/llm/providers/provider-factory';
+import { getFeatureConfig } from '@/lib/llm/config/feature-config-store';
+import { getApiKey, hasApiKey } from '@/lib/llm/config/api-key-store';
+import { createProvider } from '@/lib/llm/providers/provider-factory';
 import { vaultItemsService } from './vault-items.service';
-import { generateId } from '../../mocks/storage';
-import type { ApiResponse, Flashcard } from '../../types/knowledge-vault';
+import { generateId } from '@/mocks/storage';
+import type { ApiResponse, Flashcard } from '@/types/knowledge-vault';
 import { spacedRepetitionService } from './spaced-repetition.service';
 
 interface GenerateFlashcardsInput {

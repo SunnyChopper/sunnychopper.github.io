@@ -1,7 +1,7 @@
-import type { ApiResponse } from '../../types/api-contracts';
-import { getFeatureConfig, getApiKey, hasApiKey } from '../../lib/llm/config';
-import { createProvider } from '../../lib/llm/providers';
-import type { Area } from '../../types/growth-system';
+import type { ApiResponse } from '@/types/api-contracts';
+import { getFeatureConfig, getApiKey, hasApiKey } from '@/lib/llm/config';
+import { createProvider } from '@/lib/llm/providers';
+import type { Area } from '@/types/growth-system';
 
 const ERROR_LLM_NOT_CONFIGURED = 'LLM not configured. Please configure in Settings.';
 const ERROR_API_KEY_NOT_FOUND = 'API key not found';
@@ -20,7 +20,7 @@ import {
   type AreaSuggestionOutput,
   type GenerateContentOutput,
   type ContentAnalysisOutput,
-} from '../../lib/llm/schemas/note-ai-schemas';
+} from '@/lib/llm/schemas/note-ai-schemas';
 
 export const noteAIService = {
   /**

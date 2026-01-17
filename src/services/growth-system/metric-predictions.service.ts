@@ -1,6 +1,6 @@
-import type { Metric, MetricLog } from '../../types/growth-system';
-import type { ApiResponse } from '../../types/api-contracts';
-import { predictTrajectory, getTrendData } from '../../utils/metric-analytics';
+import type { Metric, MetricLog } from '@/types/growth-system';
+import type { ApiResponse } from '@/types/api-contracts';
+import { predictTrajectory, getTrendData } from '@/utils/metric-analytics';
 
 export interface PredictionResult {
   futureValue: number;

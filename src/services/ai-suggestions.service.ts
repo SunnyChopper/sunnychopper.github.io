@@ -1,4 +1,4 @@
-import type { StoredSuggestion } from '../types/llm';
+import type { StoredSuggestion } from '@/types/llm';
 
 const SUGGESTIONS_STORAGE_KEY = 'gs_ai_suggestions';
 const DISMISSAL_EXPIRY_HOURS = 48;

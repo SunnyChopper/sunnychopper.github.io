@@ -1,7 +1,7 @@
-import { BaseAgent } from '../../../../lib/llm/langgraph/base-agent';
-import { RefinementSchema } from '../../../../lib/llm/schemas/course-ai-schemas';
+import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
+import { RefinementSchema } from '@/lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
-import { generateId } from '../../../../mocks/storage';
+import { generateId } from '@/mocks/storage';
 
 // Helper functions to reduce complexity
 function formatAlignmentContext(state: CourseGenerationState): string {

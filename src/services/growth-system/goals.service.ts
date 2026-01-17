@@ -1,5 +1,5 @@
-import { apiClient } from '../../lib/api-client';
-import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
+import { apiClient } from '@/lib/api-client';
+import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 import type {
   Goal,
   CreateGoalInput,
@@ -9,7 +9,7 @@ import type {
   Habit,
   GoalProgressBreakdown,
   GoalActivity,
-} from '../../types/growth-system';
+} from '@/types/growth-system';
 
 interface BackendPaginatedResponse<T> {
   data: T[];

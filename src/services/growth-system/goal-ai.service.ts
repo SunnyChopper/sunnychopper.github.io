@@ -1,13 +1,8 @@
-import { apiClient } from '../../lib/api-client';
-import type {
-  Goal,
-  Task,
-  GoalProgressBreakdown,
-  SuccessCriterion,
-} from '../../types/growth-system';
-import type { ApiResponse } from '../../types/api-contracts';
-import { getFeatureConfig, getApiKey, hasApiKey } from '../../lib/llm/config';
-import { createProvider } from '../../lib/llm/providers';
+import { apiClient } from '@/lib/api-client';
+import type { Goal, Task, GoalProgressBreakdown, SuccessCriterion } from '@/types/growth-system';
+import type { ApiResponse } from '@/types/api-contracts';
+import { getFeatureConfig, getApiKey, hasApiKey } from '@/lib/llm/config';
+import { createProvider } from '@/lib/llm/providers';
 import {
   ProgressCoachingOutputSchema,
   GoalHealthScoreOutputSchema,
@@ -17,7 +12,7 @@ import {
   type GoalHealthScoreOutput,
   type GoalDecompositionOutput,
   type ConflictDetectionOutput,
-} from '../../lib/llm/schemas/goal-ai-schemas';
+} from '@/lib/llm/schemas/goal-ai-schemas';
 
 interface AIResponse<T> {
   result: T;

@@ -7,8 +7,8 @@ import type {
   Task,
   Metric,
   Habit,
-} from '../../types/growth-system';
-import { randomDelay } from '../../mocks/storage';
+} from '@/types/growth-system';
+import { randomDelay } from '@/mocks/storage';
 
 type HealthStatus = 'healthy' | 'at_risk' | 'behind' | 'dormant';
 

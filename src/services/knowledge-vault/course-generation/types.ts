@@ -1,4 +1,4 @@
-import type { DifficultyLevel } from '../../../types/knowledge-vault';
+import type { DifficultyLevel } from '@/types/knowledge-vault';
 
 /**
  * Course Generation State - Shared global state for LangGraph workflow

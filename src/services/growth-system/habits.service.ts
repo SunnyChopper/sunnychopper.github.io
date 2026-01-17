@@ -1,12 +1,12 @@
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import type {
   Habit,
   HabitLog,
   CreateHabitInput,
   UpdateHabitInput,
   CreateHabitLogInput,
-} from '../../types/growth-system';
-import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
+} from '@/types/growth-system';
+import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 
 interface BackendPaginatedResponse<T> {
   data: T[];

@@ -1,8 +1,8 @@
-import { apiClient } from '../../lib/api-client';
-import type { Metric, MetricLog, Goal } from '../../types/growth-system';
-import type { ApiResponse } from '../../types/api-contracts';
-import { getFeatureConfig, getApiKey, hasApiKey } from '../../lib/llm/config';
-import { createProvider } from '../../lib/llm/providers';
+import { apiClient } from '@/lib/api-client';
+import type { Metric, MetricLog, Goal } from '@/types/growth-system';
+import type { ApiResponse } from '@/types/api-contracts';
+import { getFeatureConfig, getApiKey, hasApiKey } from '@/lib/llm/config';
+import { createProvider } from '@/lib/llm/providers';
 import { z } from 'zod';
 
 const ERROR_LLM_NOT_CONFIGURED = 'LLM not configured. Please configure in Settings.';

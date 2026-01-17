@@ -5,7 +5,7 @@ import type {
   CreateConceptNodeInput,
   UpdateConceptNodeInput,
   CreateConceptEdgeInput,
-} from '../../types/concept-graph';
+} from '@/types/concept-graph';
 
 const STORAGE_KEY_NODES = 'kv_concept_nodes';
 const STORAGE_KEY_EDGES = 'kv_concept_edges';

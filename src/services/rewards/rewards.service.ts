@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import type {
   Reward,
   RewardRedemption,
@@ -7,8 +7,8 @@ import type {
   RedeemRewardInput,
   RewardWithRedemptions,
   RewardCategory,
-} from '../../types/rewards';
-import type { ApiResponse } from '../../types/api-contracts';
+} from '@/types/rewards';
+import type { ApiResponse } from '@/types/api-contracts';
 
 interface BackendPaginatedResponse<T> {
   data: T[];

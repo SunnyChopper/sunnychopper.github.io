@@ -22,8 +22,8 @@ export interface ReviewResult {
 const DEFAULT_EASINESS_FACTOR = 2.5;
 const MIN_EASINESS_FACTOR = 1.3;
 
-import { apiClient } from '../../lib/api-client';
-import type { ApiResponse } from '../../types/api-contracts';
+import { apiClient } from '@/lib/api-client';
+import type { ApiResponse } from '@/types/api-contracts';
 
 interface ReviewSessionResult {
   updated: number;

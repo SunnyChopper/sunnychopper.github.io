@@ -1,8 +1,8 @@
-import type { Area, Priority } from '../../types/growth-system';
+import type { Area, Priority } from '@/types/growth-system';
 import { z } from 'zod';
-import { getFeatureConfig } from '../../lib/llm/config/feature-config-store';
-import { getApiKey } from '../../lib/llm/config/api-key-store';
-import { createProvider } from '../../lib/llm/providers/provider-factory';
+import { getFeatureConfig } from '@/lib/llm/config/feature-config-store';
+import { getApiKey } from '@/lib/llm/config/api-key-store';
+import { createProvider } from '@/lib/llm/providers/provider-factory';
 
 const pointCalculationSchema = z.object({
   pointValue: z.number().min(0),

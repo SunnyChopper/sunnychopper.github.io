@@ -1,4 +1,4 @@
-import { getLLMAdapter } from '../lib/llm';
+import { getLLMAdapter } from '@/lib/llm';
 import type {
   LLMResponse,
   ParseTaskInput,
@@ -21,8 +21,8 @@ import type {
   ProjectTaskGenOutput,
   ProjectRiskInput,
   ProjectRiskOutput,
-} from '../types/llm';
-import type { Task, Project } from '../types/growth-system';
+} from '@/types/llm';
+import type { Task, Project } from '@/types/growth-system';
 
 class LLMService {
   isConfigured(): boolean {

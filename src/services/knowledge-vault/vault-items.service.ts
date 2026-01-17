@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import type {
   VaultItem,
   Note,
@@ -14,8 +14,8 @@ import type {
   CreateFlashcardInput,
   UpdateFlashcardInput,
   ApiResponse,
-} from '../../types/knowledge-vault';
-import type { Area } from '../../types/growth-system';
+} from '@/types/knowledge-vault';
+import type { Area } from '@/types/growth-system';
 
 interface CreateCourseLessonInput {
   title: string;

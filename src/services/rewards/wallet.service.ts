@@ -1,6 +1,6 @@
-import { apiClient } from '../../lib/api-client';
-import type { WalletBalance, WalletTransaction } from '../../types/rewards';
-import type { ApiResponse } from '../../types/api-contracts';
+import { apiClient } from '@/lib/api-client';
+import type { WalletBalance, WalletTransaction } from '@/types/rewards';
+import type { ApiResponse } from '@/types/api-contracts';
 
 interface WalletResponse {
   balance: number;

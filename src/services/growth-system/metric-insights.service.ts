@@ -1,7 +1,7 @@
-import { getStorageAdapter } from '../../lib/storage';
-import { generateId, randomDelay } from '../../mocks/storage';
-import type { MetricInsight } from '../../types/growth-system';
-import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
+import { getStorageAdapter } from '@/lib/storage';
+import { generateId, randomDelay } from '@/mocks/storage';
+import type { MetricInsight } from '@/types/growth-system';
+import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 

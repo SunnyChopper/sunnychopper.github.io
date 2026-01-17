@@ -1,8 +1,8 @@
-import { BaseAgent } from '../../../../lib/llm/langgraph/base-agent';
-import { ModuleLessonsSchema } from '../../../../lib/llm/schemas/course-ai-schemas';
+import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
+import { ModuleLessonsSchema } from '@/lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
 import { getModuleContextOptimized } from '../context-manager';
-import { generateId } from '../../../../mocks/storage';
+import { generateId } from '@/mocks/storage';
 
 /**
  * Module Architect Agent

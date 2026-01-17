@@ -1,4 +1,4 @@
-import { BaseAgent } from '../../../../lib/llm/langgraph/base-agent';
+import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
 
 /**

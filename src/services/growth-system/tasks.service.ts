@@ -1,6 +1,6 @@
-import { llmConfig } from '../../lib/llm';
-import { taskPointsAIService } from '../ai/task-points.service';
-import { apiClient } from '../../lib/api-client';
+import { llmConfig } from '@/lib/llm';
+import { taskPointsAIService } from '@/services/ai/task-points.service';
+import { apiClient } from '@/lib/api-client';
 import type {
   Task,
   CreateTaskInput,
@@ -9,8 +9,8 @@ import type {
   FilterOptions,
   PaginatedResponse,
   DependencyGraph,
-} from '../../types/growth-system';
-import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
+} from '@/types/growth-system';
+import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 
 interface BackendPaginatedResponse<T> {
   data: T[];
