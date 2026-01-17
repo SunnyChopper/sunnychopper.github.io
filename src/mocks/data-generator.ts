@@ -17,6 +17,7 @@ import type {
   LogbookProject,
   LogbookGoal,
   LogbookHabit,
+  SuccessCriterion,
 } from '@/types/growth-system';
 import { generateId } from './storage';
 
@@ -30,6 +31,19 @@ function addDays(date: Date, days: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;
+}
+
+function createSuccessCriteria(texts: string[]): SuccessCriterion[] {
+  return texts.map((text, index) => ({
+    id: generateId(),
+    text: text.replace(/^✓\s*/, ''),
+    isCompleted: text.includes('✓'),
+    completedAt: text.includes('✓') ? new Date().toISOString() : null,
+    linkedMetricId: null,
+    linkedTaskId: null,
+    targetDate: null,
+    order: index,
+  }));
 }
 
 export function generateSeedData() {
@@ -65,11 +79,14 @@ export function generateSeedData() {
     status: 'Active',
     targetDate: formatDate(addDays(now, 180)),
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       'Complete MVP with core features',
       'Acquire 100 paying customers',
       'Generate $5,000 MRR',
-    ],
+    ]),
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     notes: null,
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -90)),
@@ -88,12 +105,15 @@ export function generateSeedData() {
     status: 'OnTrack',
     targetDate: formatDate(addDays(now, 120)),
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       'Build up to 40 miles per week',
       'Complete a half marathon',
       'Finish marathon in under 4 hours',
-    ],
+    ]),
     notes: null,
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -60)),
     updatedAt: formatDate(now),
@@ -111,12 +131,15 @@ export function generateSeedData() {
     status: 'Active',
     targetDate: formatDate(addDays(now, 30)),
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       'Close 15 new deals',
       'Achieve $150K in revenue',
       'Maintain 95% customer retention',
-    ],
+    ]),
     notes: null,
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -60)),
     updatedAt: formatDate(now),
@@ -134,13 +157,16 @@ export function generateSeedData() {
     status: 'OnTrack',
     targetDate: formatDate(addDays(now, 30)),
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       'Have weekly family dinners',
       'Plan and execute one family outing',
       'Call parents twice per week',
       '✓ Start monthly family game night',
-    ],
+    ]),
     notes: 'Focus on being present and engaged during family time',
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -15)),
     updatedAt: formatDate(now),
@@ -158,13 +184,16 @@ export function generateSeedData() {
     status: 'Active',
     targetDate: formatDate(addDays(now, 5)),
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       '✓ Complete user authentication feature',
       '✓ Write unit tests for API endpoints',
       'Deploy to staging environment',
       'Code review for team members',
-    ],
+    ]),
     notes: null,
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -2)),
     updatedAt: formatDate(now),
@@ -182,12 +211,15 @@ export function generateSeedData() {
     status: 'Active',
     targetDate: null,
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       '✓ Meditate for 10 minutes',
       '✓ Practice mindful breathing',
       'Journal after meditation',
-    ],
+    ]),
     notes: 'Best time is early morning before work',
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -30)),
     updatedAt: formatDate(now),
@@ -205,13 +237,16 @@ export function generateSeedData() {
     status: 'Planning',
     targetDate: formatDate(addDays(now, 365)),
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       'Complete Duolingo Spanish course',
       'Have 50 conversation sessions with native speakers',
       'Watch 10 Spanish movies without subtitles',
       'Pass DELE A2 exam',
-    ],
+    ]),
     notes: 'Planning to start after Q1 work commitments ease up',
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -5)),
     updatedAt: formatDate(now),
@@ -229,13 +264,16 @@ export function generateSeedData() {
     status: 'AtRisk',
     targetDate: formatDate(addDays(now, 90)),
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       '✓ Create debt payoff plan',
       'Pay $2,000 per month toward balance',
       'Reduce total debt by 50%',
       'Avoid new credit card purchases',
-    ],
+    ]),
     notes: 'Behind schedule due to unexpected expenses. Need to cut discretionary spending.',
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -45)),
     updatedAt: formatDate(now),
@@ -253,13 +291,16 @@ export function generateSeedData() {
     status: 'Active',
     targetDate: formatDate(addDays(now, 20)),
     completedDate: null,
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       '✓ Declutter desk and shelves',
       '✓ Install better lighting',
       'Set up ergonomic monitor stand',
       'Create filing system for documents',
-    ],
+    ]),
     notes: null,
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(now),
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -10)),
     updatedAt: formatDate(now),
@@ -277,12 +318,15 @@ export function generateSeedData() {
     status: 'Achieved',
     targetDate: formatDate(addDays(now, -15)),
     completedDate: formatDate(addDays(now, -15)),
-    successCriteria: [
+    successCriteria: createSuccessCriteria([
       '✓ No work emails after 6 PM',
       '✓ Take all vacation days',
       '✓ Exercise 3x per week',
       '✓ Have one hobby activity per week',
-    ],
+    ]),
+    progressConfig: null,
+    parentGoalId: null,
+    lastActivityAt: formatDate(addDays(now, -15)),
     notes: 'Successfully implemented boundaries. Feeling much better!',
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -90)),

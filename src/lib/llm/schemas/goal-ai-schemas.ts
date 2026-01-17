@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ConfidenceSchema, AreaSchema, PrioritySchema } from './common-schemas';
+import { ConfidenceSchema, PrioritySchema } from './common-schemas';
 
 // Progress Coaching Output
 export const ProgressCoachingOutputSchema = z.object({

@@ -14,11 +14,11 @@ export function validateProps<T>(props: unknown, schema: z.ZodSchema<T>, compone
   if (import.meta.env.DEV) {
     const result = schema.safeParse(props);
     if (!result.success) {
-      const errorMessage = `[${componentName}] Prop validation failed: ${result.error.errors
+      const errorMessage = `[${componentName}] Prop validation failed: ${result.error.issues
         .map((e) => `${e.path.join('.')}: ${e.message}`)
         .join(', ')}`;
       console.error(errorMessage, {
-        errors: result.error.errors,
+        errors: result.error.issues,
         props,
       });
       throw new Error(errorMessage);

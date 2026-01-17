@@ -27,14 +27,14 @@ export abstract class BaseAgent {
       return this.provider;
     }
 
-    const featureConfig = getFeatureConfig(this.feature);
+    const featureConfig = await getFeatureConfig(this.feature);
     if (!featureConfig || !hasApiKey(featureConfig.provider)) {
       throw new Error(
         `LLM not configured for feature: ${this.feature}. Please configure in Settings.`
       );
     }
 
-    const apiKey = getApiKey(featureConfig.provider);
+    const apiKey = await getApiKey(featureConfig.provider);
     if (!apiKey) {
       throw new Error('API key not found');
     }
