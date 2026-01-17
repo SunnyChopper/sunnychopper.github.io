@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import type { BlogPost } from '../../types';
+import type { BlogPost } from '@/types';
 
 interface BlogCardProps {
   post: BlogPost;

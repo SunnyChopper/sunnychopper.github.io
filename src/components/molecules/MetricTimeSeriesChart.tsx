@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
 import { AlertCircle } from 'lucide-react';
-import type { Metric, MetricLog } from '../../types/growth-system';
+import type { Metric, MetricLog } from '@/types/growth-system';
 import {
   getTimeSeriesData,
   getTrendData,
   detectAnomalies,
   predictTrajectory,
   getPeriodComparison,
-} from '../../utils/metric-analytics';
+} from '@/utils/metric-analytics';
 
 interface MetricTimeSeriesChartProps {
   metric: Metric;

@@ -17,7 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Check, X, Calendar, Link2 } from 'lucide-react';
-import type { SuccessCriterion } from '../../types/growth-system';
+import type { SuccessCriterion } from '@/types/growth-system';
 
 interface SortableCriterionItemProps {
   criterion: SuccessCriterion;
@@ -220,10 +220,12 @@ export function SortableCriteriaList({
       const oldIndex = items.findIndex((item) => item.id === active.id);
       const newIndex = items.findIndex((item) => item.id === over.id);
 
-      const reordered = arrayMove(items, oldIndex, newIndex).map((item, index) => ({
-        ...item,
-        order: index,
-      }));
+      const reordered = arrayMove(items, oldIndex, newIndex).map(
+        (item: SuccessCriterion, index: number) => ({
+          ...item,
+          order: index,
+        })
+      );
 
       setItems(reordered);
       onReorder?.(reordered);

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, X, CheckSquare, BarChart3, Repeat, Target } from 'lucide-react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import type { Goal } from '../../types/growth-system';
+import { motion, AnimatePresence, type PanInfo } from 'framer-motion';
+import type { Goal } from '@/types/growth-system';
 
 interface GoalMobileActionsProps {
   goal: Goal;
@@ -51,7 +51,7 @@ export function GoalMobileActions({
     },
   ].filter((a) => a.action);
 
-  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDrag = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     // Swipe up to expand
     if (info.offset.y < -50 && !isExpanded) {
       setIsExpanded(true);

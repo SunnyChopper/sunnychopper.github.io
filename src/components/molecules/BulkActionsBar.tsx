@@ -1,7 +1,7 @@
 import { Check, X, Archive, Trash2, Edit } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { GoalStatus, Priority } from '../../types/growth-system';
-import Button from '../atoms/Button';
+import type { GoalStatus, Priority } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
 
 interface BulkActionsBarProps {
   selectedCount: number;

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link as LinkIcon } from 'lucide-react';
-import type { Metric, Goal, MetricLog } from '../../types/growth-system';
-import { goalsService } from '../../services/growth-system/goals.service';
-import { calculateProgress } from '../../utils/metric-analytics';
+import type { Metric, Goal, MetricLog } from '@/types/growth-system';
+import { goalsService } from '@/services/growth-system/goals.service';
+import { calculateProgress } from '@/utils/metric-analytics';
 
 interface GoalMetricLinkProps {
   metric: Metric;
@@ -28,7 +28,7 @@ export function GoalMetricLink({ metric, logs, onLinkChange }: GoalMetricLinkPro
           if (
             metricsResponse.success &&
             metricsResponse.data &&
-            metricsResponse.data.some((gm) => gm.metricId === metric.id)
+            metricsResponse.data.some((gm) => gm.id === metric.id)
           ) {
             linked.push(goal);
           }

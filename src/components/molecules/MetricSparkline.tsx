@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { MetricLog } from '../../types/growth-system';
-import { getTimeSeriesData } from '../../utils/metric-analytics';
+import type { MetricLog } from '@/types/growth-system';
+import { getTimeSeriesData } from '@/utils/metric-analytics';
 
 interface MetricSparklineProps {
   logs: MetricLog[];

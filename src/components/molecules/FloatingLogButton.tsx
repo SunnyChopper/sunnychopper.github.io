@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
-import type { Habit, HabitLog } from '../../types/growth-system';
-import { getLastCompletedDateFromLogs } from '../../utils/date-formatters';
+import type { Habit, HabitLog } from '@/types/growth-system';
+import { getLastCompletedDateFromLogs } from '@/utils/date-formatters';
 
 interface FloatingLogButtonProps {
   habit: Habit;

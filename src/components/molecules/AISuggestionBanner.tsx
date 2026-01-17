@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, X, RefreshCw, ChevronRight } from 'lucide-react';
-import { aiSuggestionsService } from '../../services/ai-suggestions.service';
-import type { StoredSuggestion } from '../../types/llm';
-import { llmConfig } from '../../lib/llm';
+import { aiSuggestionsService } from '@/services/ai-suggestions.service';
+import type { StoredSuggestion } from '@/types/llm';
+import { llmConfig } from '@/lib/llm';
 
 interface AISuggestionBannerProps {
   entityType?: 'task' | 'project' | null;

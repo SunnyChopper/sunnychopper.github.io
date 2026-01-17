@@ -1,5 +1,5 @@
-import Dialog from '../organisms/Dialog';
-import type { Skill } from '../../types';
+import Dialog from '@/components/organisms/Dialog';
+import type { Skill } from '@/types';
 
 interface SkillModalProps {
   skill: Skill | null;

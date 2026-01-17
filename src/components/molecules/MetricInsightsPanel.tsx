@@ -10,13 +10,13 @@ import {
   Target,
   Lightbulb,
 } from 'lucide-react';
-import { llmConfig } from '../../lib/llm';
-import type { Metric, MetricLog, MetricInsight } from '../../types/growth-system';
-import { metricInsightsService } from '../../services/growth-system/metric-insights.service';
-import { metricAIService } from '../../services/growth-system/metric-ai.service';
-import Button from '../atoms/Button';
-import { AIThinkingIndicator } from '../atoms/AIThinkingIndicator';
-import { AIConfidenceIndicator } from '../atoms/AIConfidenceIndicator';
+import { llmConfig } from '@/lib/llm';
+import type { Metric, MetricLog, MetricInsight } from '@/types/growth-system';
+import { metricInsightsService } from '@/services/growth-system/metric-insights.service';
+import { metricAIService } from '@/services/growth-system/metric-ai.service';
+import Button from '@/components/atoms/Button';
+import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
+import { AIConfidenceIndicator } from '@/components/atoms/AIConfidenceIndicator';
 
 type InsightType = 'pattern' | 'anomaly' | 'correlation' | 'prediction' | 'milestone';
 

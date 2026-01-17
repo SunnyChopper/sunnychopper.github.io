@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import type { Habit, HabitLog } from '../../types/growth-system';
-import { getCompletionRateData, type CompletionRateData } from '../../utils/habit-analytics';
-import { getHabitTypeColors } from '../../utils/habit-colors';
+import type { Habit, HabitLog } from '@/types/growth-system';
+import { getCompletionRateData, type CompletionRateData } from '@/utils/habit-analytics';
+import { getHabitTypeColors } from '@/utils/habit-colors';
 
 interface ChartItemProps {
   data: CompletionRateData;

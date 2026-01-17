@@ -1,10 +1,10 @@
 import { Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import type { Goal } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { StatusBadge } from '../atoms/StatusBadge';
-import { ROUTES } from '../../routes';
+import type { Goal } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { ROUTES } from '@/routes';
 
 interface LinkedGoalsDisplayProps {
   goals: Goal[];

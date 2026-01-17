@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import type { Habit, HabitLog } from '../../types/growth-system';
-import { generateHeatmapData } from '../../utils/habit-analytics';
+import type { Habit, HabitLog } from '@/types/growth-system';
+import { generateHeatmapData } from '@/utils/habit-analytics';
 
 interface HabitCalendarHeatmapProps {
   habit: Habit;

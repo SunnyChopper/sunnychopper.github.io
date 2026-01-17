@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import { Flame, Target, TrendingUp, Award } from 'lucide-react';
-import type { Habit, HabitLog } from '../../types/growth-system';
+import type { Habit, HabitLog } from '@/types/growth-system';
 import {
   getAllStreaks,
   calculateCompletionRate,
   calculateConsistencyScore,
   calculateTrend,
   getLogsForDateRange,
-} from '../../utils/habit-analytics';
+} from '@/utils/habit-analytics';
 import { HabitStatCard } from './HabitStatCard';
 
 interface HabitStatsDashboardProps {

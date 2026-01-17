@@ -8,9 +8,9 @@ import {
   CreditCard,
   Link as LinkIcon,
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import type { VaultItemType } from '../../types/knowledge-vault';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
+import { cn } from '@/lib/utils';
+import type { VaultItemType } from '@/types/knowledge-vault';
+import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 
 interface LinkedItemsPickerProps {
   value: string[];

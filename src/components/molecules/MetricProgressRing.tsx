@@ -1,5 +1,5 @@
-import type { Metric } from '../../types/growth-system';
-import { calculateProgress } from '../../utils/metric-analytics';
+import type { Metric } from '@/types/growth-system';
+import { calculateProgress } from '@/utils/metric-analytics';
 
 interface MetricProgressRingProps {
   metric: Metric;

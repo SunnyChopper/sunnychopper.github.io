@@ -1,8 +1,8 @@
 import { BarChart3, Plus, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Metric, MetricLog } from '../../types/growth-system';
+import type { Metric, MetricLog } from '@/types/growth-system';
 import { EmptyState } from './EmptyState';
-import Button from '../atoms/Button';
+import Button from '@/components/atoms/Button';
 
 interface MetricWithLogs {
   metric: Metric;

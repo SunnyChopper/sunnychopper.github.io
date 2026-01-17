@@ -1,6 +1,6 @@
 import { AlertTriangle, RefreshCw, X } from 'lucide-react';
-import { useBackendStatus } from '../../contexts/BackendStatusContext';
-import Button from '../atoms/Button';
+import { useBackendStatus } from '@/contexts/BackendStatusContext';
+import Button from '@/components/atoms/Button';
 import { useState } from 'react';
 
 export function BackendStatusBanner() {

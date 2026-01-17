@@ -1,12 +1,7 @@
 import { X } from 'lucide-react';
-import type { Area, Priority, TaskStatus } from '../../types/growth-system';
-import Button from '../atoms/Button';
-import {
-  AREAS,
-  PRIORITIES,
-  TASK_STATUSES,
-  TASK_STATUS_LABELS,
-} from '../../constants/growth-system';
+import type { Area, Priority, TaskStatus } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { AREAS, PRIORITIES, TASK_STATUSES, TASK_STATUS_LABELS } from '@/constants/growth-system';
 
 interface TaskFiltersProps {
   selectedArea?: Area;

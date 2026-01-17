@@ -1,13 +1,13 @@
 import { ChevronRight, Edit2, Trash2 } from 'lucide-react';
-import type { Habit, HabitLog } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import Button from '../atoms/Button';
-import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
+import type { Habit, HabitLog } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import Button from '@/components/atoms/Button';
+import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
 import {
   formatRelativeDate,
   getLastCompletedDateFromLogs,
   getNextExpectedDate,
-} from '../../utils/date-formatters';
+} from '@/utils/date-formatters';
 
 interface HabitDetailHeaderProps {
   habit: Habit;

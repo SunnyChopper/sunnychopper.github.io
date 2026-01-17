@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import type { Goal, GoalProgressBreakdown } from '../../types/growth-system';
+import type { Goal, GoalProgressBreakdown } from '@/types/growth-system';
 import { GoalCard } from './GoalCard';
 
 interface DraggableGoalCardProps {

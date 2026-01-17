@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
-import type { Metric, MetricLog } from '../../types/growth-system';
+import type { Metric, MetricLog } from '@/types/growth-system';
 import {
   metricPredictionsService,
   type PredictionResult,
   type TargetDatePrediction,
-} from '../../services/growth-system/metric-predictions.service';
+} from '@/services/growth-system/metric-predictions.service';
 import { MetricTimeSeriesChart } from './MetricTimeSeriesChart';
 
 interface MetricPredictionsProps {

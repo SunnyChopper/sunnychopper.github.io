@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import type { Habit, HabitLog } from '../../types/growth-system';
-import { generateCalendarDays } from '../../utils/habit-analytics';
-import { getHabitTypeColors } from '../../utils/habit-colors';
+import type { Habit, HabitLog } from '@/types/growth-system';
+import { generateCalendarDays } from '@/utils/habit-analytics';
+import { getHabitTypeColors } from '@/utils/habit-colors';
 
 interface HabitCalendarViewProps {
   habit: Habit;

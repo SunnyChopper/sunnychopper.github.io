@@ -1,7 +1,7 @@
 import { CheckSquare, TrendingUp, BarChart3, Repeat } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { GoalProgressBreakdown } from '../../types/growth-system';
-import { ProgressRing } from '../atoms/ProgressRing';
+import type { GoalProgressBreakdown } from '@/types/growth-system';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
 
 interface GoalProgressDashboardProps {
   progress: GoalProgressBreakdown;

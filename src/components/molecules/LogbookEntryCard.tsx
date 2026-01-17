@@ -1,5 +1,5 @@
 import { Calendar, Smile, Meh, Frown } from 'lucide-react';
-import type { LogbookEntry, LogbookMood } from '../../types/growth-system';
+import type { LogbookEntry, LogbookMood } from '@/types/growth-system';
 
 interface LogbookEntryCardProps {
   entry: LogbookEntry;

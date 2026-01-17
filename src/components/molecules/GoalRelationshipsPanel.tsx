@@ -1,8 +1,8 @@
 import { Target, GitBranch, FolderKanban, ArrowRight, ArrowDown } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Goal, EntitySummary, ProjectStatus } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { StatusBadge } from '../atoms/StatusBadge';
+import type { Goal, EntitySummary, ProjectStatus } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
 
 interface GoalRelationshipsPanelProps {
   goal: Goal;

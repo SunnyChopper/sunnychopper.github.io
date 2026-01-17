@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Sparkles, Wand2, X, Check, AlertCircle } from 'lucide-react';
-import { llmService } from '../../services/llm.service';
-import { llmConfig } from '../../lib/llm';
-import type { CreateTaskInput, Task } from '../../types/growth-system';
+import { llmService } from '@/services/llm.service';
+import { llmConfig } from '@/lib/llm';
+import type { CreateTaskInput, Task } from '@/types/growth-system';
 import type {
   ParseTaskOutput,
   TaskBreakdownOutput,
@@ -10,10 +10,10 @@ import type {
   EffortEstimationOutput,
   TaskCategorizationOutput,
   DependencyDetectionOutput,
-} from '../../types/llm';
-import Button from '../atoms/Button';
-import { AIThinkingIndicator } from '../atoms/AIThinkingIndicator';
-import { AIConfidenceIndicator } from '../atoms/AIConfidenceIndicator';
+} from '@/types/llm';
+import Button from '@/components/atoms/Button';
+import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
+import { AIConfidenceIndicator } from '@/components/atoms/AIConfidenceIndicator';
 
 type AssistMode = 'parse' | 'categorize' | 'estimate' | 'priority' | 'breakdown' | 'dependencies';
 

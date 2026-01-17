@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { MessageSquare, Link as LinkIcon, Calendar, TrendingUp } from 'lucide-react';
-import type { Metric, MetricLog } from '../../types/growth-system';
-import { detectAnomalies } from '../../utils/metric-analytics';
+import type { Metric, MetricLog } from '@/types/growth-system';
+import { detectAnomalies } from '@/utils/metric-analytics';
 
 interface MetricContextualInsightsProps {
   metric: Metric;

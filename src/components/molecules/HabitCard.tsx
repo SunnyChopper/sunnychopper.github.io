@@ -1,6 +1,6 @@
 import { Check, Flame, Calendar, Target } from 'lucide-react';
-import type { Habit } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
+import type { Habit } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
 
 interface HabitCardProps {
   habit: Habit;

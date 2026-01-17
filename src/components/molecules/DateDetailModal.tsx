@@ -1,8 +1,8 @@
 import { Plus, Trash2 } from 'lucide-react';
-import type { HabitLog } from '../../types/growth-system';
-import Dialog from '../organisms/Dialog';
-import Button from '../atoms/Button';
-import { formatCompletionDate } from '../../utils/date-formatters';
+import type { Habit, HabitLog } from '@/types/growth-system';
+import Dialog from '@/components/organisms/Dialog';
+import Button from '@/components/atoms/Button';
+import { formatCompletionDate } from '@/utils/date-formatters';
 
 interface DateDetailModalProps {
   isOpen: boolean;

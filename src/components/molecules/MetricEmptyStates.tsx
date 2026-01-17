@@ -1,6 +1,6 @@
 import { Plus, TrendingUp, Target, Calendar, Sparkles } from 'lucide-react';
-import type { Metric } from '../../types/growth-system';
-import Button from '../atoms/Button';
+import type { Metric } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
 
 interface MetricEmptyStatesProps {
   type: 'no_metrics' | 'no_logs' | 'no_insights' | 'no_milestones';

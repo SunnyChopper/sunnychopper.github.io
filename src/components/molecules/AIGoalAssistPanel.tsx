@@ -12,19 +12,19 @@ import {
   GitBranch,
   MessageCircle,
 } from 'lucide-react';
-import { llmConfig } from '../../lib/llm';
-import type { Goal, GoalProgressBreakdown, Task } from '../../types/growth-system';
-import type { ApiError } from '../../types/api-contracts';
+import { llmConfig } from '@/lib/llm';
+import type { Goal, GoalProgressBreakdown, Task } from '@/types/growth-system';
+import type { ApiError } from '@/types/api-contracts';
 import type {
   ProgressCoachingOutput,
   GoalHealthScoreOutput,
   GoalDecompositionOutput,
   ConflictDetectionOutput,
-} from '../../lib/llm/schemas/goal-ai-schemas';
-import Button from '../atoms/Button';
-import { AIThinkingIndicator } from '../atoms/AIThinkingIndicator';
-import { AIConfidenceIndicator } from '../atoms/AIConfidenceIndicator';
-import { goalAIService } from '../../services/growth-system/goal-ai.service';
+} from '@/lib/llm/schemas/goal-ai-schemas';
+import Button from '@/components/atoms/Button';
+import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
+import { AIConfidenceIndicator } from '@/components/atoms/AIConfidenceIndicator';
+import { goalAIService } from '@/services/growth-system/goal-ai.service';
 
 type AssistMode =
   | 'refine'

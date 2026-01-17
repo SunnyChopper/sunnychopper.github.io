@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Lightbulb, ArrowRight } from 'lucide-react';
-import Button from '../atoms/Button';
+import Button from '@/components/atoms/Button';
 
 interface EmptyStateProps {
   icon?: LucideIcon;

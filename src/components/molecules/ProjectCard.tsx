@@ -1,9 +1,9 @@
 import { Calendar, Target, TrendingUp } from 'lucide-react';
-import type { Project } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
-import { ProgressRing } from '../atoms/ProgressRing';
-import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
+import type { Project } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
+import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
 
 interface ProjectCardProps {
   project: Project;

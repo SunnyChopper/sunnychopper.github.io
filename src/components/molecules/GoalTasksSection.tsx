@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { CheckSquare, Plus, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Task } from '../../types/growth-system';
+import type { Task } from '@/types/growth-system';
 import { EmptyState } from './EmptyState';
-import { StatusBadge } from '../atoms/StatusBadge';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
-import Button from '../atoms/Button';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import Button from '@/components/atoms/Button';
 
 interface GoalTasksSectionProps {
   tasks: Task[];

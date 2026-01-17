@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 // Dynamic imports for optional dependencies
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,7 +69,6 @@ const loadPrism = async () => {
 
       for (const lang of languages) {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           await import(/* @vite-ignore */ `prismjs/components/prism-${lang}`);
         } catch {
           // Language not available, skip

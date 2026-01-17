@@ -1,6 +1,6 @@
 import { AlertCircle, Clock, Activity, X } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Goal } from '../../types/growth-system';
+import type { Goal } from '@/types/growth-system';
 
 type QuickFilter =
   | 'at_risk'

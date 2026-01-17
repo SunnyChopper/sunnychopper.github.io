@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { Target, TrendingUp } from 'lucide-react';
-import type { Metric, MetricLog } from '../../types/growth-system';
-import { calculateProgress } from '../../utils/metric-analytics';
-import { ProgressRing } from '../atoms/ProgressRing';
+import type { Goal, Metric, MetricLog } from '@/types/growth-system';
+import { calculateProgress } from '@/utils/metric-analytics';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
 
 interface GoalProgressFromMetricsProps {
   goal: Goal;

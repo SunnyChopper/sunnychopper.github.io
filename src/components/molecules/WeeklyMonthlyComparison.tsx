@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import type { Habit, HabitLog } from '../../types/growth-system';
+import type { Habit, HabitLog } from '@/types/growth-system';
 import {
   getWeeklyData,
   getMonthlyData,
   calculateTrend,
   getLogsForDateRange,
-} from '../../utils/habit-analytics';
-import { getHabitTypeColors } from '../../utils/habit-colors';
+} from '@/utils/habit-analytics';
+import { getHabitTypeColors } from '@/utils/habit-colors';
 
 interface WeeklyMonthlyComparisonProps {
   habit: Habit;

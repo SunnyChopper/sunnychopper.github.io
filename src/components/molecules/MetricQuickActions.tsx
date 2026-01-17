@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, List, Mic, Camera, X } from 'lucide-react';
-import type { Metric } from '../../types/growth-system';
+import type { Metric } from '@/types/growth-system';
 
 interface MetricQuickActionsProps {
   metrics: Metric[];

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
-import type { Area, SubCategory, Priority, FilterOptions } from '../../types/growth-system';
+import type { Area, SubCategory, Priority, FilterOptions } from '@/types/growth-system';
 
 interface FilterPanelProps {
   filters: FilterOptions;

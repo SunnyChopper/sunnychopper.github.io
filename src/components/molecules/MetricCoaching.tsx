@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MessageSquare, Sparkles, TrendingUp, AlertCircle, Target } from 'lucide-react';
-import type { Metric, MetricLog } from '../../types/growth-system';
-import { metricAIService } from '../../services/growth-system/metric-ai.service';
-import { metricInsightsService } from '../../services/growth-system/metric-insights.service';
-import { calculateProgress, getTrendData } from '../../utils/metric-analytics';
+import type { Metric, MetricLog } from '@/types/growth-system';
+import { metricAIService } from '@/services/growth-system/metric-ai.service';
+import { metricInsightsService } from '@/services/growth-system/metric-insights.service';
+import { calculateProgress, getTrendData } from '@/utils/metric-analytics';
 
 interface MetricCoachingProps {
   metric: Metric;

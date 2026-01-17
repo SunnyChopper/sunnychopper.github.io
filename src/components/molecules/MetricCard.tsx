@@ -1,12 +1,12 @@
 import { TrendingUp, TrendingDown, Target, Calendar, ArrowUp, ArrowDown } from 'lucide-react';
-import type { Metric, MetricLog } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { StatusBadge } from '../atoms/StatusBadge';
+import type { Metric, MetricLog } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { MetricProgressRing } from './MetricProgressRing';
 import { MetricSparkline } from './MetricSparkline';
 import { MetricHeatmapPreview } from './MetricHeatmapPreview';
-import { getTrendData, calculateProgress } from '../../utils/metric-analytics';
-import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
+import { getTrendData, calculateProgress } from '@/utils/metric-analytics';
+import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
 
 interface MetricCardProps {
   metric: Metric;

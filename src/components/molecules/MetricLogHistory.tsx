@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Calendar, MessageSquare, Link as LinkIcon, TrendingUp, AlertCircle } from 'lucide-react';
-import type { Metric, MetricLog } from '../../types/growth-system';
-import { getTrendData, detectAnomalies } from '../../utils/metric-analytics';
+import type { Metric, MetricLog } from '@/types/growth-system';
+import { getTrendData, detectAnomalies } from '@/utils/metric-analytics';
 
 interface MetricLogHistoryProps {
   metric: Metric;

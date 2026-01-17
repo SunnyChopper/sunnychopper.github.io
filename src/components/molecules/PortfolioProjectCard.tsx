@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import Button from '../atoms/Button';
-import type { Project } from '../../types';
+import Button from '@/components/atoms/Button';
+import type { Project } from '@/types';
 
 interface PortfolioProjectCardProps {
   project: Project;

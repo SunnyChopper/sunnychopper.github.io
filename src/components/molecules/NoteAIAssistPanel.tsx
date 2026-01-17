@@ -11,9 +11,9 @@ import {
   X,
   Check,
 } from 'lucide-react';
-import { noteAIService } from '../../services/knowledge-vault/note-ai.service';
-import type { Area } from '../../types/growth-system';
-import { cn } from '../../lib/utils';
+import { noteAIService } from '@/services/knowledge-vault/note-ai.service';
+import type { Area } from '@/types/growth-system';
+import { cn } from '@/lib/utils';
 
 interface NoteAIAssistPanelProps {
   content: string;

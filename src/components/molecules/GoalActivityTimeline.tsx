@@ -1,6 +1,6 @@
 import { CheckSquare, BarChart3, Repeat, FileText, AlertCircle, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { GoalActivity } from '../../types/growth-system';
+import type { GoalActivity } from '@/types/growth-system';
 
 interface GoalActivityTimelineProps {
   activities: GoalActivity[];

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Habit, CreateHabitLogInput } from '../../types/growth-system';
-import Button from '../atoms/Button';
+import type { Habit, CreateHabitLogInput } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
 
 interface HabitLogWidgetProps {
   habit: Habit;

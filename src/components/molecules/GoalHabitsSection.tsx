@@ -1,9 +1,9 @@
 import { Repeat, Plus, Check, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Habit } from '../../types/growth-system';
+import type { Habit } from '@/types/growth-system';
 import { EmptyState } from './EmptyState';
-import { AreaBadge } from '../atoms/AreaBadge';
-import Button from '../atoms/Button';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import Button from '@/components/atoms/Button';
 
 interface HabitWithStreak {
   habit: Habit;

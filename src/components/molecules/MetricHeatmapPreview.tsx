@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { MetricLog } from '../../types/growth-system';
-import { generateHeatmapData } from '../../utils/metric-analytics';
+import type { MetricLog } from '@/types/growth-system';
+import { generateHeatmapData } from '@/utils/metric-analytics';
 
 interface MetricHeatmapPreviewProps {
   logs: MetricLog[];

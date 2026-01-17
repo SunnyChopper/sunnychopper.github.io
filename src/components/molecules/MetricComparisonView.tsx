@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import type { Metric, MetricLog } from '../../types/growth-system';
+import type { Metric, MetricLog } from '@/types/growth-system';
 import { MetricTimeSeriesChart } from './MetricTimeSeriesChart';
-import { getMetricCorrelations } from '../../utils/metric-correlations';
-import { calculateCorrelations } from '../../utils/metric-analytics';
+import { getMetricCorrelations } from '@/utils/metric-correlations';
+import { calculateCorrelations } from '@/utils/metric-analytics';
 
 interface MetricComparisonViewProps {
   primaryMetric: Metric;

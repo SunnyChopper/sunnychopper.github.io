@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Bold, Italic, Link, Code, List, Heading1, Eye, Split, FileText } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import MarkdownRenderer from './MarkdownRenderer';
 
 type ViewMode = 'split' | 'edit' | 'preview';

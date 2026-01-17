@@ -12,12 +12,12 @@ import {
   Repeat,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Goal, GoalProgressBreakdown, SuccessCriterion } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { StatusBadge } from '../atoms/StatusBadge';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
-import { ProgressRing } from '../atoms/ProgressRing';
-import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
+import type { Goal, GoalProgressBreakdown, SuccessCriterion } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
+import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
 
 type HealthStatus = 'healthy' | 'at_risk' | 'behind' | 'dormant';
 
@@ -131,9 +131,9 @@ export function GoalCard({
                 {healthBadge.label}
               </span>
               {momentum === 'active' ? (
-                <Zap className="w-3.5 h-3.5 text-amber-500" title="Active" />
+                <Zap className="w-3.5 h-3.5 text-amber-500" aria-label="Active" />
               ) : (
-                <Moon className="w-3.5 h-3.5 text-gray-400" title="Dormant" />
+                <Moon className="w-3.5 h-3.5 text-gray-400" aria-label="Dormant" />
               )}
             </div>
           </div>

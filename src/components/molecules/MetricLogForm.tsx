@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Minus, Camera, Mic } from 'lucide-react';
-import type { Metric, MetricLog, CreateMetricLogInput } from '../../types/growth-system';
-import Button from '../atoms/Button';
-import { predictTrajectory, getTrendData } from '../../utils/metric-analytics';
+import type { Metric, MetricLog, CreateMetricLogInput } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { predictTrajectory, getTrendData } from '@/utils/metric-analytics';
 
 interface MetricLogFormProps {
   metric: Metric;

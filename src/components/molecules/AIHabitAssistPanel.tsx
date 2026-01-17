@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Sparkles, Zap, X, AlertCircle, Target, TrendingUp, Repeat, Lightbulb } from 'lucide-react';
-import { llmConfig } from '../../lib/llm';
-import type { Habit, HabitLog } from '../../types/growth-system';
-import Button from '../atoms/Button';
-import { AIThinkingIndicator } from '../atoms/AIThinkingIndicator';
-import { AIConfidenceIndicator } from '../atoms/AIConfidenceIndicator';
+import { llmConfig } from '@/lib/llm';
+import type { Habit, HabitLog } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
+import { AIConfidenceIndicator } from '@/components/atoms/AIConfidenceIndicator';
 
 type AssistMode = 'design' | 'stack' | 'recovery' | 'patterns' | 'triggers' | 'alignment';
 

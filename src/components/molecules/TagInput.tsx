@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { X, Tag as TagIcon } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
+import { cn } from '@/lib/utils';
+import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 
 interface TagInputProps {
   value: string[];

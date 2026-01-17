@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Sparkles, Wand2, X, Check, AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
-import { llmService } from '../../services/llm.service';
-import { llmConfig } from '../../lib/llm';
-import type { Project, Task, CreateTaskInput } from '../../types/growth-system';
-import type { ProjectHealthOutput, ProjectTaskGenOutput, ProjectRiskOutput } from '../../types/llm';
-import Button from '../atoms/Button';
-import { AIThinkingIndicator } from '../atoms/AIThinkingIndicator';
+import { llmService } from '@/services/llm.service';
+import { llmConfig } from '@/lib/llm';
+import type { Project, Task, CreateTaskInput } from '@/types/growth-system';
+import type { ProjectHealthOutput, ProjectTaskGenOutput, ProjectRiskOutput } from '@/types/llm';
+import Button from '@/components/atoms/Button';
+import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
 
 type AssistMode = 'health' | 'generate' | 'risks';
 

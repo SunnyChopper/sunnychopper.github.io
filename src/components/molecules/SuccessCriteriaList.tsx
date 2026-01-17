@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Calendar, Link2, X } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { SuccessCriterion } from '../../types/growth-system';
+import type { SuccessCriterion } from '@/types/growth-system';
 
 interface SuccessCriteriaListProps {
   criteria: SuccessCriterion[];

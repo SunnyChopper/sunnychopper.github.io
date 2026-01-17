@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Trophy, Calendar, Coins, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import type { Metric, MetricMilestone } from '../../types/growth-system';
-import { metricMilestonesService } from '../../services/growth-system/metric-milestones.service';
-import { calculateStreaks } from '../../utils/metric-analytics';
-import { ROUTES } from '../../routes';
-import type { MetricLog } from '../../types/growth-system';
+import type { Metric, MetricMilestone, MetricLog } from '@/types/growth-system';
+import { metricMilestonesService } from '@/services/growth-system/metric-milestones.service';
+import { calculateStreaks } from '@/utils/metric-analytics';
+import { ROUTES } from '@/routes';
 
 interface MetricAchievementsProps {
   metric: Metric;

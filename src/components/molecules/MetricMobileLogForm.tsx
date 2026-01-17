@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { X } from 'lucide-react';
-import type { Metric, MetricLog, CreateMetricLogInput } from '../../types/growth-system';
+import type { Metric, MetricLog, CreateMetricLogInput } from '@/types/growth-system';
 import { MetricLogForm } from './MetricLogForm';
 
 interface MetricMobileLogFormProps {

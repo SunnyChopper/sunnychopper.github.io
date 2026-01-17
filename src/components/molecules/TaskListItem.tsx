@@ -1,10 +1,10 @@
 import { Pencil, Trash2, Calendar, Clock, GitBranch, Coins } from 'lucide-react';
-import type { Task } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
-import { StatusBadge } from '../atoms/StatusBadge';
-import { DependencyBadge } from '../atoms/DependencyBadge';
-import Button from '../atoms/Button';
+import type { Task } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { DependencyBadge } from '@/components/atoms/DependencyBadge';
+import Button from '@/components/atoms/Button';
 
 interface TaskListItemProps {
   task: Task;
