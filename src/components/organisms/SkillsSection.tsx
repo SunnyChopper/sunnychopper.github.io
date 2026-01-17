@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import SkillCard from '../molecules/SkillCard';
-import SkillModal from '../molecules/SkillModal';
-import { skills } from '../../data/skills';
-import type { Skill } from '../../types';
+import SkillCard from '@/components/molecules/SkillCard';
+import SkillModal from '@/components/molecules/SkillModal';
+import { skills } from '@/data/skills';
+import type { Skill } from '@/types';
 
 export default function SkillsSection() {
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);

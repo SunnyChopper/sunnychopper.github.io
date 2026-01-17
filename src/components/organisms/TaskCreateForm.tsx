@@ -6,10 +6,10 @@ import type {
   SubCategory,
   Priority,
   TaskStatus,
-} from '../../types/growth-system';
-import Button from '../atoms/Button';
-import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
-import { llmConfig } from '../../lib/llm';
+} from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { AITaskAssistPanel } from '@/components/molecules/AITaskAssistPanel';
+import { llmConfig } from '@/lib/llm';
 import {
   AREAS,
   PRIORITIES,
@@ -17,7 +17,7 @@ import {
   TASK_STATUSES,
   AREA_LABELS,
   TASK_STATUS_LABELS,
-} from '../../constants/growth-system';
+} from '@/constants/growth-system';
 
 interface TaskCreateFormProps {
   onSubmit: (input: CreateTaskInput) => void;

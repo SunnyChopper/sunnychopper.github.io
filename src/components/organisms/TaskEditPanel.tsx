@@ -9,13 +9,13 @@ import type {
   TaskStatus,
   EntitySummary,
   CreateTaskInput,
-} from '../../types/growth-system';
-import Button from '../atoms/Button';
-import { EntityLinkChip } from '../atoms/EntityLinkChip';
-import { DependencyBadge } from '../atoms/DependencyBadge';
-import { RelationshipPicker } from './RelationshipPicker';
-import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
-import { llmConfig } from '../../lib/llm';
+} from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
+import { DependencyBadge } from '@/components/atoms/DependencyBadge';
+import { RelationshipPicker } from '@/components/organisms/RelationshipPicker';
+import { AITaskAssistPanel } from '@/components/molecules/AITaskAssistPanel';
+import { llmConfig } from '@/lib/llm';
 import {
   AREAS,
   PRIORITIES,
@@ -23,7 +23,7 @@ import {
   TASK_STATUSES,
   AREA_LABELS,
   TASK_STATUS_LABELS,
-} from '../../constants/growth-system';
+} from '@/constants/growth-system';
 
 interface TaskEditPanelProps {
   task: Task;

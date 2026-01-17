@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Task, TaskStatus, UpdateTaskInput } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
+import type { Task, TaskStatus, UpdateTaskInput } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { Pencil, Plus, MoreVertical, ArrowRight, ArrowUpDown } from 'lucide-react';
-import { TASK_STATUS_LABELS } from '../../constants/growth-system';
+import { TASK_STATUS_LABELS } from '@/constants/growth-system';
 
 interface TaskKanbanBoardProps {
   tasks: Task[];
@@ -35,6 +35,9 @@ export function TaskKanbanBoard({
   const menuRefs = useRef<Map<TaskStatus, HTMLDivElement>>(new Map());
 
   const getTasksByStatus = (status: TaskStatus) => {
+    if (!tasks || !Array.isArray(tasks)) {
+      return [];
+    }
     return tasks.filter((task) => task.status === status);
   };
 
@@ -104,7 +107,7 @@ export function TaskKanbanBoard({
     setOpenMenuStatus(null);
   };
 
-  const handleSortByPriority = (status: TaskStatus) => {
+  const handleSortByPriority = (_status: TaskStatus) => {
     // This would require a sort callback prop - for now, just close menu
     // In a full implementation, you'd pass a sort function from parent
     setOpenMenuStatus(null);

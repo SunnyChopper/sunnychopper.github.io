@@ -1,10 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Goal } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { StatusBadge } from '../atoms/StatusBadge';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
+import type { Goal } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 
 interface GoalTimelineViewProps {
   goals: Goal[];

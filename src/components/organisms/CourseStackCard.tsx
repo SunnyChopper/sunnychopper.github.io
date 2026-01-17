@@ -1,5 +1,5 @@
 import { BookOpen, CheckCircle2, Clock, Layers } from 'lucide-react';
-import type { Course, CourseLesson } from '../../types/knowledge-vault';
+import type { Course, CourseLesson } from '@/types/knowledge-vault';
 
 interface CourseStackCardProps {
   course: Course;

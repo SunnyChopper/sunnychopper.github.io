@@ -13,10 +13,10 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
-import { useTasks, useHabits, useGoals } from '../../hooks/useGrowthSystem';
-import type { Task } from '../../types/growth-system';
+import { useTasks, useHabits, useGoals } from '@/hooks/useGrowthSystem';
+import type { Task, Habit, Goal } from '@/types/growth-system';
 import { Link, useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../routes';
+import { ROUTES } from '@/routes';
 
 interface MorningLaunchpadProps {
   isOpen: boolean;
@@ -59,7 +59,7 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
 
     const priorityOrder: Record<string, number> = { P1: 4, P2: 3, P3: 2, P4: 1 };
 
-    activeTasks.sort((a, b) => {
+    activeTasks.sort((a: Task, b: Task) => {
       const priorityDiff = (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
       if (priorityDiff !== 0) return priorityDiff;
 
@@ -148,8 +148,8 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
     const highPriorityCount = orderedTasks.filter(
       (t) => t.priority === 'P1' || t.priority === 'P2'
     ).length;
-    const dailyHabits = habits.filter((h) => h.frequency === 'Daily');
-    const activeGoals = goals.filter((g) => g.status === 'Active');
+    const dailyHabits = habits.filter((h: Habit) => h.frequency === 'Daily');
+    const activeGoals = goals.filter((g: Goal) => g.status === 'Active');
 
     let briefingText = `${greeting}! `;
 
@@ -190,7 +190,7 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return tasks.filter(
-      (t) => t.status === 'Done' && t.completedDate && new Date(t.completedDate) >= today
+      (t: Task) => t.status === 'Done' && t.completedDate && new Date(t.completedDate) >= today
     ).length;
   }, [tasks]);
 
@@ -481,7 +481,7 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                           <h4 className="font-semibold text-cyan-100">Habits</h4>
                         </div>
                         <p className="text-3xl font-bold">
-                          {habits.filter((h) => h.frequency === 'Daily').length}
+                          {habits.filter((h: Habit) => h.frequency === 'Daily').length}
                         </p>
                         <p className="text-sm text-cyan-200 mt-1">Daily routines</p>
                       </div>

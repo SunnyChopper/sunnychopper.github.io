@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Task, TaskDependency } from '../../types/growth-system';
-import { cn } from '../../lib/utils';
+import type { Task, TaskDependency } from '@/types/growth-system';
+import { cn } from '@/lib/utils';
 
 interface DependencyGraphProps {
   tasks: Task[];

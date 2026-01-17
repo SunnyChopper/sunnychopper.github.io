@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { X, BookOpen, Calendar, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Goal } from '../../types/growth-system';
-import Button from '../atoms/Button';
+import type { Goal } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
 
 type ReviewType = 'weekly' | 'monthly' | 'quarterly';
 

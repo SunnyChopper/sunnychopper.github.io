@@ -7,13 +7,7 @@ import {
   Calendar,
   CheckCircle2,
 } from 'lucide-react';
-import type {
-  VaultItem,
-  Note,
-  Document,
-  CourseLesson,
-  Flashcard,
-} from '../../types/knowledge-vault';
+import type { VaultItem, Note, Document, CourseLesson, Flashcard } from '@/types/knowledge-vault';
 
 interface VaultItemCardProps {
   item: VaultItem;

@@ -21,8 +21,9 @@ import {
   useMetrics,
   useHabits,
   useLogbook,
-} from '../../hooks/useGrowthSystem';
-import { ROUTES } from '../../routes';
+} from '@/hooks/useGrowthSystem';
+import type { Task, Goal, Project, Metric, Habit, LogbookEntry } from '@/types/growth-system';
+import { ROUTES } from '@/routes';
 
 interface CommandItem {
   id: string;
@@ -163,7 +164,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       });
     });
 
-    goals.forEach((goal) => {
+    goals.forEach((goal: Goal) => {
       commands.push({
         id: `goal-${goal.id}`,
         title: goal.title,
@@ -205,7 +206,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       });
     });
 
-    metrics.forEach((metric) => {
+    metrics.forEach((metric: Metric) => {
       commands.push({
         id: `metric-${metric.id}`,
         title: metric.name,
@@ -239,7 +240,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       });
     });
 
-    entries.forEach((entry) => {
+    entries.forEach((entry: LogbookEntry) => {
       commands.push({
         id: `entry-${entry.id}`,
         title: entry.title || 'Untitled Entry',

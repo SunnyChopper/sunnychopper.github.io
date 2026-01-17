@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import Button from '../atoms/Button';
+import Button from '@/components/atoms/Button';
 
 export default function HeroSection() {
   const scrollToSection = (sectionId: string) => {

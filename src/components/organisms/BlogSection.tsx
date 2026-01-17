@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import BlogCard from '../molecules/BlogCard';
-import { blogPosts } from '../../data/blog';
+import BlogCard from '@/components/molecules/BlogCard';
+import { blogPosts } from '@/data/blog';
 
 export default function BlogSection() {
   return (

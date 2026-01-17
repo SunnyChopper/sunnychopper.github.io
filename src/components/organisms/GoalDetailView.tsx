@@ -8,18 +8,18 @@ import type {
   Habit,
   EntitySummary,
   GoalProgressBreakdown,
-} from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { StatusBadge } from '../atoms/StatusBadge';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
-import Button from '../atoms/Button';
-import { GoalProgressDashboard } from '../molecules/GoalProgressDashboard';
-import { GoalTasksSection } from '../molecules/GoalTasksSection';
-import { GoalMetricsSection } from '../molecules/GoalMetricsSection';
-import { GoalHabitsSection } from '../molecules/GoalHabitsSection';
-import { SuccessCriteriaList } from '../molecules/SuccessCriteriaList';
-import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
-import { goalProgressService } from '../../services/growth-system/goal-progress.service';
+} from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import Button from '@/components/atoms/Button';
+import { GoalProgressDashboard } from '@/components/molecules/GoalProgressDashboard';
+import { GoalTasksSection } from '@/components/molecules/GoalTasksSection';
+import { GoalMetricsSection } from '@/components/molecules/GoalMetricsSection';
+import { GoalHabitsSection } from '@/components/molecules/GoalHabitsSection';
+import { SuccessCriteriaList } from '@/components/molecules/SuccessCriteriaList';
+import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
+import { goalProgressService } from '@/services/growth-system/goal-progress.service';
 
 interface MetricWithLogs {
   metric: Metric;

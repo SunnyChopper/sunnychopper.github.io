@@ -1,11 +1,11 @@
 import { Target, ArrowRight, Calendar, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import type { Goal } from '../../types/growth-system';
-import { ProgressRing } from '../atoms/ProgressRing';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { ROUTES } from '../../routes';
+import type { Goal } from '@/types/growth-system';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { ROUTES } from '@/routes';
 
 interface GoalWithProgress {
   goal: Goal;

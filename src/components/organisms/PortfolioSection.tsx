@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import PortfolioProjectCard from '../molecules/PortfolioProjectCard';
-import { projects } from '../../data/projects';
+import PortfolioProjectCard from '@/components/molecules/PortfolioProjectCard';
+import { projects } from '@/data/projects';
 
 export default function PortfolioSection() {
   return (

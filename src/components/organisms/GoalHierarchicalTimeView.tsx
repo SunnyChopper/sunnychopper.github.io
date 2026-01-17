@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, Plus, Home, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Goal, TimeHorizon, GoalProgressBreakdown } from '../../types/growth-system';
-import { GoalCard } from '../molecules/GoalCard';
+import type { Goal, TimeHorizon, GoalProgressBreakdown } from '@/types/growth-system';
+import { GoalCard } from '@/components/molecules/GoalCard';
 
 interface GoalHierarchicalTimeViewProps {
   goals: Goal[];

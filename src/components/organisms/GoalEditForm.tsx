@@ -8,14 +8,9 @@ import type {
   TimeHorizon,
   Priority,
   GoalStatus,
-} from '../../types/growth-system';
-import Button from '../atoms/Button';
-import {
-  AREAS,
-  GOAL_STATUSES,
-  GOAL_TIME_HORIZONS,
-  PRIORITIES,
-} from '../../constants/growth-system';
+} from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { AREAS, GOAL_STATUSES, GOAL_TIME_HORIZONS, PRIORITIES } from '@/constants/growth-system';
 
 interface GoalEditFormProps {
   goal: Goal;
@@ -221,7 +216,9 @@ export function GoalEditForm({ goal, onSubmit, onCancel, isLoading }: GoalEditFo
                 key={index}
                 className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg"
               >
-                <span className="text-sm text-gray-900 dark:text-white">{criterion}</span>
+                <span className="text-sm text-gray-900 dark:text-white">
+                  {typeof criterion === 'string' ? criterion : criterion.text}
+                </span>
                 <button
                   type="button"
                   onClick={() => removeCriterion(index)}

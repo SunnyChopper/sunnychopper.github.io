@@ -8,15 +8,15 @@ import type {
   MetricDirection,
   MetricSource,
   MetricStatus,
-} from '../../types/growth-system';
-import Button from '../atoms/Button';
+} from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
 import {
   AREAS,
   METRIC_DIRECTIONS,
   METRIC_SOURCES,
   METRIC_STATUSES,
   METRIC_UNITS,
-} from '../../constants/growth-system';
+} from '@/constants/growth-system';
 
 interface MetricEditFormProps {
   metric: Metric;

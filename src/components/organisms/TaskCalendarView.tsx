@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
-import type { Task } from '../../types/growth-system';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
-import Button from '../atoms/Button';
+import type { Task } from '@/types/growth-system';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import Button from '@/components/atoms/Button';
 
 interface TaskCalendarViewProps {
   tasks: Task[];

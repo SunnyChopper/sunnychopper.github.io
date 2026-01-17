@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
-import Dialog from './Dialog';
-import Button from '../atoms/Button';
-import { EntityLinkChip } from '../atoms/EntityLinkChip';
-import type { EntitySummary } from '../../types/growth-system';
+import Dialog from '@/components/organisms/Dialog';
+import Button from '@/components/atoms/Button';
+import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
+import type { EntitySummary } from '@/types/growth-system';
 
 interface RelationshipPickerProps {
   isOpen: boolean;

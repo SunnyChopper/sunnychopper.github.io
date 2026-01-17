@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Tag as TagIcon } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
-import type {
-  Document,
-  CreateDocumentInput,
-  UpdateDocumentInput,
-} from '../../types/knowledge-vault';
-import type { Area } from '../../types/growth-system';
+import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import type { Document, CreateDocumentInput, UpdateDocumentInput } from '@/types/knowledge-vault';
+import type { Area } from '@/types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
 

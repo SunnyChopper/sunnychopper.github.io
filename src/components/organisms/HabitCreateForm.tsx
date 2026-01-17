@@ -5,9 +5,9 @@ import type {
   SubCategory,
   HabitType,
   HabitFrequency,
-} from '../../types/growth-system';
-import Button from '../atoms/Button';
-import { AREAS, HABIT_FREQUENCIES, HABIT_TYPES } from '../../constants/growth-system';
+} from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { AREAS, HABIT_FREQUENCIES, HABIT_TYPES } from '@/constants/growth-system';
 
 interface HabitCreateFormProps {
   onSubmit: (input: CreateHabitInput) => void;

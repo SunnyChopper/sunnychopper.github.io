@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, MoreVertical, ArrowRight, Pencil } from 'lucide-react';
-import type { Goal, GoalStatus, GoalProgressBreakdown } from '../../types/growth-system';
-import { AreaBadge } from '../atoms/AreaBadge';
-import { PriorityIndicator } from '../atoms/PriorityIndicator';
+import type { Goal, GoalStatus, GoalProgressBreakdown } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 
 interface GoalKanbanViewProps {
   goals: Goal[];

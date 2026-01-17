@@ -1,18 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ExternalLink, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
-import type { Note, CreateNoteInput, UpdateNoteInput } from '../../types/knowledge-vault';
-import type { Area } from '../../types/growth-system';
-import MarkdownEditor from '../molecules/MarkdownEditor';
-import TagInput from '../molecules/TagInput';
-import LinkedItemsPicker from '../molecules/LinkedItemsPicker';
-import NoteAIAssistPanel from '../molecules/NoteAIAssistPanel';
-import { cn } from '../../lib/utils';
-import { llmConfig } from '../../lib/llm';
+import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import type { Note, CreateNoteInput, UpdateNoteInput } from '@/types/knowledge-vault';
+import type { Area } from '@/types/growth-system';
+import MarkdownEditor from '@/components/molecules/MarkdownEditor';
+import TagInput from '@/components/molecules/TagInput';
+import LinkedItemsPicker from '@/components/molecules/LinkedItemsPicker';
+import NoteAIAssistPanel from '@/components/molecules/NoteAIAssistPanel';
+import { cn } from '@/lib/utils';
+import { llmConfig } from '@/lib/llm';
+import { apiClient } from '@/lib/api-client';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
-
-const DRAFT_STORAGE_KEY = 'note-form-draft';
 
 interface NoteFormProps {
   note?: Note;
@@ -38,36 +37,49 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
     linkedItems: note?.linkedItems || [],
   });
 
-  // Load draft from localStorage if creating new note
+  // Load draft from backend if creating new note
   useEffect(() => {
     if (!note) {
-      const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
-      if (draft) {
+      const loadDraft = async () => {
         try {
-          const parsed = JSON.parse(draft);
-          setFormData((prev) => ({ ...prev, ...parsed }));
-        } catch {
-          // Invalid draft, ignore
+          const response = await apiClient.getDraftNote();
+          if (response.success && response.data) {
+            setFormData((prev) => ({
+              ...prev,
+              title: response.data!.title,
+              content: response.data!.content,
+              area: response.data!.area as Area,
+              sourceUrl: response.data!.sourceUrl,
+              tags: response.data!.tags,
+              linkedItems: response.data!.linkedItems,
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to load draft note:', error);
+          // Silently fail - draft may not exist
         }
-      }
+      };
+      loadDraft();
     }
   }, [note]);
 
   // Auto-save draft every 30 seconds
   useEffect(() => {
     if (!note && (formData.title || formData.content)) {
-      const timer = setTimeout(() => {
-        localStorage.setItem(
-          DRAFT_STORAGE_KEY,
-          JSON.stringify({
+      const timer = setTimeout(async () => {
+        try {
+          await apiClient.saveDraftNote({
             title: formData.title,
             content: formData.content,
             area: formData.area,
             sourceUrl: formData.sourceUrl,
             tags: formData.tags,
             linkedItems: formData.linkedItems,
-          })
-        );
+          });
+        } catch (error) {
+          console.error('Failed to save draft note:', error);
+          // Silently fail - draft saving is best effort
+        }
       }, 30000);
 
       return () => clearTimeout(timer);
@@ -75,8 +87,13 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
   }, [formData, note]);
 
   // Clear draft on successful save
-  const clearDraft = useCallback(() => {
-    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  const clearDraft = useCallback(async () => {
+    try {
+      await apiClient.deleteDraftNote();
+    } catch (error) {
+      console.error('Failed to clear draft note:', error);
+      // Silently fail - clearing draft is best effort
+    }
   }, []);
 
   // Real-time validation

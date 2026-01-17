@@ -9,11 +9,11 @@ import {
   Rocket,
   AlertCircle,
 } from 'lucide-react';
-import { useTasks, useHabits, useMetrics } from '../../hooks/useGrowthSystem';
-import type { Task, Habit, Metric } from '../../types/growth-system';
-import Button from '../atoms/Button';
+import { useTasks, useHabits, useMetrics } from '@/hooks/useGrowthSystem';
+import type { Task, Habit, Metric } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
 import { Link } from 'react-router-dom';
-import { ROUTES } from '../../routes';
+import { ROUTES } from '@/routes';
 
 interface DailyPlan {
   topTasks: Task[];

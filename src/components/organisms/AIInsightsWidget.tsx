@@ -9,16 +9,11 @@ import {
   RefreshCw,
   AlertCircle,
 } from 'lucide-react';
-import { llmConfig } from '../../lib/llm';
-import {
-  useTasks,
-  useHabits,
-  useMetrics,
-  useGoals,
-  useProjects,
-} from '../../hooks/useGrowthSystem';
-import Button from '../atoms/Button';
-import { ROUTES } from '../../routes';
+import { llmConfig } from '@/lib/llm';
+import { useTasks, useHabits, useMetrics, useGoals, useProjects } from '@/hooks/useGrowthSystem';
+import type { Task, Goal, Habit, Metric } from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { ROUTES } from '@/routes';
 
 interface Insight {
   id: string;
@@ -61,9 +56,9 @@ export function AIInsightsWidget() {
 
   const generateInsights = useCallback(async () => {
     // Calculate data signatures to detect actual changes
-    const tasksDone = tasks.filter((t) => t.status === 'Done').length;
-    const goalsActive = goals.filter((g) => g.status === 'Active').length;
-    const goalsAtRisk = goals.filter((g) => g.status === 'AtRisk').length;
+    const tasksDone = tasks.filter((t: Task) => t.status === 'Done').length;
+    const goalsActive = goals.filter((g: Goal) => g.status === 'Active').length;
+    const goalsAtRisk = goals.filter((g: Goal) => g.status === 'AtRisk').length;
 
     const currentData = {
       tasksLength: tasks.length,
@@ -92,7 +87,7 @@ export function AIInsightsWidget() {
 
     const newInsights: Insight[] = [];
 
-    const blockedTasks = tasks.filter((t) => t.status === 'Blocked');
+    const blockedTasks = tasks.filter((t: Task) => t.status === 'Blocked');
     if (blockedTasks.length > 0) {
       newInsights.push({
         id: 'blocked-tasks',
@@ -107,7 +102,7 @@ export function AIInsightsWidget() {
       });
     }
 
-    const activeGoals = goals.filter((g) => g.status === 'Active');
+    const activeGoals = goals.filter((g: Goal) => g.status === 'Active');
     if (activeGoals.length > 0) {
       newInsights.push({
         id: 'active-goals',
@@ -124,7 +119,7 @@ export function AIInsightsWidget() {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dailyHabits = habits.filter((h) => h.frequency === 'Daily');
+    const dailyHabits = habits.filter((h: Habit) => h.frequency === 'Daily');
     if (dailyHabits.length > 0) {
       newInsights.push({
         id: 'daily-habits',
@@ -156,7 +151,7 @@ export function AIInsightsWidget() {
       });
     }
 
-    const atRiskGoals = goals.filter((g) => g.status === 'AtRisk');
+    const atRiskGoals = goals.filter((g: Goal) => g.status === 'AtRisk');
     if (atRiskGoals.length > 0) {
       newInsights.push({
         id: 'at-risk-goals',
@@ -186,7 +181,7 @@ export function AIInsightsWidget() {
       });
     }
 
-    const completedTasks = tasks.filter((t) => t.status === 'Done');
+    const completedTasks = tasks.filter((t: Task) => t.status === 'Done');
     const completionRate = tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0;
     if (completionRate > 70) {
       newInsights.push({

@@ -5,8 +5,8 @@ import type {
   CreateLogbookEntryInput,
   UpdateLogbookEntryInput,
   LogbookMood,
-} from '../../types/growth-system';
-import Button from '../atoms/Button';
+} from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
 
 interface LogbookEditorProps {
   entry?: LogbookEntry;

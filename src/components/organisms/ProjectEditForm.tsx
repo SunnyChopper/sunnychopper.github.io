@@ -6,14 +6,14 @@ import type {
   SubCategory,
   Priority,
   ProjectStatus,
-} from '../../types/growth-system';
-import Button from '../atoms/Button';
+} from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
 import {
   AREAS,
   PRIORITIES,
   PROJECT_STATUSES,
   SUBCATEGORIES_BY_AREA,
-} from '../../constants/growth-system';
+} from '@/constants/growth-system';
 
 interface ProjectEditFormProps {
   project: Project;

@@ -6,14 +6,9 @@ import type {
   MetricUnit,
   MetricDirection,
   MetricSource,
-} from '../../types/growth-system';
-import Button from '../atoms/Button';
-import {
-  AREAS,
-  METRIC_DIRECTIONS,
-  METRIC_SOURCES,
-  METRIC_UNITS,
-} from '../../constants/growth-system';
+} from '@/types/growth-system';
+import Button from '@/components/atoms/Button';
+import { AREAS, METRIC_DIRECTIONS, METRIC_SOURCES, METRIC_UNITS } from '@/constants/growth-system';
 
 interface MetricCreateFormProps {
   onSubmit: (input: CreateMetricInput) => void;

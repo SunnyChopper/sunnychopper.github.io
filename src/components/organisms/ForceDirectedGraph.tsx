@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ConceptNode, ConceptEdge } from '../../types/concept-graph';
-import { getAreaColor } from '../../constants/growth-system';
+import type { ConceptNode, ConceptEdge } from '@/types/concept-graph';
+import { getAreaColor } from '@/constants/growth-system';
 
 interface ForceDirectedGraphProps {
   nodes: ConceptNode[];

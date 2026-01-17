@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X, Tag as TagIcon } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
+import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 import type {
   Flashcard,
   CreateFlashcardInput,
   UpdateFlashcardInput,
-} from '../../types/knowledge-vault';
-import type { Area } from '../../types/growth-system';
+} from '@/types/knowledge-vault';
+import type { Area } from '@/types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
 
