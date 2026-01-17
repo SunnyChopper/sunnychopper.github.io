@@ -6,7 +6,7 @@ import {
   goalsService,
   projectsService,
   logbookService,
-} from '../services/growth-system';
+} from '@/services/growth-system';
 import type {
   CreateTaskInput,
   UpdateTaskInput,
@@ -20,9 +20,9 @@ import type {
   UpdateProjectInput,
   CreateLogbookEntryInput,
   UpdateLogbookEntryInput,
-} from '../types/growth-system';
-import { useBackendStatus } from '../contexts/BackendStatusContext';
-import type { ApiError } from '../types/api-contracts';
+} from '@/types/growth-system';
+import { useBackendStatus } from '@/contexts/BackendStatusContext';
+import type { ApiError } from '@/types/api-contracts';
 
 // TODO: These hooks use React Query to fetch data from backend API
 // Currently will fail until backend is implemented or mock data is provided
@@ -93,20 +93,22 @@ export const useTasks = () => {
   const { data, isLoading, error, isError } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      const result = await tasksService.getAll();
-      // Record success if we got data
-      if (result.success || result.data) {
-        recordSuccess();
+      try {
+        const result = await tasksService.getAll();
+        // Record success if we got data
+        if (result.success || result.data) {
+          recordSuccess();
+        }
+        return result;
+      } catch (err: unknown) {
+        const apiError = extractApiError(err);
+        if (apiError && isNetworkError(apiError)) {
+          recordError(apiError);
+        }
+        throw err;
       }
-      return result;
     },
     enabled: true,
-    onError: (err) => {
-      const apiError = extractApiError(err);
-      if (apiError && isNetworkError(apiError)) {
-        recordError(apiError);
-      }
-    },
   });
 
   const createMutation = useMutation({
@@ -154,19 +156,21 @@ export const useHabits = () => {
   const { data, isLoading, error, isError } = useQuery({
     queryKey: ['habits'],
     queryFn: async () => {
-      const result = await habitsService.getAll();
-      if (result.success || result.data) {
-        recordSuccess();
+      try {
+        const result = await habitsService.getAll();
+        if (result.success || result.data) {
+          recordSuccess();
+        }
+        return result;
+      } catch (err: unknown) {
+        const apiError = extractApiError(err);
+        if (apiError && isNetworkError(apiError)) {
+          recordError(apiError);
+        }
+        throw err;
       }
-      return result;
     },
     enabled: true,
-    onError: (err) => {
-      const apiError = extractApiError(err);
-      if (apiError && isNetworkError(apiError)) {
-        recordError(apiError);
-      }
-    },
   });
 
   const createMutation = useMutation({
@@ -222,19 +226,21 @@ export const useMetrics = () => {
   const { data, isLoading, error, isError } = useQuery({
     queryKey: ['metrics'],
     queryFn: async () => {
-      const result = await metricsService.getAll();
-      if (result.success || result.data) {
-        recordSuccess();
+      try {
+        const result = await metricsService.getAll();
+        if (result.success || result.data) {
+          recordSuccess();
+        }
+        return result;
+      } catch (err: unknown) {
+        const apiError = extractApiError(err);
+        if (apiError && isNetworkError(apiError)) {
+          recordError(apiError);
+        }
+        throw err;
       }
-      return result;
     },
     enabled: true,
-    onError: (err) => {
-      const apiError = extractApiError(err);
-      if (apiError && isNetworkError(apiError)) {
-        recordError(apiError);
-      }
-    },
   });
 
   const createMutation = useMutation({
@@ -282,19 +288,21 @@ export const useGoals = () => {
   const { data, isLoading, error, isError } = useQuery({
     queryKey: ['goals'],
     queryFn: async () => {
-      const result = await goalsService.getAll();
-      if (result.success || result.data) {
-        recordSuccess();
+      try {
+        const result = await goalsService.getAll();
+        if (result.success || result.data) {
+          recordSuccess();
+        }
+        return result;
+      } catch (err: unknown) {
+        const apiError = extractApiError(err);
+        if (apiError && isNetworkError(apiError)) {
+          recordError(apiError);
+        }
+        throw err;
       }
-      return result;
     },
     enabled: true,
-    onError: (err) => {
-      const apiError = extractApiError(err);
-      if (apiError && isNetworkError(apiError)) {
-        recordError(apiError);
-      }
-    },
   });
 
   const createMutation = useMutation({
@@ -342,19 +350,21 @@ export const useProjects = () => {
   const { data, isLoading, error, isError } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      const result = await projectsService.getAll();
-      if (result.success || result.data) {
-        recordSuccess();
+      try {
+        const result = await projectsService.getAll();
+        if (result.success || result.data) {
+          recordSuccess();
+        }
+        return result;
+      } catch (err: unknown) {
+        const apiError = extractApiError(err);
+        if (apiError && isNetworkError(apiError)) {
+          recordError(apiError);
+        }
+        throw err;
       }
-      return result;
     },
     enabled: true,
-    onError: (err) => {
-      const apiError = extractApiError(err);
-      if (apiError && isNetworkError(apiError)) {
-        recordError(apiError);
-      }
-    },
   });
 
   const createMutation = useMutation({
@@ -402,19 +412,21 @@ export const useLogbook = () => {
   const { data, isLoading, error, isError } = useQuery({
     queryKey: ['logbook'],
     queryFn: async () => {
-      const result = await logbookService.getAll();
-      if (result.success || result.data) {
-        recordSuccess();
+      try {
+        const result = await logbookService.getAll();
+        if (result.success || result.data) {
+          recordSuccess();
+        }
+        return result;
+      } catch (err: unknown) {
+        const apiError = extractApiError(err);
+        if (apiError && isNetworkError(apiError)) {
+          recordError(apiError);
+        }
+        throw err;
       }
-      return result;
     },
     enabled: true,
-    onError: (err) => {
-      const apiError = extractApiError(err);
-      if (apiError && isNetworkError(apiError)) {
-        recordError(apiError);
-      }
-    },
   });
 
   const createMutation = useMutation({
