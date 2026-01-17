@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { X, Tag as TagIcon } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVaultContext';
-import type { Flashcard, CreateFlashcardInput, UpdateFlashcardInput } from '../../types/knowledge-vault';
+import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
+import type {
+  Flashcard,
+  CreateFlashcardInput,
+  UpdateFlashcardInput,
+} from '../../types/knowledge-vault';
 import type { Area } from '../../types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
@@ -42,7 +46,7 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim().toLowerCase();
     if (trimmedTag && !formData.tags.includes(trimmedTag)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         tags: [...prev.tags, trimmedTag],
       }));
@@ -51,9 +55,9 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove),
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
@@ -116,7 +120,7 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
         <input
           type="text"
           value={formData.title}
-          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
           className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-600"
           placeholder="Enter flashcard title"
           required
@@ -129,7 +133,7 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
         </label>
         <textarea
           value={formData.front}
-          onChange={(e) => setFormData(prev => ({ ...prev, front: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, front: e.target.value }))}
           rows={4}
           className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-600"
           placeholder="What's the question or prompt?"
@@ -143,7 +147,7 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
         </label>
         <textarea
           value={formData.back}
-          onChange={(e) => setFormData(prev => ({ ...prev, back: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, back: e.target.value }))}
           rows={4}
           className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-600"
           placeholder="What's the answer?"
@@ -157,12 +161,14 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
         </label>
         <select
           value={formData.area}
-          onChange={(e) => setFormData(prev => ({ ...prev, area: e.target.value as Area }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, area: e.target.value as Area }))}
           className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-600"
           required
         >
-          {AREAS.map(area => (
-            <option key={area} value={area}>{area}</option>
+          {AREAS.map((area) => (
+            <option key={area} value={area}>
+              {area}
+            </option>
           ))}
         </select>
       </div>
@@ -196,7 +202,7 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
 
         {formData.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {formData.tags.map(tag => (
+            {formData.tags.map((tag) => (
               <span
                 key={tag}
                 className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300"

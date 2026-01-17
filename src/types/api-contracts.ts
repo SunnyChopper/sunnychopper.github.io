@@ -134,13 +134,15 @@ export interface HabitsApiContract {
   getByGoal: (goalId: string) => Promise<ApiListResponse<Habit>>;
 
   calculateStreak: (habitId: string) => Promise<ApiResponse<number>>;
-  getCompletionStats: (habitId: string) => Promise<ApiResponse<{
-    total: number;
-    last7Days: number;
-    last30Days: number;
-    currentStreak: number;
-    longestStreak: number;
-  }>>;
+  getCompletionStats: (habitId: string) => Promise<
+    ApiResponse<{
+      total: number;
+      last7Days: number;
+      last30Days: number;
+      currentStreak: number;
+      longestStreak: number;
+    }>
+  >;
 }
 
 export interface LogbookApiContract {
@@ -194,17 +196,25 @@ export interface AIApiContract {
 }
 
 export interface SearchApiContract {
-  search: (query: string, options?: {
-    entityTypes?: Array<'task' | 'project' | 'goal' | 'metric' | 'habit' | 'logbook'>;
-    limit?: number;
-  }) => Promise<ApiResponse<EntitySummary[]>>;
+  search: (
+    query: string,
+    options?: {
+      entityTypes?: Array<'task' | 'project' | 'goal' | 'metric' | 'habit' | 'logbook'>;
+      limit?: number;
+    }
+  ) => Promise<ApiResponse<EntitySummary[]>>;
 
-  analyzeImpact: (entityType: string, entityId: string) => Promise<ApiResponse<{
-    affectedGoals: Goal[];
-    affectedProjects: Project[];
-    affectedTasks: Task[];
-    impactScore: number;
-  }>>;
+  analyzeImpact: (
+    entityType: string,
+    entityId: string
+  ) => Promise<
+    ApiResponse<{
+      affectedGoals: Goal[];
+      affectedProjects: Project[];
+      affectedTasks: Task[];
+      impactScore: number;
+    }>
+  >;
 }
 
 export interface GrowthSystemApi {

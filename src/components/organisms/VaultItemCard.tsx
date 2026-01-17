@@ -1,5 +1,19 @@
-import { FileText, BookOpen, CreditCard, FileCheck, Tag, Calendar, CheckCircle2 } from 'lucide-react';
-import type { VaultItem, Note, Document, CourseLesson, Flashcard } from '../../types/knowledge-vault';
+import {
+  FileText,
+  BookOpen,
+  CreditCard,
+  FileCheck,
+  Tag,
+  Calendar,
+  CheckCircle2,
+} from 'lucide-react';
+import type {
+  VaultItem,
+  Note,
+  Document,
+  CourseLesson,
+  Flashcard,
+} from '../../types/knowledge-vault';
 
 interface VaultItemCardProps {
   item: VaultItem;
@@ -44,7 +58,9 @@ function NoteCardContent({ note }: { note: Note }) {
           </span>
         ))}
         {note.tags.length > 3 && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">+{note.tags.length - 3} more</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            +{note.tags.length - 3} more
+          </span>
         )}
       </div>
 
@@ -77,12 +93,8 @@ function DocumentCardContent({ document }: { document: Document }) {
       )}
 
       <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-2">
-        {document.fileType && (
-          <span className="uppercase font-medium">{document.fileType}</span>
-        )}
-        {document.pageCount && (
-          <span>{document.pageCount} pages</span>
-        )}
+        {document.fileType && <span className="uppercase font-medium">{document.fileType}</span>}
+        {document.pageCount && <span>{document.pageCount} pages</span>}
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -124,9 +136,7 @@ function LessonCardContent({ lesson }: { lesson: CourseLesson }) {
 
       <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-2">
         <span>Lesson {lesson.lessonIndex + 1}</span>
-        {lesson.estimatedMinutes && (
-          <span>{lesson.estimatedMinutes} minutes</span>
-        )}
+        {lesson.estimatedMinutes && <span>{lesson.estimatedMinutes} minutes</span>}
         {lesson.aiGenerated && (
           <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
             AI Generated
@@ -153,7 +163,9 @@ function FlashcardCardContent({ flashcard }: { flashcard: Flashcard }) {
           <CreditCard size={20} className="text-amber-600 dark:text-amber-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-white truncate">{flashcard.title}</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            {flashcard.title}
+          </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">Flashcard</p>
         </div>
       </div>
@@ -171,7 +183,9 @@ function FlashcardCardContent({ flashcard }: { flashcard: Flashcard }) {
 
       <div className="flex items-center gap-2">
         <Calendar size={14} className={isOverdue ? 'text-red-500' : 'text-gray-400'} />
-        <p className={`text-xs ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+        <p
+          className={`text-xs ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}
+        >
           {isOverdue ? 'Review overdue' : `Review ${formatDate(flashcard.nextReviewDate)}`}
         </p>
       </div>
@@ -189,6 +203,19 @@ export default function VaultItemCard({ item, onClick }: VaultItemCardProps) {
   return (
     <div
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={
+        onClick
+          ? `View ${item.type}: ${item.type === 'note' ? (item as Note).title : item.type === 'document' ? (item as Document).title : 'item'}`
+          : undefined
+      }
       className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg transition-all cursor-pointer"
     >
       {item.type === 'note' && <NoteCardContent note={item as Note} />}
@@ -198,9 +225,7 @@ export default function VaultItemCard({ item, onClick }: VaultItemCardProps) {
 
       <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <span>Updated {formatDate(item.updatedAt)}</span>
-        {item.lastAccessedAt && (
-          <span>Accessed {formatDate(item.lastAccessedAt)}</span>
-        )}
+        {item.lastAccessedAt && <span>Accessed {formatDate(item.lastAccessedAt)}</span>}
       </div>
     </div>
   );

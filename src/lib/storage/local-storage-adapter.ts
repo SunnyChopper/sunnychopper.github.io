@@ -111,7 +111,11 @@ export class LocalStorageAdapter implements IStorageAdapter {
     this.getCollection<T>(collection).seed(entities);
   }
 
-  async createRelation(collection: string, id: string, relation: Record<string, unknown>): Promise<void> {
+  async createRelation(
+    collection: string,
+    id: string,
+    relation: Record<string, unknown>
+  ): Promise<void> {
     const coll = this.getCollection<Record<string, unknown>>(collection);
     await coll.create(id, relation);
   }

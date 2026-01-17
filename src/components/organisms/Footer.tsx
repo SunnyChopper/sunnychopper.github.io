@@ -9,16 +9,26 @@ export default function Footer() {
             <h2 className="text-2xl font-bold mb-6">About Me</h2>
             <div className="space-y-4 text-gray-300">
               <p>
-                My coding adventure started at 14, when I needed to earn some money. This challenge led me to learn coding and build websites for friends, sparking a passion for technology that has grown ever since.
+                My coding adventure started at 14, when I needed to earn some money. This challenge
+                led me to learn coding and build websites for friends, sparking a passion for
+                technology that has grown ever since.
               </p>
               <p>
-                Over the last 4 years, I've worked professionally, taking on real-world projects that have taught me a lot. I've gained hands-on experience in working on a software development team, collaborating with various team members to gather requirements and build solutions to problems for stakeholders, making a real difference at work.
+                Over the last 4 years, I've worked professionally, taking on real-world projects
+                that have taught me a lot. I've gained hands-on experience in working on a software
+                development team, collaborating with various team members to gather requirements and
+                build solutions to problems for stakeholders, making a real difference at work.
               </p>
               <p>
-                Besides my job, I've also created and published my own applications, with CanvasCraft being my latest. These projects have allowed me to explore how to quickly prototype an MVP solution with serverless computing and providing it to real users, showing what I can do from start to finish.
+                Besides my job, I've also created and published my own applications, with
+                CanvasCraft being my latest. These projects have allowed me to explore how to
+                quickly prototype an MVP solution with serverless computing and providing it to real
+                users, showing what I can do from start to finish.
               </p>
               <p>
-                I'm always learning and excited to tackle new challenges. My journey from making websites for Xbox Live to developing professional applications and working on impactful projects shows my dedication and ability to grow in the tech field.
+                I'm always learning and excited to tackle new challenges. My journey from making
+                websites for Xbox Live to developing professional applications and working on
+                impactful projects shows my dedication and ability to grow in the tech field.
               </p>
             </div>
           </div>

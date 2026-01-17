@@ -12,9 +12,7 @@ export default function PortfolioSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
-            Portfolio
-          </h2>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900">Portfolio</h2>
         </motion.div>
 
         <div className="max-w-6xl mx-auto">

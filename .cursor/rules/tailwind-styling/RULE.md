@@ -1,6 +1,6 @@
 ---
-description: "Tailwind CSS styling patterns and conventions."
-globs: "**/*.tsx,**/*.css"
+description: 'Tailwind CSS styling patterns and conventions.'
+globs: '**/*.tsx,**/*.css'
 alwaysApply: false
 ---
 

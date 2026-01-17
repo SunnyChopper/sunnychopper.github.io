@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN displaying images, handling image loading, and optimizing image performance."
-globs: ""
+description: 'USE WHEN displaying images, handling image loading, and optimizing image performance.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -62,9 +62,7 @@ function ImageWithLoader({ src, alt, className }: ImageProps) {
 
   return (
     <div className={cn('relative overflow-hidden', className)}>
-      {isLoading && (
-        <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />
-      )}
+      {isLoading && <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse" />}
 
       {error ? (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
@@ -108,7 +106,7 @@ function Avatar({ src, name, size = 'md' }: AvatarProps) {
 
   const initials = name
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
@@ -162,12 +160,7 @@ function Avatar({ src, name, size = 'md' }: AvatarProps) {
 
 ```tsx
 // Native lazy loading
-<img
-  src={src}
-  alt={alt}
-  loading="lazy"
-  className="w-full h-auto"
-/>
+<img src={src} alt={alt} loading="lazy" className="w-full h-auto" />;
 
 // With Intersection Observer for more control
 function LazyImage({ src, alt, className }: ImageProps) {

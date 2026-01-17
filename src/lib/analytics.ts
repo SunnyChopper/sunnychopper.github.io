@@ -32,11 +32,17 @@ export const trackAdminAction = (action: string, category: string, label?: strin
   });
 };
 
-export const trackTaskAction = (action: 'created' | 'updated' | 'deleted' | 'completed', taskId: string) => {
+export const trackTaskAction = (
+  action: 'created' | 'updated' | 'deleted' | 'completed',
+  taskId: string
+) => {
   trackAdminAction(`task_${action}`, 'Tasks', taskId);
 };
 
-export const trackHabitAction = (action: 'created' | 'updated' | 'deleted' | 'completed', habitId: string) => {
+export const trackHabitAction = (
+  action: 'created' | 'updated' | 'deleted' | 'completed',
+  habitId: string
+) => {
   trackAdminAction(`habit_${action}`, 'Habits', habitId);
 };
 
@@ -44,11 +50,17 @@ export const trackMetricAction = (action: 'created' | 'updated' | 'deleted', met
   trackAdminAction(`metric_${action}`, 'Metrics', metricId);
 };
 
-export const trackGoalAction = (action: 'created' | 'updated' | 'deleted' | 'achieved', goalId: string) => {
+export const trackGoalAction = (
+  action: 'created' | 'updated' | 'deleted' | 'achieved',
+  goalId: string
+) => {
   trackAdminAction(`goal_${action}`, 'Goals', goalId);
 };
 
-export const trackProjectAction = (action: 'created' | 'updated' | 'deleted' | 'completed', projectId: string) => {
+export const trackProjectAction = (
+  action: 'created' | 'updated' | 'deleted' | 'completed',
+  projectId: string
+) => {
   trackAdminAction(`project_${action}`, 'Projects', projectId);
 };
 

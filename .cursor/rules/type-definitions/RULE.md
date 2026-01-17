@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN defining TypeScript types, interfaces, and type utilities."
-globs: "src/types/**/*.ts"
+description: 'USE WHEN defining TypeScript types, interfaces, and type utilities.'
+globs: 'src/types/**/*.ts'
 alwaysApply: false
 ---
 
@@ -155,9 +155,7 @@ interface PaginatedResponse<T> {
 }
 
 // Service result
-type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+type ServiceResult<T> = { success: true; data: T } | { success: false; error: string };
 ```
 
 ## Re-exporting Types

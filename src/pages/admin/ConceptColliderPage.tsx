@@ -4,7 +4,12 @@ import ForceDirectedGraph from '../../components/organisms/ForceDirectedGraph';
 import ConceptSynthesisModal from '../../components/organisms/ConceptSynthesisModal';
 import { conceptGraphService } from '../../services/knowledge-vault/concept-graph.service';
 import { conceptSynthesisService } from '../../services/knowledge-vault/concept-synthesis.service';
-import type { ConceptNode, ConceptEdge, ConceptSynthesis, CreateConceptNodeInput } from '../../types/concept-graph';
+import type {
+  ConceptNode,
+  ConceptEdge,
+  ConceptSynthesis,
+  CreateConceptNodeInput,
+} from '../../types/concept-graph';
 import type { Area } from '../../types/growth-system';
 import { AREAS } from '../../constants/growth-system';
 
@@ -61,7 +66,10 @@ export default function ConceptColliderPage() {
 
     setIsGenerating(true);
     try {
-      const result = await conceptSynthesisService.generateSynthesis(selectedNode, secondSelectedNode);
+      const result = await conceptSynthesisService.generateSynthesis(
+        selectedNode,
+        secondSelectedNode
+      );
       setSynthesis(result);
     } catch (error) {
       console.error('Failed to generate synthesis:', error);
@@ -128,17 +136,13 @@ export default function ConceptColliderPage() {
   const handleRemoveTag = (tag: string) => {
     setNewNodeForm({
       ...newNodeForm,
-      tags: (newNodeForm.tags || []).filter(t => t !== tag),
+      tags: (newNodeForm.tags || []).filter((t) => t !== tag),
     });
   };
 
-  const filteredNodes = searchQuery.trim()
-    ? conceptGraphService.searchNodes(searchQuery)
-    : nodes;
+  const filteredNodes = searchQuery.trim() ? conceptGraphService.searchNodes(searchQuery) : nodes;
 
-  const connectedNodes = selectedNode
-    ? conceptGraphService.getConnectedNodes(selectedNode.id)
-    : [];
+  const connectedNodes = selectedNode ? conceptGraphService.getConnectedNodes(selectedNode.id) : [];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -146,9 +150,7 @@ export default function ConceptColliderPage() {
         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl mb-4">
           <Sparkles size={32} className="text-white" />
         </div>
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          Concept Collider
-        </h1>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Concept Collider</h1>
         <p className="text-lg text-gray-600 dark:text-gray-400">
           Explore connections in your knowledge graph
         </p>
@@ -203,7 +205,9 @@ export default function ConceptColliderPage() {
                     </label>
                     <textarea
                       value={newNodeForm.description}
-                      onChange={(e) => setNewNodeForm({ ...newNodeForm, description: e.target.value })}
+                      onChange={(e) =>
+                        setNewNodeForm({ ...newNodeForm, description: e.target.value })
+                      }
                       placeholder="Brief description..."
                       rows={2}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
@@ -215,11 +219,15 @@ export default function ConceptColliderPage() {
                     </label>
                     <select
                       value={newNodeForm.area}
-                      onChange={(e) => setNewNodeForm({ ...newNodeForm, area: e.target.value as Area })}
+                      onChange={(e) =>
+                        setNewNodeForm({ ...newNodeForm, area: e.target.value as Area })
+                      }
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                     >
-                      {AREAS.map(area => (
-                        <option key={area} value={area}>{area}</option>
+                      {AREAS.map((area) => (
+                        <option key={area} value={area}>
+                          {area}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -232,7 +240,9 @@ export default function ConceptColliderPage() {
                         type="text"
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (handleAddTag(), e.preventDefault())}
+                        onKeyPress={(e) =>
+                          e.key === 'Enter' && (handleAddTag(), e.preventDefault())
+                        }
                         placeholder="Add tag..."
                         className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
                       />
@@ -245,7 +255,7 @@ export default function ConceptColliderPage() {
                     </div>
                     {newNodeForm.tags && newNodeForm.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {newNodeForm.tags.map(tag => (
+                        {newNodeForm.tags.map((tag) => (
                           <span
                             key={tag}
                             className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs"
@@ -315,7 +325,10 @@ export default function ConceptColliderPage() {
               Search Concepts
             </h3>
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
               <input
                 type="text"
                 value={searchQuery}
@@ -365,7 +378,7 @@ export default function ConceptColliderPage() {
                   <div>
                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Tags</p>
                     <div className="flex flex-wrap gap-1">
-                      {selectedNode.tags.map(tag => (
+                      {selectedNode.tags.map((tag) => (
                         <span
                           key={tag}
                           className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs"
@@ -402,7 +415,10 @@ export default function ConceptColliderPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Density</span>
                 <span className="font-medium text-gray-900 dark:text-white">
-                  {nodes.length > 0 ? ((edges.length / (nodes.length * (nodes.length - 1) / 2)) * 100).toFixed(1) : 0}%
+                  {nodes.length > 0
+                    ? ((edges.length / ((nodes.length * (nodes.length - 1)) / 2)) * 100).toFixed(1)
+                    : 0}
+                  %
                 </span>
               </div>
             </div>

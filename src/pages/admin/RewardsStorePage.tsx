@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Store, Coins } from 'lucide-react';
-import { useRewards } from '../../contexts/RewardsContext';
-import { useWallet } from '../../contexts/WalletContext';
+import { useRewards } from '../../contexts/Rewards';
+import { useWallet } from '../../contexts/Wallet';
 import { RewardCard } from '../../components/molecules/RewardCard';
 import type { RewardWithRedemptions, RewardCategory } from '../../types/rewards';
 
@@ -24,9 +24,7 @@ const RewardsStorePage = () => {
   const handleRedeem = async (reward: RewardWithRedemptions) => {
     if (!reward.canRedeem) return;
 
-    const confirmed = confirm(
-      `Redeem "${reward.title}" for ${reward.pointCost} points?`
-    );
+    const confirmed = confirm(`Redeem "${reward.title}" for ${reward.pointCost} points?`);
     if (!confirmed) return;
 
     try {
@@ -46,9 +44,7 @@ const RewardsStorePage = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Store size={32} className="text-blue-600 dark:text-blue-500" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Rewards Store
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Rewards Store</h1>
           </div>
           {balance && (
             <div className="flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
@@ -101,9 +97,7 @@ const RewardsStorePage = () => {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             No Rewards Available
           </h3>
-          <p className="text-gray-600 dark:text-gray-400">
-            Check back later for new rewards
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Check back later for new rewards</p>
         </div>
       ) : (
         <>
@@ -125,9 +119,7 @@ const RewardsStorePage = () => {
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                     {category.name}
                   </h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {category.description}
-                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{category.description}</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {categoryRewards.map((reward) => (

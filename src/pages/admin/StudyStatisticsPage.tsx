@@ -1,7 +1,16 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Calendar, Target, Brain, Clock, Award, BarChart3 } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVaultContext';
+import {
+  ArrowLeft,
+  TrendingUp,
+  Calendar,
+  Target,
+  Brain,
+  Clock,
+  Award,
+  BarChart3,
+} from 'lucide-react';
+import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
 import { spacedRepetitionService } from '../../services/knowledge-vault';
 import { ROUTES } from '../../routes';
 import type { Flashcard } from '../../types/knowledge-vault';
@@ -20,7 +29,7 @@ export default function StudyStatisticsPage() {
         nextReviewDate: fc.nextReviewDate,
         lastReviewDate: fc.lastAccessedAt,
         reviewHistory: [],
-      }
+      },
     }));
   }, [flashcards]);
 
@@ -75,7 +84,11 @@ export default function StudyStatisticsPage() {
       }).length;
 
       next7Days.push({
-        date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        date: date.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        }),
         count,
       });
     }
@@ -153,9 +166,7 @@ export default function StudyStatisticsPage() {
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Reviews</div>
             </div>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            Lifetime study sessions
-          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Lifetime study sessions</div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -170,9 +181,7 @@ export default function StudyStatisticsPage() {
               <div className="text-sm text-gray-600 dark:text-gray-400">Study Time</div>
             </div>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            Estimated total time
-          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Estimated total time</div>
         </div>
       </div>
 
@@ -208,9 +217,7 @@ export default function StudyStatisticsPage() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Young
-                </span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Young</span>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {masteryDistribution.young} cards
                 </span>
@@ -228,9 +235,7 @@ export default function StudyStatisticsPage() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Mature
-                </span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Mature</span>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
                   {masteryDistribution.mature} cards
                 </span>
@@ -296,9 +301,7 @@ export default function StudyStatisticsPage() {
                     {day.date}
                   </span>
                 </div>
-                <span className="text-lg font-bold text-gray-900 dark:text-white">
-                  {day.count}
-                </span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{day.count}</span>
               </div>
             ))}
           </div>
@@ -316,17 +319,13 @@ export default function StudyStatisticsPage() {
           <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             {avgInterval} days
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Average time between reviews
-          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Average time between reviews</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-2 mb-4">
             <Brain size={20} className="text-gray-600 dark:text-gray-400" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Ease Factor
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ease Factor</h3>
           </div>
           <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             {stats.averageEasinessFactor}
@@ -346,9 +345,7 @@ export default function StudyStatisticsPage() {
           <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             {stats.totalCards > 0 ? (stats.totalReviews / stats.totalCards).toFixed(1) : 0}
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Average review count per card
-          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Average review count per card</p>
         </div>
       </div>
     </div>

@@ -19,16 +19,10 @@ export default function BlogCard({ post, index }: BlogCardProps) {
       className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
     >
       <div className="aspect-video w-full overflow-hidden">
-        <img
-          src={post.image}
-          alt={post.title}
-          className="w-full h-full object-cover"
-        />
+        <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
       </div>
       <div className="p-6">
-        <h4 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">
-          {post.title}
-        </h4>
+        <h4 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{post.title}</h4>
         <p className="text-gray-700 mb-4 line-clamp-3">{post.summary}</p>
         <p className="text-sm text-gray-500">Written {post.date} on Medium</p>
       </div>

@@ -28,7 +28,7 @@ export function ProgressRing({
   strokeWidth = 4,
   showLabel = true,
   color = 'blue',
-  className = ''
+  className = '',
 }: ProgressRingProps) {
   const { dimension, fontSize } = sizeConfig[size];
   const normalizedProgress = Math.min(Math.max(progress, 0), 100);
@@ -39,11 +39,7 @@ export function ProgressRing({
 
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
-      <svg
-        width={dimension}
-        height={dimension}
-        className="transform -rotate-90"
-      >
+      <svg width={dimension} height={dimension} className="transform -rotate-90">
         <circle
           cx={dimension / 2}
           cy={dimension / 2}

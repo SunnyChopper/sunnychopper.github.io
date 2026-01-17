@@ -1,6 +1,6 @@
 ---
-description: "Standards for organism-level components in the atomic design system."
-globs: "src/components/organisms/**/*.tsx"
+description: 'Standards for organism-level components in the atomic design system.'
+globs: 'src/components/organisms/**/*.tsx'
 alwaysApply: false
 ---
 
@@ -58,10 +58,11 @@ export default function TaskList({
   }>({});
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
+    return tasks.filter((task) => {
       if (filters.status && task.status !== filters.status) return false;
       if (filters.area && task.area !== filters.area) return false;
-      if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
+      if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase()))
+        return false;
       return true;
     });
   }, [tasks, filters]);
@@ -70,7 +71,7 @@ export default function TaskList({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {[1, 2, 3].map(i => (
+        {[1, 2, 3].map((i) => (
           <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
         ))}
       </div>
@@ -82,7 +83,9 @@ export default function TaskList({
     return (
       <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
         <p className="text-red-600 dark:text-red-400">Failed to load tasks</p>
-        <Button variant="ghost" className="mt-2">Retry</Button>
+        <Button variant="ghost" className="mt-2">
+          Retry
+        </Button>
       </div>
     );
   }
@@ -101,15 +104,12 @@ export default function TaskList({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <FilterPanel
-          filters={filters}
-          onChange={setFilters}
-        />
+        <FilterPanel filters={filters} onChange={setFilters} />
         <Button onClick={onTaskCreate}>New Task</Button>
       </div>
 
       <div className="space-y-2">
-        {filteredTasks.map(task => (
+        {filteredTasks.map((task) => (
           <TaskListItem
             key={task.id}
             task={task}

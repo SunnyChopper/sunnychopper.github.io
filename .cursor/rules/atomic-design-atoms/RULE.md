@@ -1,6 +1,6 @@
 ---
-description: "Standards for atom-level components in the atomic design system."
-globs: "src/components/atoms/**/*.tsx"
+description: 'Standards for atom-level components in the atomic design system.'
+globs: 'src/components/atoms/**/*.tsx'
 alwaysApply: false
 ---
 
@@ -36,15 +36,18 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({
-    variant = 'primary',
-    size = 'md',
-    isLoading = false,
-    disabled,
-    className,
-    children,
-    ...props
-  }, ref) => {
+  (
+    {
+      variant = 'primary',
+      size = 'md',
+      isLoading = false,
+      disabled,
+      className,
+      children,
+      ...props
+    },
+    ref
+  ) => {
     return (
       <button
         ref={ref}

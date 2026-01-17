@@ -1,10 +1,23 @@
 import { useState } from 'react';
 import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
-import type { CreateTaskInput, Area, SubCategory, Priority, TaskStatus } from '../../types/growth-system';
+import type {
+  CreateTaskInput,
+  Area,
+  SubCategory,
+  Priority,
+  TaskStatus,
+} from '../../types/growth-system';
 import Button from '../atoms/Button';
 import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
 import { llmConfig } from '../../lib/llm';
-import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES, AREA_LABELS, TASK_STATUS_LABELS } from '../../constants/growth-system';
+import {
+  AREAS,
+  PRIORITIES,
+  SUBCATEGORIES_BY_AREA,
+  TASK_STATUSES,
+  AREA_LABELS,
+  TASK_STATUS_LABELS,
+} from '../../constants/growth-system';
 
 interface TaskCreateFormProps {
   onSubmit: (input: CreateTaskInput) => void;
@@ -177,7 +190,9 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
           <select
             required
             value={formData.area}
-            onChange={(e) => setFormData({ ...formData, area: e.target.value as Area, subCategory: undefined })}
+            onChange={(e) =>
+              setFormData({ ...formData, area: e.target.value as Area, subCategory: undefined })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {AREAS.map((area) => (
@@ -194,7 +209,12 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
           </label>
           <select
             value={formData.subCategory || ''}
-            onChange={(e) => setFormData({ ...formData, subCategory: e.target.value as SubCategory || undefined })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                subCategory: (e.target.value as SubCategory) || undefined,
+              })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">None</option>
@@ -278,7 +298,12 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
           min="0"
           step="0.5"
           value={formData.size || ''}
-          onChange={(e) => setFormData({ ...formData, size: e.target.value ? parseFloat(e.target.value) : undefined })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              size: e.target.value ? parseFloat(e.target.value) : undefined,
+            })
+          }
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="e.g., 2.5"
         />
@@ -293,7 +318,12 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
             type="number"
             min="0"
             value={formData.pointValue || ''}
-            onChange={(e) => setFormData({ ...formData, pointValue: e.target.value ? parseFloat(e.target.value) : undefined })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                pointValue: e.target.value ? parseFloat(e.target.value) : undefined,
+              })
+            }
             placeholder="AI will calculate if left empty"
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />

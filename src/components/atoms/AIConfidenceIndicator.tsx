@@ -11,7 +11,12 @@ const sizeConfig = {
   lg: { bar: 'h-2', text: 'text-base', width: 'w-32' },
 };
 
-export function AIConfidenceIndicator({ confidence, size = 'md', showLabel = true, className = '' }: AIConfidenceIndicatorProps) {
+export function AIConfidenceIndicator({
+  confidence,
+  size = 'md',
+  showLabel = true,
+  className = '',
+}: AIConfidenceIndicatorProps) {
   const normalizedConfidence = Math.min(Math.max(confidence, 0), 100);
   const config = sizeConfig[size];
 
@@ -31,7 +36,9 @@ export function AIConfidenceIndicator({ confidence, size = 'md', showLabel = tru
           {normalizedConfidence}%
         </span>
       )}
-      <div className={`${config.width} bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden ${config.bar}`}>
+      <div
+        className={`${config.width} bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden ${config.bar}`}
+      >
         <div
           className={`${config.bar} ${colorClass} rounded-full transition-all duration-300`}
           style={{ width: `${normalizedConfidence}%` }}

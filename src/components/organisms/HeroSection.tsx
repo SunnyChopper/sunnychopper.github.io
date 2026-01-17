@@ -42,18 +42,10 @@ export default function HeroSection() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="flex flex-wrap gap-4 justify-center"
         >
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={() => scrollToSection('portfolio')}
-          >
+          <Button variant="primary" size="lg" onClick={() => scrollToSection('portfolio')}>
             View Portfolio
           </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => scrollToSection('contact')}
-          >
+          <Button variant="secondary" size="lg" onClick={() => scrollToSection('contact')}>
             Contact Me
           </Button>
         </motion.div>

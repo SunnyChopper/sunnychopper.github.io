@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN creating service modules for data access, business logic, and API calls."
-globs: "src/services/**/*.ts"
+description: 'USE WHEN creating service modules for data access, business logic, and API calls.'
+globs: 'src/services/**/*.ts'
 alwaysApply: false
 ---
 
@@ -88,9 +88,7 @@ export const habitService = {
 
     for (const log of sortedLogs) {
       const logDate = new Date(log.date);
-      const daysDiff = Math.floor(
-        (today.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
+      const daysDiff = Math.floor((today.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24));
 
       if (daysDiff === streak) {
         streak++;
@@ -112,33 +110,30 @@ export const tasksService = {
     let tasks = await this.getAll();
 
     if (filters.status) {
-      tasks = tasks.filter(t => t.status === filters.status);
+      tasks = tasks.filter((t) => t.status === filters.status);
     }
 
     if (filters.priority) {
-      tasks = tasks.filter(t => t.priority === filters.priority);
+      tasks = tasks.filter((t) => t.priority === filters.priority);
     }
 
     if (filters.projectId) {
-      tasks = tasks.filter(t => t.projectId === filters.projectId);
+      tasks = tasks.filter((t) => t.projectId === filters.projectId);
     }
 
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      tasks = tasks.filter(t =>
-        t.title.toLowerCase().includes(searchLower) ||
-        t.description?.toLowerCase().includes(searchLower)
+      tasks = tasks.filter(
+        (t) =>
+          t.title.toLowerCase().includes(searchLower) ||
+          t.description?.toLowerCase().includes(searchLower)
       );
     }
 
     return this.sortTasks(tasks, filters.sortBy, filters.sortOrder);
   },
 
-  sortTasks(
-    tasks: Task[],
-    sortBy: string = 'createdAt',
-    order: 'asc' | 'desc' = 'desc'
-  ): Task[] {
+  sortTasks(tasks: Task[], sortBy: string = 'createdAt', order: 'asc' | 'desc' = 'desc'): Task[] {
     return [...tasks].sort((a, b) => {
       const aVal = a[sortBy as keyof Task];
       const bVal = b[sortBy as keyof Task];
@@ -173,8 +168,8 @@ export const dashboardService = {
   calculateTaskStats(tasks: Task[]): TaskStats {
     return {
       total: tasks.length,
-      completed: tasks.filter(t => t.status === 'completed').length,
-      overdue: tasks.filter(t => this.isOverdue(t)).length,
+      completed: tasks.filter((t) => t.status === 'completed').length,
+      overdue: tasks.filter((t) => this.isOverdue(t)).length,
     };
   },
 };

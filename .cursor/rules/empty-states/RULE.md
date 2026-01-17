@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN handling empty data, no results, and first-use experiences."
-globs: ""
+description: 'USE WHEN handling empty data, no results, and first-use experiences.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -27,9 +27,7 @@ Empty states guide users when there's no data to display.
   </div>
 
   {/* Title */}
-  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-    No tasks yet
-  </h3>
+  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No tasks yet</h3>
 
   {/* Description */}
   <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
@@ -58,19 +56,13 @@ function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="text-center py-12 px-4">
       {icon && (
-        <div className="mx-auto w-12 h-12 text-gray-400 dark:text-gray-500 mb-4">
-          {icon}
-        </div>
+        <div className="mx-auto w-12 h-12 text-gray-400 dark:text-gray-500 mb-4">{icon}</div>
       )}
 
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        {title}
-      </h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{title}</h3>
 
       {description && (
-        <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-          {description}
-        </p>
+        <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">{description}</p>
       )}
 
       {action && <div>{action}</div>}
@@ -146,17 +138,9 @@ function EmptyState({ icon, title, description, action }: EmptyStateProps) {
 
 ```tsx
 <div className="text-center py-12">
-  <img
-    src="/images/empty-tasks.svg"
-    alt=""
-    className="w-48 h-48 mx-auto mb-6 opacity-75"
-  />
-  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-    No tasks yet
-  </h3>
-  <p className="text-gray-500 dark:text-gray-400 mb-6">
-    Start by creating your first task
-  </p>
+  <img src="/images/empty-tasks.svg" alt="" className="w-48 h-48 mx-auto mb-6 opacity-75" />
+  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No tasks yet</h3>
+  <p className="text-gray-500 dark:text-gray-400 mb-6">Start by creating your first task</p>
   <Button>Create Task</Button>
 </div>
 ```

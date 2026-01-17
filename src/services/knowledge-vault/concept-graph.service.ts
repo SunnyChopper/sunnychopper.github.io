@@ -33,30 +33,30 @@ export const conceptGraphService = {
 
   getNodeById(id: string): ConceptNode | null {
     const nodes = this.getAllNodes();
-    return nodes.find(node => node.id === id) || null;
+    return nodes.find((node) => node.id === id) || null;
   },
 
   getNodesByArea(area: string): ConceptNode[] {
     const nodes = this.getAllNodes();
-    return nodes.filter(node => node.area === area);
+    return nodes.filter((node) => node.area === area);
   },
 
   getConnectedNodes(nodeId: string): ConceptNode[] {
     const edges = this.getAllEdges();
     const connectedIds = new Set<string>();
 
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
       if (edge.source === nodeId) connectedIds.add(edge.target);
       if (edge.target === nodeId) connectedIds.add(edge.source);
     });
 
     const nodes = this.getAllNodes();
-    return nodes.filter(node => connectedIds.has(node.id));
+    return nodes.filter((node) => connectedIds.has(node.id));
   },
 
   getNodeConnections(nodeId: string): ConceptEdge[] {
     const edges = this.getAllEdges();
-    return edges.filter(edge => edge.source === nodeId || edge.target === nodeId);
+    return edges.filter((edge) => edge.source === nodeId || edge.target === nodeId);
   },
 
   createNode(input: CreateConceptNodeInput): ConceptNode {
@@ -82,7 +82,7 @@ export const conceptGraphService = {
 
   updateNode(id: string, input: UpdateConceptNodeInput): ConceptNode | null {
     const nodes = this.getAllNodes();
-    const index = nodes.findIndex(node => node.id === id);
+    const index = nodes.findIndex((node) => node.id === id);
 
     if (index === -1) return null;
 
@@ -101,14 +101,14 @@ export const conceptGraphService = {
   deleteNode(id: string): boolean {
     let nodes = this.getAllNodes();
     const initialLength = nodes.length;
-    nodes = nodes.filter(node => node.id !== id);
+    nodes = nodes.filter((node) => node.id !== id);
 
     if (nodes.length === initialLength) return false;
 
     localStorage.setItem(STORAGE_KEY_NODES, JSON.stringify(nodes));
 
     let edges = this.getAllEdges();
-    edges = edges.filter(edge => edge.source !== id && edge.target !== id);
+    edges = edges.filter((edge) => edge.source !== id && edge.target !== id);
     localStorage.setItem(STORAGE_KEY_EDGES, JSON.stringify(edges));
 
     return true;
@@ -116,7 +116,7 @@ export const conceptGraphService = {
 
   incrementNodeAccess(id: string): void {
     const nodes = this.getAllNodes();
-    const index = nodes.findIndex(node => node.id === id);
+    const index = nodes.findIndex((node) => node.id === id);
 
     if (index !== -1) {
       nodes[index].accessCount += 1;
@@ -134,7 +134,7 @@ export const conceptGraphService = {
     const edges = this.getAllEdges();
 
     const existingEdge = edges.find(
-      edge =>
+      (edge) =>
         (edge.source === input.source && edge.target === input.target) ||
         (edge.source === input.target && edge.target === input.source)
     );
@@ -159,7 +159,7 @@ export const conceptGraphService = {
   deleteEdge(id: string): boolean {
     let edges = this.getAllEdges();
     const initialLength = edges.length;
-    edges = edges.filter(edge => edge.id !== id);
+    edges = edges.filter((edge) => edge.id !== id);
 
     if (edges.length === initialLength) return false;
 
@@ -171,10 +171,11 @@ export const conceptGraphService = {
     const nodes = this.getAllNodes();
     const lowerQuery = query.toLowerCase();
 
-    return nodes.filter(node =>
-      node.label.toLowerCase().includes(lowerQuery) ||
-      node.description?.toLowerCase().includes(lowerQuery) ||
-      node.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+    return nodes.filter(
+      (node) =>
+        node.label.toLowerCase().includes(lowerQuery) ||
+        node.description?.toLowerCase().includes(lowerQuery) ||
+        node.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
     );
   },
 
@@ -193,6 +194,6 @@ export const conceptGraphService = {
       { label: 'Social Capital', area: 'Love', tags: ['relationships', 'networking'] },
     ];
 
-    sampleNodes.forEach(input => this.createNode(input));
+    sampleNodes.forEach((input) => this.createNode(input));
   },
 };

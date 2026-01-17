@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN implementing drag and drop functionality for lists, cards, or file uploads."
-globs: ""
+description: 'USE WHEN implementing drag and drop functionality for lists, cards, or file uploads.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -39,11 +39,7 @@ function DraggableItem({ id, children, onDragStart, onDragEnd }: DraggableItemPr
 ## Drop Zone
 
 ```tsx
-function DropZone({
-  onDrop,
-  children,
-  acceptedTypes = ['text/plain'],
-}: DropZoneProps) {
+function DropZone({ onDrop, children, acceptedTypes = ['text/plain'] }: DropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -102,8 +98,8 @@ function SortableList({ items, onReorder }: SortableListProps) {
   const handleDrop = (targetId: string) => {
     if (draggedId && draggedId !== targetId) {
       const newItems = [...items];
-      const draggedIndex = items.findIndex(i => i.id === draggedId);
-      const targetIndex = items.findIndex(i => i.id === targetId);
+      const draggedIndex = items.findIndex((i) => i.id === draggedId);
+      const targetIndex = items.findIndex((i) => i.id === targetId);
 
       newItems.splice(draggedIndex, 1);
       newItems.splice(targetIndex, 0, items[draggedIndex]);
@@ -116,7 +112,7 @@ function SortableList({ items, onReorder }: SortableListProps) {
 
   return (
     <div className="space-y-2">
-      {items.map(item => (
+      {items.map((item) => (
         <div
           key={item.id}
           draggable
@@ -182,9 +178,7 @@ function FileDropZone({ onFilesDropped, accept }: FileDropZoneProps) {
       <p className="text-gray-600 dark:text-gray-400">
         Drag files here or <span className="text-blue-600">browse</span>
       </p>
-      <p className="text-sm text-gray-500 mt-1">
-        {accept || 'Any file type'}
-      </p>
+      <p className="text-sm text-gray-500 mt-1">{accept || 'Any file type'}</p>
 
       <input
         ref={inputRef}
@@ -227,7 +221,7 @@ function KanbanColumn({ status, tasks, onTaskDrop }: KanbanColumnProps) {
     >
       <h3 className="font-medium mb-4">{status}</h3>
       <div className="space-y-2">
-        {tasks.map(task => (
+        {tasks.map((task) => (
           <DraggableTaskCard key={task.id} task={task} />
         ))}
       </div>
@@ -240,14 +234,14 @@ function KanbanColumn({ status, tasks, onTaskDrop }: KanbanColumnProps) {
 
 ```tsx
 // Dragging state
-className="opacity-50 scale-95"
+className = 'opacity-50 scale-95';
 
 // Valid drop target
-className="ring-2 ring-blue-500 bg-blue-50"
+className = 'ring-2 ring-blue-500 bg-blue-50';
 
 // Invalid drop target
-className="ring-2 ring-red-500 bg-red-50"
+className = 'ring-2 ring-red-500 bg-red-50';
 
 // Drop indicator line
-className="h-1 bg-blue-500 rounded-full"
+className = 'h-1 bg-blue-500 rounded-full';
 ```

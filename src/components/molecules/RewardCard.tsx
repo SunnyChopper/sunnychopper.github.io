@@ -1,6 +1,6 @@
 import { Coins, Clock, Lock, CheckCircle2 } from 'lucide-react';
 import type { RewardWithRedemptions } from '../../types/rewards';
-import { useWallet } from '../../contexts/WalletContext';
+import { useWallet } from '../../contexts/Wallet';
 
 interface RewardCardProps {
   reward: RewardWithRedemptions;
@@ -44,9 +44,7 @@ export const RewardCard = ({ reward, onRedeem, onEdit, showEditButton }: RewardC
               <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
                 {reward.title}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {reward.description}
-              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{reward.description}</p>
             </div>
           </div>
         </div>

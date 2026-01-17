@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN displaying toast notifications, alerts, and feedback messages."
-globs: ""
+description: 'USE WHEN displaying toast notifications, alerts, and feedback messages.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -36,9 +36,12 @@ const icons = {
 };
 
 const styles = {
-  success: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200',
-  error: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200',
-  warning: 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200',
+  success:
+    'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200',
+  error:
+    'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200',
+  warning:
+    'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200',
   info: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200',
 };
 
@@ -64,15 +67,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
 
       <div className="flex-1 min-w-0">
         <p className="font-medium">{toast.title}</p>
-        {toast.message && (
-          <p className="text-sm opacity-90 mt-1">{toast.message}</p>
-        )}
+        {toast.message && <p className="text-sm opacity-90 mt-1">{toast.message}</p>}
       </div>
 
-      <button
-        onClick={onDismiss}
-        className="p-1 hover:bg-black/10 rounded transition-colors"
-      >
+      <button onClick={onDismiss} className="p-1 hover:bg-black/10 rounded transition-colors">
         <X className="w-4 h-4" />
       </button>
     </motion.div>
@@ -87,12 +85,8 @@ function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
       <AnimatePresence>
-        {toasts.map(toast => (
-          <ToastItem
-            key={toast.id}
-            toast={toast}
-            onDismiss={() => onDismiss(toast.id)}
-          />
+        {toasts.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} onDismiss={() => onDismiss(toast.id)} />
         ))}
       </AnimatePresence>
     </div>
@@ -116,11 +110,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = crypto.randomUUID();
-    setToasts(prev => [...prev, { ...toast, id }]);
+    setToasts((prev) => [...prev, { ...toast, id }]);
   }, []);
 
   const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   return (
@@ -170,14 +164,10 @@ function TaskActions() {
 ```tsx
 // Convenience methods
 const toast = {
-  success: (title: string, message?: string) =>
-    showToast({ type: 'success', title, message }),
-  error: (title: string, message?: string) =>
-    showToast({ type: 'error', title, message }),
-  warning: (title: string, message?: string) =>
-    showToast({ type: 'warning', title, message }),
-  info: (title: string, message?: string) =>
-    showToast({ type: 'info', title, message }),
+  success: (title: string, message?: string) => showToast({ type: 'success', title, message }),
+  error: (title: string, message?: string) => showToast({ type: 'error', title, message }),
+  warning: (title: string, message?: string) => showToast({ type: 'warning', title, message }),
+  info: (title: string, message?: string) => showToast({ type: 'info', title, message }),
 };
 
 // Usage

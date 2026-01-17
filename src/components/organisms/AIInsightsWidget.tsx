@@ -1,7 +1,22 @@
-import { useState, useEffect } from 'react';
-import { Sparkles, TrendingUp, AlertTriangle, Target, Zap, X, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  Sparkles,
+  TrendingUp,
+  AlertTriangle,
+  Target,
+  Zap,
+  X,
+  RefreshCw,
+  AlertCircle,
+} from 'lucide-react';
 import { llmConfig } from '../../lib/llm';
-import { useTasks, useHabits, useMetrics, useGoals, useProjects } from '../../hooks/useGrowthSystem';
+import {
+  useTasks,
+  useHabits,
+  useMetrics,
+  useGoals,
+  useProjects,
+} from '../../hooks/useGrowthSystem';
 import Button from '../atoms/Button';
 import { ROUTES } from '../../routes';
 
@@ -22,22 +37,23 @@ export function AIInsightsWidget() {
   const [isLoading, setIsLoading] = useState(true);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
-  const { tasks } = useTasks();
-  const { habits } = useHabits();
-  const { metrics } = useMetrics();
-  const { goals } = useGoals();
-  const { projects } = useProjects();
+  const { tasks, isError: tasksError } = useTasks();
+  const { habits, isError: habitsError } = useHabits();
+  const { metrics, isError: metricsError } = useMetrics();
+  const { goals, isError: goalsError } = useGoals();
+  const { projects, isError: projectsError } = useProjects();
 
   const isAIConfigured = llmConfig.isConfigured();
+  const hasNetworkError = tasksError || habitsError || metricsError || goalsError || projectsError;
 
-  const generateInsights = async () => {
+  const generateInsights = useCallback(async () => {
     setIsLoading(true);
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     const newInsights: Insight[] = [];
 
-    const blockedTasks = tasks.filter(t => t.status === 'Blocked');
+    const blockedTasks = tasks.filter((t) => t.status === 'Blocked');
     if (blockedTasks.length > 0) {
       newInsights.push({
         id: 'blocked-tasks',
@@ -46,13 +62,13 @@ export function AIInsightsWidget() {
         description: 'Review dependencies and remove blockers to keep momentum',
         action: {
           label: 'View Tasks',
-          link: ROUTES.admin.tasks
+          link: ROUTES.admin.tasks,
         },
-        priority: 'high'
+        priority: 'high',
       });
     }
 
-    const activeGoals = goals.filter(g => g.status === 'Active');
+    const activeGoals = goals.filter((g) => g.status === 'Active');
     if (activeGoals.length > 0) {
       newInsights.push({
         id: 'active-goals',
@@ -61,15 +77,15 @@ export function AIInsightsWidget() {
         description: 'Review your goals and ensure they have clear success criteria',
         action: {
           label: 'Review Goals',
-          link: ROUTES.admin.goals
+          link: ROUTES.admin.goals,
         },
-        priority: 'medium'
+        priority: 'medium',
       });
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const dailyHabits = habits.filter(h => h.frequency === 'Daily');
+    const dailyHabits = habits.filter((h) => h.frequency === 'Daily');
     if (dailyHabits.length > 0) {
       newInsights.push({
         id: 'daily-habits',
@@ -78,15 +94,14 @@ export function AIInsightsWidget() {
         description: 'Build consistency by maintaining your habit streaks',
         action: {
           label: 'Log Habits',
-          link: ROUTES.admin.habits
+          link: ROUTES.admin.habits,
         },
-        priority: 'high'
+        priority: 'high',
       });
     }
 
-    const highPriorityTasks = tasks.filter(t =>
-      t.priority === 'P1' &&
-      (t.status === 'NotStarted' || t.status === 'InProgress')
+    const highPriorityTasks = tasks.filter(
+      (t) => t.priority === 'P1' && (t.status === 'NotStarted' || t.status === 'InProgress')
     );
     if (highPriorityTasks.length > 0) {
       newInsights.push({
@@ -96,13 +111,13 @@ export function AIInsightsWidget() {
         description: 'Focus on completing critical tasks first',
         action: {
           label: 'View Tasks',
-          link: ROUTES.admin.tasks
+          link: ROUTES.admin.tasks,
         },
-        priority: 'high'
+        priority: 'high',
       });
     }
 
-    const atRiskGoals = goals.filter(g => g.status === 'AtRisk');
+    const atRiskGoals = goals.filter((g) => g.status === 'AtRisk');
     if (atRiskGoals.length > 0) {
       newInsights.push({
         id: 'at-risk-goals',
@@ -111,13 +126,13 @@ export function AIInsightsWidget() {
         description: 'Review and adjust strategy to get back on track',
         action: {
           label: 'Review Goals',
-          link: ROUTES.admin.goals
+          link: ROUTES.admin.goals,
         },
-        priority: 'high'
+        priority: 'high',
       });
     }
 
-    const activeMetrics = metrics.filter(m => m.status === 'Active');
+    const activeMetrics = metrics.filter((m) => m.status === 'Active');
     if (activeMetrics.length > 0) {
       newInsights.push({
         id: 'track-metrics',
@@ -126,13 +141,13 @@ export function AIInsightsWidget() {
         description: 'Regular tracking ensures accurate progress monitoring',
         action: {
           label: 'Log Metrics',
-          link: ROUTES.admin.metrics
+          link: ROUTES.admin.metrics,
         },
-        priority: 'medium'
+        priority: 'medium',
       });
     }
 
-    const completedTasks = tasks.filter(t => t.status === 'Done');
+    const completedTasks = tasks.filter((t) => t.status === 'Done');
     const completionRate = tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0;
     if (completionRate > 70) {
       newInsights.push({
@@ -140,21 +155,21 @@ export function AIInsightsWidget() {
         type: 'achievement',
         title: `${Math.round(completionRate)}% task completion rate`,
         description: 'Great job staying productive! Keep the momentum going',
-        priority: 'low'
+        priority: 'low',
       });
     }
 
-    setInsights(newInsights.filter(i => !dismissedIds.includes(i.id)));
+    setInsights(newInsights.filter((i) => !dismissedIds.includes(i.id)));
     setIsLoading(false);
-  };
+  }, [tasks, habits, metrics, goals, projects, dismissedIds]);
 
   useEffect(() => {
     generateInsights();
-  }, [tasks, habits, metrics, goals, projects]);
+  }, [generateInsights]);
 
   const handleDismiss = (insightId: string) => {
-    setDismissedIds(prev => [...prev, insightId]);
-    setInsights(prev => prev.filter(i => i.id !== insightId));
+    setDismissedIds((prev) => [...prev, insightId]);
+    setInsights((prev) => prev.filter((i) => i.id !== insightId));
   };
 
   const handleRefresh = () => {
@@ -206,13 +221,21 @@ export function AIInsightsWidget() {
           className="p-2 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition"
           title="Refresh insights"
         >
-          <RefreshCw className={`w-5 h-5 text-amber-600 dark:text-amber-400 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw
+            className={`w-5 h-5 text-amber-600 dark:text-amber-400 ${isLoading ? 'animate-spin' : ''}`}
+          />
         </button>
       </div>
 
-      {isLoading ? (
+      {hasNetworkError ? (
+        <div className="text-center py-8">
+          <AlertCircle className="w-12 h-12 text-amber-500 dark:text-amber-400 mx-auto mb-3 opacity-50" />
+          <p className="text-gray-600 dark:text-gray-400 mb-1">Unable to generate insights</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500">Backend connection unavailable</p>
+        </div>
+      ) : isLoading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 animate-pulse">
               <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
               <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
@@ -221,7 +244,7 @@ export function AIInsightsWidget() {
         </div>
       ) : visibleInsights.length > 0 ? (
         <div className="space-y-3">
-          {visibleInsights.map(insight => (
+          {visibleInsights.map((insight) => (
             <div
               key={insight.id}
               className={`rounded-lg border p-4 ${getColor(insight.type)} relative group`}
@@ -233,9 +256,7 @@ export function AIInsightsWidget() {
                 <X className="w-4 h-4" />
               </button>
               <div className="flex items-start gap-3 pr-6">
-                <div className="flex-shrink-0 mt-0.5">
-                  {getIcon(insight.type)}
-                </div>
+                <div className="flex-shrink-0 mt-0.5">{getIcon(insight.type)}</div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
                     {insight.title}
@@ -247,7 +268,7 @@ export function AIInsightsWidget() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => window.location.href = insight.action!.link}
+                      onClick={() => (window.location.href = insight.action!.link)}
                       className="mt-2"
                     >
                       {insight.action.label}

@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { X, Tag as TagIcon } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVaultContext';
-import type { Document, CreateDocumentInput, UpdateDocumentInput } from '../../types/knowledge-vault';
+import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
+import type {
+  Document,
+  CreateDocumentInput,
+  UpdateDocumentInput,
+} from '../../types/knowledge-vault';
 import type { Area } from '../../types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
@@ -46,7 +50,7 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim().toLowerCase();
     if (trimmedTag && !formData.tags.includes(trimmedTag)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         tags: [...prev.tags, trimmedTag],
       }));
@@ -55,9 +59,9 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove),
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
@@ -118,7 +122,7 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
         <input
           type="text"
           value={formData.title}
-          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
           className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
           placeholder="Enter document title"
           required
@@ -131,7 +135,7 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
         </label>
         <textarea
           value={formData.content}
-          onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, content: e.target.value }))}
           rows={6}
           className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
           placeholder="Add notes or summary about this document"
@@ -146,7 +150,7 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
           <input
             type="text"
             value={formData.fileType}
-            onChange={(e) => setFormData(prev => ({ ...prev, fileType: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, fileType: e.target.value }))}
             className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
             placeholder="PDF, DOCX, etc."
           />
@@ -159,7 +163,12 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
           <input
             type="number"
             value={formData.pageCount || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, pageCount: e.target.value ? parseInt(e.target.value) : null }))}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                pageCount: e.target.value ? parseInt(e.target.value) : null,
+              }))
+            }
             className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
             placeholder="Number of pages"
             min="1"
@@ -174,7 +183,7 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
         <input
           type="url"
           value={formData.fileUrl}
-          onChange={(e) => setFormData(prev => ({ ...prev, fileUrl: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, fileUrl: e.target.value }))}
           className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
           placeholder="https://example.com/document.pdf"
         />
@@ -186,12 +195,14 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
         </label>
         <select
           value={formData.area}
-          onChange={(e) => setFormData(prev => ({ ...prev, area: e.target.value as Area }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, area: e.target.value as Area }))}
           className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
           required
         >
-          {AREAS.map(area => (
-            <option key={area} value={area}>{area}</option>
+          {AREAS.map((area) => (
+            <option key={area} value={area}>
+              {area}
+            </option>
           ))}
         </select>
       </div>
@@ -225,7 +236,7 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
 
         {formData.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {formData.tags.map(tag => (
+            {formData.tags.map((tag) => (
               <span
                 key={tag}
                 className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300"

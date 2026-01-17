@@ -22,7 +22,26 @@ export interface ReviewResult {
 const DEFAULT_EASINESS_FACTOR = 2.5;
 const MIN_EASINESS_FACTOR = 1.3;
 
+import { apiClient } from '../../lib/api-client';
+import type { ApiResponse } from '../../types/api-contracts';
+
+interface ReviewSessionResult {
+  updated: number;
+  nextReviewDates: Record<string, string>;
+}
+
 export const spacedRepetitionService = {
+  async submitReviewSession(
+    deckId: string,
+    reviews: Array<{ flashcardId: string; quality: number }>
+  ): Promise<ApiResponse<ReviewSessionResult>> {
+    const response = await apiClient.post<ReviewSessionResult>(
+      `/knowledge/flashcards/${deckId}/review`,
+      { reviews }
+    );
+    return response;
+  },
+
   initializeCard(): SpacedRepetitionData {
     return {
       easinessFactor: DEFAULT_EASINESS_FACTOR,
@@ -34,10 +53,7 @@ export const spacedRepetitionService = {
     };
   },
 
-  calculateNextReview(
-    currentData: SpacedRepetitionData,
-    quality: number
-  ): ReviewResult {
+  calculateNextReview(currentData: SpacedRepetitionData, quality: number): ReviewResult {
     if (quality < 0 || quality > 5) {
       throw new Error('Quality must be between 0 and 5');
     }
@@ -75,10 +91,7 @@ export const spacedRepetitionService = {
     };
   },
 
-  applyReview(
-    currentData: SpacedRepetitionData,
-    quality: number
-  ): SpacedRepetitionData {
+  applyReview(currentData: SpacedRepetitionData, quality: number): SpacedRepetitionData {
     const result = this.calculateNextReview(currentData, quality);
     const now = new Date().toISOString();
 
@@ -121,10 +134,7 @@ export const spacedRepetitionService = {
     const dueToday = flashcards.filter((card) => {
       if (!card.spacedRepetitionData) return true;
       const nextReview = new Date(card.spacedRepetitionData.nextReviewDate);
-      return (
-        nextReview.toDateString() === now.toDateString() &&
-        nextReview <= now
-      );
+      return nextReview.toDateString() === now.toDateString() && nextReview <= now;
     }).length;
 
     const dueTomorrow = flashcards.filter((card) => {
@@ -139,9 +149,10 @@ export const spacedRepetitionService = {
       return sum + (card.spacedRepetitionData?.reviewHistory.length || 0);
     }, 0);
 
-    const averageEF = flashcards.reduce((sum, card) => {
-      return sum + (card.spacedRepetitionData?.easinessFactor || DEFAULT_EASINESS_FACTOR);
-    }, 0) / (flashcards.length || 1);
+    const averageEF =
+      flashcards.reduce((sum, card) => {
+        return sum + (card.spacedRepetitionData?.easinessFactor || DEFAULT_EASINESS_FACTOR);
+      }, 0) / (flashcards.length || 1);
 
     return {
       totalCards: flashcards.length,

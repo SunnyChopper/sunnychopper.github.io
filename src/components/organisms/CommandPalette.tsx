@@ -1,7 +1,27 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Command, CheckSquare, Target, FolderKanban, TrendingUp, Repeat, BookOpen, Calendar, Settings, Sparkles, X } from 'lucide-react';
+import {
+  Search,
+  Command,
+  CheckSquare,
+  Target,
+  FolderKanban,
+  TrendingUp,
+  Repeat,
+  BookOpen,
+  Calendar,
+  Settings,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useTasks, useGoals, useProjects, useMetrics, useHabits, useLogbook } from '../../hooks/useGrowthSystem';
+import {
+  useTasks,
+  useGoals,
+  useProjects,
+  useMetrics,
+  useHabits,
+  useLogbook,
+} from '../../hooks/useGrowthSystem';
 import { ROUTES } from '../../routes';
 
 interface CommandItem {
@@ -41,7 +61,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <Command size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.dashboard),
-        keywords: ['dashboard', 'home', 'overview']
+        keywords: ['dashboard', 'home', 'overview'],
       },
       {
         id: 'nav-tasks',
@@ -50,7 +70,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <CheckSquare size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.tasks),
-        keywords: ['tasks', 'todos', 'work']
+        keywords: ['tasks', 'todos', 'work'],
       },
       {
         id: 'nav-goals',
@@ -59,7 +79,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <Target size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.goals),
-        keywords: ['goals', 'objectives', 'targets']
+        keywords: ['goals', 'objectives', 'targets'],
       },
       {
         id: 'nav-projects',
@@ -68,7 +88,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <FolderKanban size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.projects),
-        keywords: ['projects', 'work']
+        keywords: ['projects', 'work'],
       },
       {
         id: 'nav-metrics',
@@ -77,7 +97,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <TrendingUp size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.metrics),
-        keywords: ['metrics', 'tracking', 'kpi', 'data']
+        keywords: ['metrics', 'tracking', 'kpi', 'data'],
       },
       {
         id: 'nav-habits',
@@ -86,7 +106,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <Repeat size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.habits),
-        keywords: ['habits', 'routine', 'streak']
+        keywords: ['habits', 'routine', 'streak'],
       },
       {
         id: 'nav-logbook',
@@ -95,7 +115,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <BookOpen size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.logbook),
-        keywords: ['logbook', 'journal', 'diary', 'reflect']
+        keywords: ['logbook', 'journal', 'diary', 'reflect'],
       },
       {
         id: 'nav-weekly-review',
@@ -104,7 +124,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <Calendar size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.weeklyReview),
-        keywords: ['weekly', 'review', 'planning', 'reflection']
+        keywords: ['weekly', 'review', 'planning', 'reflection'],
       },
       {
         id: 'nav-settings',
@@ -113,7 +133,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <Settings size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.settings),
-        keywords: ['settings', 'config', 'ai', 'preferences']
+        keywords: ['settings', 'config', 'ai', 'preferences'],
       },
       {
         id: 'nav-assistant',
@@ -122,11 +142,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         icon: <Sparkles size={18} />,
         type: 'navigation',
         action: () => navigate(ROUTES.admin.assistant),
-        keywords: ['ai', 'assistant', 'chat', 'help']
-      }
+        keywords: ['ai', 'assistant', 'chat', 'help'],
+      },
     ];
 
-    tasks.forEach(task => {
+    tasks.forEach((task) => {
       commands.push({
         id: `task-${task.id}`,
         title: task.title,
@@ -139,11 +159,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             window.dispatchEvent(new CustomEvent('selectTask', { detail: task.id }));
           }, 100);
         },
-        keywords: [task.title.toLowerCase(), task.area.toLowerCase(), task.status.toLowerCase()]
+        keywords: [task.title.toLowerCase(), task.area.toLowerCase(), task.status.toLowerCase()],
       });
     });
 
-    goals.forEach(goal => {
+    goals.forEach((goal) => {
       commands.push({
         id: `goal-${goal.id}`,
         title: goal.title,
@@ -156,11 +176,15 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             window.dispatchEvent(new CustomEvent('selectGoal', { detail: goal.id }));
           }, 100);
         },
-        keywords: [goal.title.toLowerCase(), goal.area.toLowerCase(), goal.timeHorizon.toLowerCase()]
+        keywords: [
+          goal.title.toLowerCase(),
+          goal.area.toLowerCase(),
+          goal.timeHorizon.toLowerCase(),
+        ],
       });
     });
 
-    projects.forEach(project => {
+    projects.forEach((project) => {
       commands.push({
         id: `project-${project.id}`,
         title: project.name,
@@ -173,11 +197,15 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             window.dispatchEvent(new CustomEvent('selectProject', { detail: project.id }));
           }, 100);
         },
-        keywords: [project.name.toLowerCase(), project.area.toLowerCase(), project.status.toLowerCase()]
+        keywords: [
+          project.name.toLowerCase(),
+          project.area.toLowerCase(),
+          project.status.toLowerCase(),
+        ],
       });
     });
 
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       commands.push({
         id: `metric-${metric.id}`,
         title: metric.name,
@@ -190,11 +218,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             window.dispatchEvent(new CustomEvent('selectMetric', { detail: metric.id }));
           }, 100);
         },
-        keywords: [metric.name.toLowerCase(), metric.area.toLowerCase()]
+        keywords: [metric.name.toLowerCase(), metric.area.toLowerCase()],
       });
     });
 
-    habits.forEach(habit => {
+    habits.forEach((habit) => {
       commands.push({
         id: `habit-${habit.id}`,
         title: habit.name,
@@ -207,11 +235,11 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             window.dispatchEvent(new CustomEvent('selectHabit', { detail: habit.id }));
           }, 100);
         },
-        keywords: [habit.name.toLowerCase(), habit.habitType.toLowerCase()]
+        keywords: [habit.name.toLowerCase(), habit.habitType.toLowerCase()],
       });
     });
 
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       commands.push({
         id: `entry-${entry.id}`,
         title: entry.title || 'Untitled Entry',
@@ -224,7 +252,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             window.dispatchEvent(new CustomEvent('selectEntry', { detail: entry.id }));
           }, 100);
         },
-        keywords: [(entry.title || '').toLowerCase(), entry.date]
+        keywords: [(entry.title || '').toLowerCase(), entry.date],
       });
     });
 
@@ -233,18 +261,22 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   const filteredCommands = useMemo(() => {
     if (!query.trim()) {
-      return allCommands.filter(cmd => cmd.type === 'navigation');
+      return allCommands.filter((cmd) => cmd.type === 'navigation');
     }
 
-    const searchTerms = query.toLowerCase().split(' ').filter(t => t.length > 0);
+    const searchTerms = query
+      .toLowerCase()
+      .split(' ')
+      .filter((t) => t.length > 0);
 
-    return allCommands.filter(cmd => {
+    return allCommands.filter((cmd) => {
       const searchString = `${cmd.title} ${cmd.subtitle} ${cmd.keywords.join(' ')}`.toLowerCase();
-      return searchTerms.every(term => searchString.includes(term));
+      return searchTerms.every((term) => searchString.includes(term));
     });
   }, [query, allCommands]);
 
   useEffect(() => {
+    // Reset selection when query changes
     setSelectedIndex(0);
   }, [query]);
 
@@ -257,10 +289,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex(prev => Math.min(prev + 1, filteredCommands.length - 1));
+      setSelectedIndex((prev) => Math.min(prev + 1, filteredCommands.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex(prev => Math.max(prev - 1, 0));
+      setSelectedIndex((prev) => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredCommands[selectedIndex]) {
@@ -285,6 +317,14 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={handleClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            handleClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close command palette"
       />
 
       <div className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -323,11 +363,13 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                   }`}
                 >
-                  <div className={`flex-shrink-0 ${
-                    idx === selectedIndex
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-gray-400 dark:text-gray-500'
-                  }`}>
+                  <div
+                    className={`flex-shrink-0 ${
+                      idx === selectedIndex
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  >
                     {cmd.icon}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -341,9 +383,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                     )}
                   </div>
                   {idx === selectedIndex && (
-                    <div className="flex-shrink-0 text-xs text-gray-400">
-                      ↵
-                    </div>
+                    <div className="flex-shrink-0 text-xs text-gray-400">↵</div>
                   )}
                 </button>
               ))}
@@ -359,15 +399,21 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">↑↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">
+                ↑↓
+              </kbd>
               Navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">
+                ↵
+              </kbd>
               Select
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">Esc</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">
+                Esc
+              </kbd>
               Close
             </span>
           </div>

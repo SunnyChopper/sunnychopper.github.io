@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN building navigation, menus, and routing interfaces."
-globs: ""
+description: 'USE WHEN building navigation, menus, and routing interfaces.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -19,16 +19,18 @@ Standards for navigation and routing interfaces.
 
   {/* Nav items */}
   <div className="p-4 space-y-1">
-    {navItems.map(item => (
+    {navItems.map((item) => (
       <NavLink
         key={item.href}
         to={item.href}
-        className={({ isActive }) => cn(
-          'flex items-center gap-3 px-3 py-2 rounded-lg transition',
-          isActive
-            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-        )}
+        className={({ isActive }) =>
+          cn(
+            'flex items-center gap-3 px-3 py-2 rounded-lg transition',
+            isActive
+              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+          )
+        }
       >
         <item.icon className="w-5 h-5" />
         <span>{item.label}</span>
@@ -60,17 +62,10 @@ function NavSection({ title, icon: Icon, children, defaultOpen = true }) {
           <Icon className="w-5 h-5" />
           <span className="font-medium">{title}</span>
         </div>
-        <ChevronDown className={cn(
-          'w-4 h-4 transition-transform',
-          isOpen && 'rotate-180'
-        )} />
+        <ChevronDown className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
-      {isOpen && (
-        <div className="pl-10 space-y-1 mt-1">
-          {children}
-        </div>
-      )}
+      {isOpen && <div className="pl-10 space-y-1 mt-1">{children}</div>}
     </div>
   );
 }
@@ -81,7 +76,7 @@ function NavSection({ title, icon: Icon, children, defaultOpen = true }) {
 ```tsx
 <div className="border-b border-gray-200 dark:border-gray-700">
   <nav className="flex gap-4">
-    {tabs.map(tab => (
+    {tabs.map((tab) => (
       <button
         key={tab.id}
         onClick={() => setActiveTab(tab.id)}
@@ -105,13 +100,9 @@ function NavSection({ title, icon: Icon, children, defaultOpen = true }) {
 <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
   {items.map((item, index) => (
     <React.Fragment key={item.href}>
-      {index > 0 && (
-        <ChevronRight className="w-4 h-4 text-gray-400" />
-      )}
+      {index > 0 && <ChevronRight className="w-4 h-4 text-gray-400" />}
       {index === items.length - 1 ? (
-        <span className="text-gray-900 dark:text-white font-medium">
-          {item.label}
-        </span>
+        <span className="text-gray-900 dark:text-white font-medium">{item.label}</span>
       ) : (
         <Link
           to={item.href}
@@ -144,10 +135,7 @@ function MobileNav() {
       {/* Mobile drawer */}
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setIsOpen(false)} />
           <nav className="absolute left-0 top-0 bottom-0 w-64 bg-white dark:bg-gray-800 p-4">
             {/* Nav content */}
           </nav>
@@ -163,16 +151,16 @@ function MobileNav() {
 ```tsx
 <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 md:hidden">
   <div className="flex justify-around">
-    {tabs.map(tab => (
+    {tabs.map((tab) => (
       <NavLink
         key={tab.href}
         to={tab.href}
-        className={({ isActive }) => cn(
-          'flex flex-col items-center py-2 px-4',
-          isActive
-            ? 'text-blue-600 dark:text-blue-400'
-            : 'text-gray-500 dark:text-gray-400'
-        )}
+        className={({ isActive }) =>
+          cn(
+            'flex flex-col items-center py-2 px-4',
+            isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
+          )
+        }
       >
         <tab.icon className="w-6 h-6" />
         <span className="text-xs mt-1">{tab.label}</span>
@@ -186,16 +174,16 @@ function MobileNav() {
 
 ```tsx
 // Background highlight
-isActive && 'bg-blue-50 dark:bg-blue-900/20'
+isActive && 'bg-blue-50 dark:bg-blue-900/20';
 
 // Text color change
-isActive && 'text-blue-600 dark:text-blue-400'
+isActive && 'text-blue-600 dark:text-blue-400';
 
 // Border indicator
-isActive && 'border-l-2 border-blue-600'
+isActive && 'border-l-2 border-blue-600';
 
 // Combined
 isActive
   ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
-  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700';
 ```

@@ -8,11 +8,7 @@ import { GrokProvider } from './grok-provider';
 import { DeepSeekProvider } from './deepseek-provider';
 import { CerebrasProvider } from './cerebras-provider';
 
-export function createProvider(
-  type: LLMProvider,
-  apiKey: string,
-  model: string
-): BaseLLMProvider {
+export function createProvider(type: LLMProvider, apiKey: string, model: string): BaseLLMProvider {
   switch (type) {
     case 'anthropic':
       return new AnthropicProvider(apiKey, model);

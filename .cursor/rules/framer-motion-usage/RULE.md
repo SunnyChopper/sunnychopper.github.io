@@ -1,6 +1,6 @@
 ---
-description: "Framer Motion animation patterns and best practices."
-globs: "**/*.tsx"
+description: 'Framer Motion animation patterns and best practices.'
+globs: '**/*.tsx'
 alwaysApply: false
 ---
 
@@ -20,7 +20,7 @@ import { motion } from 'framer-motion';
   transition={{ duration: 0.3 }}
 >
   Content
-</motion.div>
+</motion.div>;
 ```
 
 ## Common Animation Variants
@@ -34,7 +34,7 @@ const fadeIn = {
   exit: { opacity: 0 },
 };
 
-<motion.div {...fadeIn}>Content</motion.div>
+<motion.div {...fadeIn}>Content</motion.div>;
 ```
 
 ### Slide Up
@@ -48,7 +48,7 @@ const slideUp = {
 
 <motion.div {...slideUp} transition={{ duration: 0.3 }}>
   Content
-</motion.div>
+</motion.div>;
 ```
 
 ### Scale
@@ -116,12 +116,12 @@ const item = {
 };
 
 <motion.ul variants={container} initial="hidden" animate="show">
-  {items.map(i => (
+  {items.map((i) => (
     <motion.li key={i.id} variants={item}>
       {i.content}
     </motion.li>
   ))}
-</motion.ul>
+</motion.ul>;
 ```
 
 ## Hover & Tap Animations
@@ -167,7 +167,7 @@ const item = {
     <Route path="/" element={<Home />} />
     <Route path="/about" element={<About />} />
   </Routes>
-</AnimatePresence>
+</AnimatePresence>;
 
 // Add animation to pages
 function Page({ children }) {

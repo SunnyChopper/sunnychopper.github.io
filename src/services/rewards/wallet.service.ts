@@ -1,52 +1,47 @@
-import { getStorageAdapter } from '../../lib/storage';
-import { generateId, randomDelay } from '../../mocks/storage';
-import type {
-  WalletBalance,
-  WalletTransaction,
-} from '../../types/rewards';
-import type { ApiResponse } from '../../types/growth-system';
+import { apiClient } from '../../lib/api-client';
+import type { WalletBalance, WalletTransaction } from '../../types/rewards';
+import type { ApiResponse } from '../../types/api-contracts';
 
-const USER_ID = 'user-1';
-
-async function ensureWalletExists(storage: ReturnType<typeof getStorageAdapter>): Promise<WalletBalance> {
-  const existing = await storage.getById<WalletBalance>('wallet_balance', USER_ID);
-
-  if (existing) {
-    return existing;
-  }
-
-  const newWallet: WalletBalance = {
-    userId: USER_ID,
-    totalPoints: 0,
-    lifetimeEarned: 0,
-    lifetimeSpent: 0,
-    updatedAt: new Date().toISOString(),
-  };
-
-  await storage.create('wallet_balance', USER_ID, newWallet);
-  return newWallet;
+interface WalletResponse {
+  balance: number;
+  lifetimeEarned: number;
+  lifetimeSpent: number;
+  recentTransactions: WalletTransaction[];
 }
 
 export const walletService = {
   async getBalance(): Promise<ApiResponse<WalletBalance>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const balance = await ensureWalletExists(storage);
-    return { data: balance, error: null, success: true };
+    const response = await apiClient.get<WalletResponse>('/wallet');
+    if (response.success && response.data) {
+      const balance: WalletBalance = {
+        userId: '', // Will be set by backend
+        totalPoints: response.data.balance,
+        lifetimeEarned: response.data.lifetimeEarned,
+        lifetimeSpent: response.data.lifetimeSpent,
+        updatedAt: new Date().toISOString(),
+      };
+      return { data: balance, error: null, success: true };
+    }
+    return {
+      data: null,
+      error: response.error?.message || 'Failed to fetch wallet balance',
+      success: false,
+    };
   },
 
   async getTransactions(limit?: number): Promise<ApiResponse<WalletTransaction[]>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const transactions = await storage.getAll<WalletTransaction>('wallet_transactions');
-
-    const sorted = transactions.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    const result = limit ? sorted.slice(0, limit) : sorted;
-    return { data: result, error: null, success: true };
+    const response = await apiClient.get<WalletResponse>('/wallet');
+    if (response.success && response.data) {
+      const transactions = limit
+        ? response.data.recentTransactions.slice(0, limit)
+        : response.data.recentTransactions;
+      return { data: transactions, error: null, success: true };
+    }
+    return {
+      data: null,
+      error: response.error?.message || 'Failed to fetch transactions',
+      success: false,
+    };
   },
 
   async addPoints(
@@ -56,57 +51,45 @@ export const walletService = {
     sourceEntityType?: 'task' | 'reward' | null,
     sourceEntityId?: string | null
   ): Promise<ApiResponse<{ balance: WalletBalance; transaction: WalletTransaction }>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-
-    const currentBalance = await ensureWalletExists(storage);
-
-    const newBalance: WalletBalance = {
-      ...currentBalance,
-      totalPoints: currentBalance.totalPoints + amount,
-      lifetimeEarned: currentBalance.lifetimeEarned + amount,
-      updatedAt: now,
-    };
-
-    await storage.update('wallet_balance', USER_ID, newBalance);
-
-    const transactionId = generateId();
-    const transaction: WalletTransaction = {
-      id: transactionId,
-      userId: USER_ID,
+    const response = await apiClient.post<{
+      balance: WalletBalance;
+      transaction: WalletTransaction;
+    }>('/wallet/add', {
       amount,
-      type: 'earn',
       source,
-      sourceEntityType: sourceEntityType || null,
-      sourceEntityId: sourceEntityId || null,
       description,
-      createdAt: now,
-    };
-
-    await storage.create('wallet_transactions', transactionId, transaction);
-
+      sourceEntityType,
+      sourceEntityId,
+    });
+    if (response.success && response.data) {
+      return { data: response.data, error: null, success: true };
+    }
     return {
-      data: { balance: newBalance, transaction },
-      error: null,
-      success: true,
+      data: null,
+      error: response.error?.message || 'Failed to add points',
+      success: false,
     };
   },
 
   async spendPoints(
     amount: number,
-    source: WalletTransaction['source'],
-    description: string,
-    sourceEntityType?: 'task' | 'reward' | null,
-    sourceEntityId?: string | null
+    _source: WalletTransaction['source'],
+    _description: string,
+    _sourceEntityType?: 'task' | 'reward' | null,
+    _sourceEntityId?: string | null
   ): Promise<ApiResponse<{ balance: WalletBalance; transaction: WalletTransaction }>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
+    // Spending is handled via reward redemption endpoint
+    // This method may need to call a different endpoint or be handled differently
+    const balanceResponse = await this.getBalance();
+    if (!balanceResponse.success || !balanceResponse.data) {
+      return {
+        data: null,
+        error: 'Failed to get current balance',
+        success: false,
+      };
+    }
 
-    const currentBalance = await ensureWalletExists(storage);
-
-    if (currentBalance.totalPoints < amount) {
+    if (balanceResponse.data.totalPoints < amount) {
       return {
         data: null,
         error: 'Insufficient points',
@@ -114,34 +97,12 @@ export const walletService = {
       };
     }
 
-    const newBalance: WalletBalance = {
-      ...currentBalance,
-      totalPoints: currentBalance.totalPoints - amount,
-      lifetimeSpent: currentBalance.lifetimeSpent + amount,
-      updatedAt: now,
-    };
-
-    await storage.update('wallet_balance', USER_ID, newBalance);
-
-    const transactionId = generateId();
-    const transaction: WalletTransaction = {
-      id: transactionId,
-      userId: USER_ID,
-      amount: -amount,
-      type: 'spend',
-      source,
-      sourceEntityType: sourceEntityType || null,
-      sourceEntityId: sourceEntityId || null,
-      description,
-      createdAt: now,
-    };
-
-    await storage.create('wallet_transactions', transactionId, transaction);
-
+    // Backend handles point deduction via redemption endpoint
+    // This is a fallback - actual spending should go through reward redemption
     return {
-      data: { balance: newBalance, transaction },
-      error: null,
-      success: true,
+      data: null,
+      error: 'Use reward redemption endpoint to spend points',
+      success: false,
     };
   },
 
@@ -151,79 +112,15 @@ export const walletService = {
     sourceEntityType?: 'task' | 'reward' | null,
     sourceEntityId?: string | null
   ): Promise<ApiResponse<{ balance: WalletBalance; transaction: WalletTransaction }>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-
-    const currentBalance = await ensureWalletExists(storage);
-
-    const newBalance: WalletBalance = {
-      ...currentBalance,
-      totalPoints: currentBalance.totalPoints + amount,
-      updatedAt: now,
-    };
-
-    await storage.update('wallet_balance', USER_ID, newBalance);
-
-    const transactionId = generateId();
-    const transaction: WalletTransaction = {
-      id: transactionId,
-      userId: USER_ID,
-      amount,
-      type: 'refund',
-      source: 'system',
-      sourceEntityType: sourceEntityType || null,
-      sourceEntityId: sourceEntityId || null,
-      description,
-      createdAt: now,
-    };
-
-    await storage.create('wallet_transactions', transactionId, transaction);
-
-    return {
-      data: { balance: newBalance, transaction },
-      error: null,
-      success: true,
-    };
+    // Refund via addPoints with source='refund'
+    return this.addPoints(amount, 'refund', description, sourceEntityType, sourceEntityId);
   },
 
   async adjustPoints(
     amount: number,
     description: string
   ): Promise<ApiResponse<{ balance: WalletBalance; transaction: WalletTransaction }>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-
-    const currentBalance = await ensureWalletExists(storage);
-
-    const newBalance: WalletBalance = {
-      ...currentBalance,
-      totalPoints: currentBalance.totalPoints + amount,
-      updatedAt: now,
-    };
-
-    await storage.update('wallet_balance', USER_ID, newBalance);
-
-    const transactionId = generateId();
-    const transaction: WalletTransaction = {
-      id: transactionId,
-      userId: USER_ID,
-      amount,
-      type: 'adjustment',
-      source: 'manual',
-      sourceEntityType: null,
-      sourceEntityId: null,
-      description,
-      createdAt: now,
-    };
-
-    await storage.create('wallet_transactions', transactionId, transaction);
-
-    return {
-      data: { balance: newBalance, transaction },
-      error: null,
-      success: true,
-    };
+    // Manual adjustment via addPoints
+    return this.addPoints(amount, 'manual', description);
   },
 };

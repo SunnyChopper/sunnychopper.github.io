@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN organizing files, folders, and module structure in React projects."
-globs: ""
+description: 'USE WHEN organizing files, folders, and module structure in React projects.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -85,6 +85,7 @@ components/
 ## Naming Conventions
 
 ### Files
+
 - Components: `PascalCase.tsx` (Button.tsx, TaskCard.tsx)
 - Hooks: `camelCase.ts` with `use` prefix (useDebounce.ts)
 - Services: `kebab-case.service.ts` (tasks.service.ts)
@@ -93,6 +94,7 @@ components/
 - Constants: `kebab-case.ts` or `SCREAMING_SNAKE.ts`
 
 ### Folders
+
 - All lowercase with hyphens (kebab-case)
 - Plural for collections (components, hooks, services)
 
@@ -167,6 +169,7 @@ import { Button } from '../../../../components/atoms/Button';
 ## When to Split Files
 
 Split a component when:
+
 - It exceeds 300 lines
 - It has multiple distinct responsibilities
 - Sub-sections could be reused elsewhere
@@ -186,6 +189,7 @@ Split a component when:
 ## Co-location Principle
 
 Keep related files close together:
+
 - Component + its types
 - Component + its tests
 - Feature-specific hooks with the feature

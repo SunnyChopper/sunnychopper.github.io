@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN integrating with Supabase for database, auth, and storage operations."
-globs: ""
+description: 'USE WHEN integrating with Supabase for database, auth, and storage operations.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -24,26 +24,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 ```tsx
 // Get all records
-const { data, error } = await supabase
-  .from('tasks')
-  .select('*');
+const { data, error } = await supabase.from('tasks').select('*');
 
 // Get single record (use maybeSingle for 0 or 1 result)
-const { data, error } = await supabase
-  .from('tasks')
-  .select('*')
-  .eq('id', taskId)
-  .maybeSingle();
+const { data, error } = await supabase.from('tasks').select('*').eq('id', taskId).maybeSingle();
 
 // Select specific columns
-const { data } = await supabase
-  .from('tasks')
-  .select('id, title, status');
+const { data } = await supabase.from('tasks').select('id, title, status');
 
 // With relations
-const { data } = await supabase
-  .from('tasks')
-  .select(`
+const { data } = await supabase.from('tasks').select(`
     *,
     project:projects(id, name),
     assignee:users(id, name, avatar_url)
@@ -107,10 +97,7 @@ const { data, error } = await supabase
   .single();
 
 // Delete
-const { error } = await supabase
-  .from('tasks')
-  .delete()
-  .eq('id', taskId);
+const { error } = await supabase.from('tasks').delete().eq('id', taskId);
 ```
 
 ## Authentication
@@ -132,7 +119,9 @@ const { data, error } = await supabase.auth.signInWithPassword({
 await supabase.auth.signOut();
 
 // Get current user
-const { data: { user } } = await supabase.auth.getUser();
+const {
+  data: { user },
+} = await supabase.auth.getUser();
 
 // Listen to auth changes (avoid async callbacks directly)
 supabase.auth.onAuthStateChange((event, session) => {
@@ -162,22 +151,14 @@ export const tasksService = {
   },
 
   async getById(id: string): Promise<Task | null> {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    const { data, error } = await supabase.from('tasks').select('*').eq('id', id).maybeSingle();
 
     if (error) throw error;
     return data;
   },
 
   async create(input: CreateTaskInput): Promise<Task> {
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert(input)
-      .select()
-      .single();
+    const { data, error } = await supabase.from('tasks').insert(input).select().single();
 
     if (error) throw error;
     return data;
@@ -191,23 +172,17 @@ export const tasksService = {
 useEffect(() => {
   const subscription = supabase
     .channel('tasks-changes')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'tasks' },
-      (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setTasks(prev => [payload.new as Task, ...prev]);
-        }
-        if (payload.eventType === 'UPDATE') {
-          setTasks(prev =>
-            prev.map(t => t.id === payload.new.id ? payload.new as Task : t)
-          );
-        }
-        if (payload.eventType === 'DELETE') {
-          setTasks(prev => prev.filter(t => t.id !== payload.old.id));
-        }
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+      if (payload.eventType === 'INSERT') {
+        setTasks((prev) => [payload.new as Task, ...prev]);
       }
-    )
+      if (payload.eventType === 'UPDATE') {
+        setTasks((prev) => prev.map((t) => (t.id === payload.new.id ? (payload.new as Task) : t)));
+      }
+      if (payload.eventType === 'DELETE') {
+        setTasks((prev) => prev.filter((t) => t.id !== payload.old.id));
+      }
+    })
     .subscribe();
 
   return () => {

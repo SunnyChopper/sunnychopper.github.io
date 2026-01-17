@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN integrating with REST APIs, handling requests, and managing responses."
-globs: ""
+description: 'USE WHEN integrating with REST APIs, handling requests, and managing responses.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -104,23 +104,18 @@ export const tasksService = {
 
   create: (data: CreateTaskInput) => api.post<Task>('/tasks', data),
 
-  update: (id: string, data: Partial<Task>) =>
-    api.patch<Task>(`/tasks/${id}`, data),
+  update: (id: string, data: Partial<Task>) => api.patch<Task>(`/tasks/${id}`, data),
 
   delete: (id: string) => api.delete<void>(`/tasks/${id}`),
 
-  getByProject: (projectId: string) =>
-    api.get<Task[]>('/tasks', { projectId }),
+  getByProject: (projectId: string) => api.get<Task[]>('/tasks', { projectId }),
 };
 ```
 
 ## Request with Authentication
 
 ```tsx
-async function apiClient<T>(
-  endpoint: string,
-  options: RequestOptions = {}
-): Promise<T> {
+async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = localStorage.getItem('auth_token');
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -170,16 +165,12 @@ function TaskList() {
 ## Retry Logic
 
 ```tsx
-async function fetchWithRetry<T>(
-  fn: () => Promise<T>,
-  retries = 3,
-  delay = 1000
-): Promise<T> {
+async function fetchWithRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
   try {
     return await fn();
   } catch (error) {
     if (retries > 0 && error instanceof ApiError && error.isServerError) {
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
       return fetchWithRetry(fn, retries - 1, delay * 2);
     }
     throw error;

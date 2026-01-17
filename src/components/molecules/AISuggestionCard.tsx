@@ -21,11 +21,13 @@ export function AISuggestionCard({
   onAccept,
   onDismiss,
   variant = 'default',
-  className = ''
+  className = '',
 }: AISuggestionCardProps) {
   if (variant === 'compact') {
     return (
-      <div className={`bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 ${className}`}>
+      <div
+        className={`bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 ${className}`}
+      >
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0">
             <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center">
@@ -50,7 +52,9 @@ export function AISuggestionCard({
   }
 
   return (
-    <div className={`bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg overflow-hidden ${className}`}>
+    <div
+      className={`bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg overflow-hidden ${className}`}
+    >
       <div className="p-4">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-start gap-3 flex-1">
@@ -61,7 +65,9 @@ export function AISuggestionCard({
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-gray-900 dark:text-white mb-1">{title}</div>
-              {confidence !== undefined && <AIConfidenceIndicator confidence={confidence} size="sm" />}
+              {confidence !== undefined && (
+                <AIConfidenceIndicator confidence={confidence} size="sm" />
+              )}
             </div>
           </div>
           {onDismiss && (
@@ -86,7 +92,12 @@ export function AISuggestionCard({
         {(onAccept || onDismiss) && (
           <div className="flex gap-2 pt-2 border-t border-purple-200 dark:border-purple-800">
             {onAccept && (
-              <Button onClick={onAccept} variant="primary" size="sm" className="flex items-center gap-1">
+              <Button
+                onClick={onAccept}
+                variant="primary"
+                size="sm"
+                className="flex items-center gap-1"
+              >
                 <Check className="w-4 h-4" />
                 Accept
               </Button>

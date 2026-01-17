@@ -19,13 +19,18 @@ const iconSizes = {
   md: 'w-4 h-4',
 };
 
-export function DependencyBadge({ type, count, onClick, size = 'md', className = '', tooltip }: DependencyBadgeProps) {
+export function DependencyBadge({
+  type,
+  count,
+  onClick,
+  size = 'md',
+  className = '',
+  tooltip,
+}: DependencyBadgeProps) {
   if (count === 0) return null;
 
   const isBlocked = type === 'blocked';
-  const bgColor = isBlocked
-    ? 'bg-red-100 dark:bg-red-900/30'
-    : 'bg-blue-100 dark:bg-blue-900/30';
+  const bgColor = isBlocked ? 'bg-red-100 dark:bg-red-900/30' : 'bg-blue-100 dark:bg-blue-900/30';
   const textColor = isBlocked
     ? 'text-red-700 dark:text-red-400'
     : 'text-blue-700 dark:text-blue-400';

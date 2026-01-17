@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN creating skeleton/shimmer loading placeholders for content."
-globs: ""
+description: 'USE WHEN creating skeleton/shimmer loading placeholders for content.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -34,12 +34,7 @@ interface SkeletonProps {
   height?: string | number;
 }
 
-function Skeleton({
-  className,
-  variant = 'text',
-  width,
-  height,
-}: SkeletonProps) {
+function Skeleton({ className, variant = 'text', width, height }: SkeletonProps) {
   const baseClasses = 'bg-gray-200 dark:bg-gray-700 animate-pulse';
 
   const variantClasses = {
@@ -183,7 +178,9 @@ function TaskList() {
 
   return (
     <div className="space-y-3">
-      {data?.map(task => <TaskCard key={task.id} task={task} />)}
+      {data?.map((task) => (
+        <TaskCard key={task.id} task={task} />
+      ))}
     </div>
   );
 }
@@ -194,17 +191,16 @@ function TaskList() {
 ```css
 /* Custom shimmer animation */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    #e5e7eb 25%,
-    #f3f4f6 50%,
-    #e5e7eb 75%
-  );
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

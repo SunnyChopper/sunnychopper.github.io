@@ -39,7 +39,10 @@ class LLMService {
     return getLLMAdapter().breakdownTask(input);
   }
 
-  async resolveBlockers(task: Task, blockers: Task[]): Promise<LLMResponse<BlockerResolutionOutput>> {
+  async resolveBlockers(
+    task: Task,
+    blockers: Task[]
+  ): Promise<LLMResponse<BlockerResolutionOutput>> {
     const input: BlockerResolutionInput = { task, blockers };
     return getLLMAdapter().resolveBlockers(input);
   }
@@ -49,32 +52,50 @@ class LLMService {
     return getLLMAdapter().advisePriority(input);
   }
 
-  async estimateEffort(task: Partial<Task>, similarTasks?: Task[]): Promise<LLMResponse<EffortEstimationOutput>> {
+  async estimateEffort(
+    task: Partial<Task>,
+    similarTasks?: Task[]
+  ): Promise<LLMResponse<EffortEstimationOutput>> {
     const input: EffortEstimationInput = { task, similarTasks };
     return getLLMAdapter().estimateEffort(input);
   }
 
-  async categorizeTask(title: string, description?: string): Promise<LLMResponse<TaskCategorizationOutput>> {
+  async categorizeTask(
+    title: string,
+    description?: string
+  ): Promise<LLMResponse<TaskCategorizationOutput>> {
     const input: TaskCategorizationInput = { title, description };
     return getLLMAdapter().categorizeTask(input);
   }
 
-  async detectDependencies(task: Partial<Task>, existingTasks: Task[]): Promise<LLMResponse<DependencyDetectionOutput>> {
+  async detectDependencies(
+    task: Partial<Task>,
+    existingTasks: Task[]
+  ): Promise<LLMResponse<DependencyDetectionOutput>> {
     const input: DependencyDetectionInput = { task, existingTasks };
     return getLLMAdapter().detectDependencies(input);
   }
 
-  async analyzeProjectHealth(project: Project, tasks: Task[]): Promise<LLMResponse<ProjectHealthOutput>> {
+  async analyzeProjectHealth(
+    project: Project,
+    tasks: Task[]
+  ): Promise<LLMResponse<ProjectHealthOutput>> {
     const input: ProjectHealthInput = { project, tasks };
     return getLLMAdapter().analyzeProjectHealth(input);
   }
 
-  async generateProjectTasks(project: Project, existingTasks: Task[]): Promise<LLMResponse<ProjectTaskGenOutput>> {
+  async generateProjectTasks(
+    project: Project,
+    existingTasks: Task[]
+  ): Promise<LLMResponse<ProjectTaskGenOutput>> {
     const input: ProjectTaskGenInput = { project, existingTasks };
     return getLLMAdapter().generateProjectTasks(input);
   }
 
-  async identifyProjectRisks(project: Project, tasks: Task[]): Promise<LLMResponse<ProjectRiskOutput>> {
+  async identifyProjectRisks(
+    project: Project,
+    tasks: Task[]
+  ): Promise<LLMResponse<ProjectRiskOutput>> {
     const input: ProjectRiskInput = { project, tasks };
     return getLLMAdapter().identifyProjectRisks(input);
   }

@@ -1,6 +1,6 @@
 ---
-description: "Accessibility standards and WCAG compliance requirements."
-globs: "**/*.tsx"
+description: 'Accessibility standards and WCAG compliance requirements.'
+globs: '**/*.tsx'
 alwaysApply: false
 ---
 
@@ -134,13 +134,13 @@ useEffect(() => {
 
 Support these patterns:
 
-| Key | Action |
-|-----|--------|
-| Tab | Move to next focusable element |
-| Shift+Tab | Move to previous focusable element |
-| Enter/Space | Activate button/link |
-| Escape | Close modal/dropdown |
-| Arrow keys | Navigate within lists/menus |
+| Key         | Action                             |
+| ----------- | ---------------------------------- |
+| Tab         | Move to next focusable element     |
+| Shift+Tab   | Move to previous focusable element |
+| Enter/Space | Activate button/link               |
+| Escape      | Close modal/dropdown               |
+| Arrow keys  | Navigate within lists/menus        |
 
 ## Screen Reader Text
 
@@ -157,6 +157,7 @@ Support these patterns:
 ## Color Contrast
 
 Minimum ratios:
+
 - Normal text: 4.5:1
 - Large text (18px+): 3:1
 - UI components: 3:1

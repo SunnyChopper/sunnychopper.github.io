@@ -1,3 +1,5 @@
+import type { z } from 'zod';
+import type { AIFeature } from './config/feature-types';
 import type {
   ILLMAdapter,
   LLMResponse,
@@ -8,11 +10,11 @@ import type {
   BlockerResolutionInput,
   BlockerResolutionOutput,
   PriorityAdvisorInput,
-  PriorityAdvisorOutput,
+  PriorityAdvisorOutput as LegacyPriorityAdvisorOutput,
   EffortEstimationInput,
-  EffortEstimationOutput,
+  EffortEstimationOutput as LegacyEffortEstimationOutput,
   TaskCategorizationInput,
-  TaskCategorizationOutput,
+  TaskCategorizationOutput as LegacyTaskCategorizationOutput,
   DependencyDetectionInput,
   DependencyDetectionOutput,
   ProjectHealthInput,
@@ -22,6 +24,27 @@ import type {
   ProjectRiskInput,
   ProjectRiskOutput,
 } from '../../types/llm';
+
+import { getFeatureConfig } from './config/feature-config-store';
+import { getApiKey, hasApiKey } from './config/api-key-store';
+import { createProvider } from './providers/provider-factory';
+
+import {
+  ParseTaskOutputSchema,
+  TaskBreakdownOutputSchema,
+  BlockerResolutionOutputSchema,
+  PriorityAdvisorOutputSchema,
+  EffortEstimationOutputSchema,
+  TaskCategorizationOutputSchema,
+  DependencyDetectionOutputSchema,
+} from './schemas/task-schemas';
+
+import {
+  ProjectHealthOutputSchema,
+  ProjectTaskGenOutputSchema,
+  ProjectRiskOutputSchema,
+} from './schemas/project-schemas';
+
 import {
   SYSTEM_PROMPT,
   getParseTaskPrompt,
@@ -36,86 +59,39 @@ import {
   getProjectRiskPrompt,
 } from './llm-prompts';
 
-const LLM_API_KEY_STORAGE = 'gs_llm_api_key';
-const LLM_MODEL_STORAGE = 'gs_llm_model';
-
 export class DirectLLMAdapter implements ILLMAdapter {
-  private apiKey: string | null = null;
-  private model: string = 'claude-sonnet-4-20250514';
-  private apiUrl: string = 'https://api.anthropic.com/v1/messages';
-
-  constructor() {
-    this.apiKey = localStorage.getItem(LLM_API_KEY_STORAGE);
-    this.model = localStorage.getItem(LLM_MODEL_STORAGE) || 'claude-sonnet-4-20250514';
-  }
-
-  setApiKey(key: string): void {
-    this.apiKey = key;
-    localStorage.setItem(LLM_API_KEY_STORAGE, key);
-  }
-
-  getApiKey(): string | null {
-    return this.apiKey;
-  }
-
-  setModel(model: string): void {
-    this.model = model;
-    localStorage.setItem(LLM_MODEL_STORAGE, model);
-  }
-
-  getModel(): string {
-    return this.model;
-  }
-
-  isConfigured(): boolean {
-    return !!this.apiKey;
-  }
-
-  private async callLLM<T>(userPrompt: string): Promise<LLMResponse<T>> {
-    if (!this.apiKey) {
-      return { data: null, error: 'API key not configured', success: false };
-    }
-
+  private async callLLMForFeature<TSchema extends z.ZodType, TOutput>(
+    feature: AIFeature,
+    schema: TSchema,
+    userPrompt: string,
+    converter: (schemaOutput: z.infer<TSchema>) => TOutput
+  ): Promise<LLMResponse<TOutput>> {
     try {
-      const response = await fetch(this.apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': this.apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: 2048,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: userPrompt }],
-        }),
-      });
+      const config = getFeatureConfig(feature);
+      const apiKey = getApiKey(config.provider);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        return { data: null, error: `API error: ${response.status} - ${errorText}`, success: false };
+      if (!apiKey) {
+        return {
+          data: null,
+          error: `API key not configured for provider: ${config.provider}`,
+          success: false,
+        };
       }
 
-      const result = await response.json();
-      const content = result.content?.[0]?.text || '';
+      const provider = createProvider(config.provider, apiKey, config.model);
 
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        return { data: null, error: 'Failed to parse JSON response', success: false };
-      }
+      const messages = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userPrompt },
+      ];
 
-      const parsed = JSON.parse(jsonMatch[0]) as T;
+      const result = await provider.invokeStructured(schema, messages);
+      const converted = converter(result);
+
       return {
-        data: parsed,
+        data: converted,
         error: null,
         success: true,
-        usage: {
-          promptTokens: result.usage?.input_tokens || 0,
-          completionTokens: result.usage?.output_tokens || 0,
-          totalTokens: (result.usage?.input_tokens || 0) + (result.usage?.output_tokens || 0),
-        },
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -123,108 +99,242 @@ export class DirectLLMAdapter implements ILLMAdapter {
     }
   }
 
+  isConfigured(): boolean {
+    return hasApiKey('anthropic') || hasApiKey('openai') || hasApiKey('gemini');
+  }
+
   async parseNaturalLanguageTask(input: ParseTaskInput): Promise<LLMResponse<ParseTaskOutput>> {
     const prompt = getParseTaskPrompt(input.text);
-    return this.callLLM<ParseTaskOutput>(prompt);
+
+    return this.callLLMForFeature('parseTask', ParseTaskOutputSchema, prompt, (schemaOutput) => ({
+      task: {
+        title: schemaOutput.title,
+        description: schemaOutput.description,
+        area: schemaOutput.area,
+        subCategory: schemaOutput.subCategory,
+        priority: schemaOutput.priority,
+        dueDate: schemaOutput.dueDate,
+        scheduledDate: schemaOutput.scheduledDate,
+        size: schemaOutput.size,
+      },
+      confidence: schemaOutput.confidence,
+      extractedEntities: [],
+    }));
   }
 
   async breakdownTask(input: TaskBreakdownInput): Promise<LLMResponse<TaskBreakdownOutput>> {
-    const prompt = getTaskBreakdownPrompt(input.task.title, input.task.description, input.task.area);
-    return this.callLLM<TaskBreakdownOutput>(prompt);
+    const prompt = getTaskBreakdownPrompt(
+      input.task.title,
+      input.task.description,
+      input.task.area
+    );
+
+    return this.callLLMForFeature(
+      'breakdownTask',
+      TaskBreakdownOutputSchema,
+      prompt,
+      (schemaOutput) => ({
+        subtasks: schemaOutput.subtasks.map((sub) => ({
+          title: sub.title,
+          description: sub.description,
+          area: input.task.area,
+          size: sub.estimatedSize,
+        })),
+        reasoning: schemaOutput.reasoning,
+      })
+    );
   }
 
-  async resolveBlockers(input: BlockerResolutionInput): Promise<LLMResponse<BlockerResolutionOutput>> {
-    const blockers = input.blockers.map(b => ({ id: b.id, title: b.title, status: b.status }));
+  async resolveBlockers(
+    input: BlockerResolutionInput
+  ): Promise<LLMResponse<BlockerResolutionOutput>> {
+    const blockers = input.blockers.map((b) => ({ id: b.id, title: b.title, status: b.status }));
     const prompt = getBlockerResolutionPrompt(input.task.title, blockers);
-    return this.callLLM<BlockerResolutionOutput>(prompt);
+
+    return this.callLLMForFeature(
+      'dependencyDetection',
+      BlockerResolutionOutputSchema,
+      prompt,
+      (schemaOutput) => ({
+        suggestions: schemaOutput.suggestedActions,
+        recommendedActions:
+          schemaOutput.newTasks?.map((task) => ({
+            action: task.title,
+            targetTaskId: '',
+            reason: task.description,
+          })) || [],
+      })
+    );
   }
 
-  async advisePriority(input: PriorityAdvisorInput): Promise<LLMResponse<PriorityAdvisorOutput>> {
+  async advisePriority(
+    input: PriorityAdvisorInput
+  ): Promise<LLMResponse<LegacyPriorityAdvisorOutput>> {
     const otherTasks = input.allTasks
-      .filter(t => t.id !== input.task.id && t.status !== 'Done' && t.status !== 'Cancelled')
+      .filter((t) => t.id !== input.task.id && t.status !== 'Done' && t.status !== 'Cancelled')
       .slice(0, 10)
-      .map(t => ({ title: t.title, priority: t.priority, dueDate: t.dueDate }));
-    const prompt = getPriorityAdvisorPrompt(input.task.title, input.task.description, input.task.priority, otherTasks);
-    return this.callLLM<PriorityAdvisorOutput>(prompt);
+      .map((t) => ({ title: t.title, priority: t.priority, dueDate: t.dueDate }));
+    const prompt = getPriorityAdvisorPrompt(
+      input.task.title,
+      input.task.description,
+      input.task.priority,
+      otherTasks
+    );
+
+    return this.callLLMForFeature(
+      'priorityAdvisor',
+      PriorityAdvisorOutputSchema,
+      prompt,
+      (schemaOutput) => ({
+        recommendedPriority: schemaOutput.recommendedPriority,
+        reasoning: schemaOutput.reasoning,
+        factors: schemaOutput.factors,
+      })
+    );
   }
 
-  async estimateEffort(input: EffortEstimationInput): Promise<LLMResponse<EffortEstimationOutput>> {
+  async estimateEffort(
+    input: EffortEstimationInput
+  ): Promise<LLMResponse<LegacyEffortEstimationOutput>> {
     const similarTasks = (input.similarTasks || [])
-      .filter(t => t.size !== null)
+      .filter((t) => t.size !== null)
       .slice(0, 5)
-      .map(t => ({ title: t.title, size: t.size }));
-    const prompt = getEffortEstimationPrompt(input.task.title || '', input.task.description || null, similarTasks);
-    return this.callLLM<EffortEstimationOutput>(prompt);
+      .map((t) => ({ title: t.title, size: t.size }));
+    const prompt = getEffortEstimationPrompt(
+      input.task.title || '',
+      input.task.description || null,
+      similarTasks
+    );
+
+    return this.callLLMForFeature(
+      'effortEstimation',
+      EffortEstimationOutputSchema,
+      prompt,
+      (schemaOutput) => ({
+        estimatedSize: schemaOutput.estimatedSize,
+        confidence: schemaOutput.confidence,
+        comparisons: schemaOutput.factors,
+      })
+    );
   }
 
-  async categorizeTask(input: TaskCategorizationInput): Promise<LLMResponse<TaskCategorizationOutput>> {
+  async categorizeTask(
+    input: TaskCategorizationInput
+  ): Promise<LLMResponse<LegacyTaskCategorizationOutput>> {
     const prompt = getTaskCategorizationPrompt(input.title, input.description);
-    return this.callLLM<TaskCategorizationOutput>(prompt);
+
+    return this.callLLMForFeature(
+      'taskCategorization',
+      TaskCategorizationOutputSchema,
+      prompt,
+      (schemaOutput) => ({
+        area: schemaOutput.area,
+        subCategory: schemaOutput.subCategory,
+        confidence: schemaOutput.confidence,
+        reasoning: schemaOutput.reasoning,
+      })
+    );
   }
 
-  async detectDependencies(input: DependencyDetectionInput): Promise<LLMResponse<DependencyDetectionOutput>> {
+  async detectDependencies(
+    input: DependencyDetectionInput
+  ): Promise<LLMResponse<DependencyDetectionOutput>> {
     const existingTasks = input.existingTasks
-      .filter(t => t.status !== 'Done' && t.status !== 'Cancelled')
+      .filter((t) => t.status !== 'Done' && t.status !== 'Cancelled')
       .slice(0, 20)
-      .map(t => ({ id: t.id, title: t.title, status: t.status }));
-    const prompt = getDependencyDetectionPrompt(input.task.title || '', input.task.description || null, existingTasks);
-    return this.callLLM<DependencyDetectionOutput>(prompt);
+      .map((t) => ({ id: t.id, title: t.title, status: t.status }));
+    const prompt = getDependencyDetectionPrompt(
+      input.task.title || '',
+      input.task.description || null,
+      existingTasks
+    );
+
+    return this.callLLMForFeature(
+      'dependencyDetection',
+      DependencyDetectionOutputSchema,
+      prompt,
+      (schemaOutput) => ({
+        suggestedDependencies: schemaOutput.suggestions.map((dep) => ({
+          taskId: dep.taskId,
+          taskTitle: dep.taskTitle,
+          reason: dep.reasoning,
+          confidence: schemaOutput.confidence,
+        })),
+      })
+    );
   }
 
   async analyzeProjectHealth(input: ProjectHealthInput): Promise<LLMResponse<ProjectHealthOutput>> {
-    const tasks = input.tasks.map(t => ({
+    const tasks = input.tasks.map((t) => ({
       title: t.title,
       status: t.status,
       priority: t.priority,
       dueDate: t.dueDate,
     }));
     const prompt = getProjectHealthPrompt(input.project.name, input.project.description, tasks);
-    const response = await this.callLLM<{
-      healthScore: number;
-      issues: Array<{ type: string; title: string; content: string; severity: string }>;
-      recommendations: string[];
-      summary: string;
-    }>(prompt);
 
-    if (!response.success || !response.data) {
-      return response as LLMResponse<ProjectHealthOutput>;
-    }
+    return this.callLLMForFeature(
+      'projectHealth',
+      ProjectHealthOutputSchema,
+      prompt,
+      (schemaOutput) => {
+        const mappedIssues = schemaOutput.issues.map((issue, index) => ({
+          id: `issue-${Date.now()}-${index}`,
+          type: 'health_analysis' as const,
+          title: issue.description,
+          content: `${issue.impact}\n\nRecommendation: ${issue.recommendation}`,
+          severity:
+            issue.severity === 'critical' || issue.severity === 'high'
+              ? 'critical'
+              : issue.severity === 'medium'
+                ? 'warning'
+                : ('info' as 'info' | 'warning' | 'critical'),
+          relatedEntities: [{ type: 'project', id: input.project.id }],
+          createdAt: new Date().toISOString(),
+          viewedAt: null,
+        }));
 
-    const mappedIssues = response.data.issues.map((issue, index) => ({
-      id: `issue-${Date.now()}-${index}`,
-      type: issue.type as 'progress_analysis' | 'health_analysis' | 'blocker_resolution',
-      title: issue.title,
-      content: issue.content,
-      severity: issue.severity as 'info' | 'warning' | 'critical',
-      relatedEntities: [{ type: 'project', id: input.project.id }],
-      createdAt: new Date().toISOString(),
-      viewedAt: null,
-    }));
-
-    return {
-      ...response,
-      data: {
-        healthScore: response.data.healthScore,
-        issues: mappedIssues,
-        recommendations: response.data.recommendations,
-        summary: response.data.summary,
-      },
-    };
+        return {
+          healthScore: schemaOutput.overallHealth,
+          issues: mappedIssues,
+          recommendations: schemaOutput.recommendations,
+          summary: schemaOutput.summary,
+        };
+      }
+    );
   }
 
-  async generateProjectTasks(input: ProjectTaskGenInput): Promise<LLMResponse<ProjectTaskGenOutput>> {
-    const existingTasks = input.existingTasks.map(t => ({ title: t.title }));
+  async generateProjectTasks(
+    input: ProjectTaskGenInput
+  ): Promise<LLMResponse<ProjectTaskGenOutput>> {
+    const existingTasks = input.existingTasks.map((t) => ({ title: t.title }));
     const prompt = getProjectTaskGenPrompt(
       input.project.name,
       input.project.description,
       input.project.area,
       existingTasks
     );
-    return this.callLLM<ProjectTaskGenOutput>(prompt);
+
+    return this.callLLMForFeature(
+      'projectTaskGen',
+      ProjectTaskGenOutputSchema,
+      prompt,
+      (schemaOutput) => ({
+        suggestedTasks: schemaOutput.tasks.map((task) => ({
+          title: task.title,
+          description: task.description,
+          area: task.area,
+          subCategory: task.subCategory,
+          priority: task.priority,
+          size: task.size,
+        })),
+        reasoning: schemaOutput.overallStrategy,
+      })
+    );
   }
 
   async identifyProjectRisks(input: ProjectRiskInput): Promise<LLMResponse<ProjectRiskOutput>> {
-    const tasks = input.tasks.map(t => ({
+    const tasks = input.tasks.map((t) => ({
       id: t.id,
       title: t.title,
       status: t.status,
@@ -232,6 +342,22 @@ export class DirectLLMAdapter implements ILLMAdapter {
       dueDate: t.dueDate,
     }));
     const prompt = getProjectRiskPrompt(input.project.name, input.project.description, tasks);
-    return this.callLLM<ProjectRiskOutput>(prompt);
+
+    return this.callLLMForFeature(
+      'projectRisk',
+      ProjectRiskOutputSchema,
+      prompt,
+      (schemaOutput) => ({
+        risks: schemaOutput.risks.map((risk) => ({
+          severity: risk.impact === 'critical' ? 'high' : risk.impact,
+          description: risk.description,
+          mitigation: risk.mitigation,
+          affectedTasks: [],
+        })),
+        overallRiskLevel:
+          schemaOutput.overallRiskLevel === 'critical' ? 'high' : schemaOutput.overallRiskLevel,
+        summary: schemaOutput.summary,
+      })
+    );
   }
 }

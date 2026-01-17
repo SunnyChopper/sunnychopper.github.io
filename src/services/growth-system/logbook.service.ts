@@ -1,166 +1,133 @@
-import { getStorageAdapter } from '../../lib/storage';
-import { generateId, randomDelay } from '../../mocks/storage';
+import { apiClient } from '../../lib/api-client';
 import type {
   LogbookEntry,
   CreateLogbookEntryInput,
   UpdateLogbookEntryInput,
-  LogbookTask,
-  LogbookHabit,
 } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
 
-const USER_ID = 'user-1';
+interface BackendPaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
 
 export const logbookService = {
-  async getAll(): Promise<ApiListResponse<LogbookEntry>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const entries = await storage.getAll<LogbookEntry>('logbookEntries');
-    const sorted = entries.sort((a, b) =>
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    return { data: sorted, total: sorted.length, success: true };
+  async getAll(filters?: {
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<ApiListResponse<LogbookEntry>> {
+    const queryParams = new URLSearchParams();
+    if (filters?.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters?.endDate) queryParams.append('endDate', filters.endDate);
+    if (filters?.page) queryParams.append('page', String(filters.page));
+    if (filters?.pageSize) queryParams.append('pageSize', String(filters.pageSize));
+
+    const endpoint = `/logbook${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await apiClient.get<BackendPaginatedResponse<LogbookEntry>>(endpoint);
+
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+
+    throw new Error(response.error?.message || 'Failed to fetch logbook entries');
   },
 
   async getById(id: string): Promise<ApiResponse<LogbookEntry>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const entry = await storage.getById<LogbookEntry>('logbookEntries', id);
-    if (!entry) {
-      return {
-        data: undefined,
-        error: { message: 'Logbook entry not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: entry, success: true };
+    const response = await apiClient.get<LogbookEntry>(`/logbook/${id}`);
+    return response;
   },
 
   async getByDate(date: string): Promise<ApiResponse<LogbookEntry>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const entries = await storage.getAll<LogbookEntry>('logbookEntries');
-    const entry = entries.find((e) => e.date === date);
-    if (!entry) {
-      return {
-        data: undefined,
-        error: { message: 'No logbook entry found for this date', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: entry, success: true };
+    const response = await apiClient.get<LogbookEntry>(`/logbook/${date}`);
+    return response;
   },
 
   async create(input: CreateLogbookEntryInput): Promise<ApiResponse<LogbookEntry>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-
-    // Check if an entry already exists for this date
-    const entries = await storage.getAll<LogbookEntry>('logbookEntries');
-    const existing = entries.find((e) => e.date === input.date);
-    if (existing) {
-      return {
-        data: undefined,
-        error: { message: 'Logbook entry already exists for this date', code: 'CONFLICT' },
-        success: false,
-      };
-    }
-
-    const entry: LogbookEntry = {
-      id: generateId(),
-      date: input.date,
-      title: input.title || null,
-      notes: input.notes || null,
-      mood: input.mood || null,
-      energy: input.energy || null,
-      userId: USER_ID,
-      createdAt: now,
-      updatedAt: now,
-    };
-    await storage.create('logbookEntries', entry.id, entry);
-    return { data: entry, success: true };
+    const response = await apiClient.post<LogbookEntry>('/logbook', input);
+    return response;
   },
 
   async update(id: string, input: UpdateLogbookEntryInput): Promise<ApiResponse<LogbookEntry>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const updated = await storage.update<LogbookEntry>('logbookEntries', id, {
-      ...input,
-      updatedAt: new Date().toISOString(),
-    });
-    if (!updated) {
-      return {
-        data: undefined,
-        error: { message: 'Logbook entry not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: updated, success: true };
+    const response = await apiClient.patch<LogbookEntry>(`/logbook/${id}`, input);
+    return response;
   },
 
   async delete(id: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const deleted = await storage.delete('logbookEntries', id);
-    if (!deleted) {
+    const response = await apiClient.delete<void>(`/logbook/${id}`);
+    return response;
+  },
+
+  async getLinks(
+    entryId: string
+  ): Promise<ApiListResponse<{ entityType: string; entityId: string }>> {
+    const response = await apiClient.get<
+      BackendPaginatedResponse<{ entityType: string; entityId: string }>
+    >(`/logbook/${entryId}/links`);
+    if (response.success && response.data) {
       return {
-        data: undefined,
-        error: { message: 'Logbook entry not found', code: 'NOT_FOUND' },
-        success: false,
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
       };
     }
-
-    // Delete related logbook-task links
-    const allLogbookTasks = await storage.getAll<LogbookTask>('logbookTasks');
-    for (const lt of allLogbookTasks.filter((lt) => lt.logbookEntryId === id)) {
-      await storage.deleteRelation('logbookTasks', `${lt.logbookEntryId}-${lt.taskId}`);
-    }
-
-    // Delete related logbook-habit links
-    const allLogbookHabits = await storage.getAll<LogbookHabit>('logbookHabits');
-    for (const lh of allLogbookHabits.filter((lh) => lh.logbookEntryId === id)) {
-      await storage.deleteRelation('logbookHabits', `${lh.logbookEntryId}-${lh.habitId}`);
-    }
-
-    return { data: undefined, success: true };
+    throw new Error(response.error?.message || 'Failed to fetch logbook links');
   },
 
   async linkTask(entryId: string, taskId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const link: LogbookTask = {
-      logbookEntryId: entryId,
-      taskId,
-      createdAt: new Date().toISOString(),
-    };
-    await storage.createRelation('logbookTasks', `${entryId}-${taskId}`, link as unknown as Record<string, unknown>);
-    return { data: undefined, success: true };
+    const response = await apiClient.post<void>(`/logbook/${entryId}/links`, {
+      entityType: 'task',
+      entityId: taskId,
+    });
+    return response;
   },
 
   async unlinkTask(entryId: string, taskId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    await storage.deleteRelation('logbookTasks', `${entryId}-${taskId}`);
-    return { data: undefined, success: true };
+    // Backend may require linkId, but we'll use taskId as identifier
+    const linksResponse = await this.getLinks(entryId);
+    if (linksResponse.success && linksResponse.data) {
+      const link = linksResponse.data.find((l) => l.entityType === 'task' && l.entityId === taskId);
+      if (link) {
+        const response = await apiClient.delete<void>(`/logbook/${entryId}/links/${link.entityId}`);
+        return response;
+      }
+    }
+    return {
+      success: false,
+      error: { code: 'NOT_FOUND', message: 'Link not found' },
+    };
   },
 
   async linkHabit(entryId: string, habitId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const link: LogbookHabit = {
-      logbookEntryId: entryId,
-      habitId,
-      createdAt: new Date().toISOString(),
-    };
-    await storage.createRelation('logbookHabits', `${entryId}-${habitId}`, link as unknown as Record<string, unknown>);
-    return { data: undefined, success: true };
+    const response = await apiClient.post<void>(`/logbook/${entryId}/links`, {
+      entityType: 'habit',
+      entityId: habitId,
+    });
+    return response;
   },
 
   async unlinkHabit(entryId: string, habitId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    await storage.deleteRelation('logbookHabits', `${entryId}-${habitId}`);
-    return { data: undefined, success: true };
+    const linksResponse = await this.getLinks(entryId);
+    if (linksResponse.success && linksResponse.data) {
+      const link = linksResponse.data.find(
+        (l) => l.entityType === 'habit' && l.entityId === habitId
+      );
+      if (link) {
+        const response = await apiClient.delete<void>(`/logbook/${entryId}/links/${link.entityId}`);
+        return response;
+      }
+    }
+    return {
+      success: false,
+      error: { code: 'NOT_FOUND', message: 'Link not found' },
+    };
   },
 };

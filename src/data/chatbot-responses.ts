@@ -223,7 +223,7 @@ export function findBestResponse(userMessage: string): ResponseData {
   const lowerMessage = userMessage.toLowerCase();
 
   for (const pattern of chatbotResponses) {
-    if (pattern.keywords.some(keyword => lowerMessage.includes(keyword))) {
+    if (pattern.keywords.some((keyword) => lowerMessage.includes(keyword))) {
       return {
         content: pattern.response,
         thinking: pattern.thinking,

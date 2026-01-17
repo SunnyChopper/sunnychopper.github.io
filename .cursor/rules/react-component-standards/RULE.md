@@ -1,6 +1,6 @@
 ---
-description: "React component implementation standards for this repo."
-globs: "src/components/**/*.tsx,src/pages/**/*.tsx"
+description: 'React component implementation standards for this repo.'
+globs: 'src/components/**/*.tsx,src/pages/**/*.tsx'
 alwaysApply: false
 ---
 
@@ -25,11 +25,7 @@ interface ComponentNameProps {
 }
 
 // 3. Component definition (export default for pages, named for components)
-export default function ComponentName({
-  required,
-  optional = 10,
-  onAction,
-}: ComponentNameProps) {
+export default function ComponentName({ required, optional = 10, onAction }: ComponentNameProps) {
   // 4. Hooks first
   const [state, setState] = useState(false);
 
@@ -47,11 +43,7 @@ export default function ComponentName({
   if (!data) return <LoadingState />;
 
   // 8. Main render
-  return (
-    <div className="...">
-      {/* JSX */}
-    </div>
-  );
+  return <div className="...">{/* JSX */}</div>;
 }
 ```
 
@@ -67,12 +59,7 @@ export default function ComponentName({
 
 ```tsx
 // Good: Destructure with defaults
-function Button({
-  variant = 'primary',
-  size = 'md',
-  disabled = false,
-  children,
-}: ButtonProps) {}
+function Button({ variant = 'primary', size = 'md', disabled = false, children }: ButtonProps) {}
 
 // Good: Spread remaining props for flexibility
 function Input({ label, error, ...inputProps }: InputProps) {

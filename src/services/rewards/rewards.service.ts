@@ -1,5 +1,4 @@
-import { getStorageAdapter } from '../../lib/storage';
-import { generateId, randomDelay } from '../../mocks/storage';
+import { apiClient } from '../../lib/api-client';
 import type {
   Reward,
   RewardRedemption,
@@ -9,11 +8,17 @@ import type {
   RewardWithRedemptions,
   RewardCategory,
 } from '../../types/rewards';
-import type { ApiResponse } from '../../types/growth-system';
+import type { ApiResponse } from '../../types/api-contracts';
 
-const USER_ID = 'user-1';
+interface BackendPaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
 
-function canRedeemReward(
+function _canRedeemReward(
   reward: Reward,
   redemptions: RewardRedemption[]
 ): { canRedeem: boolean; cooldownMessage: string | null } {
@@ -24,14 +29,9 @@ function canRedeemReward(
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const todayRedemptions = redemptions.filter(
-    (r) => new Date(r.redeemedAt) >= todayStart
-  );
+  const todayRedemptions = redemptions.filter((r) => new Date(r.redeemedAt) >= todayStart);
 
-  if (
-    reward.maxRedemptionsPerDay &&
-    todayRedemptions.length >= reward.maxRedemptionsPerDay
-  ) {
+  if (reward.maxRedemptionsPerDay && todayRedemptions.length >= reward.maxRedemptionsPerDay) {
     return {
       canRedeem: false,
       cooldownMessage: 'Daily redemption limit reached',
@@ -40,18 +40,14 @@ function canRedeemReward(
 
   if (reward.cooldownHours && redemptions.length > 0) {
     const lastRedemption = redemptions.sort(
-      (a, b) =>
-        new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime()
+      (a, b) => new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime()
     )[0];
     const cooldownEnd = new Date(
-      new Date(lastRedemption.redeemedAt).getTime() +
-        reward.cooldownHours * 60 * 60 * 1000
+      new Date(lastRedemption.redeemedAt).getTime() + reward.cooldownHours * 60 * 60 * 1000
     );
 
     if (now < cooldownEnd) {
-      const hoursLeft = Math.ceil(
-        (cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60)
-      );
+      const hoursLeft = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60));
       return {
         canRedeem: false,
         cooldownMessage: `Available in ${hoursLeft} hour${hoursLeft > 1 ? 's' : ''}`,
@@ -64,80 +60,71 @@ function canRedeemReward(
 
 export const rewardsService = {
   async getAll(): Promise<ApiResponse<Reward[]>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const rewards = await storage.getAll<Reward>('rewards');
-    return { data: rewards, error: null, success: true };
+    const response = await apiClient.get<BackendPaginatedResponse<Reward>>('/rewards');
+    if (response.success && response.data) {
+      return { data: response.data.data, error: null, success: true };
+    }
+    return {
+      data: null,
+      error: response.error?.message || 'Failed to fetch rewards',
+      success: false,
+    };
   },
 
   async getById(id: string): Promise<ApiResponse<Reward>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const reward = await storage.getById<Reward>('rewards', id);
-    if (!reward) {
-      return { data: null, error: 'Reward not found', success: false };
+    const response = await apiClient.get<Reward>(`/rewards/${id}`);
+    if (response.success && response.data) {
+      return { data: response.data, error: null, success: true };
     }
-    return { data: reward, error: null, success: true };
+    return {
+      data: null,
+      error: response.error?.message || 'Reward not found',
+      success: false,
+    };
   },
 
   async getWithRedemptions(id: string): Promise<ApiResponse<RewardWithRedemptions>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const reward = await storage.getById<Reward>('rewards', id);
-    if (!reward) {
-      return { data: null, error: 'Reward not found', success: false };
+    // Backend may include redemption info in reward response
+    const rewardResponse = await this.getById(id);
+    if (!rewardResponse.success || !rewardResponse.data) {
+      return {
+        data: null,
+        error: rewardResponse.error || 'Reward not found',
+        success: false,
+      };
     }
 
-    const allRedemptions = await storage.getAll<RewardRedemption>('reward_redemptions');
-    const redemptions = allRedemptions.filter((r) => r.rewardId === id);
-
-    const lastRedemption = redemptions.sort(
-      (a, b) =>
-        new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime()
-    )[0];
-
-    const { canRedeem, cooldownMessage } = canRedeemReward(reward, redemptions);
-
+    // For now, return reward without redemptions (backend may provide this)
+    const reward = rewardResponse.data;
     const rewardWithRedemptions: RewardWithRedemptions = {
       ...reward,
-      redemptions,
-      lastRedeemedAt: lastRedemption?.redeemedAt || null,
-      canRedeem,
-      cooldownMessage,
+      redemptions: [],
+      lastRedeemedAt: null,
+      canRedeem: reward.status === 'Active',
+      cooldownMessage: null,
     };
 
     return { data: rewardWithRedemptions, error: null, success: true };
   },
 
   async getAllWithRedemptions(): Promise<ApiResponse<RewardWithRedemptions[]>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const rewards = await storage.getAll<Reward>('rewards');
-    const allRedemptions = await storage.getAll<RewardRedemption>('reward_redemptions');
+    const response = await this.getAll();
+    if (!response.success || !response.data) {
+      return response as ApiResponse<RewardWithRedemptions[]>;
+    }
 
-    const rewardsWithRedemptions: RewardWithRedemptions[] = rewards.map((reward) => {
-      const redemptions = allRedemptions.filter((r) => r.rewardId === reward.id);
-      const lastRedemption = redemptions.sort(
-        (a, b) =>
-          new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime()
-      )[0];
-
-      const { canRedeem, cooldownMessage } = canRedeemReward(reward, redemptions);
-
-      return {
-        ...reward,
-        redemptions,
-        lastRedeemedAt: lastRedemption?.redeemedAt || null,
-        canRedeem,
-        cooldownMessage,
-      };
-    });
+    const rewardsWithRedemptions: RewardWithRedemptions[] = response.data.map((reward) => ({
+      ...reward,
+      redemptions: [],
+      lastRedeemedAt: null,
+      canRedeem: reward.status === 'Active',
+      cooldownMessage: null,
+    }));
 
     return { data: rewardsWithRedemptions, error: null, success: true };
   },
 
   async getByCategory(category: RewardCategory): Promise<ApiResponse<RewardWithRedemptions[]>> {
-    await randomDelay();
     const response = await this.getAllWithRedemptions();
     if (!response.success || !response.data) {
       return response;
@@ -148,104 +135,68 @@ export const rewardsService = {
   },
 
   async create(input: CreateRewardInput): Promise<ApiResponse<Reward>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-    const id = generateId();
-
-    const reward: Reward = {
-      id,
-      title: input.title,
-      description: input.description || null,
-      category: input.category,
-      pointCost: input.pointCost,
-      icon: input.icon || null,
-      imageUrl: input.imageUrl || null,
-      isAutomated: input.isAutomated || false,
-      automationInstructions: input.automationInstructions || null,
-      cooldownHours: input.cooldownHours || null,
-      maxRedemptionsPerDay: input.maxRedemptionsPerDay || null,
-      status: input.status || 'Active',
-      userId: USER_ID,
-      createdAt: now,
-      updatedAt: now,
+    const response = await apiClient.post<Reward>('/rewards', input);
+    if (response.success && response.data) {
+      return { data: response.data, error: null, success: true };
+    }
+    return {
+      data: null,
+      error: response.error?.message || 'Failed to create reward',
+      success: false,
     };
-
-    await storage.create('rewards', id, reward);
-    return { data: reward, error: null, success: true };
   },
 
   async update(id: string, input: UpdateRewardInput): Promise<ApiResponse<Reward>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-
-    const updated = await storage.update<Reward>('rewards', id, {
-      ...input,
-      updatedAt: now,
-    });
-
-    if (!updated) {
-      return { data: null, error: 'Reward not found', success: false };
+    const response = await apiClient.patch<Reward>(`/rewards/${id}`, input);
+    if (response.success && response.data) {
+      return { data: response.data, error: null, success: true };
     }
-
-    return { data: updated, error: null, success: true };
+    return {
+      data: null,
+      error: response.error?.message || 'Failed to update reward',
+      success: false,
+    };
   },
 
   async delete(id: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const success = await storage.delete('rewards', id);
-
-    if (!success) {
-      return { data: null, error: 'Reward not found', success: false };
-    }
-
-    return { data: null, error: null, success: true };
+    const response = await apiClient.delete<void>(`/rewards/${id}`);
+    return {
+      data: undefined,
+      error: response.error?.message || null,
+      success: response.success,
+    };
   },
 
   async redeem(input: RedeemRewardInput): Promise<ApiResponse<RewardRedemption>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-
-    const rewardResponse = await this.getWithRedemptions(input.rewardId);
-    if (!rewardResponse.success || !rewardResponse.data) {
-      return { data: null, error: rewardResponse.error, success: false };
+    const response = await apiClient.post<RewardRedemption>(`/rewards/${input.rewardId}/redeem`, {
+      notes: input.notes,
+    });
+    if (response.success && response.data) {
+      return { data: response.data, error: null, success: true };
     }
-
-    const reward = rewardResponse.data;
-    if (!reward.canRedeem) {
-      return {
-        data: null,
-        error: reward.cooldownMessage || 'Cannot redeem this reward',
-        success: false,
-      };
-    }
-
-    const now = new Date().toISOString();
-    const redemptionId = generateId();
-
-    const redemption: RewardRedemption = {
-      id: redemptionId,
-      rewardId: input.rewardId,
-      userId: USER_ID,
-      pointsSpent: reward.pointCost,
-      redeemedAt: now,
-      notes: input.notes || null,
+    return {
+      data: null,
+      error: response.error?.message || 'Failed to redeem reward',
+      success: false,
     };
-
-    await storage.create('reward_redemptions', redemptionId, redemption);
-    return { data: redemption, error: null, success: true };
   },
 
   async getRedemptionHistory(): Promise<ApiResponse<RewardRedemption[]>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const redemptions = await storage.getAll<RewardRedemption>('reward_redemptions');
-    const sorted = redemptions.sort(
-      (a, b) =>
-        new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime()
+    // Backend may provide this via wallet transactions
+    const walletResponse = await apiClient.get<{ recentTransactions: RewardRedemption[] }>(
+      '/wallet'
     );
-    return { data: sorted, error: null, success: true };
+    if (walletResponse.success && walletResponse.data) {
+      return {
+        data: walletResponse.data.recentTransactions.filter((t) => t.type === 'spend'),
+        error: null,
+        success: true,
+      };
+    }
+    return {
+      data: null,
+      error: walletResponse.error?.message || 'Failed to fetch redemption history',
+      success: false,
+    };
   },
 };

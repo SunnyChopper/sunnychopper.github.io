@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import MarkdownRenderer from '../../components/molecules/MarkdownRenderer';
 import {
   MessageCircle,
   Plus,
@@ -51,32 +50,7 @@ export default function ChatbotPage() {
   const [messageBranches, setMessageBranches] = useState<{ [key: string]: MessageBranch[] }>({});
   const [currentBranchIndex, setCurrentBranchIndex] = useState<{ [key: string]: number }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    loadThreads();
-
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setSidebarCollapsed(false);
-      } else {
-        setSidebarCollapsed(true);
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (activeThread) {
-      loadMessages(activeThread.id);
-    }
-  }, [activeThread]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent]);
+  const messageIdCounterRef = useRef(0);
 
   const loadThreads = async () => {
     try {
@@ -98,6 +72,32 @@ export default function ChatbotPage() {
       console.error('Error loading messages:', error);
     }
   };
+
+  useEffect(() => {
+    loadThreads();
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarCollapsed(false);
+      } else {
+        setSidebarCollapsed(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [loadThreads]);
+
+  useEffect(() => {
+    if (activeThread) {
+      loadMessages(activeThread.id);
+    }
+  }, [activeThread]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingContent]);
 
   const handleCreateThread = async () => {
     try {
@@ -144,7 +144,11 @@ export default function ChatbotPage() {
     }
   };
 
-  const handleSendMessage = async (messageContent?: string, isEdit: boolean = false, editedMessageId?: string) => {
+  const handleSendMessage = async (
+    messageContent?: string,
+    isEdit: boolean = false,
+    editedMessageId?: string
+  ) => {
     const userMessage = messageContent || inputValue.trim();
     if (!userMessage || !activeThread || isLoading) return;
 
@@ -178,7 +182,8 @@ export default function ChatbotPage() {
         setIsSearching(false);
       }
 
-      const tempMessageId = `temp-${Date.now()}`;
+      messageIdCounterRef.current += 1;
+      const tempMessageId = `temp-${messageIdCounterRef.current}`;
       setStreamingMessageId(tempMessageId);
       setStreamingContent('');
       setStreamingThinking('');
@@ -239,8 +244,10 @@ export default function ChatbotPage() {
       if (updatedBranches.length === 0) {
         updatedBranches.push({
           content: originalMessage.content,
-          response: messageIndex < messages.length - 1 ? messages[messageIndex + 1].content : undefined,
-          responseThinking: messageIndex < messages.length - 1 ? messages[messageIndex + 1].thinking : undefined,
+          response:
+            messageIndex < messages.length - 1 ? messages[messageIndex + 1].content : undefined,
+          responseThinking:
+            messageIndex < messages.length - 1 ? messages[messageIndex + 1].thinking : undefined,
         });
       }
 
@@ -566,58 +573,47 @@ export default function ChatbotPage() {
                               }`}
                             >
                               {message.role === 'assistant' ? (
-                                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-3 prose-ul:my-2 prose-li:my-1">
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                                      ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>,
-                                      ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-3">{children}</ol>,
-                                      li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                                      a: ({ node, ...props }) => {
-                                        const href = props.href || '';
-                                        if (href.startsWith('/')) {
-                                          return (
-                                            <Link
-                                              to={href}
-                                              className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                                            >
-                                              {props.children}
-                                            </Link>
-                                          );
-                                        }
+                                <MarkdownRenderer
+                                  content={message.content}
+                                  className="prose-p:my-3 prose-ul:my-2 prose-li:my-1"
+                                  components={{
+                                    p: ({ children }) => (
+                                      <p className="mb-3 last:mb-0">{children}</p>
+                                    ),
+                                    ul: ({ children }) => (
+                                      <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>
+                                    ),
+                                    ol: ({ children }) => (
+                                      <ol className="list-decimal pl-5 space-y-1 my-3">
+                                        {children}
+                                      </ol>
+                                    ),
+                                    li: ({ children }) => (
+                                      <li className="leading-relaxed">{children}</li>
+                                    ),
+                                    a: ({ node, ...props }) => {
+                                      const href = props.href || '';
+                                      if (href.startsWith('/')) {
                                         return (
-                                          <a
-                                            {...props}
-                                            className="text-blue-600 dark:text-blue-400 hover:underline"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                          />
-                                        );
-                                      },
-                                      code: ({ className, children, ...props }) => {
-                                        const isInline = !className?.includes('language-');
-                                        return isInline ? (
-                                          <code
-                                            className="bg-gray-200 dark:bg-gray-600 px-1 py-0.5 rounded text-sm"
-                                            {...props}
+                                          <Link
+                                            to={href}
+                                            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
                                           >
-                                            {children}
-                                          </code>
-                                        ) : (
-                                          <code
-                                            className="block bg-gray-200 dark:bg-gray-600 p-2 rounded text-sm overflow-x-auto"
-                                            {...props}
-                                          >
-                                            {children}
-                                          </code>
+                                            {props.children}
+                                          </Link>
                                         );
-                                      },
-                                    }}
-                                  >
-                                    {message.content}
-                                  </ReactMarkdown>
-                                </div>
+                                      }
+                                      return (
+                                        <a
+                                          {...props}
+                                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        />
+                                      );
+                                    },
+                                  }}
+                                />
                               ) : (
                                 message.content
                               )}
@@ -698,19 +694,20 @@ export default function ChatbotPage() {
                     )}
                     {streamingContent && (
                       <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3 text-gray-900 dark:text-gray-100">
-                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-3 prose-ul:my-2 prose-li:my-1">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                              ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>,
-                              ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-3">{children}</ol>,
-                              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                            }}
-                          >
-                            {streamingContent}
-                          </ReactMarkdown>
-                        </div>
+                        <MarkdownRenderer
+                          content={streamingContent}
+                          className="prose-p:my-3 prose-ul:my-2 prose-li:my-1"
+                          components={{
+                            p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                            ul: ({ children }) => (
+                              <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal pl-5 space-y-1 my-3">{children}</ol>
+                            ),
+                            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                          }}
+                        />
                         <span className="inline-block w-1 h-4 bg-blue-600 dark:bg-blue-400 ml-1 animate-pulse" />
                       </div>
                     )}

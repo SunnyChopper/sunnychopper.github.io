@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN implementing form validation, error messages, and input constraints."
-globs: ""
+description: 'USE WHEN implementing form validation, error messages, and input constraints.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -124,12 +124,13 @@ const validateEmail = async (email: string): Promise<string | null> => {
 
 // Usage with debouncing
 const debouncedEmailValidation = useMemo(
-  () => debounce(async (email: string) => {
-    setIsValidating(true);
-    const error = await validateEmail(email);
-    setErrors(prev => ({ ...prev, email: error || '' }));
-    setIsValidating(false);
-  }, 500),
+  () =>
+    debounce(async (email: string) => {
+      setIsValidating(true);
+      const error = await validateEmail(email);
+      setErrors((prev) => ({ ...prev, email: error || '' }));
+      setIsValidating(false);
+    }, 500),
   []
 );
 ```
@@ -156,28 +157,30 @@ const debouncedEmailValidation = useMemo(
 ### Error Summary
 
 ```tsx
-{Object.keys(errors).length > 0 && (
-  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-    <h4 className="font-medium text-red-800 dark:text-red-300 mb-2">
-      Please fix the following errors:
-    </h4>
-    <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-400">
-      {Object.values(errors).map((error, i) => (
-        <li key={i}>{error}</li>
-      ))}
-    </ul>
-  </div>
-)}
+{
+  Object.keys(errors).length > 0 && (
+    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+      <h4 className="font-medium text-red-800 dark:text-red-300 mb-2">
+        Please fix the following errors:
+      </h4>
+      <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-400">
+        {Object.values(errors).map((error, i) => (
+          <li key={i}>{error}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 ```
 
 ## Good Error Messages
 
-| Bad | Good |
-|-----|------|
-| "Invalid input" | "Please enter a valid email address" |
-| "Error" | "Name must be at least 2 characters" |
-| "Required" | "Please enter your email" |
-| "Format error" | "Phone number should be in format: (555) 123-4567" |
+| Bad             | Good                                               |
+| --------------- | -------------------------------------------------- |
+| "Invalid input" | "Please enter a valid email address"               |
+| "Error"         | "Name must be at least 2 characters"               |
+| "Required"      | "Please enter your email"                          |
+| "Format error"  | "Phone number should be in format: (555) 123-4567" |
 
 ## Best Practices
 

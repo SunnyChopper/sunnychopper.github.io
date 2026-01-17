@@ -11,12 +11,8 @@ export default function ContactSection() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Ready to Work?
-          </h2>
-          <p className="text-gray-600 text-lg">
-            Like what you see? Let's work together.
-          </p>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Ready to Work?</h2>
+          <p className="text-gray-600 text-lg">Like what you see? Let's work together.</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">

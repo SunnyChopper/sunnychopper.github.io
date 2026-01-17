@@ -1,12 +1,33 @@
 export type Area = 'Health' | 'Wealth' | 'Love' | 'Happiness' | 'Operations' | 'DayJob';
 
 export type SubCategory =
-  | 'Physical' | 'Mental' | 'Spiritual' | 'Nutrition' | 'Sleep' | 'Exercise'
-  | 'Income' | 'Expenses' | 'Investments' | 'Debt' | 'NetWorth'
-  | 'Romantic' | 'Family' | 'Friends' | 'Social'
-  | 'Joy' | 'Gratitude' | 'Purpose' | 'Peace'
-  | 'Productivity' | 'Organization' | 'Systems' | 'Habits'
-  | 'Career' | 'Skills' | 'Projects' | 'Performance';
+  | 'Physical'
+  | 'Mental'
+  | 'Spiritual'
+  | 'Nutrition'
+  | 'Sleep'
+  | 'Exercise'
+  | 'Income'
+  | 'Expenses'
+  | 'Investments'
+  | 'Debt'
+  | 'NetWorth'
+  | 'Romantic'
+  | 'Family'
+  | 'Friends'
+  | 'Social'
+  | 'Joy'
+  | 'Gratitude'
+  | 'Purpose'
+  | 'Peace'
+  | 'Productivity'
+  | 'Organization'
+  | 'Systems'
+  | 'Habits'
+  | 'Career'
+  | 'Skills'
+  | 'Projects'
+  | 'Performance';
 
 export type Priority = 'P1' | 'P2' | 'P3' | 'P4';
 
@@ -22,7 +43,16 @@ export type HabitFrequency = 'Daily' | 'Weekly' | 'Monthly' | 'Custom';
 
 export type MetricDirection = 'Higher' | 'Lower' | 'Target';
 export type MetricSource = 'Manual' | 'App' | 'Device';
-export type MetricUnit = 'count' | 'hours' | 'minutes' | 'dollars' | 'pounds' | 'kg' | 'percent' | 'rating' | 'custom';
+export type MetricUnit =
+  | 'count'
+  | 'hours'
+  | 'minutes'
+  | 'dollars'
+  | 'pounds'
+  | 'kg'
+  | 'percent'
+  | 'rating'
+  | 'custom';
 
 export type LogbookMood = 'Low' | 'Steady' | 'High';
 
@@ -100,6 +130,55 @@ export interface ProjectGoal {
   createdAt: string;
 }
 
+// Enhanced Success Criterion (replaces string[])
+export interface SuccessCriterion {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+  completedAt: string | null;
+  linkedMetricId: string | null; // Auto-track from metric
+  linkedTaskId: string | null; // Auto-track from task
+  targetDate: string | null; // Milestone date
+  order: number;
+}
+
+// Goal Activity Log
+export interface GoalActivity {
+  id: string;
+  goalId: string;
+  type:
+    | 'criterion_completed'
+    | 'task_completed'
+    | 'metric_logged'
+    | 'habit_completed'
+    | 'status_changed'
+    | 'note_added'
+    | 'progress_milestone';
+  title: string;
+  description: string | null;
+  entityType: string | null;
+  entityId: string | null;
+  createdAt: string;
+}
+
+// Goal Progress Configuration
+export interface GoalProgressConfig {
+  criteriaWeight: number; // 0-100
+  tasksWeight: number; // 0-100
+  metricsWeight: number; // 0-100
+  habitsWeight: number; // 0-100
+  manualOverride: number | null;
+}
+
+// Computed Progress (for display)
+export interface GoalProgressBreakdown {
+  overall: number;
+  criteria: { completed: number; total: number; percentage: number };
+  tasks: { completed: number; total: number; percentage: number };
+  metrics: { atTarget: number; total: number; percentage: number };
+  habits: { streakDays: number; consistency: number };
+}
+
 export interface Goal {
   id: string;
   title: string;
@@ -111,7 +190,10 @@ export interface Goal {
   status: GoalStatus;
   targetDate: string | null;
   completedDate: string | null;
-  successCriteria: string[];
+  successCriteria: SuccessCriterion[]; // Changed from string[]
+  progressConfig: GoalProgressConfig | null;
+  parentGoalId: string | null; // For goal hierarchy
+  lastActivityAt: string | null; // For momentum tracking
   notes: string | null;
   userId: string;
   createdAt: string;
@@ -157,6 +239,34 @@ export interface MetricLog {
   loggedAt: string;
   userId: string;
   createdAt: string;
+}
+
+export interface MetricInsight {
+  id: string;
+  metricId: string;
+  type: 'pattern' | 'anomaly' | 'correlation' | 'prediction' | 'milestone';
+  title: string;
+  description: string;
+  confidence: number;
+  cachedAt: string;
+  expiresAt: string;
+}
+
+export interface MetricMilestone {
+  id: string;
+  metricId: string;
+  type: 'target_reached' | 'streak' | 'improvement' | 'consistency';
+  value: number;
+  achievedAt: string;
+  pointsAwarded: number;
+  rewardId: string | null;
+}
+
+export interface MetricComparison {
+  metricId1: string;
+  metricId2: string;
+  correlation: number;
+  insights: string;
 }
 
 export interface Habit {
@@ -235,7 +345,17 @@ export interface LogbookHabit {
 
 export interface AISuggestion {
   id: string;
-  type: 'task_breakdown' | 'metric_suggestion' | 'habit_design' | 'goal_refinement' | 'dependency_detection' | 'priority_adjustment' | 'project_scope' | 'reflection_prompt' | 'pattern_insight' | 'risk_identification';
+  type:
+    | 'task_breakdown'
+    | 'metric_suggestion'
+    | 'habit_design'
+    | 'goal_refinement'
+    | 'dependency_detection'
+    | 'priority_adjustment'
+    | 'project_scope'
+    | 'reflection_prompt'
+    | 'pattern_insight'
+    | 'risk_identification';
   title: string;
   description: string;
   confidence: number;
@@ -251,11 +371,19 @@ export interface AISuggestion {
 
 export interface AIInsight {
   id: string;
-  type: 'progress_analysis' | 'health_analysis' | 'pattern_recognition' | 'correlation' | 'forecast' | 'anomaly' | 'blocker_resolution' | 'capacity_planning';
+  type:
+    | 'progress_analysis'
+    | 'health_analysis'
+    | 'pattern_recognition'
+    | 'correlation'
+    | 'forecast'
+    | 'anomaly'
+    | 'blocker_resolution'
+    | 'capacity_planning';
   title: string;
   content: string;
   severity: 'info' | 'warning' | 'critical';
-  relatedEntities: Array<{type: string; id: string}>;
+  relatedEntities: Array<{ type: string; id: string }>;
   createdAt: string;
   viewedAt: string | null;
 }
@@ -331,7 +459,9 @@ export interface CreateGoalInput {
   priority?: Priority;
   status?: GoalStatus;
   targetDate?: string;
-  successCriteria?: string[];
+  successCriteria?: string[] | SuccessCriterion[]; // Support both for migration
+  progressConfig?: GoalProgressConfig;
+  parentGoalId?: string;
   notes?: string;
 }
 
@@ -345,7 +475,10 @@ export interface UpdateGoalInput {
   status?: GoalStatus;
   targetDate?: string;
   completedDate?: string;
-  successCriteria?: string[];
+  successCriteria?: string[] | SuccessCriterion[]; // Support both for migration
+  progressConfig?: GoalProgressConfig;
+  parentGoalId?: string;
+  lastActivityAt?: string;
   notes?: string;
 }
 
@@ -449,6 +582,14 @@ export interface FilterOptions {
   subCategory?: SubCategory;
   priority?: Priority;
   status?: string;
+  momentum?: string;
+  targetProximity?: 'approaching' | 'far' | 'reached';
+  loggingFrequency?: 'recent' | 'needs_logging';
+  hasLinkedTasks?: boolean;
+  hasLinkedMetrics?: boolean;
+  hasLinkedHabits?: boolean;
+  healthStatus?: 'healthy' | 'at_risk' | 'behind' | 'dormant';
+  progressRange?: { min: number; max: number };
   startDate?: string;
   endDate?: string;
   sortBy?: string;
@@ -521,7 +662,7 @@ export interface WeeklyReview {
   tasksCompleted: number;
   tasksPlanned: number;
   habitConsistency: number;
-  goalProgress: Array<{goalId: string; progress: number}>;
+  goalProgress: Array<{ goalId: string; progress: number }>;
   keyWins: string[];
   areasForImprovement: string[];
   nextWeekPriorities: string[];

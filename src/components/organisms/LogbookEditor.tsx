@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { Smile, Meh, Frown } from 'lucide-react';
-import type { LogbookEntry, CreateLogbookEntryInput, UpdateLogbookEntryInput, LogbookMood } from '../../types/growth-system';
+import type {
+  LogbookEntry,
+  CreateLogbookEntryInput,
+  UpdateLogbookEntryInput,
+  LogbookMood,
+} from '../../types/growth-system';
 import Button from '../atoms/Button';
 
 interface LogbookEditorProps {
@@ -70,24 +75,32 @@ export function LogbookEditor({ entry, onSubmit, onCancel, isLoading }: LogbookE
               onClick={() => setFormData({ ...formData, mood: value })}
               className={`flex-1 flex flex-col items-center gap-2 py-4 px-3 rounded-lg border-2 transition-all ${
                 formData.mood === value
-                  ? value === 'High' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' :
-                    value === 'Steady' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' :
-                    'border-red-500 bg-red-50 dark:bg-red-900/20'
+                  ? value === 'High'
+                    ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                    : value === 'Steady'
+                      ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                      : 'border-red-500 bg-red-50 dark:bg-red-900/20'
                   : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
               }`}
             >
-              <Icon className={`w-8 h-8 ${
-                formData.mood === value
-                  ? value === 'High' ? 'text-green-600 dark:text-green-400' :
-                    value === 'Steady' ? 'text-yellow-600 dark:text-yellow-400' :
-                    'text-red-600 dark:text-red-400'
-                  : 'text-gray-400 dark:text-gray-500'
-              }`} />
-              <span className={`text-sm font-medium ${
-                formData.mood === value
-                  ? 'text-gray-900 dark:text-white'
-                  : 'text-gray-600 dark:text-gray-400'
-              }`}>
+              <Icon
+                className={`w-8 h-8 ${
+                  formData.mood === value
+                    ? value === 'High'
+                      ? 'text-green-600 dark:text-green-400'
+                      : value === 'Steady'
+                        ? 'text-yellow-600 dark:text-yellow-400'
+                        : 'text-red-600 dark:text-red-400'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}
+              />
+              <span
+                className={`text-sm font-medium ${
+                  formData.mood === value
+                    ? 'text-gray-900 dark:text-white'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}
+              >
                 {label}
               </span>
             </button>
@@ -132,20 +145,17 @@ export function LogbookEditor({ entry, onSubmit, onCancel, isLoading }: LogbookE
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={isLoading}
-        >
-          {isLoading ? (entry ? 'Saving...' : 'Creating...') : (entry ? 'Save Changes' : 'Create Entry')}
+        <Button type="submit" variant="primary" disabled={isLoading}>
+          {isLoading
+            ? entry
+              ? 'Saving...'
+              : 'Creating...'
+            : entry
+              ? 'Save Changes'
+              : 'Create Entry'}
         </Button>
       </div>
     </form>

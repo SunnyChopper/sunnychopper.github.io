@@ -7,6 +7,7 @@ import ThemeToggle from '../atoms/ThemeToggle';
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [pendingHash, setPendingHash] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,6 +19,19 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Handle hash update in useEffect to avoid React compiler error
+  useEffect(() => {
+    if (pendingHash && location.pathname === '/') {
+      const currentUrl = window.location.href.split('#')[0];
+      window.history.replaceState(null, '', `${currentUrl}#${pendingHash}`);
+      const element = document.querySelector(pendingHash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+      setPendingHash(null);
+    }
+  }, [pendingHash, location.pathname]);
 
   const navItems = [
     { label: 'Home', href: '/#home' },
@@ -37,11 +51,8 @@ export default function Header() {
       const hash = href.substring(1);
 
       if (location.pathname === '/') {
-        window.location.hash = hash;
-        const element = document.querySelector(hash);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
+        // Set pending hash to be handled by useEffect
+        setPendingHash(hash);
       } else {
         navigate('/' + hash);
       }
@@ -56,12 +67,15 @@ export default function Header() {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-gray-900 dark:text-white hover:text-primary dark:hover:text-blue-400 transition-colors">
+          <Link
+            to="/"
+            className="text-2xl font-bold text-gray-900 dark:text-white hover:text-primary dark:hover:text-blue-400 transition-colors"
+          >
             Sunny Singh
           </Link>
 
           <nav className="hidden xl:flex items-center gap-8">
-            {navItems.map((item) => (
+            {navItems.map((item) =>
               item.href.startsWith('/#') ? (
                 <a
                   key={item.label}
@@ -80,7 +94,7 @@ export default function Header() {
                   {item.label}
                 </Link>
               )
-            ))}
+            )}
             <ThemeToggle />
           </nav>
 
@@ -105,7 +119,7 @@ export default function Header() {
             className="xl:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 overflow-hidden"
           >
             <nav className="container mx-auto px-4 py-6 flex flex-col gap-4">
-              {navItems.map((item) => (
+              {navItems.map((item) =>
                 item.href.startsWith('/#') ? (
                   <a
                     key={item.label}
@@ -125,7 +139,7 @@ export default function Header() {
                     {item.label}
                   </Link>
                 )
-              ))}
+              )}
             </nav>
           </motion.div>
         )}

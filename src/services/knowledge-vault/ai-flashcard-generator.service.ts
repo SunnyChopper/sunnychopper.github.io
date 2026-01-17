@@ -19,9 +19,7 @@ interface FlashcardData {
 }
 
 export const aiFlashcardGeneratorService = {
-  async generateFromLesson(
-    input: GenerateFlashcardsInput
-  ): Promise<ApiResponse<Flashcard[]>> {
+  async generateFromLesson(input: GenerateFlashcardsInput): Promise<ApiResponse<Flashcard[]>> {
     try {
       const featureConfig = getFeatureConfig('goalRefinement');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
@@ -60,9 +58,7 @@ Return ONLY valid JSON in this exact format:
   ]
 }`;
 
-      const response = await provider.invoke([
-        { role: 'user', content: prompt }
-      ]);
+      const response = await provider.invoke([{ role: 'user', content: prompt }]);
 
       const parsed = JSON.parse(response);
       const flashcardsData: FlashcardData[] = parsed.flashcards || [];
@@ -159,9 +155,7 @@ Return ONLY valid JSON in this exact format:
   ]
 }`;
 
-      const response = await provider.invoke([
-        { role: 'user', content: prompt }
-      ]);
+      const response = await provider.invoke([{ role: 'user', content: prompt }]);
 
       const parsed = JSON.parse(response);
 
@@ -180,10 +174,7 @@ Return ONLY valid JSON in this exact format:
     }
   },
 
-  async reviewFlashcard(
-    flashcardId: string,
-    quality: number
-  ): Promise<ApiResponse<Flashcard>> {
+  async reviewFlashcard(flashcardId: string, quality: number): Promise<ApiResponse<Flashcard>> {
     try {
       const flashcardResponse = await vaultItemsService.getById(flashcardId);
 

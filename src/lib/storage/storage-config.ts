@@ -12,7 +12,10 @@ export class StorageConfig {
   private currentType: StorageType;
 
   private constructor() {
-    const savedType = (localStorage.getItem(STORAGE_TYPE_KEY) as StorageType) || 'local';
+    // Default to 'api' if VITE_API_BASE_URL is set, otherwise 'local'
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+    const defaultType: StorageType = apiBaseUrl && apiBaseUrl !== '/api' ? 'api' : 'local';
+    const savedType = (localStorage.getItem(STORAGE_TYPE_KEY) as StorageType) || defaultType;
     this.currentType = savedType;
     this.currentAdapter = this.createAdapter(savedType);
   }

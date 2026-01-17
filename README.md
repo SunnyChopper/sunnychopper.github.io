@@ -34,6 +34,7 @@ src/
 ## Features
 
 ### Public Portfolio Site
+
 - Responsive design that works on all devices
 - Smooth scroll animations with Framer Motion
 - Interactive skill cards with modal details
@@ -46,6 +47,7 @@ src/
 - Google Analytics integration
 
 ### Personal Growth System (Admin Area)
+
 - **Tasks Management**: Kanban board, list view, calendar view, dependency tracking
 - **Projects**: Project health tracking, task generation, risk assessment
 - **Goals**: Goal hierarchy, success criteria, progress tracking by time horizon
@@ -83,6 +85,7 @@ The Personal Growth System is located in the admin area. To access it:
 3. You'll be redirected to the Growth System dashboard
 
 Available admin routes:
+
 - `/admin/dashboard` - Overview and AI insights
 - `/admin/tasks` - Task management with Kanban/List/Calendar views
 - `/admin/projects` - Project tracking and management
@@ -132,7 +135,9 @@ The Growth System includes 33 AI-powered features across all entity types. To us
 Once configured, AI tools appear in the detail view of each entity:
 
 #### Tasks AI Tools
+
 When viewing a task detail, click "AI Task Tools" to access:
+
 - **Parse Natural Language**: Convert plain text into structured tasks
 - **Breakdown Task**: Decompose complex tasks into subtasks
 - **Priority Advisor**: Get recommendations on task prioritization
@@ -142,13 +147,17 @@ When viewing a task detail, click "AI Task Tools" to access:
 - **Blocker Resolution**: Get suggestions for unblocking tasks
 
 #### Projects AI Tools
+
 When viewing a project detail, click "AI Project Tools" to access:
+
 - **Health Analysis**: Assess overall project health and risks
 - **Generate Tasks**: Create comprehensive task breakdown
 - **Risk Assessment**: Identify potential project risks
 
 #### Goals AI Tools
+
 When viewing a goal detail, click "AI Goal Tools" to access:
+
 - **Refine Goal**: Improve goal clarity and specificity
 - **Success Criteria**: Generate measurable success criteria
 - **Suggest Metrics**: Recommend metrics to track progress
@@ -157,7 +166,9 @@ When viewing a goal detail, click "AI Goal Tools" to access:
 - **Progress Analysis**: Analyze current progress and trajectory
 
 #### Metrics AI Tools
+
 When viewing a metric detail, click "AI Metric Tools" to access:
+
 - **Pattern Recognition**: Identify trends and patterns in your data
 - **Anomaly Detection**: Flag unusual data points
 - **Correlations**: Discover relationships between metrics
@@ -165,7 +176,9 @@ When viewing a metric detail, click "AI Metric Tools" to access:
 - **Health Analysis**: Assess metric tracking consistency
 
 #### Habits AI Tools
+
 When viewing a habit detail, click "AI Habit Tools" to access:
+
 - **Habit Design**: Optimize trigger-action-reward loop
 - **Habit Stacking**: Suggest habit combinations
 - **Streak Recovery**: Get back on track after missing days
@@ -174,7 +187,9 @@ When viewing a habit detail, click "AI Habit Tools" to access:
 - **Goal Alignment**: Check alignment with your goals
 
 #### Logbook AI Tools
+
 When viewing a journal entry, click "AI Logbook Tools" to access:
+
 - **Reflection Prompts**: Get thoughtful journaling questions
 - **Daily Digest**: Summarize your day's activities
 - **Pattern Insights**: Discover patterns in your journaling
@@ -185,6 +200,7 @@ When viewing a journal entry, click "AI Logbook Tools" to access:
 ### AI Assistant Chatbot
 
 The chatbot at `/admin/chatbot` provides conversational AI assistance:
+
 - Ask questions about your growth system
 - Get personalized recommendations
 - Analyze patterns across all your data
@@ -194,6 +210,7 @@ The chatbot at `/admin/chatbot` provides conversational AI assistance:
 ### Cost Optimization
 
 To optimize API costs:
+
 1. Go to Settings > AI Settings
 2. Click "Apply Cost-Optimized Mix"
 3. This configures faster, cheaper models for simple tasks
@@ -202,6 +219,7 @@ To optimize API costs:
 ### Privacy Note
 
 All AI features can work with:
+
 - **Direct API calls**: Your data sent directly to providers (configure API keys)
 - **Backend proxy**: Route through your own backend (configure in settings)
 - **Mock mode**: Simulated AI responses for testing (default when not configured)
@@ -232,6 +250,7 @@ The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) 
      - Or add A records pointing to GitHub's IP addresses
 
 3. **Push to main branch:**
+
    ```bash
    git add .
    git commit -m "Deploy to GitHub Pages"
@@ -252,6 +271,7 @@ npm run deploy
 ```
 
 This will:
+
 - Build the production version
 - Deploy to the `gh-pages` branch
 - Preserve the CNAME file for custom domain
@@ -275,6 +295,7 @@ This will:
 ### Styling
 
 The project uses Tailwind CSS. The main colors are defined in `tailwind.config.js`:
+
 - Primary: `#007bff` (Bootstrap blue)
 - Fonts: Montserrat (sans-serif) and Playfair Display (serif)
 
@@ -287,12 +308,14 @@ The project uses Tailwind CSS. The main colors are defined in `tailwind.config.j
 ## Assets
 
 All images and fonts are located in the `public/` directory:
+
 - `public/images/` - Portfolio images, logos, GIFs
 - `public/fonts/` - Icon fonts (icomoon, flaticon)
 
 ## Performance
 
 The production build is optimized with:
+
 - Code splitting
 - Asset optimization
 - Tree shaking

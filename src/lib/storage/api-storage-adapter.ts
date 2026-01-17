@@ -1,11 +1,20 @@
 import type { IStorageAdapter } from './storage-interface';
 import { apiClient } from '../api-client';
 
+interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
 export class APIStorageAdapter implements IStorageAdapter {
   async getAll<T>(collection: string): Promise<T[]> {
-    const response = await apiClient.get<{ items: T[] }>(`/${collection}`);
+    const response = await apiClient.get<PaginatedResponse<T>>(`/${collection}`);
     if (response.success && response.data) {
-      return response.data.items;
+      // Backend returns paginated response with data array
+      return response.data.data;
     }
     throw new Error(response.error?.message || 'Failed to fetch items');
   }
@@ -59,7 +68,11 @@ export class APIStorageAdapter implements IStorageAdapter {
     console.warn('Seed operation is not supported on API storage adapter');
   }
 
-  async createRelation(collection: string, _id: string, relation: Record<string, unknown>): Promise<void> {
+  async createRelation(
+    collection: string,
+    _id: string,
+    relation: Record<string, unknown>
+  ): Promise<void> {
     const response = await apiClient.post(`/${collection}`, relation);
     if (!response.success) {
       throw new Error(response.error?.message || 'Failed to create relation');
@@ -76,9 +89,12 @@ export class APIStorageAdapter implements IStorageAdapter {
       queryParams.append(key, String(value));
     });
 
-    const response = await apiClient.get<{ items: T[] }>(`/${collection}?${queryParams.toString()}`);
+    const response = await apiClient.get<PaginatedResponse<T>>(
+      `/${collection}?${queryParams.toString()}`
+    );
     if (response.success && response.data) {
-      return response.data.items;
+      // Backend returns paginated response with data array
+      return response.data.data;
     }
     throw new Error(response.error?.message || 'Failed to fetch relations');
   }

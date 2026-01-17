@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN creating charts, graphs, and data visualizations."
-globs: ""
+description: 'USE WHEN creating charts, graphs, and data visualizations.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -66,18 +66,14 @@ function StatCard({ label, value, change, icon }: StatCardProps) {
       </div>
 
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-3xl font-bold text-gray-900 dark:text-white">
-          {value}
-        </span>
+        <span className="text-3xl font-bold text-gray-900 dark:text-white">{value}</span>
 
         {change !== undefined && (
           <span
-            className={cn(
-              'text-sm font-medium',
-              change >= 0 ? 'text-green-600' : 'text-red-600'
-            )}
+            className={cn('text-sm font-medium', change >= 0 ? 'text-green-600' : 'text-red-600')}
           >
-            {change >= 0 ? '+' : ''}{change}%
+            {change >= 0 ? '+' : ''}
+            {change}%
           </span>
         )}
       </div>
@@ -95,7 +91,7 @@ interface BarChartProps {
 }
 
 function SimpleBarChart({ data, maxValue }: BarChartProps) {
-  const max = maxValue || Math.max(...data.map(d => d.value));
+  const max = maxValue || Math.max(...data.map((d) => d.value));
 
   return (
     <div className="space-y-3">
@@ -129,13 +125,7 @@ interface DonutChartProps {
   label?: string;
 }
 
-function DonutChart({
-  value,
-  max,
-  size = 120,
-  strokeWidth = 12,
-  label,
-}: DonutChartProps) {
+function DonutChart({ value, max, size = 120, strokeWidth = 12, label }: DonutChartProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const percentage = (value / max) * 100;
@@ -168,9 +158,7 @@ function DonutChart({
       </svg>
       <div className="absolute flex flex-col items-center">
         <span className="text-2xl font-bold">{percentage.toFixed(0)}%</span>
-        {label && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
-        )}
+        {label && <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>}
       </div>
     </div>
   );
@@ -192,11 +180,13 @@ function Sparkline({ data, width = 100, height = 30, color = '#3b82f6' }: Sparkl
   const max = Math.max(...data);
   const range = max - min || 1;
 
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * width;
-    const y = height - ((value - min) / range) * height;
-    return `${x},${y}`;
-  }).join(' ');
+  const points = data
+    .map((value, index) => {
+      const x = (index / (data.length - 1)) * width;
+      const y = height - ((value - min) / range) * height;
+      return `${x},${y}`;
+    })
+    .join(' ');
 
   return (
     <svg width={width} height={height} className="overflow-visible">
@@ -221,7 +211,7 @@ interface HeatMapProps {
 }
 
 function HeatMap({ data }: HeatMapProps) {
-  const maxValue = Math.max(...data.map(d => d.value));
+  const maxValue = Math.max(...data.map((d) => d.value));
 
   const getIntensity = (value: number) => {
     const intensity = value / maxValue;
@@ -254,13 +244,8 @@ function ChartLegend({ items }: { items: { label: string; color: string }[] }) {
     <div className="flex flex-wrap gap-4">
       {items.map((item, index) => (
         <div key={index} className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: item.color }}
-          />
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {item.label}
-          </span>
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+          <span className="text-sm text-gray-600 dark:text-gray-400">{item.label}</span>
         </div>
       ))}
     </div>

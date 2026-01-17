@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { X, Sparkles, Brain, Zap, ArrowRight, Save, Loader } from 'lucide-react';
-import type { ConceptNode } from '../../types/concept-graph';
-import type { ConceptSynthesis } from '../../types/concept-graph';
+import type { ConceptNode, ConceptSynthesis } from '../../types/concept-graph';
 import { getAreaColor } from '../../constants/growth-system';
 
 interface ConceptSynthesisModalProps {
@@ -42,9 +41,7 @@ export default function ConceptSynthesisModal({
               <Sparkles size={24} className="text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Concept Synthesis
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Concept Synthesis</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Exploring connections between concepts
               </p>
@@ -63,7 +60,10 @@ export default function ConceptSynthesisModal({
             <div className="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700">
               <div
                 className="inline-block px-3 py-1 rounded-full text-sm font-semibold mb-2"
-                style={{ backgroundColor: getAreaColor(node1.area) + '20', color: getAreaColor(node1.area) }}
+                style={{
+                  backgroundColor: getAreaColor(node1.area) + '20',
+                  color: getAreaColor(node1.area),
+                }}
               >
                 {node1.area}
               </div>
@@ -71,13 +71,11 @@ export default function ConceptSynthesisModal({
                 {node1.label}
               </h3>
               {node1.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {node1.description}
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{node1.description}</p>
               )}
               {node1.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {node1.tags.map(tag => (
+                  {node1.tags.map((tag) => (
                     <span
                       key={tag}
                       className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
@@ -92,7 +90,10 @@ export default function ConceptSynthesisModal({
             <div className="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700">
               <div
                 className="inline-block px-3 py-1 rounded-full text-sm font-semibold mb-2"
-                style={{ backgroundColor: getAreaColor(node2.area) + '20', color: getAreaColor(node2.area) }}
+                style={{
+                  backgroundColor: getAreaColor(node2.area) + '20',
+                  color: getAreaColor(node2.area),
+                }}
               >
                 {node2.area}
               </div>
@@ -100,13 +101,11 @@ export default function ConceptSynthesisModal({
                 {node2.label}
               </h3>
               {node2.description && (
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {node2.description}
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{node2.description}</p>
               )}
               {node2.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {node2.tags.map(tag => (
+                  {node2.tags.map((tag) => (
                     <span
                       key={tag}
                       className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
@@ -155,9 +154,7 @@ export default function ConceptSynthesisModal({
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800 p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Brain size={24} className="text-purple-600 dark:text-purple-400" />
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                    Synthesis
-                  </h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Synthesis</h3>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                   {synthesis.synthesis}
@@ -193,7 +190,9 @@ export default function ConceptSynthesisModal({
                     {synthesis.applications.map((application, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <ArrowRight size={20} className="text-pink-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700 dark:text-gray-300 text-sm">{application}</span>
+                        <span className="text-gray-700 dark:text-gray-300 text-sm">
+                          {application}
+                        </span>
                       </li>
                     ))}
                   </ul>

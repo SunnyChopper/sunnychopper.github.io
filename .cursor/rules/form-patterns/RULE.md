@@ -1,6 +1,6 @@
 ---
-description: "Standards for form implementation, field grouping, and form UX."
-globs: "**/*Form*.tsx,**/*form*.tsx"
+description: 'Standards for form implementation, field grouping, and form UX.'
+globs: '**/*Form*.tsx,**/*form*.tsx'
 alwaysApply: false
 ---
 
@@ -21,7 +21,7 @@ Standards for building forms with great UX.
       <input
         type="text"
         value={values.name}
-        onChange={e => setValues({ ...values, name: e.target.value })}
+        onChange={(e) => setValues({ ...values, name: e.target.value })}
       />
     </FormField>
   </div>
@@ -59,13 +59,9 @@ function FormField({ label, required, error, hint, children }: FormFieldProps) {
 
       {children}
 
-      {hint && !error && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{hint}</p>
-      )}
+      {hint && !error && <p className="text-sm text-gray-500 dark:text-gray-400">{hint}</p>}
 
-      {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }
@@ -93,10 +89,7 @@ const errorClasses = `
 `;
 
 // Input component
-<input
-  className={cn(inputClasses, error && errorClasses)}
-  {...props}
-/>
+<input className={cn(inputClasses, error && errorClasses)} {...props} />;
 ```
 
 ## Common Field Types
@@ -107,7 +100,7 @@ const errorClasses = `
 <input
   type="text"
   value={value}
-  onChange={e => onChange(e.target.value)}
+  onChange={(e) => onChange(e.target.value)}
   placeholder="Enter text..."
   className={inputClasses}
 />
@@ -118,7 +111,7 @@ const errorClasses = `
 ```tsx
 <textarea
   value={value}
-  onChange={e => onChange(e.target.value)}
+  onChange={(e) => onChange(e.target.value)}
   rows={4}
   placeholder="Enter description..."
   className={inputClasses}
@@ -128,14 +121,12 @@ const errorClasses = `
 ### Select
 
 ```tsx
-<select
-  value={value}
-  onChange={e => onChange(e.target.value)}
-  className={inputClasses}
->
+<select value={value} onChange={(e) => onChange(e.target.value)} className={inputClasses}>
   <option value="">Select an option</option>
-  {options.map(opt => (
-    <option key={opt.value} value={opt.value}>{opt.label}</option>
+  {options.map((opt) => (
+    <option key={opt.value} value={opt.value}>
+      {opt.label}
+    </option>
   ))}
 </select>
 ```
@@ -147,12 +138,10 @@ const errorClasses = `
   <input
     type="checkbox"
     checked={checked}
-    onChange={e => onChange(e.target.checked)}
+    onChange={(e) => onChange(e.target.checked)}
     className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
   />
-  <span className="text-sm text-gray-700 dark:text-gray-300">
-    Label text
-  </span>
+  <span className="text-sm text-gray-700 dark:text-gray-300">Label text</span>
 </label>
 ```
 
@@ -192,12 +181,8 @@ const handleSubmit = async (e: React.FormEvent) => {
   {/* Section 1 */}
   <div className="space-y-4">
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-        Basic Information
-      </h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        Enter the basic details
-      </p>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Basic Information</h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400">Enter the basic details</p>
     </div>
     {/* Fields */}
   </div>
@@ -205,9 +190,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   <hr className="border-gray-200 dark:border-gray-700" />
 
   {/* Section 2 */}
-  <div className="space-y-4">
-    {/* More fields */}
-  </div>
+  <div className="space-y-4">{/* More fields */}</div>
 </div>
 ```
 

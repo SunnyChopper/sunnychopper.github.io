@@ -1,6 +1,6 @@
 ---
-description: "Global frontend quality bar for this repo: UI polish, accessibility, interaction states, consistency."
-globs: ""
+description: 'Global frontend quality bar for this repo: UI polish, accessibility, interaction states, consistency.'
+globs: ''
 alwaysApply: true
 ---
 

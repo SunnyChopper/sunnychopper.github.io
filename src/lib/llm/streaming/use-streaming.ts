@@ -18,37 +18,33 @@ export function useStreamingLLM<T = string>(): UseStreamingLLMResult<T> {
   const [error, setError] = useState<Error | null>(null);
   const handlerRef = useRef<StreamHandler<T> | null>(null);
 
-  const stream = useCallback(
-    async (executor: (handler: StreamHandler<T>) => Promise<void>) => {
-      setIsStreaming(true);
-      setPartialResult(null);
-      setResult(null);
-      setError(null);
+  const stream = useCallback(async (executor: (handler: StreamHandler<T>) => Promise<void>) => {
+    setIsStreaming(true);
+    setPartialResult(null);
+    setResult(null);
+    setError(null);
 
-      const handler = new StreamHandler<T>();
-      handlerRef.current = handler;
+    const handler = new StreamHandler<T>();
+    handlerRef.current = handler;
 
-      handler
-        .onToken(() => {
-        })
-        .onComplete((finalResult) => {
-          setResult(finalResult);
-          setIsStreaming(false);
-        })
-        .onError((err) => {
-          setError(err);
-          setIsStreaming(false);
-        });
+    handler
+      .onToken(() => {})
+      .onComplete((finalResult) => {
+        setResult(finalResult);
+        setIsStreaming(false);
+      })
+      .onError((err) => {
+        setError(err);
+        setIsStreaming(false);
+      });
 
-      try {
-        await executor(handler);
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err));
-        handler.emitError(error);
-      }
-    },
-    []
-  );
+    try {
+      await executor(handler);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      handler.emitError(error);
+    }
+  }, []);
 
   const abort = useCallback(() => {
     if (handlerRef.current) {

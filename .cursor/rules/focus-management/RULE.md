@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN managing focus states, focus trapping, and focus restoration."
-globs: ""
+description: 'USE WHEN managing focus states, focus trapping, and focus restoration.'
+globs: ''
 alwaysApply: false
 ---
 

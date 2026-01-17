@@ -1,6 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-import { Brain, Calendar, TrendingUp, BookOpen, Play, Sparkles, Zap, BarChart3 } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVaultContext';
+import {
+  Brain,
+  Calendar,
+  TrendingUp,
+  BookOpen,
+  Play,
+  Sparkles,
+  Zap,
+  BarChart3,
+} from 'lucide-react';
+import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
 import { spacedRepetitionService } from '../../services/knowledge-vault';
 import { ROUTES } from '../../routes';
 import type { Flashcard } from '../../types/knowledge-vault';
@@ -18,7 +27,7 @@ export default function StudyDashboard() {
       nextReviewDate: fc.nextReviewDate,
       lastReviewDate: fc.lastAccessedAt,
       reviewHistory: [],
-    }
+    },
   }));
 
   const stats = spacedRepetitionService.getStudyStats(flashcardsWithData);
@@ -30,7 +39,7 @@ export default function StudyDashboard() {
     } else if (stats.dueCount <= 5) {
       return "Just a few cards left. You've got this!";
     } else if (stats.dueCount <= 20) {
-      return "Time for a quick review session!";
+      return 'Time for a quick review session!';
     } else {
       return "Let's tackle these reviews together!";
     }
@@ -43,9 +52,7 @@ export default function StudyDashboard() {
           <Brain size={32} />
           <h2 className="text-3xl font-bold">Daily Study Session</h2>
         </div>
-        <p className="text-lg opacity-90 mb-6">
-          {getMotivationalMessage()}
-        </p>
+        <p className="text-lg opacity-90 mb-6">{getMotivationalMessage()}</p>
 
         <div className="flex gap-3 flex-wrap">
           {stats.dueCount > 0 ? (
@@ -113,9 +120,7 @@ export default function StudyDashboard() {
               <div className="text-sm text-gray-600 dark:text-gray-400">Due Tomorrow</div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Upcoming review sessions
-          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Upcoming review sessions</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -130,9 +135,7 @@ export default function StudyDashboard() {
               <div className="text-sm text-gray-600 dark:text-gray-400">Total Cards</div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            In your collection
-          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">In your collection</p>
         </div>
       </div>
 
@@ -167,7 +170,8 @@ export default function StudyDashboard() {
             <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
               {stats.totalCards > 0
                 ? Math.round(((stats.totalCards - stats.dueCount) / stats.totalCards) * 100)
-                : 0}%
+                : 0}
+              %
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">Retention Rate</div>
           </div>
@@ -177,9 +181,7 @@ export default function StudyDashboard() {
       {dueCards.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Up Next
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Up Next</h3>
             <span className="text-sm text-gray-500 dark:text-gray-400">
               {Math.min(5, dueCards.length)} of {dueCards.length}
             </span>

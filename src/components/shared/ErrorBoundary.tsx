@@ -85,9 +85,7 @@ ${this.state.errorInfo?.componentStack}
                 <AlertTriangle className="text-red-600" size={32} />
               </div>
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                  Something went wrong
-                </h1>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>
                 <p className="text-gray-600">
                   We encountered an unexpected error. This has been logged and we'll look into it.
                 </p>
@@ -100,9 +98,7 @@ ${this.state.errorInfo?.componentStack}
                   <div className="text-red-400 font-bold mb-2">
                     {this.state.error.name}: {this.state.error.message}
                   </div>
-                  <div className="text-gray-300 whitespace-pre-wrap">
-                    {this.state.error.stack}
-                  </div>
+                  <div className="text-gray-300 whitespace-pre-wrap">{this.state.error.stack}</div>
                   {this.state.errorInfo && (
                     <div className="mt-4 text-yellow-400">
                       <div className="font-bold mb-2">Component Stack:</div>
@@ -154,8 +150,8 @@ ${this.state.errorInfo?.componentStack}
             {!isDevelopment && (
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>Need help?</strong> If this problem persists, please contact support
-                  with a description of what you were doing when the error occurred.
+                  <strong>Need help?</strong> If this problem persists, please contact support with
+                  a description of what you were doing when the error occurred.
                 </p>
               </div>
             )}

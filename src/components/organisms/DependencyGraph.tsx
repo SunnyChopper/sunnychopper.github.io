@@ -168,7 +168,12 @@ export default function DependencyGraph({
 
   if (tasks.length === 0) {
     return (
-      <div className={cn('flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800 rounded-lg', className)}>
+      <div
+        className={cn(
+          'flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800 rounded-lg',
+          className
+        )}
+      >
         <p className="text-gray-500 dark:text-gray-400">No tasks to display</p>
       </div>
     );
@@ -176,7 +181,12 @@ export default function DependencyGraph({
 
   if (dependencies.length === 0) {
     return (
-      <div className={cn('flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800 rounded-lg', className)}>
+      <div
+        className={cn(
+          'flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800 rounded-lg',
+          className
+        )}
+      >
         <p className="text-gray-500 dark:text-gray-400">No dependencies to visualize</p>
       </div>
     );
@@ -186,7 +196,12 @@ export default function DependencyGraph({
   const viewBoxHeight = Math.max(...nodes.map((n) => n.y + NODE_HEIGHT)) + 50;
 
   return (
-    <div className={cn('bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-auto', className)}>
+    <div
+      className={cn(
+        'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-auto',
+        className
+      )}
+    >
       <svg
         ref={svgRef}
         viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}

@@ -1,8 +1,20 @@
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
-import type { CreateGoalInput, Area, SubCategory, TimeHorizon, Priority, GoalStatus } from '../../types/growth-system';
+import type {
+  CreateGoalInput,
+  Area,
+  SubCategory,
+  TimeHorizon,
+  Priority,
+  GoalStatus,
+} from '../../types/growth-system';
 import Button from '../atoms/Button';
-import { AREAS, GOAL_STATUSES, GOAL_TIME_HORIZONS, PRIORITIES } from '../../constants/growth-system';
+import {
+  AREAS,
+  GOAL_STATUSES,
+  GOAL_TIME_HORIZONS,
+  PRIORITIES,
+} from '../../constants/growth-system';
 
 interface GoalCreateFormProps {
   onSubmit: (input: CreateGoalInput) => void;
@@ -100,7 +112,9 @@ export function GoalCreateForm({ onSubmit, onCancel, isLoading }: GoalCreateForm
           <input
             type="text"
             value={formData.subCategory || ''}
-            onChange={(e) => setFormData({ ...formData, subCategory: e.target.value as SubCategory })}
+            onChange={(e) =>
+              setFormData({ ...formData, subCategory: e.target.value as SubCategory })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Optional"
           />
@@ -114,7 +128,9 @@ export function GoalCreateForm({ onSubmit, onCancel, isLoading }: GoalCreateForm
           </label>
           <select
             value={formData.timeHorizon}
-            onChange={(e) => setFormData({ ...formData, timeHorizon: e.target.value as TimeHorizon })}
+            onChange={(e) =>
+              setFormData({ ...formData, timeHorizon: e.target.value as TimeHorizon })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
@@ -189,12 +205,7 @@ export function GoalCreateForm({ onSubmit, onCancel, isLoading }: GoalCreateForm
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Add a success criterion..."
           />
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={addCriterion}
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={addCriterion}>
             <Plus className="w-4 h-4" />
           </Button>
         </div>
@@ -233,19 +244,10 @@ export function GoalCreateForm({ onSubmit, onCancel, isLoading }: GoalCreateForm
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={isLoading}
-        >
+        <Button type="submit" variant="primary" disabled={isLoading}>
           {isLoading ? 'Creating...' : 'Create Goal'}
         </Button>
       </div>

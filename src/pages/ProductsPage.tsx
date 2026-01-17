@@ -37,10 +37,13 @@ export default function ProductsPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">CanvasCraft</h2>
               <h5 className="text-gray-500 mb-4">Published April 2024</h5>
               <p className="text-gray-700 mb-4">
-                CanvasCraft is a tool for entrepreneurs to swiftly turn ideas into strategic plans. Its intuitive interface and GPT API integration streamline the Lean Canvas process and generate business plans efficiently.
+                CanvasCraft is a tool for entrepreneurs to swiftly turn ideas into strategic plans.
+                Its intuitive interface and GPT API integration streamline the Lean Canvas process
+                and generate business plans efficiently.
               </p>
               <p className="text-gray-700">
-                The backend API uses AWS serverless resources (API Gateway, Lambdas, and DynamoDB), and the frontend uses React Native and Expo.
+                The backend API uses AWS serverless resources (API Gateway, Lambdas, and DynamoDB),
+                and the frontend uses React Native and Expo.
               </p>
             </motion.a>
           </div>

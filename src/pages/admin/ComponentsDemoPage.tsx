@@ -1,33 +1,41 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Package } from 'lucide-react';
-import { AreaBadge } from '../../components/atoms/AreaBadge';
-import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
-import { StatusBadge } from '../../components/atoms/StatusBadge';
-import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
-import { DateDisplay } from '../../components/atoms/DateDisplay';
-import { ProgressRing } from '../../components/atoms/ProgressRing';
-import { DependencyBadge } from '../../components/atoms/DependencyBadge';
 import { AIConfidenceIndicator } from '../../components/atoms/AIConfidenceIndicator';
 import { AIThinkingIndicator } from '../../components/atoms/AIThinkingIndicator';
-import { AIInsightBanner } from '../../components/molecules/AIInsightBanner';
-import { AIAssistPanel } from '../../components/organisms/AIAssistPanel';
-import { AISuggestionCard } from '../../components/molecules/AISuggestionCard';
-import { FilterPanel } from '../../components/molecules/FilterPanel';
-import { EmptyState } from '../../components/molecules/EmptyState';
-import { QuickActionBar } from '../../components/molecules/QuickActionBar';
+import { AreaBadge } from '../../components/atoms/AreaBadge';
 import Button from '../../components/atoms/Button';
+import { DateDisplay } from '../../components/atoms/DateDisplay';
+import { DependencyBadge } from '../../components/atoms/DependencyBadge';
+import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
+import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
+import { ProgressRing } from '../../components/atoms/ProgressRing';
+import { StatusBadge } from '../../components/atoms/StatusBadge';
+import { AIInsightBanner } from '../../components/molecules/AIInsightBanner';
+import { AISuggestionCard } from '../../components/molecules/AISuggestionCard';
+import { EmptyState } from '../../components/molecules/EmptyState';
+import { FilterPanel } from '../../components/molecules/FilterPanel';
+import { QuickActionBar } from '../../components/molecules/QuickActionBar';
+import { AIAssistPanel } from '../../components/organisms/AIAssistPanel';
 
 export default function ComponentsDemoPage() {
   const [filters, setFilters] = useState({});
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedCount, setSelectedCount] = useState(0);
 
+  // Use useState with lazy initializer to calculate dates once without calling Date.now during render
+  const [demoDates] = useState(() => {
+    const now = Date.now();
+    return {
+      today: new Date(now).toISOString().split('T')[0],
+      tomorrow: new Date(now + 86400000).toISOString().split('T')[0],
+      yesterday: new Date(now - 86400000).toISOString().split('T')[0],
+    };
+  });
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-12">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Components Demo
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Components Demo</h1>
         <p className="text-gray-600 dark:text-gray-400">
           Showcase of all shared UI components in the Growth System
         </p>
@@ -56,7 +64,9 @@ export default function ComponentsDemoPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Priority Indicators</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              Priority Indicators
+            </h3>
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Badge variant:</p>
@@ -89,7 +99,9 @@ export default function ComponentsDemoPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Status Badges</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              Status Badges
+            </h3>
             <div className="flex flex-wrap gap-2">
               <StatusBadge status="NotStarted" />
               <StatusBadge status="InProgress" />
@@ -107,7 +119,9 @@ export default function ComponentsDemoPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Entity Link Chips</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              Entity Link Chips
+            </h3>
             <div className="flex flex-wrap gap-2">
               <EntityLinkChip id="1" label="Build authentication" type="task" />
               <EntityLinkChip id="2" label="MVP Development" type="project" />
@@ -117,23 +131,35 @@ export default function ComponentsDemoPage() {
               <EntityLinkChip id="6" label="Daily Entry" type="logbook" />
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
-              <EntityLinkChip id="1" label="With remove button" type="task" onRemove={() => alert('Removed')} />
-              <EntityLinkChip id="2" label="Clickable chip" type="project" onClick={() => alert('Clicked')} />
+              <EntityLinkChip
+                id="1"
+                label="With remove button"
+                type="task"
+                onRemove={() => alert('Removed')}
+              />
+              <EntityLinkChip
+                id="2"
+                label="Clickable chip"
+                type="project"
+                onClick={() => alert('Clicked')}
+              />
             </div>
           </div>
 
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Date Display</h3>
             <div className="space-y-3">
-              <DateDisplay date={new Date().toISOString().split('T')[0]} label="Today" />
-              <DateDisplay date={new Date(Date.now() + 86400000).toISOString().split('T')[0]} label="Tomorrow" />
-              <DateDisplay date={new Date(Date.now() - 86400000).toISOString().split('T')[0]} label="Yesterday (overdue)" />
+              <DateDisplay date={demoDates.today} label="Today" />
+              <DateDisplay date={demoDates.tomorrow} label="Tomorrow" />
+              <DateDisplay date={demoDates.yesterday} label="Yesterday (overdue)" />
               <DateDisplay date={null} label="No date" />
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Progress Rings</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              Progress Rings
+            </h3>
             <div className="flex flex-wrap gap-6">
               <ProgressRing progress={25} size="sm" />
               <ProgressRing progress={50} size="md" color="green" />
@@ -143,7 +169,9 @@ export default function ComponentsDemoPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Dependency Badges</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              Dependency Badges
+            </h3>
             <div className="flex flex-wrap gap-2">
               <DependencyBadge type="blocked" count={2} onClick={() => alert('Show blockers')} />
               <DependencyBadge type="blocking" count={3} onClick={() => alert('Show blocking')} />
@@ -186,7 +214,9 @@ export default function ComponentsDemoPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Quick Action Bar</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              Quick Action Bar
+            </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Select items to see the quick action bar (it appears at the bottom)
             </p>
@@ -197,8 +227,18 @@ export default function ComponentsDemoPage() {
               selectedCount={selectedCount}
               onClear={() => setSelectedCount(0)}
               actions={[
-                { label: 'Complete', icon: 'complete', variant: 'success', onClick: () => alert('Complete') },
-                { label: 'Delete', icon: 'delete', variant: 'danger', onClick: () => alert('Delete') },
+                {
+                  label: 'Complete',
+                  icon: 'complete',
+                  variant: 'success',
+                  onClick: () => alert('Complete'),
+                },
+                {
+                  label: 'Delete',
+                  icon: 'delete',
+                  variant: 'danger',
+                  onClick: () => alert('Delete'),
+                },
               ]}
             />
           </div>
@@ -206,12 +246,12 @@ export default function ComponentsDemoPage() {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-          AI Components
-        </h2>
+        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">AI Components</h2>
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">AI Confidence Indicator</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              AI Confidence Indicator
+            </h3>
             <div className="space-y-2">
               <AIConfidenceIndicator confidence={90} />
               <AIConfidenceIndicator confidence={70} />
@@ -221,12 +261,16 @@ export default function ComponentsDemoPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">AI Thinking Indicator</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              AI Thinking Indicator
+            </h3>
             <AIThinkingIndicator />
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">AI Insight Banners</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              AI Insight Banners
+            </h3>
             <div className="space-y-3">
               <AIInsightBanner
                 title="Progress Update"
@@ -247,7 +291,9 @@ export default function ComponentsDemoPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">AI Suggestion Cards</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              AI Suggestion Cards
+            </h3>
             <div className="space-y-3">
               <AISuggestionCard
                 title="Break down this task"
@@ -267,7 +313,9 @@ export default function ComponentsDemoPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">AI Assist Panel</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              AI Assist Panel
+            </h3>
             <Button onClick={() => setShowAIPanel(true)} variant="primary">
               Open AI Assistant
             </Button>
@@ -282,16 +330,26 @@ export default function ComponentsDemoPage() {
                 </p>
                 <div className="space-y-2">
                   <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="font-medium text-gray-900 dark:text-white">1. Set up project structure</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Estimated: 2 hours</div>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      1. Set up project structure
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Estimated: 2 hours
+                    </div>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="font-medium text-gray-900 dark:text-white">2. Implement core features</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Estimated: 8 hours</div>
+                    <div className="font-medium text-gray-900 dark:text-white">
+                      2. Implement core features
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Estimated: 8 hours
+                    </div>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="font-medium text-gray-900 dark:text-white">3. Write tests</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Estimated: 3 hours</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Estimated: 3 hours
+                    </div>
                   </div>
                 </div>
                 <Button onClick={() => setShowAIPanel(false)} variant="primary" className="w-full">

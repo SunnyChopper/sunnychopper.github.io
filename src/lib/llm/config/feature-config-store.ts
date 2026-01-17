@@ -28,11 +28,7 @@ export function getFeatureConfig(feature: AIFeature): FeatureProviderConfig {
   }
 }
 
-export function setFeatureConfig(
-  feature: AIFeature,
-  provider: LLMProvider,
-  model: string
-): void {
+export function setFeatureConfig(feature: AIFeature, provider: LLMProvider, model: string): void {
   try {
     const providerKey = `${FEATURE_PROVIDER_PREFIX}${feature}`;
     const modelKey = `${FEATURE_MODEL_PREFIX}${feature}`;

@@ -1,6 +1,6 @@
 ---
-description: "Standards for page-level components and route handlers."
-globs: "src/pages/**/*.tsx"
+description: 'Standards for page-level components and route handlers.'
+globs: 'src/pages/**/*.tsx'
 alwaysApply: false
 ---
 
@@ -37,7 +37,7 @@ export default function TasksPage() {
     data: tasks = [],
     isLoading,
     error,
-    refetch
+    refetch,
   } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => tasksService.getTasks(),
@@ -70,9 +70,7 @@ export default function TasksPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Tasks
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Tasks</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Manage your tasks and track progress
           </p>
@@ -111,9 +109,7 @@ Every page should have a consistent header:
 ```tsx
 <div className="flex items-center justify-between">
   <div>
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-      Page Title
-    </h1>
+    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Page Title</h1>
     <p className="text-gray-600 dark:text-gray-400 mt-1">
       Brief description of what this page is for
     </p>

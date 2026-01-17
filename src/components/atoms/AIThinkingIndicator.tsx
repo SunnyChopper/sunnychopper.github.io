@@ -10,7 +10,11 @@ const sizeConfig = {
   lg: { dot: 'w-2.5 h-2.5', text: 'text-base', gap: 'gap-2' },
 };
 
-export function AIThinkingIndicator({ message = 'AI is thinking...', size = 'md', className = '' }: AIThinkingIndicatorProps) {
+export function AIThinkingIndicator({
+  message = 'AI is thinking...',
+  size = 'md',
+  className = '',
+}: AIThinkingIndicatorProps) {
   const config = sizeConfig[size];
 
   return (

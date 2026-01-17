@@ -23,12 +23,8 @@ export default function SkillsSection() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            My Skills
-          </h2>
-          <p className="text-gray-600 text-lg">
-            Click on any box to learn more about that skill
-          </p>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">My Skills</h2>
+          <p className="text-gray-600 text-lg">Click on any box to learn more about that skill</p>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

@@ -1,6 +1,6 @@
 ---
-description: "Dark mode implementation patterns and requirements."
-globs: "**/*.tsx"
+description: 'Dark mode implementation patterns and requirements.'
+globs: '**/*.tsx'
 alwaysApply: false
 ---
 

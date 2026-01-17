@@ -18,7 +18,12 @@ const iconMap = {
   complete: Check,
 };
 
-export function QuickActionBar({ selectedCount, onClear, actions, className = '' }: QuickActionBarProps) {
+export function QuickActionBar({
+  selectedCount,
+  onClear,
+  actions,
+  className = '',
+}: QuickActionBarProps) {
   if (selectedCount === 0) return null;
 
   return (
@@ -47,8 +52,8 @@ export function QuickActionBar({ selectedCount, onClear, actions, className = ''
               action.variant === 'danger'
                 ? 'bg-red-600 hover:bg-red-700 text-white'
                 : action.variant === 'success'
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white';
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white';
 
             return (
               <button
