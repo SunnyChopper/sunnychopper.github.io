@@ -1,4 +1,4 @@
-import { MockStorage } from './storage';
+import { MockStorage, generateId } from './storage';
 import { generateSeedData } from './data-generator';
 import type {
   Task,
@@ -19,9 +19,8 @@ import type {
   LogbookProject,
   LogbookGoal,
   LogbookHabit,
-} from '../types/growth-system';
-import type { Reward } from '../types/rewards';
-import { generateId } from './storage';
+} from '@/types/growth-system';
+import type { Reward } from '@/types/rewards';
 
 const SEED_FLAG_KEY = 'gs_seeded';
 const USER_ID = 'user-1';

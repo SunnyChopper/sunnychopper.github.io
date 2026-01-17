@@ -12,7 +12,7 @@ import type {
   MetricDirection,
   MetricSource,
   MetricStatus,
-} from '../types/growth-system';
+} from '@/types/growth-system';
 
 export const AREAS: readonly Area[] = [
   'Health',

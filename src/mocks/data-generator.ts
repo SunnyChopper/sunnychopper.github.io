@@ -17,7 +17,7 @@ import type {
   LogbookProject,
   LogbookGoal,
   LogbookHabit,
-} from '../types/growth-system';
+} from '@/types/growth-system';
 import { generateId } from './storage';
 
 const USER_ID = 'user-1';
