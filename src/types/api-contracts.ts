@@ -227,3 +227,18 @@ export interface GrowthSystemApi {
   ai: AIApiContract;
   search: SearchApiContract;
 }
+
+// Draft Notes
+export interface NoteDraft {
+  title: string;
+  content: string;
+  area: string;
+  sourceUrl: string;
+  tags: string[];
+  linkedItems: string[];
+}
+
+// Mode Preferences
+export interface ModePreference {
+  mode: 'work' | 'leisure';
+}
