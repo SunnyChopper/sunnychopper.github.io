@@ -1,31 +1,8 @@
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { apiClient } from '../lib/api-client';
-import type { ApiError } from '../types/api-contracts';
-
-interface BackendStatus {
-  isOnline: boolean;
-  isChecking: boolean;
-  lastError: ApiError | null;
-  errorCount: number;
-}
-
-interface BackendStatusContextValue {
-  status: BackendStatus;
-  checkConnection: () => Promise<boolean>;
-  resetErrorCount: () => void;
-  recordError: (error: ApiError) => void;
-  recordSuccess: () => void;
-}
-
-const BackendStatusContext = createContext<BackendStatusContextValue | undefined>(undefined);
-
-export function useBackendStatus() {
-  const context = useContext(BackendStatusContext);
-  if (!context) {
-    throw new Error('useBackendStatus must be used within BackendStatusProvider');
-  }
-  return context;
-}
+import { useState, useCallback, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { apiClient } from '../../lib/api-client';
+import type { ApiError } from '../../types/api-contracts';
+import { BackendStatusContext, type BackendStatus, type BackendStatusContextValue } from './types';
 
 interface BackendStatusProviderProps {
   children: ReactNode;
@@ -49,7 +26,7 @@ export function BackendStatusProvider({ children }: BackendStatusProviderProps) 
   }, []);
 
   const recordSuccess = useCallback(() => {
-    setStatus((prev) => ({
+    setStatus(() => ({
       isOnline: true,
       isChecking: false,
       lastError: null,
@@ -76,7 +53,7 @@ export function BackendStatusProvider({ children }: BackendStatusProviderProps) 
         recordError(error);
         return false;
       }
-    } catch (error) {
+    } catch {
       // If health endpoint doesn't exist, try a lightweight endpoint
       try {
         const fallbackResponse = await apiClient.get('/tasks?limit=1');
@@ -91,7 +68,7 @@ export function BackendStatusProvider({ children }: BackendStatusProviderProps) 
           recordError(apiError);
           return false;
         }
-      } catch (fallbackError) {
+      } catch {
         const apiError: ApiError = {
           message: 'Unable to reach backend server',
           code: 'NETWORK_ERROR',
