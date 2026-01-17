@@ -1,39 +1,12 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { walletService } from '../services/rewards';
-import type { WalletBalance, WalletTransaction } from '../types/rewards';
-
-interface WalletContextType {
-  balance: WalletBalance | null;
-  transactions: WalletTransaction[];
-  loading: boolean;
-  error: string | null;
-  refreshWallet: () => Promise<void>;
-  addPoints: (
-    amount: number,
-    source: WalletTransaction['source'],
-    description: string,
-    sourceEntityType?: 'task' | 'reward' | null,
-    sourceEntityId?: string | null
-  ) => Promise<void>;
-  spendPoints: (
-    amount: number,
-    source: WalletTransaction['source'],
-    description: string,
-    sourceEntityType?: 'task' | 'reward' | null,
-    sourceEntityId?: string | null
-  ) => Promise<void>;
-}
-
-const WalletContext = createContext<WalletContextType | undefined>(undefined);
-
-export const useWallet = () => {
-  const context = useContext(WalletContext);
-  if (!context) {
-    throw new Error('useWallet must be used within WalletProvider');
-  }
-  return context;
-};
+import { walletService } from '../../services/rewards';
+import {
+  WalletContext,
+  type WalletContextType,
+  type WalletBalance,
+  type WalletTransaction,
+} from './types';
 
 interface WalletProviderProps {
   children: ReactNode;
@@ -145,7 +118,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     []
   );
 
-  const value = {
+  const value: WalletContextType = {
     balance,
     transactions,
     loading,

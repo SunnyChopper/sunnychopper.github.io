@@ -1,36 +1,16 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { rewardsService } from '../services/rewards';
-import type {
-  Reward,
-  RewardWithRedemptions,
-  CreateRewardInput,
-  UpdateRewardInput,
-  RewardCategory,
-} from '../types/rewards';
-import { useWallet } from './WalletContext';
-
-interface RewardsContextType {
-  rewards: RewardWithRedemptions[];
-  loading: boolean;
-  error: string | null;
-  refreshRewards: () => Promise<void>;
-  getRewardsByCategory: (category: RewardCategory) => RewardWithRedemptions[];
-  createReward: (input: CreateRewardInput) => Promise<Reward>;
-  updateReward: (id: string, input: UpdateRewardInput) => Promise<Reward>;
-  deleteReward: (id: string) => Promise<void>;
-  redeemReward: (rewardId: string, notes?: string) => Promise<void>;
-}
-
-const RewardsContext = createContext<RewardsContextType | undefined>(undefined);
-
-export const useRewards = () => {
-  const context = useContext(RewardsContext);
-  if (!context) {
-    throw new Error('useRewards must be used within RewardsProvider');
-  }
-  return context;
-};
+import { rewardsService } from '../../services/rewards';
+import { useWallet } from '../Wallet';
+import {
+  RewardsContext,
+  type RewardsContextType,
+  type RewardWithRedemptions,
+  type Reward,
+  type RewardCategory,
+  type CreateRewardInput,
+  type UpdateRewardInput,
+} from './types';
 
 interface RewardsProviderProps {
   children: ReactNode;
@@ -174,7 +154,7 @@ export const RewardsProvider = ({ children }: RewardsProviderProps) => {
     [rewards, spendPoints, refreshRewards, refreshWallet]
   );
 
-  const value = {
+  const value: RewardsContextType = {
     rewards,
     loading,
     error,
