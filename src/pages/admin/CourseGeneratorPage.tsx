@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { aiCourseGeneratorService } from '../../services/knowledge-vault';
 import type { PreAssessmentQuestion, DifficultyLevel } from '../../types/knowledge-vault';
+import type { CourseGenerationProgress } from '../../services/knowledge-vault/course-generation/types';
 import { ROUTES } from '../../routes';
 
 type Step = 'topic' | 'assessment' | 'generating' | 'review';
@@ -19,6 +20,12 @@ export default function CourseGeneratorPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedCourseId, setGeneratedCourseId] = useState<string | null>(null);
+  const [generationProgress, setGenerationProgress] = useState<{
+    phase: string;
+    phaseName: string;
+    summary?: string;
+    progress: number;
+  } | null>(null);
 
   const handleTopicSubmit = async () => {
     if (!topic.trim()) {
@@ -57,12 +64,23 @@ export default function CourseGeneratorPage() {
     setLoading(true);
     setError(null);
     setStep('generating');
+    setGenerationProgress(null);
+
+    const handleProgress = (progress: CourseGenerationProgress) => {
+      setGenerationProgress({
+        phase: progress.phase,
+        phaseName: progress.phaseName,
+        summary: progress.summary,
+        progress: progress.progress,
+      });
+    };
 
     try {
       const skeletonResponse = await aiCourseGeneratorService.generateCourseSkeleton({
         topic,
         assessmentResponses,
         targetDifficulty: difficulty,
+        onProgress: handleProgress,
       });
 
       if (skeletonResponse.success && skeletonResponse.data) {
@@ -78,11 +96,15 @@ export default function CourseGeneratorPage() {
           setStep('assessment');
         }
       } else {
-        setError(skeletonResponse.error || 'Failed to generate course');
+        const errorMsg = skeletonResponse.error || 'Failed to generate course';
+        console.error('Course generation error:', errorMsg);
+        setError(errorMsg);
         setStep('assessment');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred. Please try again.';
+      console.error('Unexpected error during course generation:', err);
+      setError(errorMsg);
       setStep('assessment');
     } finally {
       setLoading(false);
@@ -255,17 +277,117 @@ export default function CourseGeneratorPage() {
       )}
 
       {step === 'generating' && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-6">
-            <Sparkles size={32} className="text-green-600 dark:text-green-400 animate-pulse" />
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-6">
+              <Sparkles size={32} className="text-green-600 dark:text-green-400 animate-pulse" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+              Generating Your Course
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              AI is creating a personalized learning path just for you...
+            </p>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-            Generating Your Course
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            AI is creating a personalized learning path just for you...
-          </p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+
+          {generationProgress && (
+            <div className="space-y-6">
+              {/* Progress Bar */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {generationProgress.phaseName}
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {generationProgress.progress}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                  <div
+                    className="bg-green-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${generationProgress.progress}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Phase Summary */}
+              {generationProgress.summary && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {generationProgress.summary}
+                  </p>
+                </div>
+              )}
+
+              {/* Phase Indicators */}
+              <div className="space-y-3">
+                {[
+                  { phase: 'strategizing', label: 'Designing Course Structure', icon: '📐' },
+                  { phase: 'architecting', label: 'Creating Lesson Outlines', icon: '📚' },
+                  { phase: 'mapping', label: 'Building Concept Graph', icon: '🗺️' },
+                  { phase: 'validating', label: 'Validating Course Flow', icon: '✓' },
+                  { phase: 'refining', label: 'Refining Structure', icon: '✨' },
+                  { phase: 'generating', label: 'Generating Content', icon: '✍️' },
+                ].map((phaseInfo, index) => {
+                  const isActive = generationProgress.phase === phaseInfo.phase;
+                  const isCompleted = [
+                    'strategizing',
+                    'architecting',
+                    'mapping',
+                    'validating',
+                    'refining',
+                    'generating',
+                  ].indexOf(generationProgress.phase) > index;
+                  
+                  return (
+                    <div
+                      key={phaseInfo.phase}
+                      className={`flex items-center gap-3 p-3 rounded-lg transition ${
+                        isActive
+                          ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500'
+                          : isCompleted
+                          ? 'bg-gray-50 dark:bg-gray-900/50 opacity-60'
+                          : 'bg-gray-50 dark:bg-gray-900/30'
+                      }`}
+                    >
+                      <div
+                        className={`text-xl ${
+                          isActive ? 'animate-pulse' : isCompleted ? 'opacity-50' : ''
+                        }`}
+                      >
+                        {phaseInfo.icon}
+                      </div>
+                      <div className="flex-1">
+                        <p
+                          className={`text-sm font-medium ${
+                            isActive
+                              ? 'text-green-700 dark:text-green-300'
+                              : isCompleted
+                              ? 'text-gray-500 dark:text-gray-400'
+                              : 'text-gray-400 dark:text-gray-500'
+                          }`}
+                        >
+                          {phaseInfo.label}
+                        </p>
+                      </div>
+                      {isActive && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                      )}
+                      {isCompleted && (
+                        <div className="text-green-600 dark:text-green-400">✓</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!generationProgress && (
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+            </div>
+          )}
         </div>
       )}
 

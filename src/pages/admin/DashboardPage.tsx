@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useTasks, useHabits, useMetrics, useGoals, useProjects, useLogbook } from '../../hooks/useGrowthSystem';
-import { CheckSquare, Calendar, TrendingUp, Target, FolderKanban, BookOpen, Heart, Film, Star } from 'lucide-react';
+import { CheckSquare, Calendar, TrendingUp, Target, FolderKanban, BookOpen, Heart, Film, Star, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AIInsightsWidget } from '../../components/organisms/AIInsightsWidget';
 import { DailyPlanningAssistant } from '../../components/organisms/DailyPlanningAssistant';
 import { MorningLaunchpad } from '../../components/organisms/MorningLaunchpad';
-import { useMode } from '../../contexts/ModeContext';
+import { GoalsDashboardWidget } from '../../components/organisms/GoalsDashboardWidget';
+import { useMode } from '../../contexts/Mode';
 import { ROUTES } from '../../routes';
+import { useMemo } from 'react';
+import { useBackendStatus } from '../../contexts/BackendStatusContext';
 
 interface StatCardProps {
   title: string;
@@ -39,18 +42,41 @@ const StatCard = ({ title, value, icon, link, description }: StatCardProps) => {
 export default function DashboardPage() {
   const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
   const { isLeisureMode } = useMode();
+  const { status: backendStatus } = useBackendStatus();
 
-  const { tasks } = useTasks();
-  const { habits } = useHabits();
-  const { metrics } = useMetrics();
-  const { goals } = useGoals();
-  const { projects } = useProjects();
-  const { entries } = useLogbook();
+  const { tasks, isLoading: tasksLoading, isError: tasksError } = useTasks();
+  const { habits, isLoading: habitsLoading, isError: habitsError } = useHabits();
+  const { metrics, isLoading: metricsLoading, isError: metricsError } = useMetrics();
+  const { goals, isLoading: goalsLoading, isError: goalsError } = useGoals();
+  const { projects, isLoading: projectsLoading, isError: projectsError } = useProjects();
+  const { entries, isLoading: entriesLoading, isError: entriesError } = useLogbook();
+
+  // Check if any data source has a network error
+  const hasNetworkError = tasksError || habitsError || metricsError || goalsError || projectsError || entriesError || !backendStatus.isOnline;
 
   const activeTasks = tasks.filter((t) => t.status !== 'Done' && t.status !== 'Cancelled');
   const activeHabits = habits.filter((h) => h.frequency === 'Daily');
   const activeGoals = goals.filter((g) => g.status === 'Active');
   const activeProjects = projects.filter((p) => p.status === 'Active');
+
+  // Calculate simple progress for goals (for dashboard widget)
+  const goalsProgress = useMemo(() => {
+    const progressMap = new Map<string, number>();
+    goals.forEach(goal => {
+      if (Array.isArray(goal.successCriteria)) {
+        if (typeof goal.successCriteria[0] === 'string') {
+          const completed = (goal.successCriteria as string[]).filter(c => c.includes('✓')).length;
+          const total = goal.successCriteria.length;
+          progressMap.set(goal.id, total > 0 ? Math.round((completed / total) * 100) : 0);
+        } else {
+          const completed = goal.successCriteria.filter((c: any) => c.isCompleted).length;
+          const total = goal.successCriteria.length;
+          progressMap.set(goal.id, total > 0 ? Math.round((completed / total) * 100) : 0);
+        }
+      }
+    });
+    return progressMap;
+  }, [goals]);
 
   return (
     <div>
@@ -65,6 +91,22 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {hasNetworkError && (
+        <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+                Backend connection unavailable
+              </h3>
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Unable to load data from the backend server. Statistics may be incomplete. Please check the connection status banner at the top of the page.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {!isLeisureMode && (
           <>
@@ -73,28 +115,28 @@ export default function DashboardPage() {
               value={activeTasks.length}
               icon={<CheckSquare size={24} />}
               link={ROUTES.admin.tasks}
-              description={`${tasks.length} total tasks`}
+              description={tasksError ? 'Connection error' : `${tasks.length} total tasks`}
             />
             <StatCard
               title="Metrics Tracked"
               value={metrics.length}
               icon={<TrendingUp size={24} />}
               link={ROUTES.admin.metrics}
-              description="Key performance indicators"
+              description={metricsError ? 'Connection error' : 'Key performance indicators'}
             />
             <StatCard
               title="Active Goals"
               value={activeGoals.length}
               icon={<Target size={24} />}
               link={ROUTES.admin.goals}
-              description={`${goals.length} total goals`}
+              description={goalsError ? 'Connection error' : `${goals.length} total goals`}
             />
             <StatCard
               title="Active Projects"
               value={activeProjects.length}
               icon={<FolderKanban size={24} />}
               link={ROUTES.admin.projects}
-              description={`${projects.length} total projects`}
+              description={projectsError ? 'Connection error' : `${projects.length} total projects`}
             />
           </>
         )}
@@ -103,14 +145,14 @@ export default function DashboardPage() {
           value={activeHabits.length}
           icon={<Calendar size={24} />}
           link={ROUTES.admin.habits}
-          description={`${habits.length} total habits`}
+          description={habitsError ? 'Connection error' : `${habits.length} total habits`}
         />
         <StatCard
           title="Journal Entries"
           value={entries.length}
           icon={<BookOpen size={24} />}
           link={ROUTES.admin.logbook}
-          description="Daily reflections"
+          description={entriesError ? 'Connection error' : 'Daily reflections'}
         />
         {isLeisureMode && (
           <>
@@ -141,6 +183,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <DailyPlanningAssistant onStartDay={() => setIsLaunchpadOpen(true)} />
+        {!isLeisureMode && <GoalsDashboardWidget goals={goals} goalsProgress={goalsProgress} />}
         <AIInsightsWidget />
       </div>
 
@@ -150,7 +193,19 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Recent Tasks</h2>
-            {activeTasks.length > 0 ? (
+            {tasksError ? (
+              <div className="text-center py-6">
+                <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400 mx-auto mb-2" />
+                <p className="text-sm text-amber-600 dark:text-amber-400">Unable to load tasks</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Backend connection unavailable</p>
+              </div>
+            ) : tasksLoading ? (
+              <div className="space-y-2 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                ))}
+              </div>
+            ) : activeTasks.length > 0 ? (
               <div className="space-y-2">
                 {activeTasks.slice(0, 5).map((task) => (
                   <div key={task.id} className="flex items-start gap-3 p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
@@ -174,7 +229,19 @@ export default function DashboardPage() {
 
           <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Active Projects</h2>
-            {activeProjects.length > 0 ? (
+            {projectsError ? (
+              <div className="text-center py-6">
+                <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400 mx-auto mb-2" />
+                <p className="text-sm text-amber-600 dark:text-amber-400">Unable to load projects</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Backend connection unavailable</p>
+              </div>
+            ) : projectsLoading ? (
+              <div className="space-y-2 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                ))}
+              </div>
+            ) : activeProjects.length > 0 ? (
               <div className="space-y-2">
                 {activeProjects.slice(0, 5).map((project) => (
                   <div key={project.id} className="p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">

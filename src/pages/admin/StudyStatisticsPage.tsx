@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Calendar, Target, Brain, Clock, Award, BarChart3 } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVaultContext';
+import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
 import { spacedRepetitionService } from '../../services/knowledge-vault';
 import { ROUTES } from '../../routes';
 import type { Flashcard } from '../../types/knowledge-vault';

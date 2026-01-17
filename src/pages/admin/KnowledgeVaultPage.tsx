@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Grid3x3, List, FileText, FileCheck, BookOpen, CreditCard, ChevronDown } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVaultContext';
+import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
 import VaultItemCard from '../../components/organisms/VaultItemCard';
+import CourseStackCard from '../../components/organisms/CourseStackCard';
 import Dialog from '../../components/organisms/Dialog';
 import NoteForm from '../../components/organisms/NoteForm';
 import DocumentForm from '../../components/organisms/DocumentForm';
 import FlashcardForm from '../../components/organisms/FlashcardForm';
-import type { VaultItemType } from '../../types/knowledge-vault';
+import type { VaultItemType, Note, CourseLesson, Course } from '../../types/knowledge-vault';
 import type { Area } from '../../types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
@@ -14,19 +16,73 @@ const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'D
 type ViewMode = 'grid' | 'list';
 type FilterType = 'all' | VaultItemType;
 
+interface CourseStack {
+  course: Course;
+  lessons: CourseLesson[];
+}
+
 export default function KnowledgeVaultPage() {
-  const { vaultItems, loading, refreshVaultItems } = useKnowledgeVault();
+  const navigate = useNavigate();
+  const { vaultItems, courses, loading, refreshVaultItems } = useKnowledgeVault();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [selectedArea, setSelectedArea] = useState<Area | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [createDialogType, setCreateDialogType] = useState<VaultItemType | null>(null);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+
+  // Group course lessons by courseId
+  const courseStacks = useMemo(() => {
+    const lessons = vaultItems.filter(
+      (item): item is CourseLesson => item.type === 'course_lesson' && item.status === 'active'
+    );
+
+    const stacksMap = new Map<string, CourseStack>();
+    
+    lessons.forEach(lesson => {
+      const course = courses.find(c => c.id === lesson.courseId);
+      if (!course) return; // Skip lessons without a course
+
+      if (!stacksMap.has(lesson.courseId)) {
+        stacksMap.set(lesson.courseId, {
+          course,
+          lessons: [],
+        });
+      }
+      
+      stacksMap.get(lesson.courseId)!.lessons.push(lesson);
+    });
+
+    // Sort lessons within each stack by lessonIndex
+    stacksMap.forEach(stack => {
+      stack.lessons.sort((a, b) => a.lessonIndex - b.lessonIndex);
+    });
+
+    return Array.from(stacksMap.values());
+  }, [vaultItems, courses]);
+
+  // Get course IDs that have lessons (to filter out individual lesson cards)
+  const courseIdsWithLessons = useMemo(() => {
+    return new Set(courseStacks.map(stack => stack.course.id));
+  }, [courseStacks]);
 
   const filteredItems = useMemo(() => {
     let filtered = vaultItems;
 
+    // Filter out course lessons that belong to a course stack
+    filtered = filtered.filter(item => {
+      if (item.type === 'course_lesson') {
+        return !courseIdsWithLessons.has((item as CourseLesson).courseId);
+      }
+      return true;
+    });
+
     if (filterType !== 'all') {
+      // For course_lesson filter, show course stacks instead
+      if (filterType === 'course_lesson') {
+        return []; // We'll handle course stacks separately
+      }
       filtered = filtered.filter(item => item.type === filterType);
     }
 
@@ -42,7 +98,33 @@ export default function KnowledgeVaultPage() {
     }
 
     return filtered.filter(item => item.status === 'active');
-  }, [vaultItems, filterType, selectedArea, searchQuery]);
+  }, [vaultItems, filterType, selectedArea, searchQuery, courseIdsWithLessons]);
+
+  // Filter course stacks based on search and area
+  const filteredCourseStacks = useMemo(() => {
+    let filtered = courseStacks;
+
+    if (selectedArea !== 'all') {
+      filtered = filtered.filter(stack => 
+        stack.lessons.some(lesson => lesson.area === selectedArea)
+      );
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(stack => {
+        const courseMatches = stack.course.title.toLowerCase().includes(query) ||
+          stack.course.description?.toLowerCase().includes(query) ||
+          stack.course.topic.toLowerCase().includes(query);
+        const lessonMatches = stack.lessons.some(lesson =>
+          lesson.searchableText.toLowerCase().includes(query)
+        );
+        return courseMatches || lessonMatches;
+      });
+    }
+
+    return filtered;
+  }, [courseStacks, selectedArea, searchQuery]);
 
   const typeCounts = useMemo(() => {
     const counts: Record<VaultItemType, number> = {
@@ -54,12 +136,22 @@ export default function KnowledgeVaultPage() {
 
     vaultItems.forEach(item => {
       if (item.status === 'active') {
-        counts[item.type]++;
+        // Only count course lessons that aren't part of a course stack
+        if (item.type === 'course_lesson') {
+          if (!courseIdsWithLessons.has((item as CourseLesson).courseId)) {
+            counts[item.type]++;
+          }
+        } else {
+          counts[item.type]++;
+        }
       }
     });
 
+    // Add course stacks count to course_lesson count
+    counts.course_lesson += courseStacks.length;
+
     return counts;
-  }, [vaultItems]);
+  }, [vaultItems, courseIdsWithLessons, courseStacks]);
 
   const handleCreateClick = (type: VaultItemType) => {
     setShowCreateMenu(false);
@@ -204,7 +296,7 @@ export default function KnowledgeVaultPage() {
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
-      ) : filteredItems.length === 0 ? (
+      ) : filteredItems.length === 0 && filteredCourseStacks.length === 0 ? (
         <div className="text-center py-12">
           <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -233,20 +325,41 @@ export default function KnowledgeVaultPage() {
               : 'space-y-3'
           }
         >
+          {/* Show course stacks when filter is 'all' or 'course_lesson' */}
+          {(filterType === 'all' || filterType === 'course_lesson') && filteredCourseStacks.map(stack => (
+            <CourseStackCard
+              key={stack.course.id}
+              course={stack.course}
+              lessons={stack.lessons}
+              onClick={() => {
+                navigate(`/admin/knowledge-vault/courses/${stack.course.id}`);
+              }}
+            />
+          ))}
+          
+          {/* Show regular vault items */}
           {filteredItems.map(item => (
             <VaultItemCard
               key={item.id}
               item={item}
-              onClick={() => console.log('View item:', item.id)}
+              onClick={() => {
+                if (item.type === 'note') {
+                  setEditingNote(item as Note);
+                } else {
+                  console.log('View item:', item.id);
+                }
+              }}
             />
           ))}
         </div>
       )}
 
+      {/* Create Dialog */}
       <Dialog
         isOpen={createDialogType !== null}
         onClose={() => setCreateDialogType(null)}
         title={`Create ${createDialogType === 'note' ? 'Note' : createDialogType === 'document' ? 'Document' : 'Flashcard'}`}
+        size={createDialogType === 'note' ? 'full' : 'md'}
       >
         <div className="p-6">
           {createDialogType === 'note' && (
@@ -274,6 +387,27 @@ export default function KnowledgeVaultPage() {
                 refreshVaultItems();
               }}
               onCancel={() => setCreateDialogType(null)}
+            />
+          )}
+        </div>
+      </Dialog>
+
+      {/* Edit Note Dialog */}
+      <Dialog
+        isOpen={editingNote !== null}
+        onClose={() => setEditingNote(null)}
+        title="Edit Note"
+        size="full"
+      >
+        <div className="p-6">
+          {editingNote && (
+            <NoteForm
+              note={editingNote}
+              onSuccess={() => {
+                setEditingNote(null);
+                refreshVaultItems();
+              }}
+              onCancel={() => setEditingNote(null)}
             />
           )}
         </div>

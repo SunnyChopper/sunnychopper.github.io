@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVaultContext';
+import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
 import { Plus, BookOpen, GraduationCap, Clock, Sparkles, Search } from 'lucide-react';
 import Dialog from '../../components/organisms/Dialog';
 import { useNavigate } from 'react-router-dom';

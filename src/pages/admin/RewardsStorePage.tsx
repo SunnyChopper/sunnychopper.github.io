@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Store, Coins } from 'lucide-react';
-import { useRewards } from '../../contexts/RewardsContext';
-import { useWallet } from '../../contexts/WalletContext';
+import { useRewards } from '../../contexts/Rewards';
+import { useWallet } from '../../contexts/Wallet';
 import { RewardCard } from '../../components/molecules/RewardCard';
 import type { RewardWithRedemptions, RewardCategory } from '../../types/rewards';
 

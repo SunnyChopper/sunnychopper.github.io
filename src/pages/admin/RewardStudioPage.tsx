@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Palette, Plus, Trash2, Sparkles, Lightbulb } from 'lucide-react';
-import { useRewards } from '../../contexts/RewardsContext';
+import { useRewards } from '../../contexts/Rewards';
 import { RewardCard } from '../../components/molecules/RewardCard';
 import Dialog from '../../components/organisms/Dialog';
 import { taskPointsAIService } from '../../services/ai/task-points.service';
