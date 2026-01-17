@@ -129,17 +129,14 @@ export default function GoalsPage() {
         const metricsDetails: Metric[] = [];
         const storage = getStorageAdapter();
 
-        for (const metricLink of metricsRes.data) {
-          const metric = await storage.getById<Metric>('metrics', metricLink.metricId);
-          if (metric) {
-            metricsDetails.push(metric);
-            // Load logs for each metric
-            const allLogs = await storage.getAll<MetricLog>('metricLogs');
-            const metricLogs = allLogs
-              .filter((log) => log.metricId === metricLink.metricId)
-              .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime());
-            setGoalMetricLogs((prev) => new Map(prev).set(metricLink.metricId, metricLogs));
-          }
+        for (const metric of metricsRes.data) {
+          metricsDetails.push(metric);
+          // Load logs for each metric
+          const allLogs = await storage.getAll<MetricLog>('metricLogs');
+          const metricLogs = allLogs
+            .filter((log) => log.metricId === metric.id)
+            .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime());
+          setGoalMetricLogs((prev) => new Map(prev).set(metric.id, metricLogs));
         }
         setGoalMetrics((prev) => new Map(prev).set(goalId, metricsDetails));
       }
@@ -147,24 +144,15 @@ export default function GoalsPage() {
       if (projectsRes.success && projectsRes.data) {
         // Convert to EntitySummary
         const projectEntities: EntitySummary[] = [];
-        const storage = getStorageAdapter();
 
-        for (const projectLink of projectsRes.data) {
-          const project = await storage.getById<{
-            id: string;
-            name: string;
-            area: Goal['area'];
-            status: string;
-          }>('projects', projectLink.projectId);
-          if (project) {
-            projectEntities.push({
-              id: project.id,
-              title: project.name,
-              type: 'project',
-              area: project.area,
-              status: project.status,
-            });
-          }
+        for (const project of projectsRes.data) {
+          projectEntities.push({
+            id: project.id,
+            title: project.name,
+            type: 'project',
+            area: project.area,
+            status: project.status,
+          });
         }
         setGoalProjects((prev) => new Map(prev).set(goalId, projectEntities));
       }
@@ -302,7 +290,6 @@ export default function GoalsPage() {
 
         // Log activity
         await goalsService.logActivity(selectedGoal.id, {
-          goalId: selectedGoal.id,
           type: 'criterion_completed',
           title: 'Success criterion completed',
           description: `Marked criterion as completed`,
