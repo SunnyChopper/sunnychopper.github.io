@@ -1,0 +1,37 @@
+# Dependencies
+node_modules
+dist
+build
+
+# Generated files
+*.min.js
+*.min.css
+
+# Logs
+*.log
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+coverage
+.nyc_output
+
+# Public assets
+public/fonts
+public/images
