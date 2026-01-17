@@ -1,6 +1,6 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { z } from 'zod';
-import type { LLMProvider } from '../config/provider-types';
+import type { LLMProvider } from '@/lib/llm/config/provider-types';
 
 export abstract class BaseLLMProvider {
   protected apiKey: string;

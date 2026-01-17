@@ -1,9 +1,18 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import type { ApiResponse, ApiError } from '../types/api-contracts';
-import { authService } from './auth/auth.service';
-import { ROUTES } from '../routes';
+import type { ApiResponse, ApiError, NoteDraft, ModePreference } from '@/types/api-contracts';
+import { authService } from '@/lib/auth/auth.service';
+import { ROUTES } from '@/routes';
 import type { z } from 'zod';
+import type { LLMProvider } from '@/lib/llm/config/provider-types';
+import type { AIFeature, FeatureProviderConfig } from '@/lib/llm/config/feature-types';
+import type {
+  ChatThread,
+  ChatMessage,
+  CreateThreadRequest,
+  CreateMessageRequest,
+  UpdateThreadRequest,
+} from '@/types/chatbot';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -262,11 +271,14 @@ class ApiClient {
     if (import.meta.env.DEV) {
       const result = schema.safeParse(data);
       if (!result.success) {
-        const errorMessage = `API response validation failed: ${result.error.errors
-          .map((e) => `${e.path.join('.')}: ${e.message}`)
+        const errorMessage = `API response validation failed: ${result.error.issues
+          .map((issue) => {
+            const pathStr = issue.path.map((p) => String(p)).join('.');
+            return `${pathStr}: ${issue.message}`;
+          })
           .join(', ')}`;
         console.error('[ApiClient] Validation Error:', errorMessage, {
-          errors: result.error.errors,
+          errors: result.error.issues,
           data,
         });
         return { valid: false, error: errorMessage };
@@ -423,7 +435,11 @@ class ApiClient {
     }
   }
 
-  async put<T>(endpoint: string, body?: unknown, schema?: z.ZodSchema<T>): Promise<ApiResponse<T>> {
+  async put<T>(
+    endpoint: string,
+    body?: unknown,
+    _schema?: z.ZodSchema<T>
+  ): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.put<ApiResponse<T>>(endpoint, body);
       const backendResponse = response.data;
@@ -462,7 +478,7 @@ class ApiClient {
   async patch<T>(
     endpoint: string,
     body?: unknown,
-    schema?: z.ZodSchema<T>
+    _schema?: z.ZodSchema<T>
   ): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.patch<ApiResponse<T>>(endpoint, body);
@@ -499,7 +515,7 @@ class ApiClient {
     }
   }
 
-  async delete<T>(endpoint: string, schema?: z.ZodSchema<T>): Promise<ApiResponse<T>> {
+  async delete<T>(endpoint: string, _schema?: z.ZodSchema<T>): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.delete<ApiResponse<T>>(endpoint);
       const backendResponse = response.data;
@@ -533,6 +549,104 @@ class ApiClient {
         error: this.handleError(error),
       };
     }
+  }
+
+  // API Keys (stored as secrets)
+  async getApiKeys(): Promise<ApiResponse<Record<LLMProvider, string>>> {
+    return this.get<Record<LLMProvider, string>>('/api-keys');
+  }
+
+  async setApiKey(provider: LLMProvider, key: string): Promise<ApiResponse<void>> {
+    return this.post<void>(`/api-keys/${provider}`, { key });
+  }
+
+  async deleteApiKey(provider: LLMProvider): Promise<ApiResponse<void>> {
+    return this.delete<void>(`/api-keys/${provider}`);
+  }
+
+  // Chatbot
+  async getChatThreads(): Promise<ApiResponse<ChatThread[]>> {
+    return this.get<ChatThread[]>('/chatbot/threads');
+  }
+
+  async getChatThread(id: string): Promise<ApiResponse<ChatThread>> {
+    return this.get<ChatThread>(`/chatbot/threads/${id}`);
+  }
+
+  async createChatThread(data: CreateThreadRequest): Promise<ApiResponse<ChatThread>> {
+    return this.post<ChatThread>('/chatbot/threads', data);
+  }
+
+  async updateChatThread(id: string, data: UpdateThreadRequest): Promise<ApiResponse<ChatThread>> {
+    return this.patch<ChatThread>(`/chatbot/threads/${id}`, data);
+  }
+
+  async deleteChatThread(id: string): Promise<ApiResponse<void>> {
+    return this.delete<void>(`/chatbot/threads/${id}`);
+  }
+
+  async getChatMessages(threadId: string): Promise<ApiResponse<ChatMessage[]>> {
+    return this.get<ChatMessage[]>(`/chatbot/threads/${threadId}/messages`);
+  }
+
+  async createChatMessage(data: CreateMessageRequest): Promise<ApiResponse<ChatMessage>> {
+    return this.post<ChatMessage>('/chatbot/messages', data);
+  }
+
+  async updateChatMessage(id: string, content: string): Promise<ApiResponse<ChatMessage>> {
+    return this.patch<ChatMessage>(`/chatbot/messages/${id}`, { content });
+  }
+
+  async deleteMessagesAfter(messageId: string, threadId: string): Promise<ApiResponse<void>> {
+    return this.delete<void>(`/chatbot/messages?after=${messageId}&threadId=${threadId}`);
+  }
+
+  // Draft Notes
+  async getDraftNote(): Promise<ApiResponse<NoteDraft | null>> {
+    return this.get<NoteDraft | null>('/drafts/notes');
+  }
+
+  async saveDraftNote(draft: NoteDraft): Promise<ApiResponse<void>> {
+    return this.post<void>('/drafts/notes', draft);
+  }
+
+  async deleteDraftNote(): Promise<ApiResponse<void>> {
+    return this.delete<void>('/drafts/notes');
+  }
+
+  // Mode Preferences
+  async getModePreference(): Promise<ApiResponse<'work' | 'leisure'>> {
+    const response = await this.get<ModePreference>('/preferences/mode');
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: response.data.mode,
+      };
+    }
+    return {
+      success: false,
+      error: response.error,
+    };
+  }
+
+  async setModePreference(mode: 'work' | 'leisure'): Promise<ApiResponse<void>> {
+    return this.post<void>('/preferences/mode', { mode });
+  }
+
+  // Feature Configs
+  async getFeatureConfigs(): Promise<ApiResponse<Record<AIFeature, FeatureProviderConfig>>> {
+    return this.get<Record<AIFeature, FeatureProviderConfig>>('/preferences/feature-configs');
+  }
+
+  async setFeatureConfig(
+    feature: AIFeature,
+    config: FeatureProviderConfig
+  ): Promise<ApiResponse<void>> {
+    return this.post<void>(`/preferences/feature-configs/${feature}`, config);
+  }
+
+  async resetFeatureConfig(feature: AIFeature): Promise<ApiResponse<void>> {
+    return this.delete<void>(`/preferences/feature-configs/${feature}`);
   }
 }
 

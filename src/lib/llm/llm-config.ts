@@ -1,4 +1,4 @@
-import type { ILLMAdapter, LLMAdapterType } from '../../types/llm';
+import type { ILLMAdapter, LLMAdapterType } from '@/types/llm';
 import { DirectLLMAdapter } from './direct-llm-adapter';
 import { APILLMAdapter } from './api-llm-adapter';
 

@@ -1,4 +1,4 @@
-import { apiClient } from '../api-client';
+import { apiClient } from '@/lib/api-client';
 import type {
   ILLMAdapter,
   LLMResponse,
@@ -22,7 +22,7 @@ import type {
   ProjectTaskGenOutput,
   ProjectRiskInput,
   ProjectRiskOutput,
-} from '../../types/llm';
+} from '@/types/llm';
 
 interface AIResponse<T> {
   result: T;

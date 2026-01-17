@@ -1,4 +1,4 @@
-import type { Area, SubCategory, Priority } from '../../types/growth-system';
+import type { Area, SubCategory, Priority } from '@/types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
 const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];

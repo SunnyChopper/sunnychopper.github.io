@@ -6,8 +6,8 @@ import {
   getCurrentUser as amplifyGetCurrentUser,
 } from 'aws-amplify/auth';
 import type { SignUpOutput, AuthSession } from 'aws-amplify/auth';
-import { apiClient } from '../api-client';
-import type { ApiResponse } from '../../types/api-contracts';
+import { apiClient } from '@/lib/api-client';
+import type { ApiResponse } from '@/types/api-contracts';
 import { isCognitoConfigured } from './cognito-config';
 
 // Extended AuthTokens type that includes refreshToken for Cognito

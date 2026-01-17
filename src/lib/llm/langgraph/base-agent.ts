@@ -1,9 +1,9 @@
 import type { z } from 'zod';
-import { getFeatureConfig } from '../config/feature-config-store';
-import { getApiKey, hasApiKey } from '../config/api-key-store';
-import { createProvider } from '../providers/provider-factory';
-import type { BaseLLMProvider } from '../providers/base-provider';
-import type { AIFeature } from '../config/feature-types';
+import { getFeatureConfig, getFeatureConfigSync } from '@/lib/llm/config/feature-config-store';
+import { getApiKey, hasApiKey, hasApiKeySync } from '@/lib/llm/config/api-key-store';
+import { createProvider } from '@/lib/llm/providers/provider-factory';
+import type { BaseLLMProvider } from '@/lib/llm/providers/base-provider';
+import type { AIFeature } from '@/lib/llm/config/feature-types';
 
 /**
  * Abstract base class for all LangGraph agents.
@@ -88,9 +88,10 @@ export abstract class BaseAgent {
 
   /**
    * Check if the agent is properly configured.
+   * Uses sync versions for synchronous check.
    */
   isConfigured(): boolean {
-    const featureConfig = getFeatureConfig(this.feature);
-    return featureConfig !== null && hasApiKey(featureConfig.provider);
+    const featureConfig = getFeatureConfigSync(this.feature);
+    return featureConfig !== null && hasApiKeySync(featureConfig.provider);
   }
 }

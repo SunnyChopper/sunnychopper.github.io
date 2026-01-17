@@ -1,6 +1,6 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { BaseLLMProvider } from './base-provider';
-import type { LLMProvider } from '../config/provider-types';
+import type { LLMProvider } from '@/lib/llm/config/provider-types';
 
 export class CerebrasProvider extends BaseLLMProvider {
   getProviderName(): LLMProvider {

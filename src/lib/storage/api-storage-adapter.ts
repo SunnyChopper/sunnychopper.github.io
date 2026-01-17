@@ -1,5 +1,5 @@
 import type { IStorageAdapter } from './storage-interface';
-import { apiClient } from '../api-client';
+import { apiClient } from '@/lib/api-client';
 
 interface PaginatedResponse<T> {
   data: T[];

@@ -23,10 +23,10 @@ import type {
   ProjectTaskGenOutput,
   ProjectRiskInput,
   ProjectRiskOutput,
-} from '../../types/llm';
+} from '@/types/llm';
 
 import { getFeatureConfig } from './config/feature-config-store';
-import { getApiKey, hasApiKey } from './config/api-key-store';
+import { getApiKey, hasApiKeySync } from './config/api-key-store';
 import { createProvider } from './providers/provider-factory';
 
 import {
@@ -67,8 +67,8 @@ export class DirectLLMAdapter implements ILLMAdapter {
     converter: (schemaOutput: z.infer<TSchema>) => TOutput
   ): Promise<LLMResponse<TOutput>> {
     try {
-      const config = getFeatureConfig(feature);
-      const apiKey = getApiKey(config.provider);
+      const config = await getFeatureConfig(feature);
+      const apiKey = await getApiKey(config.provider);
 
       if (!apiKey) {
         return {
@@ -100,7 +100,7 @@ export class DirectLLMAdapter implements ILLMAdapter {
   }
 
   isConfigured(): boolean {
-    return hasApiKey('anthropic') || hasApiKey('openai') || hasApiKey('gemini');
+    return hasApiKeySync('anthropic') || hasApiKeySync('openai') || hasApiKeySync('gemini');
   }
 
   async parseNaturalLanguageTask(input: ParseTaskInput): Promise<LLMResponse<ParseTaskOutput>> {
