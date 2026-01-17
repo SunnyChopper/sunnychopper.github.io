@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Sparkles, X, RefreshCw, ChevronRight } from 'lucide-react';
 import { aiSuggestionsService } from '../../services/ai-suggestions.service';
 import type { StoredSuggestion } from '../../types/llm';
@@ -23,11 +23,7 @@ export function AISuggestionBanner({
 
   const isConfigured = llmConfig.isConfigured();
 
-  useEffect(() => {
-    loadSuggestions();
-  }, [entityType, entityId]);
-
-  const loadSuggestions = () => {
+  const loadSuggestions = useCallback(() => {
     aiSuggestionsService.clearExpiredDismissals();
 
     let loaded: StoredSuggestion[];
@@ -44,7 +40,11 @@ export function AISuggestionBanner({
     }
 
     setSuggestions(loaded);
-  };
+  }, [entityType, entityId]);
+
+  useEffect(() => {
+    loadSuggestions();
+  }, [loadSuggestions]);
 
   const handleDismiss = (id: string) => {
     aiSuggestionsService.dismissSuggestion(id);

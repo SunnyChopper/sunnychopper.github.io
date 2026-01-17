@@ -1,5 +1,5 @@
 import { Coins, TrendingUp, History } from 'lucide-react';
-import { useWallet } from '../../contexts/WalletContext';
+import { useWallet } from '../../contexts/Wallet';
 import { useState } from 'react';
 
 export const WalletWidget = () => {

@@ -1,142 +1,195 @@
-import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
+import { useMemo } from 'react';
+import { TrendingUp, TrendingDown, Target, Calendar, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Metric, MetricLog } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
+import { StatusBadge } from '../atoms/StatusBadge';
+import { MetricProgressRing } from './MetricProgressRing';
+import { MetricSparkline } from './MetricSparkline';
+import { MetricHeatmapPreview } from './MetricHeatmapPreview';
+import { getTrendData, calculateProgress } from '../../utils/metric-analytics';
 import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
 
 interface MetricCardProps {
   metric: Metric;
-  recentLogs?: MetricLog[];
+  logs?: MetricLog[];
   onClick: (metric: Metric) => void;
   onQuickLog?: (metric: Metric) => void;
 }
 
-export function MetricCard({ metric, recentLogs = [], onClick, onQuickLog }: MetricCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
-      case 'Paused':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
-      case 'Archived':
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400';
-      default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
-    }
+export function MetricCard({
+  metric,
+  logs = [],
+  onClick,
+  onQuickLog,
+}: MetricCardProps) {
+  const latestLog = logs.length > 0 ? logs[0] : null;
+  const currentValue = latestLog?.value || 0;
+
+  const trend = useMemo(() => {
+    if (logs.length < 2) return null;
+    return getTrendData(logs, metric);
+  }, [logs, metric]);
+
+  const progress = useMemo(() => {
+    return calculateProgress(currentValue, metric.targetValue, metric.direction);
+  }, [currentValue, metric.targetValue, metric.direction]);
+
+  const getStatus = () => {
+    if (!metric.targetValue) return 'No Target';
+    if (progress.isOnTrack) return 'On Track';
+    if (progress.percentage >= 50) return 'At Risk';
+    return 'Stalled';
   };
 
-  const latestLog = recentLogs[0];
-  const previousLog = recentLogs[1];
-  const trend = latestLog && previousLog ? latestLog.value - previousLog.value : 0;
-  const trendPercentage = previousLog ? Math.abs((trend / previousLog.value) * 100) : 0;
+  const status = getStatus();
+  const statusColors = {
+    'On Track': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+    'At Risk': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+    'Stalled': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+    'No Target': 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+  };
 
-  const getTrendIcon = () => {
-    if (!latestLog || !previousLog) return null;
-    if (metric.direction === 'Higher') {
-      return trend > 0 ? <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" /> : <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />;
-    }
-    if (metric.direction === 'Lower') {
-      return trend < 0 ? <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" /> : <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />;
+  const getVelocityIcon = () => {
+    if (!trend) return null;
+    if (trend.acceleration > 0.1) {
+      return <ArrowUp className="w-3 h-3 text-green-600 dark:text-green-400" />;
+    } else if (trend.acceleration < -0.1) {
+      return <ArrowDown className="w-3 h-3 text-red-600 dark:text-red-400" />;
     }
     return null;
   };
 
-  const isOnTrack = () => {
-    if (!latestLog || !metric.targetValue) return null;
-    if (metric.direction === 'Higher') {
-      return latestLog.value >= metric.targetValue;
-    }
-    if (metric.direction === 'Lower') {
-      return latestLog.value <= metric.targetValue;
-    }
-    if (metric.direction === 'Target') {
-      const threshold = metric.targetValue * 0.1;
-      return Math.abs(latestLog.value - metric.targetValue) <= threshold;
-    }
-    return null;
-  };
-
-  const trackStatus = isOnTrack();
+  const unit =
+    metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
 
   return (
     <div
       className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 cursor-pointer"
+      onClick={() => onClick(metric)}
     >
-      <div onClick={() => onClick(metric)}>
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
-              {metric.name}
-            </h3>
-            {metric.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
-                {metric.description}
-              </p>
-            )}
-          </div>
-          {trackStatus !== null && (
-            <div className={`w-3 h-3 rounded-full ${trackStatus ? 'bg-green-500' : 'bg-yellow-500'} ml-2 flex-shrink-0`} />
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
+            {metric.name}
+          </h3>
+          {metric.description && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+              {metric.description}
+            </p>
           )}
         </div>
-
-        <div className="flex items-center gap-2 mb-4">
-          <AreaBadge area={metric.area} />
-          {metric.subCategory && (
-            <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              {SUBCATEGORY_LABELS[metric.subCategory]}
-            </span>
-          )}
-        </div>
-
-        {latestLog && (
-          <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div className="flex items-baseline justify-between mb-2">
-              <div>
-                <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {latestLog.value}
-                </span>
-                <span className="text-lg text-gray-600 dark:text-gray-400 ml-2">
-                  {metric.unit === 'custom' ? metric.customUnit : metric.unit}
-                </span>
-              </div>
-              {getTrendIcon()}
-            </div>
-            {previousLog && (
-              <div className="flex items-center gap-2 text-sm">
-                <span className={trend > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                  {trend > 0 ? '+' : ''}{trend.toFixed(1)} ({trendPercentage.toFixed(1)}%)
-                </span>
-                <span className="text-gray-500 dark:text-gray-400">from previous</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-2">
-              <Calendar className="w-3 h-3" />
-              <span>{new Date(latestLog.loggedAt).toLocaleDateString()}</span>
-            </div>
-          </div>
-        )}
-
-        {metric.targetValue && (
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-            <Target className="w-4 h-4" />
-            <span>Target: {metric.targetValue} {metric.unit === 'custom' ? metric.customUnit : metric.unit}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-500">
-              ({metric.direction})
-            </span>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(metric.status)}`}>
-            {metric.status}
-          </span>
-          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {metric.source}
-            </span>
-          </div>
+        <div className={`px-2 py-1 text-xs font-medium rounded-full ml-2 flex-shrink-0 ${statusColors[status as keyof typeof statusColors]}`}>
+          {status}
         </div>
       </div>
 
+      {/* Tags */}
+      <div className="flex items-center gap-2 mb-4">
+        <AreaBadge area={metric.area} />
+        {metric.subCategory && (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+            {SUBCATEGORY_LABELS[metric.subCategory]}
+          </span>
+        )}
+      </div>
+
+      {/* Progress Ring and Current Value */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex-1">
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">
+              {currentValue.toFixed(metric.unit === 'dollars' ? 0 : 1)}
+            </span>
+            <span className="text-lg text-gray-600 dark:text-gray-400">
+              {unit}
+            </span>
+            {trend && (
+              <div className="flex items-center gap-1">
+                {trend.isImproving ? (
+                  <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
+                ) : (
+                  <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
+                )}
+                <span
+                  className={`text-sm font-medium ${
+                    trend.isImproving
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  {trend.changePercent >= 0 ? '+' : ''}
+                  {trend.changePercent.toFixed(1)}%
+                </span>
+                {getVelocityIcon()}
+              </div>
+            )}
+          </div>
+          {latestLog && (
+            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <Calendar className="w-3 h-3" />
+              <span>
+                {new Date(latestLog.loggedAt).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+        </div>
+        {metric.targetValue && (
+          <div className="flex-shrink-0">
+            <MetricProgressRing
+              metric={metric}
+              currentValue={currentValue}
+              size="sm"
+              showLabel={true}
+              showTarget={false}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Sparkline Chart */}
+      {logs.length > 0 && (
+        <div className="mb-4">
+          <MetricSparkline
+            logs={logs}
+            days={30}
+            height={40}
+            width={280}
+            color="blue"
+            showPoints={false}
+          />
+        </div>
+      )}
+
+      {/* Heatmap Preview */}
+      {logs.length > 0 && (
+        <div className="mb-4">
+          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+            Logging Activity
+          </div>
+          <MetricHeatmapPreview logs={logs} months={6} size="sm" />
+        </div>
+      )}
+
+      {/* Target Info */}
+      {metric.targetValue && (
+        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <Target className="w-4 h-4" />
+          <span>
+            Target: {metric.targetValue.toFixed(metric.unit === 'dollars' ? 0 : 1)} {unit} ({metric.direction})
+          </span>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+        <StatusBadge status={metric.status} size="sm" />
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <span>{metric.source}</span>
+        </div>
+      </div>
+
+      {/* Quick Log Button */}
       {onQuickLog && metric.status === 'Active' && (
         <button
           onClick={(e) => {

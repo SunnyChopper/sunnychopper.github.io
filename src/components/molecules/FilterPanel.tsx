@@ -11,10 +11,11 @@ interface FilterPanelProps {
     priorities?: Priority[];
     statuses?: string[];
   };
+  goalSpecificFilters?: boolean;
   className?: string;
 }
 
-export function FilterPanel({ filters, onFiltersChange, availableFilters, className = '' }: FilterPanelProps) {
+export function FilterPanel({ filters, onFiltersChange, availableFilters, goalSpecificFilters = false, className = '' }: FilterPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const hasActiveFilters = Boolean(
@@ -128,6 +129,68 @@ export function FilterPanel({ filters, onFiltersChange, availableFilters, classN
                 ))}
               </select>
             </div>
+          )}
+
+          {/* Goal-specific filters */}
+          {goalSpecificFilters && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Activity Level
+                </label>
+                <select
+                  value={filters.momentum || ''}
+                  onChange={(e) => updateFilter('momentum', e.target.value || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All</option>
+                  <option value="active">Active</option>
+                  <option value="dormant">Dormant</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Time Remaining
+                </label>
+                <select
+                  value={filters.targetProximity || ''}
+                  onChange={(e) => updateFilter('targetProximity', e.target.value || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All</option>
+                  <option value="approaching">Due Soon</option>
+                  <option value="far">Long Term</option>
+                  <option value="reached">Completed</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Has Linked...
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!filters.hasLinkedTasks}
+                      onChange={(e) => updateFilter('hasLinkedTasks', e.target.checked || undefined)}
+                      className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Tasks</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!filters.hasLinkedMetrics}
+                      onChange={(e) => updateFilter('hasLinkedMetrics', e.target.checked || undefined)}
+                      className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Metrics</span>
+                  </label>
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}

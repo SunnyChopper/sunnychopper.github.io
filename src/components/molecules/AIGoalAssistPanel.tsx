@@ -1,27 +1,38 @@
 import { useState } from 'react';
-import { Sparkles, Wand2, X, Check, AlertCircle, Target, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Sparkles, Wand2, X, Check, AlertCircle, Target, TrendingUp, AlertTriangle, Heart, GitBranch, MessageCircle } from 'lucide-react';
 import { llmConfig } from '../../lib/llm';
-import type { Goal } from '../../types/growth-system';
+import type { Goal, GoalProgressBreakdown, Task } from '../../types/growth-system';
 import Button from '../atoms/Button';
 import { AIThinkingIndicator } from '../atoms/AIThinkingIndicator';
 import { AIConfidenceIndicator } from '../atoms/AIConfidenceIndicator';
+import { goalAIService } from '../../services/growth-system/goal-ai.service';
 
-type AssistMode = 'refine' | 'criteria' | 'metrics' | 'cascade' | 'forecast' | 'conflicts' | 'progress';
+type AssistMode = 'refine' | 'criteria' | 'metrics' | 'cascade' | 'forecast' | 'conflicts' | 'progress' | 'coaching' | 'health' | 'decompose';
 
 interface AIGoalAssistPanelProps {
   mode: AssistMode;
   goal: Goal;
+  progress?: GoalProgressBreakdown;
+  linkedTasks?: Task[];
+  allGoals?: Goal[];
   onClose: () => void;
   onApplyRefinement?: (title: string, description: string) => void;
   onApplyCriteria?: (criteria: string[]) => void;
+  onApplySubGoals?: (subGoals: any[]) => void;
+  onApplyTasks?: (tasks: any[]) => void;
 }
 
 export function AIGoalAssistPanel({
   mode,
   goal,
+  progress,
+  linkedTasks = [],
+  allGoals = [],
   onClose,
   onApplyRefinement,
   onApplyCriteria,
+  onApplySubGoals,
+  onApplyTasks,
 }: AIGoalAssistPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,52 +44,87 @@ export function AIGoalAssistPanel({
     setIsLoading(true);
     setError(null);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      if (mode === 'coaching' && progress) {
+        const response = await goalAIService.getProgressCoaching(goal, progress, linkedTasks);
+        if (response.success && response.data) {
+          setResult(response.data);
+        } else {
+          setError(response.error || 'Failed to get coaching');
+        }
+      } else if (mode === 'health' && progress) {
+        const response = await goalAIService.calculateHealthScore(goal, allGoals, progress);
+        if (response.success && response.data) {
+          setResult(response.data);
+        } else {
+          setError(response.error || 'Failed to calculate health score');
+        }
+      } else if (mode === 'decompose') {
+        const response = await goalAIService.decomposeGoal(goal);
+        if (response.success && response.data) {
+          setResult(response.data);
+        } else {
+          setError(response.error || 'Failed to decompose goal');
+        }
+      } else if (mode === 'conflicts') {
+        const response = await goalAIService.detectConflicts(allGoals);
+        if (response.success && response.data) {
+          setResult(response.data);
+        } else {
+          setError(response.error || 'Failed to detect conflicts');
+        }
+      } else {
+        // Legacy mock responses for old modes
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-    if (mode === 'refine') {
-      setResult({
-        refinedTitle: `${goal.title} (Enhanced)`,
-        refinedDescription: `This is a refined version of your goal with more specific metrics and actionable steps.`,
-        reasoning: 'Made the goal more specific and measurable',
-        confidence: 0.85,
-        suggestedAdjustments: ['Add specific numbers', 'Define success criteria', 'Set intermediate milestones'],
-      });
-    } else if (mode === 'criteria') {
-      setResult({
-        criteria: [
-          { criterion: 'Complete 80% of related tasks', measurable: true, suggestedMetric: 'Task completion rate' },
-          { criterion: 'Achieve target metric values', measurable: true, suggestedMetric: 'Metric tracking' },
-          { criterion: 'Maintain consistent progress', measurable: false },
-        ],
-        reasoning: 'These criteria cover all aspects of the goal',
-        confidence: 0.9,
-      });
-    } else if (mode === 'metrics') {
-      setResult({
-        metrics: [
-          { name: 'Weekly Progress', description: 'Track weekly progress', unit: 'percentage', targetValue: 100, frequency: 'weekly', reasoning: 'Essential for tracking' },
-          { name: 'Daily Consistency', description: 'Daily habit tracking', unit: 'count', targetValue: 7, frequency: 'daily', reasoning: 'Builds momentum' },
-        ],
-        overallRationale: 'These metrics provide comprehensive tracking',
-        confidence: 0.88,
-      });
-    } else if (mode === 'forecast') {
-      setResult({
-        probability: 75,
-        expectedDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-        confidenceLevel: 'high',
-        factors: {
-          positive: ['Strong initial progress', 'Clear success criteria', 'Regular tracking'],
-          negative: ['Limited time available', 'Multiple competing goals'],
-        },
-        recommendations: ['Focus on high-impact tasks', 'Schedule dedicated time', 'Track metrics daily'],
-        reasoning: 'Based on current progress and historical patterns',
-      });
-    } else {
-      setResult({ message: 'AI analysis in progress...' });
+        if (mode === 'refine') {
+          setResult({
+            refinedTitle: `${goal.title} (Enhanced)`,
+            refinedDescription: `This is a refined version of your goal with more specific metrics and actionable steps.`,
+            reasoning: 'Made the goal more specific and measurable',
+            confidence: 0.85,
+            suggestedAdjustments: ['Add specific numbers', 'Define success criteria', 'Set intermediate milestones'],
+          });
+        } else if (mode === 'criteria') {
+          setResult({
+            criteria: [
+              { criterion: 'Complete 80% of related tasks', measurable: true, suggestedMetric: 'Task completion rate' },
+              { criterion: 'Achieve target metric values', measurable: true, suggestedMetric: 'Metric tracking' },
+              { criterion: 'Maintain consistent progress', measurable: false },
+            ],
+            reasoning: 'These criteria cover all aspects of the goal',
+            confidence: 0.9,
+          });
+        } else if (mode === 'metrics') {
+          setResult({
+            metrics: [
+              { name: 'Weekly Progress', description: 'Track weekly progress', unit: 'percentage', targetValue: 100, frequency: 'weekly', reasoning: 'Essential for tracking' },
+              { name: 'Daily Consistency', description: 'Daily habit tracking', unit: 'count', targetValue: 7, frequency: 'daily', reasoning: 'Builds momentum' },
+            ],
+            overallRationale: 'These metrics provide comprehensive tracking',
+            confidence: 0.88,
+          });
+        } else if (mode === 'forecast') {
+          setResult({
+            probability: 75,
+            expectedDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+            confidenceLevel: 'high',
+            factors: {
+              positive: ['Strong initial progress', 'Clear success criteria', 'Regular tracking'],
+              negative: ['Limited time available', 'Multiple competing goals'],
+            },
+            recommendations: ['Focus on high-impact tasks', 'Schedule dedicated time', 'Track metrics daily'],
+            reasoning: 'Based on current progress and historical patterns',
+          });
+        } else {
+          setResult({ message: 'AI analysis in progress...' });
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const getModeIcon = () => {
@@ -88,6 +134,9 @@ export function AIGoalAssistPanel({
       case 'metrics': return <Target className="w-5 h-5" />;
       case 'forecast': return <TrendingUp className="w-5 h-5" />;
       case 'conflicts': return <AlertTriangle className="w-5 h-5" />;
+      case 'coaching': return <MessageCircle className="w-5 h-5" />;
+      case 'health': return <Heart className="w-5 h-5" />;
+      case 'decompose': return <GitBranch className="w-5 h-5" />;
       default: return <Sparkles className="w-5 h-5" />;
     }
   };
@@ -101,6 +150,9 @@ export function AIGoalAssistPanel({
       case 'forecast': return 'Achievement Forecast';
       case 'conflicts': return 'Detect Conflicts';
       case 'progress': return 'Progress Analysis';
+      case 'coaching': return 'Progress Coaching';
+      case 'health': return 'Health Score';
+      case 'decompose': return 'Goal Decomposition';
     }
   };
 
@@ -314,7 +366,199 @@ export function AIGoalAssistPanel({
         </div>
       )}
 
-      {result && !['refine', 'criteria', 'forecast'].includes(mode) && (
+      {result && mode === 'coaching' && (
+        <div className="space-y-4">
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Assessment</h4>
+            <p className="text-sm text-blue-800 dark:text-blue-200">{result.overallAssessment}</p>
+          </div>
+
+          <div>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Specific Advice</h4>
+            <div className="space-y-2">
+              {result.specificAdvice.map((advice: any, i: number) => (
+                <div key={i} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
+                      advice.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                      advice.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                      'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    }`}>
+                      {advice.area}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">{advice.action}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{advice.reasoning}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <p className="text-sm text-green-800 dark:text-green-200">{result.motivationalMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {result && mode === 'health' && (
+        <div className="space-y-4">
+          <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="text-5xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+              {result.score}
+            </div>
+            <div className={`text-sm font-medium uppercase tracking-wide ${
+              result.rating === 'excellent' ? 'text-green-600 dark:text-green-400' :
+              result.rating === 'good' ? 'text-blue-600 dark:text-blue-400' :
+              result.rating === 'fair' ? 'text-yellow-600 dark:text-yellow-400' :
+              result.rating === 'poor' ? 'text-orange-600 dark:text-orange-400' :
+              'text-red-600 dark:text-red-400'
+            }`}>
+              {result.rating}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {Object.entries(result.factors).map(([key, value]: [string, any]) => (
+              <div key={key} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 capitalize">
+                  {key.replace(/([A-Z])/g, ' $1').trim()}
+                </div>
+                <div className="text-lg font-bold text-gray-900 dark:text-white">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {result.strengths.length > 0 && (
+            <div>
+              <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Strengths</h5>
+              <ul className="space-y-1">
+                {result.strengths.map((s: string, i: number) => (
+                  <li key={i} className="text-sm text-green-700 dark:text-green-300 flex items-start gap-2">
+                    <span>+</span>
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.concerns.length > 0 && (
+            <div>
+              <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Concerns</h5>
+              <ul className="space-y-1">
+                {result.concerns.map((c: string, i: number) => (
+                  <li key={i} className="text-sm text-orange-700 dark:text-orange-300 flex items-start gap-2">
+                    <span>!</span>
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {result && mode === 'decompose' && (
+        <div className="space-y-4">
+          {result.subGoals && result.subGoals.length > 0 && (
+            <div>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Sub-Goals</h4>
+              <div className="space-y-2">
+                {result.subGoals.map((sg: any, i: number) => (
+                  <div key={i} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h5 className="font-medium text-gray-900 dark:text-white text-sm mb-1">{sg.title}</h5>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{sg.description}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                        {sg.timeHorizon}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {onApplySubGoals && (
+                <Button onClick={() => { onApplySubGoals(result.subGoals); onClose(); }} className="w-full mt-2">
+                  Create Sub-Goals
+                </Button>
+              )}
+            </div>
+          )}
+
+          {result.suggestedTasks && result.suggestedTasks.length > 0 && (
+            <div>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Suggested Tasks</h4>
+              <div className="space-y-2">
+                {result.suggestedTasks.slice(0, 5).map((task: any, i: number) => (
+                  <div key={i} className="p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm">
+                    <div className="font-medium text-gray-900 dark:text-white">{task.title}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">{task.description}</div>
+                  </div>
+                ))}
+              </div>
+              {onApplyTasks && (
+                <Button onClick={() => { onApplyTasks(result.suggestedTasks); onClose(); }} className="w-full mt-2">
+                  Create Tasks
+                </Button>
+              )}
+            </div>
+          )}
+
+          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Implementation Plan</h5>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{result.implementationPlan}</p>
+          </div>
+        </div>
+      )}
+
+      {result && mode === 'conflicts' && (
+        <div className="space-y-4">
+          <div className={`p-4 rounded-lg border ${
+            result.isOvercommitted 
+              ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+              : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+          }`}>
+            <h4 className={`font-medium mb-2 ${
+              result.isOvercommitted
+                ? 'text-red-900 dark:text-red-100'
+                : 'text-green-900 dark:text-green-100'
+            }`}>
+              {result.isOvercommitted ? 'Overcommitted' : 'Balanced Workload'}
+            </h4>
+            <div className="text-2xl font-bold mb-1 ${result.isOvercommitted ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+              {result.overcommitmentScore}%
+            </div>
+            <p className="text-sm">{result.capacityAnalysis.sustainabilityRating}</p>
+          </div>
+
+          {result.conflicts && result.conflicts.length > 0 && (
+            <div>
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Detected Conflicts</h4>
+              <div className="space-y-2">
+                {result.conflicts.map((conflict: any, i: number) => (
+                  <div key={i} className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-orange-700 dark:text-orange-300 uppercase">
+                        {conflict.conflictType}
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        conflict.severity === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                        conflict.severity === 'medium' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
+                        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                      }`}>
+                        {conflict.severity}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-900 dark:text-white mb-1">{conflict.description}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 italic">→ {conflict.resolution}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {result && !['refine', 'criteria', 'forecast', 'coaching', 'health', 'decompose', 'conflicts'].includes(mode) && (
         <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <p className="text-sm text-gray-700 dark:text-gray-300">
             {result.message || 'Analysis complete'}

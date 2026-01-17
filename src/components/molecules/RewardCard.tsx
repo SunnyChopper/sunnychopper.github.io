@@ -1,6 +1,6 @@
 import { Coins, Clock, Lock, CheckCircle2 } from 'lucide-react';
 import type { RewardWithRedemptions } from '../../types/rewards';
-import { useWallet } from '../../contexts/WalletContext';
+import { useWallet } from '../../contexts/Wallet';
 
 interface RewardCardProps {
   reward: RewardWithRedemptions;
