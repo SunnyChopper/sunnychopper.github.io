@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { initializeMockData } from '../../mocks/seed-data';
 import { AuthContext, type User } from './types';
-
-const AUTH_STORAGE_KEY = 'gs_auth_user';
+import { authService } from '../../lib/auth/auth.service';
+import { apiClient } from '../../lib/api-client';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -13,47 +12,165 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
+    console.log('[AuthProvider] Component mounted, calling checkUser');
+    // Clear any invalid stored users (with UUID emails) before checking
+    authService.clearInvalidStoredUser();
     checkUser();
+
+    return () => {
+      console.log('[AuthProvider] Component unmounting');
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const checkUser = async () => {
+  const handleTokenRefresh = async (): Promise<boolean> => {
+    console.log('[AuthProvider] checkUser: Tokens expired, attempting refresh');
     try {
-      setLoading(true);
-      const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else {
-        setUser(null);
+      const refreshResponse = await authService.refreshToken();
+      if (refreshResponse.success && refreshResponse.data) {
+        console.log('[AuthProvider] checkUser: Token refresh successful');
+        apiClient.setAuthToken(refreshResponse.data.accessToken);
+        return true;
       }
-    } catch (err) {
-      console.error('Error checking user:', err);
+      console.warn('[AuthProvider] checkUser: Token refresh failed, clearing auth state');
+      authService.clearTokensOnly();
+      apiClient.setAuthToken(null);
       setUser(null);
-    } finally {
-      setLoading(false);
+      return false;
+    } catch (refreshError) {
+      console.warn(
+        '[AuthProvider] checkUser: Token refresh exception, clearing auth state:',
+        refreshError
+      );
+      authService.clearTokensOnly();
+      apiClient.setAuthToken(null);
+      setUser(null);
+      return false;
     }
   };
 
-  // TODO: Implement actual sign in with AWS Cognito and use the `password` parameter
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSignIn = async (email: string, _password: string) => {
+  const handleGetCurrentUser = async (): Promise<void> => {
+    try {
+      const response = await authService.getCurrentUser();
+      console.log('[AuthProvider] checkUser: getCurrentUser response:', {
+        success: response.success,
+        hasData: !!response.data,
+        error: response.error,
+      });
+      if (response.success && response.data) {
+        console.log('[AuthProvider] checkUser: Setting user:', response.data.email);
+        setUser(response.data);
+      } else {
+        console.warn('[AuthProvider] checkUser: Failed to fetch current user, clearing auth state');
+        authService.clearTokensOnly();
+        apiClient.setAuthToken(null);
+        setUser(null);
+      }
+    } catch (err) {
+      console.warn(
+        '[AuthProvider] checkUser: Exception fetching current user, clearing auth state:',
+        err
+      );
+      authService.clearTokensOnly();
+      apiClient.setAuthToken(null);
+      setUser(null);
+    }
+  };
+
+  const checkUser = async () => {
+    // Prevent multiple simultaneous checks
+    if (isChecking) {
+      console.log('[AuthProvider] checkUser: Already checking, skipping');
+      return;
+    }
+
+    console.log('[AuthProvider] checkUser: Starting user check');
+    try {
+      setIsChecking(true);
+      setLoading(true);
+      console.log('[AuthProvider] checkUser: Set loading=true, isChecking=true');
+
+      // Check if we have stored tokens
+      const tokens = authService.getStoredTokens();
+      console.log('[AuthProvider] checkUser: Tokens found?', !!tokens?.accessToken);
+
+      if (tokens?.accessToken) {
+        // Check if tokens are expired and attempt refresh if needed
+        const tokensExpired = authService.areStoredTokensExpired();
+        console.log('[AuthProvider] checkUser: Tokens expired?', tokensExpired);
+
+        if (tokensExpired) {
+          const refreshSuccess = await handleTokenRefresh();
+          if (!refreshSuccess) {
+            return;
+          }
+        } else {
+          // Tokens are still valid, set them in API client
+          console.log('[AuthProvider] checkUser: Tokens still valid, setting in API client', {
+            tokenLength: tokens.accessToken.length,
+            tokenPreview: `${tokens.accessToken.substring(0, 20)}...`,
+          });
+          apiClient.setAuthToken(tokens.accessToken);
+        }
+
+        console.log('[AuthProvider] checkUser: Token set in API client, calling getCurrentUser');
+        await handleGetCurrentUser();
+      } else {
+        // No tokens, clear user
+        console.log('[AuthProvider] checkUser: No tokens found, setting user=null');
+        setUser(null);
+      }
+    } catch (err) {
+      console.error('[AuthProvider] checkUser: Error in checkUser:', err);
+      setUser(null);
+    } finally {
+      console.log('[AuthProvider] checkUser: Setting loading=false, isChecking=false');
+      setLoading(false);
+      setIsChecking(false);
+    }
+  };
+
+  const handleSignIn = async (email: string, password: string): Promise<void> => {
     try {
       setError(null);
       setLoading(true);
 
-      const mockUser: User = {
-        id: 'user-1',
-        email,
-      };
+      console.log('[AuthProvider] Calling authService.signIn');
+      const response = await authService.signIn({ email, password });
 
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
-      setUser(mockUser);
+      console.log('[AuthProvider] signIn response:', {
+        success: response.success,
+        hasData: !!response.data,
+        hasError: !!response.error,
+        errorMessage: response.error?.message,
+      });
 
-      initializeMockData();
+      if (response.success && response.data) {
+        console.log('[AuthProvider] Sign in successful, setting user:', response.data.user.email);
+        setUser(response.data.user);
+        // Ensure token is set in API client
+        if (response.data.tokens?.accessToken) {
+          console.log('[AuthProvider] Setting token in API client after sign-in', {
+            tokenLength: response.data.tokens.accessToken.length,
+            tokenPreview: `${response.data.tokens.accessToken.substring(0, 20)}...`,
+          });
+          apiClient.setAuthToken(response.data.tokens.accessToken);
+          console.log('[AuthProvider] Token set in API client after sign-in');
+        } else {
+          console.error('[AuthProvider] No access token in sign-in response!', response.data);
+        }
+      } else {
+        const errorMessage = response.error?.message || 'Failed to sign in';
+        console.error('[AuthProvider] Sign in failed:', errorMessage);
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
+      console.error('[AuthProvider] Sign in exception:', err);
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -61,22 +178,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // TODO: Implement actual sign up with AWS Cognito and use the `password` parameter
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSignUp = async (email: string, _password: string) => {
+  const handleSignUp = async (email: string, password: string): Promise<void> => {
     try {
       setError(null);
       setLoading(true);
 
-      const mockUser: User = {
-        id: 'user-1',
-        email,
-      };
+      const response = await authService.signUp({ email, password });
 
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(mockUser));
-      setUser(mockUser);
-
-      initializeMockData();
+      if (response.success && response.data) {
+        // After signup, automatically sign in
+        await handleSignIn(email, password);
+      } else {
+        const errorMessage = response.error?.message || 'Failed to sign up';
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign up';
       setError(errorMessage);
@@ -90,7 +206,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setError(null);
       setLoading(true);
-      localStorage.removeItem(AUTH_STORAGE_KEY);
+
+      await authService.signOut();
       setUser(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign out';
@@ -109,6 +226,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signOut: handleSignOut,
     signUp: handleSignUp,
   };
+
+  // Log state changes
+  useEffect(() => {
+    console.log('[AuthProvider] State changed:', {
+      hasUser: !!user,
+      userEmail: user?.email,
+      loading,
+      error,
+    });
+  }, [user, loading, error]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

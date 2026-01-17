@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Sun,
   CheckSquare,
@@ -31,6 +31,7 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
   const [plan, setPlan] = useState<DailyPlan | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const hasGenerated = useRef(false);
 
   const { tasks, isLoading: tasksLoading, isError: tasksError } = useTasks();
   const { habits, isLoading: habitsLoading, isError: habitsError } = useHabits();
@@ -39,7 +40,43 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
   const hasNetworkError = tasksError || habitsError || metricsError;
   const isLoading = tasksLoading || habitsLoading || metricsLoading;
 
-  const generateDailyPlan = async () => {
+  // Track previous data signatures to detect actual changes
+  const prevDataRef = useRef<{
+    tasksLength: number;
+    activeTasksCount: number;
+    habitsLength: number;
+    dailyHabitsCount: number;
+    metricsLength: number;
+    activeMetricsCount: number;
+  } | null>(null);
+
+  const generateDailyPlan = useCallback(async () => {
+    // Calculate data signatures to detect actual changes
+    const activeTasks = tasks
+      .filter((t: Task) => t.status === 'NotStarted' || t.status === 'InProgress')
+      .filter((t: Task) => t.status !== 'Blocked');
+    const dailyHabits = habits.filter((h: Habit) => h.frequency === 'Daily');
+    const activeMetrics = metrics.filter((m: Metric) => m.status === 'Active');
+
+    const currentData = {
+      tasksLength: tasks.length,
+      activeTasksCount: activeTasks.length,
+      habitsLength: habits.length,
+      dailyHabitsCount: dailyHabits.length,
+      metricsLength: metrics.length,
+      activeMetricsCount: activeMetrics.length,
+    };
+
+    // Only regenerate if data actually changed (not just array reference)
+    if (
+      prevDataRef.current &&
+      JSON.stringify(prevDataRef.current) === JSON.stringify(currentData) &&
+      hasGenerated.current
+    ) {
+      return; // Data hasn't changed, skip regeneration
+    }
+
+    prevDataRef.current = currentData;
     setIsGeneratingPlan(true);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -51,11 +88,7 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
     else if (hour < 18) energyLevel = 'afternoon';
     else energyLevel = 'evening';
 
-    const activeTasks = tasks
-      .filter((t) => t.status === 'NotStarted' || t.status === 'InProgress')
-      .filter((t) => t.status !== 'Blocked');
-
-    const scoredTasks = activeTasks.map((task) => {
+    const scoredTasks = activeTasks.map((task: Task) => {
       let score = 0;
 
       if (task.priority === 'P1') score += 40;
@@ -88,12 +121,9 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
       return { task, score };
     });
 
-    scoredTasks.sort((a, b) => b.score - a.score);
-    const topTasks = scoredTasks.slice(0, 3).map((s) => s.task);
-
-    const dailyHabits = habits.filter((h) => h.frequency === 'Daily');
-
-    const activeMetrics = metrics.filter((m) => m.status === 'Active');
+    type ScoredTask = { task: Task; score: number };
+    scoredTasks.sort((a: ScoredTask, b: ScoredTask) => b.score - a.score);
+    const topTasks = scoredTasks.slice(0, 3).map((s: ScoredTask) => s.task);
 
     let briefing = '';
     if (energyLevel === 'morning') {
@@ -113,11 +143,17 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
     });
 
     setIsGeneratingPlan(false);
-  };
+    hasGenerated.current = true;
+  }, [tasks, habits, metrics]);
 
   useEffect(() => {
-    generateDailyPlan();
-  }, [tasks, habits, metrics]);
+    // Only generate once data is loaded (not in error state) or after initial load
+    // Note: generateDailyPlan is memoized with useCallback and only runs when data actually changes
+    // due to our data signature comparison, so this pattern is safe and necessary for syncing with React Query data
+    if (!hasNetworkError || hasGenerated.current) {
+      generateDailyPlan();
+    }
+  }, [generateDailyPlan, hasNetworkError]);
 
   if (hasNetworkError) {
     return (

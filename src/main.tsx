@@ -5,12 +5,10 @@ import { configureAmplify } from './lib/aws-config';
 import { AuthProvider } from './contexts/Auth';
 import { WalletProvider } from './contexts/Wallet';
 import { RewardsProvider } from './contexts/Rewards';
-import { initializeMockData } from './mocks/seed-data';
 import './index.css';
 import App from './App.tsx';
 
 configureAmplify();
-initializeMockData();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +16,7 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       retry: (failureCount, error: unknown) => {
         // Don't retry network errors (connection refused, timeout, etc.)
+        // Don't retry 4xx client errors (404, 400, etc.) - these won't succeed on retry
         if (error) {
           // Check for error code in object
           if (typeof error === 'object') {
@@ -29,6 +28,7 @@ const queryClient = new QueryClient({
             const errorCode = errorObj.code || errorObj.error?.code;
             const errorMessage = (errorObj.message || '').toLowerCase();
 
+            // Don't retry network errors
             if (
               errorCode === 'NETWORK_ERROR' ||
               errorCode === 'ERR_CONNECTION_REFUSED' ||
@@ -40,6 +40,11 @@ const queryClient = new QueryClient({
               errorMessage.includes('network error') ||
               errorMessage.includes('failed to fetch')
             ) {
+              return false;
+            }
+
+            // Don't retry 4xx client errors (404, 400, 403, etc.)
+            if (errorCode && /^HTTP_4\d{2}$/.test(errorCode)) {
               return false;
             }
           }
@@ -55,6 +60,20 @@ const queryClient = new QueryClient({
               message.includes('timeout')
             ) {
               return false;
+            }
+          }
+
+          // Check for AxiosError with 4xx status codes
+          if (
+            typeof error === 'object' &&
+            'response' in error &&
+            error.response &&
+            typeof error.response === 'object' &&
+            'status' in error.response
+          ) {
+            const status = (error.response as { status: number }).status;
+            if (status >= 400 && status < 500) {
+              return false; // Don't retry 4xx client errors
             }
           }
         }

@@ -1,5 +1,21 @@
+import {
+  signIn,
+  signUp,
+  signOut,
+  fetchAuthSession,
+  getCurrentUser as amplifyGetCurrentUser,
+} from 'aws-amplify/auth';
+import type { SignUpOutput, AuthSession } from 'aws-amplify/auth';
 import { apiClient } from '../api-client';
 import type { ApiResponse } from '../../types/api-contracts';
+import { isCognitoConfigured } from './cognito-config';
+
+// Extended AuthTokens type that includes refreshToken for Cognito
+interface CognitoAuthTokens {
+  accessToken: string;
+  idToken?: string;
+  refreshToken?: string;
+}
 
 export interface LoginCredentials {
   email: string;
@@ -13,7 +29,7 @@ export interface SignUpCredentials {
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string; // Optional - Amplify v6 manages refresh tokens internally
   expiresIn: number;
 }
 
@@ -26,6 +42,26 @@ export interface User {
 export interface AuthResponse {
   user: User;
   tokens: AuthTokens;
+}
+
+/**
+ * Decode JWT token to extract user information
+ */
+function decodeJWT(token: string): { sub: string; email: string; [key: string]: unknown } | null {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
 }
 
 const TOKEN_STORAGE_KEY = 'gs_auth_tokens';
@@ -80,66 +116,498 @@ function getStoredUser(): User | null {
   }
 }
 
+/**
+ * Extract email from ID token, access token, or fallback to credentials
+ */
+function extractEmailFromTokens(
+  idToken: string | undefined,
+  accessToken: string,
+  fallbackEmail: string
+): string {
+  // Try ID token first (typically contains email)
+  if (idToken) {
+    const decodedIdToken = decodeJWT(idToken);
+    if (decodedIdToken?.email) {
+      return decodedIdToken.email;
+    }
+  }
+
+  // Try access token (usually doesn't have email)
+  const decodedAccessToken = decodeJWT(accessToken);
+  if (decodedAccessToken?.email) {
+    return decodedAccessToken.email;
+  }
+
+  // Fallback to credentials email
+  return fallbackEmail;
+}
+
+/**
+ * Process tokens from Cognito session and create user/auth response
+ */
+function processSignInTokens(
+  session: AuthSession,
+  credentials: LoginCredentials
+): { user: User; tokens: AuthTokens } | null {
+  if (!session.tokens?.accessToken) {
+    return null;
+  }
+
+  const accessToken = session.tokens.accessToken.toString();
+  const cognitoTokens = session.tokens as unknown as CognitoAuthTokens;
+  const refreshToken = cognitoTokens.refreshToken;
+  const idToken = cognitoTokens.idToken;
+
+  // Get existing refresh token from storage if not available in session
+  const existingTokens = getStoredTokens();
+  const storedRefreshToken = refreshToken || existingTokens?.refreshToken;
+
+  // Decode access token to get user ID
+  const decodedAccessToken = decodeJWT(accessToken);
+  if (!decodedAccessToken) {
+    return null;
+  }
+
+  // Extract email from tokens
+  const email = extractEmailFromTokens(idToken, accessToken, credentials.email);
+
+  // Get expiration time from token
+  const exp = typeof decodedAccessToken.exp === 'number' ? decodedAccessToken.exp : null;
+  const expiresIn = exp ? Math.max(0, exp - Math.floor(Date.now() / 1000)) : 3600;
+
+  const tokens: AuthTokens = {
+    accessToken,
+    refreshToken: storedRefreshToken,
+    expiresIn,
+  };
+
+  const user: User = {
+    id: decodedAccessToken.sub,
+    email,
+    displayName: decodedAccessToken.name as string | undefined,
+  };
+
+  return { user, tokens };
+}
+
+/**
+ * Check if email is valid (not a UUID/sub ID)
+ */
+function isValidEmail(email: string | undefined): boolean {
+  if (!email || !email.includes('@')) {
+    return false;
+  }
+
+  // UUIDs typically have the format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(email);
+  return !isUUID;
+}
+
+/**
+ * Check if a token is expired
+ */
+function isTokenExpired(token: string | null | undefined): boolean {
+  if (!token) {
+    return true;
+  }
+
+  const decodedToken = decodeJWT(token);
+  if (!decodedToken) {
+    return true;
+  }
+
+  const exp = decodedToken.exp;
+  if (!exp || typeof exp !== 'number') {
+    return true;
+  }
+
+  const currentTime = Math.floor(Date.now() / 1000);
+  return exp < currentTime;
+}
+
+/**
+ * Check if stored tokens are expired
+ */
+function areStoredTokensExpired(): boolean {
+  const tokens = getStoredTokens();
+  if (!tokens?.accessToken) {
+    return true;
+  }
+
+  return isTokenExpired(tokens.accessToken);
+}
+
+/**
+ * Validate if stored user is still valid (token not expired, email is valid)
+ */
+function validateStoredUser(storedUser: User): boolean {
+  const tokens = getStoredTokens();
+  if (!tokens?.accessToken) {
+    return false;
+  }
+
+  if (isTokenExpired(tokens.accessToken)) {
+    return false;
+  }
+
+  // Check if stored user has a valid email (not a UUID/sub ID)
+  if (!isValidEmail(storedUser.email)) {
+    // Clear invalid stored user
+    console.warn('[authService] Stored user has invalid email (UUID), clearing it');
+    localStorage.removeItem(USER_STORAGE_KEY);
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Internal function to refresh tokens and store them
+ * This is used by both refreshToken method and getCurrentUser
+ */
+async function performTokenRefresh(): Promise<{ success: boolean; accessToken?: string }> {
+  if (!isCognitoConfigured()) {
+    return { success: false };
+  }
+
+  try {
+    // Force refresh to get new tokens
+    const session: AuthSession = await fetchAuthSession({ forceRefresh: true });
+
+    if (!session.tokens?.accessToken) {
+      clearTokens();
+      apiClient.setAuthToken(null);
+      return { success: false };
+    }
+
+    const accessToken = session.tokens.accessToken.toString();
+    const cognitoTokens = session.tokens as unknown as CognitoAuthTokens;
+    const refreshToken = cognitoTokens.refreshToken;
+
+    // Get existing refresh token from storage if not available in session
+    const existingTokens = getStoredTokens();
+    const storedRefreshToken = refreshToken || existingTokens?.refreshToken;
+
+    // Decode JWT to get expiration time
+    const decodedToken = decodeJWT(accessToken);
+    const exp = decodedToken?.exp;
+    const expiresIn =
+      exp && typeof exp === 'number' ? Math.max(0, exp - Math.floor(Date.now() / 1000)) : 3600;
+
+    const newTokens: AuthTokens = {
+      accessToken,
+      refreshToken: storedRefreshToken,
+      expiresIn,
+    };
+
+    storeTokens(newTokens);
+    apiClient.setAuthToken(accessToken);
+
+    return { success: true, accessToken };
+  } catch {
+    clearTokens();
+    apiClient.setAuthToken(null);
+    return { success: false };
+  }
+}
+
+/**
+ * Fetch user from Cognito session and extract user information
+ * @param forceRefresh - Whether to force refresh the auth session (use when tokens are expired)
+ */
+async function fetchUserFromCognito(forceRefresh: boolean = false): Promise<User | null> {
+  // Use AWS Amplify's getCurrentUser (imported as amplifyGetCurrentUser to avoid naming conflict)
+  const cognitoUser = await amplifyGetCurrentUser();
+  const session: AuthSession = await fetchAuthSession({ forceRefresh });
+
+  if (!session.tokens?.accessToken) {
+    return null;
+  }
+
+  const accessToken = session.tokens.accessToken.toString();
+  const decodedAccessToken = decodeJWT(accessToken);
+
+  if (!decodedAccessToken) {
+    return null;
+  }
+
+  // Try to get email from ID token (which typically contains email)
+  const cognitoTokens = session.tokens as unknown as CognitoAuthTokens;
+  const idToken = cognitoTokens.idToken;
+  const fallbackEmail = cognitoUser.username; // Usually the email when email is used as username
+
+  const email = extractEmailFromTokens(idToken, accessToken, fallbackEmail);
+
+  return {
+    id: decodedAccessToken.sub,
+    email,
+    displayName: decodedAccessToken.name as string | undefined,
+  };
+}
+
+/**
+ * Handle Cognito sign-in errors and return user-friendly messages
+ */
+function handleSignInError(error: unknown): { code: string; message: string } {
+  if (!(error instanceof Error)) {
+    return {
+      code: 'SIGNIN_FAILED',
+      message: 'An unexpected error occurred. Please try again.',
+    };
+  }
+
+  const errorName = error.name || '';
+  const errorMsg = error.message || '';
+
+  console.log('[authService] Error details:', {
+    name: errorName,
+    message: errorMsg,
+    stack: error.stack,
+  });
+
+  // Check for common Cognito error patterns
+  if (
+    errorName.includes('NotAuthorizedException') ||
+    errorMsg.includes('Incorrect username or password') ||
+    errorMsg.includes('not authorized') ||
+    errorMsg.toLowerCase().includes('authentication failed')
+  ) {
+    return {
+      code: 'INVALID_CREDENTIALS',
+      message: 'Invalid email or password. Please check your credentials and try again.',
+    };
+  }
+
+  if (
+    errorName.includes('UserNotConfirmedException') ||
+    errorMsg.includes('not confirmed') ||
+    errorMsg.includes('User is not confirmed')
+  ) {
+    return {
+      code: 'USER_NOT_CONFIRMED',
+      message:
+        'Your email address has not been verified. Please check your inbox for a verification email.',
+    };
+  }
+
+  if (
+    errorName.includes('UserNotFoundException') ||
+    errorMsg.includes('does not exist') ||
+    errorMsg.includes('User does not exist')
+  ) {
+    return {
+      code: 'USER_NOT_FOUND',
+      message: 'No account found with this email address.',
+    };
+  }
+
+  if (
+    errorName.includes('TooManyRequestsException') ||
+    errorMsg.includes('too many requests') ||
+    errorMsg.includes('Attempt limit exceeded')
+  ) {
+    return {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many login attempts. Please wait a few minutes and try again.',
+    };
+  }
+
+  if (errorName.includes('InvalidParameterException') || errorMsg.includes('Invalid parameter')) {
+    return {
+      code: 'INVALID_PARAMETER',
+      message: 'Invalid email or password format. Please check your input.',
+    };
+  }
+
+  if (
+    errorMsg.includes('already a signed in user') ||
+    errorMsg.includes('already signed in') ||
+    errorMsg.includes('User is already signed in')
+  ) {
+    return {
+      code: 'ALREADY_SIGNED_IN',
+      message: 'You are already signed in. Redirecting to dashboard...',
+    };
+  }
+
+  // Default error
+  return {
+    code: 'SIGNIN_FAILED',
+    message: errorMsg || 'Failed to sign in. Please check your credentials.',
+  };
+}
+
 export const authService = {
   /**
-   * Sign up a new user
+   * Sign up a new user with AWS Cognito
    */
   async signUp(
     credentials: SignUpCredentials
   ): Promise<ApiResponse<{ userId: string; email: string; message: string }>> {
-    const response = await apiClient.post<{ userId: string; email: string; message: string }>(
-      '/auth/signup',
-      {
-        email: credentials.email,
-        password: credentials.password,
-      }
-    );
-
-    return response;
-  },
-
-  /**
-   * Sign in with email and password
-   */
-  async signIn(credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> {
-    const response = await apiClient.post<{
-      accessToken: string;
-      refreshToken: string;
-      expiresIn: number;
-      user: User;
-    }>('/auth/login', {
-      email: credentials.email,
-      password: credentials.password,
-    });
-
-    if (response.success && response.data) {
-      const tokens: AuthTokens = {
-        accessToken: response.data.accessToken,
-        refreshToken: response.data.refreshToken,
-        expiresIn: response.data.expiresIn,
+    if (!isCognitoConfigured()) {
+      return {
+        success: false,
+        error: {
+          code: 'COGNITO_NOT_CONFIGURED',
+          message: 'Cognito is not configured. Please check your environment variables.',
+        },
       };
-
-      storeTokens(tokens);
-      storeUser(response.data.user);
-      apiClient.setAuthToken(tokens.accessToken);
     }
 
-    return response as ApiResponse<AuthResponse>;
+    try {
+      const result: SignUpOutput = await signUp({
+        username: credentials.email,
+        password: credentials.password,
+        options: {
+          userAttributes: {
+            email: credentials.email,
+          },
+        },
+      });
+
+      // Cognito returns userId in the result
+      return {
+        success: true,
+        data: {
+          userId: result.userId || 'unknown',
+          email: credentials.email,
+          message: result.isSignUpComplete
+            ? 'Account created successfully'
+            : 'Account created. Please verify your email.',
+        },
+      };
+    } catch (error) {
+      // Handle Cognito-specific errors with user-friendly messages
+      let errorMessage = 'Failed to sign up';
+      let errorCode = 'SIGNUP_FAILED';
+
+      if (error instanceof Error) {
+        const errorName = error.name || '';
+        const errorMsg = error.message || '';
+
+        // Check for common Cognito error patterns
+        if (
+          errorName.includes('UsernameExistsException') ||
+          errorMsg.includes('already exists') ||
+          errorMsg.includes('An account with the given email already exists')
+        ) {
+          errorMessage =
+            'An account with this email address already exists. Please sign in instead.';
+          errorCode = 'USER_ALREADY_EXISTS';
+        } else if (
+          errorName.includes('InvalidPasswordException') ||
+          errorMsg.includes('Password did not conform')
+        ) {
+          errorMessage =
+            'Password does not meet requirements. Please use at least 8 characters with uppercase, lowercase, and numbers.';
+          errorCode = 'INVALID_PASSWORD';
+        } else if (
+          errorName.includes('InvalidParameterException') ||
+          errorMsg.includes('Invalid parameter')
+        ) {
+          errorMessage = 'Invalid email format. Please enter a valid email address.';
+          errorCode = 'INVALID_PARAMETER';
+        } else if (
+          errorName.includes('TooManyRequestsException') ||
+          errorMsg.includes('too many requests')
+        ) {
+          errorMessage = 'Too many sign-up attempts. Please wait a few minutes and try again.';
+          errorCode = 'TOO_MANY_REQUESTS';
+        } else {
+          // Use the original error message for other errors
+          errorMessage = errorMsg || 'Failed to sign up';
+        }
+      }
+
+      return {
+        success: false,
+        error: {
+          code: errorCode,
+          message: errorMessage,
+        },
+      };
+    }
   },
 
   /**
-   * Sign out the current user
+   * Sign in with email and password using AWS Cognito
+   */
+  async signIn(credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> {
+    if (!isCognitoConfigured()) {
+      return {
+        success: false,
+        error: {
+          code: 'COGNITO_NOT_CONFIGURED',
+          message: 'Cognito is not configured. Please check your environment variables.',
+        },
+      };
+    }
+
+    try {
+      console.log('[authService] Attempting Cognito signIn for:', credentials.email);
+      await signIn({
+        username: credentials.email,
+        password: credentials.password,
+      });
+
+      // Fetch the auth session to get tokens
+      console.log('[authService] Fetching auth session...');
+      const session: AuthSession = await fetchAuthSession({ forceRefresh: false });
+      console.log('[authService] Auth session:', {
+        hasTokens: !!session.tokens,
+        hasAccessToken: !!session.tokens?.accessToken,
+      });
+
+      // Process tokens and create user/auth response
+      const result = processSignInTokens(session, credentials);
+      if (!result) {
+        return {
+          success: false,
+          error: {
+            code: 'TOKEN_PROCESSING_FAILED',
+            message: 'Failed to process authentication tokens',
+          },
+        };
+      }
+
+      const { user, tokens } = result;
+
+      // Store tokens and user
+      storeTokens(tokens);
+      storeUser(user);
+      apiClient.setAuthToken(tokens.accessToken);
+
+      return {
+        success: true,
+        data: {
+          user,
+          tokens,
+        },
+      };
+    } catch (error) {
+      console.error('[authService] SignIn error:', error);
+      const { code, message } = handleSignInError(error);
+
+      return {
+        success: false,
+        error: {
+          code,
+          message,
+        },
+      };
+    }
+  },
+
+  /**
+   * Sign out the current user from AWS Cognito
    */
   async signOut(): Promise<ApiResponse<void>> {
-    const tokens = getStoredTokens();
-
-    // Call backend logout endpoint if we have a token
-    if (tokens?.accessToken) {
-      try {
-        await apiClient.post<void>('/auth/logout');
-      } catch (error) {
-        console.warn('Logout API call failed:', error);
-      }
+    try {
+      // Sign out from Cognito
+      await signOut();
+    } catch (error) {
+      console.warn('Cognito sign out failed:', error);
+      // Continue with local cleanup even if Cognito sign out fails
     }
 
     // Clear local storage
@@ -150,60 +618,132 @@ export const authService = {
   },
 
   /**
-   * Refresh the access token using refresh token
+   * Refresh the access token using AWS Cognito
    */
   async refreshToken(): Promise<ApiResponse<AuthTokens>> {
-    const tokens = getStoredTokens();
-
-    if (!tokens?.refreshToken) {
+    if (!isCognitoConfigured()) {
       return {
         success: false,
         error: {
-          code: 'NO_REFRESH_TOKEN',
-          message: 'No refresh token available',
+          code: 'COGNITO_NOT_CONFIGURED',
+          message: 'Cognito is not configured. Please check your environment variables.',
         },
       };
     }
 
-    const response = await apiClient.post<{
-      accessToken: string;
-      refreshToken?: string;
-      expiresIn: number;
-    }>('/auth/refresh', {
-      refreshToken: tokens.refreshToken,
-    });
+    const refreshResult = await performTokenRefresh();
 
-    if (response.success && response.data) {
-      const newTokens: AuthTokens = {
-        accessToken: response.data.accessToken,
-        refreshToken: response.data.refreshToken || tokens.refreshToken,
-        expiresIn: response.data.expiresIn,
+    if (!refreshResult.success || !refreshResult.accessToken) {
+      return {
+        success: false,
+        error: {
+          code: 'REFRESH_FAILED',
+          message: 'Failed to refresh access token',
+        },
       };
-
-      storeTokens(newTokens);
-      apiClient.setAuthToken(newTokens.accessToken);
-
-      return { success: true, data: newTokens };
     }
 
-    // If refresh fails, clear tokens
-    clearTokens();
-    apiClient.setAuthToken(null);
+    // Get the stored tokens (which were just updated by performTokenRefresh)
+    const tokens = getStoredTokens();
+    if (!tokens) {
+      return {
+        success: false,
+        error: {
+          code: 'REFRESH_FAILED',
+          message: 'Failed to retrieve refreshed tokens',
+        },
+      };
+    }
 
-    return response as ApiResponse<AuthTokens>;
+    return { success: true, data: tokens };
   },
 
   /**
-   * Get current user from backend
+   * Get current user from Cognito session or stored user
    */
   async getCurrentUser(): Promise<ApiResponse<User>> {
-    const response = await apiClient.get<User>('/auth/me');
-
-    if (response.success && response.data) {
-      storeUser(response.data);
+    if (!isCognitoConfigured()) {
+      return {
+        success: false,
+        error: {
+          code: 'COGNITO_NOT_CONFIGURED',
+          message: 'Cognito is not configured. Please check your environment variables.',
+        },
+      };
     }
 
-    return response;
+    try {
+      // First, try to get stored user (faster and more reliable)
+      const storedUser = getStoredUser();
+      if (storedUser && validateStoredUser(storedUser)) {
+        return {
+          success: true,
+          data: storedUser,
+        };
+      }
+
+      // If stored user is invalid or token expired, refresh tokens first
+      const tokensExpired = areStoredTokensExpired();
+      if (tokensExpired) {
+        console.log('[authService] getCurrentUser: Tokens expired, attempting refresh');
+        const refreshResult = await performTokenRefresh();
+        if (!refreshResult.success) {
+          console.warn('[authService] getCurrentUser: Token refresh failed');
+          return {
+            success: false,
+            error: {
+              code: 'TOKEN_REFRESH_FAILED',
+              message: 'Failed to refresh expired tokens',
+            },
+          };
+        }
+        console.log('[authService] getCurrentUser: Token refresh successful');
+      }
+
+      // Get from Cognito (use forceRefresh if tokens were expired to ensure fresh session)
+      const user = await fetchUserFromCognito(tokensExpired);
+      if (!user) {
+        return {
+          success: false,
+          error: {
+            code: 'NO_ACCESS_TOKEN',
+            message: 'No access token available',
+          },
+        };
+      }
+
+      storeUser(user);
+
+      return {
+        success: true,
+        data: user,
+      };
+    } catch (error) {
+      // If Cognito call fails, try to return stored user as fallback (only if valid)
+      const storedUser = getStoredUser();
+      if (storedUser && validateStoredUser(storedUser)) {
+        console.warn('[authService] getCurrentUser: Cognito call failed, using stored user');
+        return {
+          success: true,
+          data: storedUser,
+        };
+      }
+
+      // If stored user is invalid, clear it
+      if (storedUser && !isValidEmail(storedUser.email)) {
+        console.warn('[authService] getCurrentUser: Stored user has invalid email, clearing it');
+        localStorage.removeItem(USER_STORAGE_KEY);
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get current user';
+      return {
+        success: false,
+        error: {
+          code: 'GET_USER_FAILED',
+          message: errorMessage,
+        },
+      };
+    }
   },
 
   /**
@@ -239,4 +779,21 @@ export const authService = {
   clearTokensOnly(): void {
     clearTokens();
   },
+
+  /**
+   * Clear stored user if it has an invalid email (UUID)
+   * This forces a fresh fetch from Cognito on next getCurrentUser call
+   */
+  clearInvalidStoredUser(): void {
+    const storedUser = getStoredUser();
+    if (storedUser && !isValidEmail(storedUser.email)) {
+      console.warn('[authService] Clearing stored user with invalid email:', storedUser.email);
+      localStorage.removeItem(USER_STORAGE_KEY);
+    }
+  },
+
+  /**
+   * Check if stored tokens are expired
+   */
+  areStoredTokensExpired,
 };
