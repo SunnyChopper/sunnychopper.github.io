@@ -2,6 +2,7 @@ export * from './vault-items.service';
 export * from './courses.service';
 export * from './ai-course-generator.service';
 export * from './ai-flashcard-generator.service';
+export * from './note-ai.service';
 export * from './spaced-repetition.service';
 export * from './concept-graph.service';
 export * from './concept-synthesis.service';
