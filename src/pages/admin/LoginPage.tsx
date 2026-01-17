@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/Auth';
 import Button from '../../components/atoms/Button';
 import { ROUTES } from '../../routes';
 
@@ -11,8 +11,42 @@ export default function LoginPage() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    console.log('[LoginPage] Component mounted');
+    return () => {
+      console.log('[LoginPage] Component unmounting');
+    };
+  }, []);
+
+  // Redirect authenticated users to dashboard
+  // Only redirect if not already on login page to prevent infinite loops
+  useEffect(() => {
+    console.log('[LoginPage] useEffect triggered:', {
+      loading,
+      hasUser: !!user,
+      userEmail: user?.email,
+      pathname: location.pathname,
+      loginRoute: ROUTES.admin.login,
+    });
+    
+    if (!loading && user && location.pathname === ROUTES.admin.login) {
+      console.log('[LoginPage] Redirecting authenticated user to dashboard');
+      navigate(ROUTES.admin.dashboard, { replace: true });
+    } else {
+      console.log('[LoginPage] Not redirecting:', {
+        reason: loading ? 'still loading' : !user ? 'no user' : 'not on login page',
+      });
+    }
+  }, [user, loading, navigate, location.pathname]);
+
+  // Show nothing while checking auth status to prevent flash of login form
+  if (loading) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
