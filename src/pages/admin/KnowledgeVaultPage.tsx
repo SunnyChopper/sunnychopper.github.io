@@ -11,15 +11,15 @@ import {
   CreditCard,
   ChevronDown,
 } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
-import VaultItemCard from '../../components/organisms/VaultItemCard';
-import CourseStackCard from '../../components/organisms/CourseStackCard';
-import Dialog from '../../components/organisms/Dialog';
-import NoteForm from '../../components/organisms/NoteForm';
-import DocumentForm from '../../components/organisms/DocumentForm';
-import FlashcardForm from '../../components/organisms/FlashcardForm';
-import type { VaultItemType, Note, CourseLesson, Course } from '../../types/knowledge-vault';
-import type { Area } from '../../types/growth-system';
+import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import VaultItemCard from '@/components/organisms/VaultItemCard';
+import CourseStackCard from '@/components/organisms/CourseStackCard';
+import Dialog from '@/components/organisms/Dialog';
+import NoteForm from '@/components/organisms/NoteForm';
+import DocumentForm from '@/components/organisms/DocumentForm';
+import FlashcardForm from '@/components/organisms/FlashcardForm';
+import type { VaultItemType, Note, CourseLesson, Course } from '@/types/knowledge-vault';
+import type { Area } from '@/types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
 

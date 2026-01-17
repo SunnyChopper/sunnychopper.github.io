@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Calendar, CheckSquare, Target, Repeat, ArrowRight, Sparkles } from 'lucide-react';
-import Button from '../../components/atoms/Button';
-import { useTasks, useHabits, useMetrics, useGoals, useLogbook } from '../../hooks/useGrowthSystem';
-import { ROUTES } from '../../routes';
+import Button from '@/components/atoms/Button';
+import { useTasks, useHabits, useMetrics, useGoals, useLogbook } from '@/hooks/useGrowthSystem';
+import { ROUTES } from '@/routes';
 
 interface WeeklyStats {
   tasksCompleted: number;

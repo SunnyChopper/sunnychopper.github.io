@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import HeroSection from '../components/organisms/HeroSection';
-import SkillsSection from '../components/organisms/SkillsSection';
-import PortfolioSection from '../components/organisms/PortfolioSection';
-import BlogSection from '../components/organisms/BlogSection';
-import ContactSection from '../components/organisms/ContactSection';
+import HeroSection from '@/components/organisms/HeroSection';
+import SkillsSection from '@/components/organisms/SkillsSection';
+import PortfolioSection from '@/components/organisms/PortfolioSection';
+import BlogSection from '@/components/organisms/BlogSection';
+import ContactSection from '@/components/organisms/ContactSection';
 
 export default function HomePage() {
   const location = useLocation();

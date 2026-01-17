@@ -1,13 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, XCircle, RotateCcw, Sparkles } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
-import {
-  aiFlashcardGeneratorService,
-  spacedRepetitionService,
-} from '../../services/knowledge-vault';
-import type { Flashcard } from '../../types/knowledge-vault';
-import { ROUTES } from '../../routes';
+import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import { aiFlashcardGeneratorService, spacedRepetitionService } from '@/services/knowledge-vault';
+import type { Flashcard } from '@/types/knowledge-vault';
+import { ROUTES } from '@/routes';
 
 type ReviewQuality = 0 | 1 | 2 | 3 | 4 | 5;
 

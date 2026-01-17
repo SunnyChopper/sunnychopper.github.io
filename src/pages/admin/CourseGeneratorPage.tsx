@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
-import { aiCourseGeneratorService } from '../../services/knowledge-vault';
-import type { PreAssessmentQuestion, DifficultyLevel } from '../../types/knowledge-vault';
-import type { CourseGenerationProgress } from '../../services/knowledge-vault/course-generation/types';
-import { ROUTES } from '../../routes';
+import { aiCourseGeneratorService } from '@/services/knowledge-vault';
+import type { PreAssessmentQuestion, DifficultyLevel } from '@/types/knowledge-vault';
+import type { CourseGenerationProgress } from '@/services/knowledge-vault/course-generation/types';
+import { ROUTES } from '@/routes';
 
 type Step = 'topic' | 'assessment' | 'generating' | 'review';
 

@@ -10,10 +10,10 @@ import {
   Award,
   BarChart3,
 } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
-import { spacedRepetitionService } from '../../services/knowledge-vault';
-import { ROUTES } from '../../routes';
-import type { Flashcard } from '../../types/knowledge-vault';
+import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import { spacedRepetitionService } from '@/services/knowledge-vault';
+import { ROUTES } from '@/routes';
+import type { Flashcard } from '@/types/knowledge-vault';
 
 export default function StudyStatisticsPage() {
   const navigate = useNavigate();

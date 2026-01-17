@@ -1,21 +1,21 @@
 import { useState, useMemo } from 'react';
 import { Package } from 'lucide-react';
-import { AIConfidenceIndicator } from '../../components/atoms/AIConfidenceIndicator';
-import { AIThinkingIndicator } from '../../components/atoms/AIThinkingIndicator';
-import { AreaBadge } from '../../components/atoms/AreaBadge';
-import Button from '../../components/atoms/Button';
-import { DateDisplay } from '../../components/atoms/DateDisplay';
-import { DependencyBadge } from '../../components/atoms/DependencyBadge';
-import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
-import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
-import { ProgressRing } from '../../components/atoms/ProgressRing';
-import { StatusBadge } from '../../components/atoms/StatusBadge';
-import { AIInsightBanner } from '../../components/molecules/AIInsightBanner';
-import { AISuggestionCard } from '../../components/molecules/AISuggestionCard';
-import { EmptyState } from '../../components/molecules/EmptyState';
-import { FilterPanel } from '../../components/molecules/FilterPanel';
-import { QuickActionBar } from '../../components/molecules/QuickActionBar';
-import { AIAssistPanel } from '../../components/organisms/AIAssistPanel';
+import { AIConfidenceIndicator } from '@/components/atoms/AIConfidenceIndicator';
+import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import Button from '@/components/atoms/Button';
+import { DateDisplay } from '@/components/atoms/DateDisplay';
+import { DependencyBadge } from '@/components/atoms/DependencyBadge';
+import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { AIInsightBanner } from '@/components/molecules/AIInsightBanner';
+import { AISuggestionCard } from '@/components/molecules/AISuggestionCard';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import { FilterPanel } from '@/components/molecules/FilterPanel';
+import { QuickActionBar } from '@/components/molecules/QuickActionBar';
+import { AIAssistPanel } from '@/components/organisms/AIAssistPanel';
 
 export default function ComponentsDemoPage() {
   const [filters, setFilters] = useState({});

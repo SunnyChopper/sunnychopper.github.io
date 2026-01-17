@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Store, Coins } from 'lucide-react';
-import { useRewards } from '../../contexts/Rewards';
-import { useWallet } from '../../contexts/Wallet';
-import { RewardCard } from '../../components/molecules/RewardCard';
-import type { RewardWithRedemptions, RewardCategory } from '../../types/rewards';
+import { useRewards } from '@/contexts/Rewards';
+import { useWallet } from '@/contexts/Wallet';
+import { RewardCard } from '@/components/molecules/RewardCard';
+import type { RewardWithRedemptions, RewardCategory } from '@/types/rewards';
 
 const categories: { name: RewardCategory; description: string }[] = [
   { name: 'Quick Treat', description: 'Small instant rewards' },

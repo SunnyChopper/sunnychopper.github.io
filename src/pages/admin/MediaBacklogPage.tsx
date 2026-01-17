@@ -1,5 +1,5 @@
 import { Film, Tv, Book, Music } from 'lucide-react';
-import { EmptyState } from '../../components/molecules/EmptyState';
+import { EmptyState } from '@/components/molecules/EmptyState';
 
 export default function MediaBacklogPage() {
   return (

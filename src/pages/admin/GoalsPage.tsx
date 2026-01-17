@@ -24,26 +24,26 @@ import type {
   Habit,
   Priority,
   Area,
-} from '../../types/growth-system';
-import { goalsService } from '../../services/growth-system/goals.service';
-import { goalProgressService } from '../../services/growth-system/goal-progress.service';
-import Button from '../../components/atoms/Button';
-import { GoalCard } from '../../components/molecules/GoalCard';
-import { QuickFilterBar } from '../../components/molecules/QuickFilterBar';
-import { BulkActionsBar } from '../../components/molecules/BulkActionsBar';
-import { GoalCreateForm } from '../../components/organisms/GoalCreateForm';
-import { GoalEditForm } from '../../components/organisms/GoalEditForm';
-import { GoalDetailView } from '../../components/organisms/GoalDetailView';
-import { GoalKanbanView } from '../../components/organisms/GoalKanbanView';
-import { GoalTimelineView } from '../../components/organisms/GoalTimelineView';
-import { GoalHierarchicalTimeView } from '../../components/organisms/GoalHierarchicalTimeView';
-import Dialog from '../../components/organisms/Dialog';
-import { EmptyState } from '../../components/molecules/EmptyState';
-import { AreaBadge } from '../../components/atoms/AreaBadge';
-import { CelebrationEffect } from '../../components/atoms/CelebrationEffect';
-import { GOAL_STATUSES, AREAS, PRIORITIES, AREA_LABELS } from '../../constants/growth-system';
-import { migrateGoals, needsMigration } from '../../utils/goal-migration';
-import { getStorageAdapter } from '../../lib/storage';
+} from '@/types/growth-system';
+import { goalsService } from '@/services/growth-system/goals.service';
+import { goalProgressService } from '@/services/growth-system/goal-progress.service';
+import Button from '@/components/atoms/Button';
+import { GoalCard } from '@/components/molecules/GoalCard';
+import { QuickFilterBar } from '@/components/molecules/QuickFilterBar';
+import { BulkActionsBar } from '@/components/molecules/BulkActionsBar';
+import { GoalCreateForm } from '@/components/organisms/GoalCreateForm';
+import { GoalEditForm } from '@/components/organisms/GoalEditForm';
+import { GoalDetailView } from '@/components/organisms/GoalDetailView';
+import { GoalKanbanView } from '@/components/organisms/GoalKanbanView';
+import { GoalTimelineView } from '@/components/organisms/GoalTimelineView';
+import { GoalHierarchicalTimeView } from '@/components/organisms/GoalHierarchicalTimeView';
+import Dialog from '@/components/organisms/Dialog';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { CelebrationEffect } from '@/components/atoms/CelebrationEffect';
+import { GOAL_STATUSES, AREAS, PRIORITIES, AREA_LABELS } from '@/constants/growth-system';
+import { migrateGoals, needsMigration } from '@/utils/goal-migration';
+import { getStorageAdapter } from '@/lib/storage';
 
 const STATUSES: GoalStatus[] = [...GOAL_STATUSES];
 const AREA_OPTIONS: Area[] = [...AREAS];

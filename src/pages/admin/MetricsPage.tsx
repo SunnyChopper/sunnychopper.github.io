@@ -27,39 +27,39 @@ import type {
   FilterOptions,
   Goal,
   Area,
-} from '../../types/growth-system';
-import { metricsService } from '../../services/growth-system/metrics.service';
-import { goalsService } from '../../services/growth-system/goals.service';
-import Button from '../../components/atoms/Button';
-import { MetricCard } from '../../components/molecules/MetricCard';
-import { MetricLogForm } from '../../components/molecules/MetricLogForm';
-import { MetricDetailTabs } from '../../components/organisms/MetricDetailTabs';
-import { MetricTimeSeriesChart } from '../../components/molecules/MetricTimeSeriesChart';
-import { MetricLogHistory } from '../../components/molecules/MetricLogHistory';
-import { MetricInsightsPanel } from '../../components/molecules/MetricInsightsPanel';
-import { MetricMilestoneSystem } from '../../components/organisms/MetricMilestoneSystem';
-import { MetricComparisonView } from '../../components/molecules/MetricComparisonView';
-import { MetricPredictions } from '../../components/molecules/MetricPredictions';
-import { GoalMetricLink } from '../../components/molecules/GoalMetricLink';
-import { MetricCoaching } from '../../components/molecules/MetricCoaching';
-import { MetricEmptyStates } from '../../components/molecules/MetricEmptyStates';
-import { MetricProgressRing } from '../../components/molecules/MetricProgressRing';
-import { calculateProgress, getTrendData, getPeriodComparison } from '../../utils/metric-analytics';
-import { MetricCreateForm } from '../../components/organisms/MetricCreateForm';
-import { MetricEditForm } from '../../components/organisms/MetricEditForm';
-import Dialog from '../../components/organisms/Dialog';
-import { EmptyState } from '../../components/molecules/EmptyState';
-import { AreaBadge } from '../../components/atoms/AreaBadge';
-import { StatusBadge } from '../../components/atoms/StatusBadge';
-import { llmConfig } from '../../lib/llm';
-import { SUBCATEGORY_LABELS, AREAS, AREA_LABELS } from '../../constants/growth-system';
+} from '@/types/growth-system';
+import { metricsService } from '@/services/growth-system/metrics.service';
+import { goalsService } from '@/services/growth-system/goals.service';
+import Button from '@/components/atoms/Button';
+import { MetricCard } from '@/components/molecules/MetricCard';
+import { MetricLogForm } from '@/components/molecules/MetricLogForm';
+import { MetricDetailTabs } from '@/components/organisms/MetricDetailTabs';
+import { MetricTimeSeriesChart } from '@/components/molecules/MetricTimeSeriesChart';
+import { MetricLogHistory } from '@/components/molecules/MetricLogHistory';
+import { MetricInsightsPanel } from '@/components/molecules/MetricInsightsPanel';
+import { MetricMilestoneSystem } from '@/components/organisms/MetricMilestoneSystem';
+import { MetricComparisonView } from '@/components/molecules/MetricComparisonView';
+import { MetricPredictions } from '@/components/molecules/MetricPredictions';
+import { GoalMetricLink } from '@/components/molecules/GoalMetricLink';
+import { MetricCoaching } from '@/components/molecules/MetricCoaching';
+import { MetricEmptyStates } from '@/components/molecules/MetricEmptyStates';
+import { MetricProgressRing } from '@/components/molecules/MetricProgressRing';
+import { calculateProgress, getTrendData, getPeriodComparison } from '@/utils/metric-analytics';
+import { MetricCreateForm } from '@/components/organisms/MetricCreateForm';
+import { MetricEditForm } from '@/components/organisms/MetricEditForm';
+import Dialog from '@/components/organisms/Dialog';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { llmConfig } from '@/lib/llm';
+import { SUBCATEGORY_LABELS, AREAS, AREA_LABELS } from '@/constants/growth-system';
 import {
   groupByArea,
   groupByStatus,
   groupByMomentum,
   sortByPriority,
   filterMetrics,
-} from '../../utils/metric-grouping';
+} from '@/utils/metric-grouping';
 
 const STATUSES = ['Active', 'Paused', 'Archived'];
 

@@ -1,4 +1,4 @@
-import StudyDashboard from '../../components/organisms/StudyDashboard';
+import StudyDashboard from '@/components/organisms/StudyDashboard';
 
 export default function FlashcardsPage() {
   return (

@@ -18,27 +18,27 @@ import type {
   TaskStatus,
   EntitySummary,
   TaskDependency,
-} from '../../types/growth-system';
-import { tasksService } from '../../services/growth-system/tasks.service';
-import { projectsService } from '../../services/growth-system/projects.service';
-import { goalsService } from '../../services/growth-system/goals.service';
-import Button from '../../components/atoms/Button';
-import { TaskListItem } from '../../components/molecules/TaskListItem';
-import { TaskCreateForm } from '../../components/organisms/TaskCreateForm';
-import { TaskEditPanel } from '../../components/organisms/TaskEditPanel';
-import { TaskKanbanBoard } from '../../components/organisms/TaskKanbanBoard';
-import { TaskCalendarView } from '../../components/organisms/TaskCalendarView';
-import DependencyGraph from '../../components/organisms/DependencyGraph';
-import Dialog from '../../components/organisms/Dialog';
-import { EmptyState } from '../../components/molecules/EmptyState';
-import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
+} from '@/types/growth-system';
+import { tasksService } from '@/services/growth-system/tasks.service';
+import { projectsService } from '@/services/growth-system/projects.service';
+import { goalsService } from '@/services/growth-system/goals.service';
+import Button from '@/components/atoms/Button';
+import { TaskListItem } from '@/components/molecules/TaskListItem';
+import { TaskCreateForm } from '@/components/organisms/TaskCreateForm';
+import { TaskEditPanel } from '@/components/organisms/TaskEditPanel';
+import { TaskKanbanBoard } from '@/components/organisms/TaskKanbanBoard';
+import { TaskCalendarView } from '@/components/organisms/TaskCalendarView';
+import DependencyGraph from '@/components/organisms/DependencyGraph';
+import Dialog from '@/components/organisms/Dialog';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
 import {
   AREAS,
   PRIORITIES,
   TASK_STATUSES,
   AREA_LABELS,
   TASK_STATUS_LABELS,
-} from '../../constants/growth-system';
+} from '@/constants/growth-system';
 
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'graph';
 
@@ -115,11 +115,15 @@ export default function TasksPage() {
         sortBy: 'createdAt',
         sortOrder: 'desc',
       });
-      setTasks(response.data);
-      setFilteredTasks(response.data);
-      await loadRelationships(response.data);
+      const tasksArray = response.data || [];
+      setTasks(tasksArray);
+      setFilteredTasks(tasksArray);
+      await loadRelationships(tasksArray);
     } catch (error) {
       console.error('Failed to load tasks:', error);
+      // Ensure tasks are always arrays even on error
+      setTasks([]);
+      setFilteredTasks([]);
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import MarkdownRenderer from '../../components/molecules/MarkdownRenderer';
+import MarkdownRenderer from '@/components/molecules/MarkdownRenderer';
 import {
   MessageCircle,
   Plus,
@@ -20,9 +20,9 @@ import {
   ArrowLeft,
   ArrowRight,
 } from 'lucide-react';
-import { chatbotService } from '../../services/chatbot.service';
-import { findBestResponse } from '../../data/chatbot-responses';
-import type { ChatThread, ChatMessage } from '../../types/chatbot';
+import { chatbotService } from '@/services/chatbot.service';
+import { findBestResponse } from '@/data/chatbot-responses';
+import type { ChatThread, ChatMessage } from '@/types/chatbot';
 
 interface MessageBranch {
   content: string;

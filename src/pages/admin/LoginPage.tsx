@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../../contexts/Auth';
-import Button from '../../components/atoms/Button';
-import { ROUTES } from '../../routes';
+import { useAuth } from '@/contexts/Auth';
+import Button from '@/components/atoms/Button';
+import { ROUTES } from '@/routes';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

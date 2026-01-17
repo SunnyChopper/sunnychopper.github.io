@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Plus, Search, Trash2, Info, RefreshCw } from 'lucide-react';
-import ForceDirectedGraph from '../../components/organisms/ForceDirectedGraph';
-import ConceptSynthesisModal from '../../components/organisms/ConceptSynthesisModal';
-import { conceptGraphService } from '../../services/knowledge-vault/concept-graph.service';
-import { conceptSynthesisService } from '../../services/knowledge-vault/concept-synthesis.service';
+import ForceDirectedGraph from '@/components/organisms/ForceDirectedGraph';
+import ConceptSynthesisModal from '@/components/organisms/ConceptSynthesisModal';
+import { conceptGraphService } from '@/services/knowledge-vault/concept-graph.service';
+import { conceptSynthesisService } from '@/services/knowledge-vault/concept-synthesis.service';
 import type {
   ConceptNode,
   ConceptEdge,
   ConceptSynthesis,
   CreateConceptNodeInput,
-} from '../../types/concept-graph';
-import type { Area } from '../../types/growth-system';
-import { AREAS } from '../../constants/growth-system';
+} from '@/types/concept-graph';
+import type { Area } from '@/types/growth-system';
+import { AREAS } from '@/constants/growth-system';
 
 export default function ConceptColliderPage() {
   const [nodes, setNodes] = useState<ConceptNode[]>([]);

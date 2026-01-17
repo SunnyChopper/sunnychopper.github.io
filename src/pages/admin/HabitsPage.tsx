@@ -8,30 +8,30 @@ import type {
   CreateHabitLogInput,
   HabitType,
   Goal,
-} from '../../types/growth-system';
-import { habitsService } from '../../services/growth-system/habits.service';
-import { goalsService } from '../../services/growth-system/goals.service';
-import Button from '../../components/atoms/Button';
-import { HabitCard } from '../../components/molecules/HabitCard';
-import { HabitLogWidget } from '../../components/molecules/HabitLogWidget';
-import { HabitCreateForm } from '../../components/organisms/HabitCreateForm';
-import { HabitEditForm } from '../../components/organisms/HabitEditForm';
-import Dialog from '../../components/organisms/Dialog';
-import { EmptyState } from '../../components/molecules/EmptyState';
-import { AIHabitAssistPanel } from '../../components/molecules/AIHabitAssistPanel';
-import { llmConfig } from '../../lib/llm';
-import { HabitStatsDashboard } from '../../components/molecules/HabitStatsDashboard';
-import { HabitCalendarHeatmap } from '../../components/molecules/HabitCalendarHeatmap';
-import { CompletionRateChart } from '../../components/molecules/CompletionRateChart';
-import { HabitCalendarView } from '../../components/molecules/HabitCalendarView';
-import { WeeklyMonthlyComparison } from '../../components/molecules/WeeklyMonthlyComparison';
-import { HabitDetailHeader } from '../../components/molecules/HabitDetailHeader';
-import { HabitDetailTabs, type HabitDetailTab } from '../../components/molecules/HabitDetailTabs';
-import { FloatingLogButton } from '../../components/molecules/FloatingLogButton';
-import { DateDetailModal } from '../../components/molecules/DateDetailModal';
-import { LinkedGoalsDisplay } from '../../components/molecules/LinkedGoalsDisplay';
-import { formatCompletionDate } from '../../utils/date-formatters';
-import { getLogsForDateRange } from '../../utils/habit-analytics';
+} from '@/types/growth-system';
+import { habitsService } from '@/services/growth-system/habits.service';
+import { goalsService } from '@/services/growth-system/goals.service';
+import Button from '@/components/atoms/Button';
+import { HabitCard } from '@/components/molecules/HabitCard';
+import { HabitLogWidget } from '@/components/molecules/HabitLogWidget';
+import { HabitCreateForm } from '@/components/organisms/HabitCreateForm';
+import { HabitEditForm } from '@/components/organisms/HabitEditForm';
+import Dialog from '@/components/organisms/Dialog';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import { AIHabitAssistPanel } from '@/components/molecules/AIHabitAssistPanel';
+import { llmConfig } from '@/lib/llm';
+import { HabitStatsDashboard } from '@/components/molecules/HabitStatsDashboard';
+import { HabitCalendarHeatmap } from '@/components/molecules/HabitCalendarHeatmap';
+import { CompletionRateChart } from '@/components/molecules/CompletionRateChart';
+import { HabitCalendarView } from '@/components/molecules/HabitCalendarView';
+import { WeeklyMonthlyComparison } from '@/components/molecules/WeeklyMonthlyComparison';
+import { HabitDetailHeader } from '@/components/molecules/HabitDetailHeader';
+import { HabitDetailTabs, type HabitDetailTab } from '@/components/molecules/HabitDetailTabs';
+import { FloatingLogButton } from '@/components/molecules/FloatingLogButton';
+import { DateDetailModal } from '@/components/molecules/DateDetailModal';
+import { LinkedGoalsDisplay } from '@/components/molecules/LinkedGoalsDisplay';
+import { formatCompletionDate } from '@/utils/date-formatters';
+import { getLogsForDateRange } from '@/utils/habit-analytics';
 
 type ViewMode = 'today' | 'all';
 

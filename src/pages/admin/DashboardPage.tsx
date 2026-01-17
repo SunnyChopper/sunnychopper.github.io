@@ -6,7 +6,7 @@ import {
   useGoals,
   useProjects,
   useLogbook,
-} from '../../hooks/useGrowthSystem';
+} from '@/hooks/useGrowthSystem';
 import {
   CheckSquare,
   Calendar,
@@ -20,13 +20,13 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { AIInsightsWidget } from '../../components/organisms/AIInsightsWidget';
-import { DailyPlanningAssistant } from '../../components/organisms/DailyPlanningAssistant';
-import { MorningLaunchpad } from '../../components/organisms/MorningLaunchpad';
-import { GoalsDashboardWidget } from '../../components/organisms/GoalsDashboardWidget';
-import { useMode } from '../../contexts/Mode';
-import { ROUTES } from '../../routes';
-import { useBackendStatus } from '../../contexts/BackendStatusContext';
+import { AIInsightsWidget } from '@/components/organisms/AIInsightsWidget';
+import { DailyPlanningAssistant } from '@/components/organisms/DailyPlanningAssistant';
+import { MorningLaunchpad } from '@/components/organisms/MorningLaunchpad';
+import { GoalsDashboardWidget } from '@/components/organisms/GoalsDashboardWidget';
+import { useMode } from '@/contexts/Mode';
+import { ROUTES } from '@/routes';
+import { useBackendStatus } from '@/contexts/BackendStatusContext';
 
 interface StatCardProps {
   title: string;

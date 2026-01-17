@@ -19,28 +19,28 @@ import type {
   Task,
   EntitySummary,
   FilterOptions,
-} from '../../types/growth-system';
-import { projectsService } from '../../services/growth-system/projects.service';
-import { tasksService } from '../../services/growth-system/tasks.service';
-import { goalsService } from '../../services/growth-system/goals.service';
-import Button from '../../components/atoms/Button';
-import { ProjectCard } from '../../components/molecules/ProjectCard';
-import { FilterPanel } from '../../components/molecules/FilterPanel';
-import { ProjectCreateForm } from '../../components/organisms/ProjectCreateForm';
-import { ProjectEditForm } from '../../components/organisms/ProjectEditForm';
-import Dialog from '../../components/organisms/Dialog';
-import { EmptyState } from '../../components/molecules/EmptyState';
-import { AreaBadge } from '../../components/atoms/AreaBadge';
-import { StatusBadge } from '../../components/atoms/StatusBadge';
-import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
-import { ProgressRing } from '../../components/atoms/ProgressRing';
-import { SUBCATEGORY_LABELS, PROJECT_STATUSES } from '../../constants/growth-system';
-import { TaskListItem } from '../../components/molecules/TaskListItem';
-import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
-import { RelationshipPicker } from '../../components/organisms/RelationshipPicker';
-import { AIProjectAssistPanel } from '../../components/molecules/AIProjectAssistPanel';
-import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
-import { llmConfig } from '../../lib/llm';
+} from '@/types/growth-system';
+import { projectsService } from '@/services/growth-system/projects.service';
+import { tasksService } from '@/services/growth-system/tasks.service';
+import { goalsService } from '@/services/growth-system/goals.service';
+import Button from '@/components/atoms/Button';
+import { ProjectCard } from '@/components/molecules/ProjectCard';
+import { FilterPanel } from '@/components/molecules/FilterPanel';
+import { ProjectCreateForm } from '@/components/organisms/ProjectCreateForm';
+import { ProjectEditForm } from '@/components/organisms/ProjectEditForm';
+import Dialog from '@/components/organisms/Dialog';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
+import { SUBCATEGORY_LABELS, PROJECT_STATUSES } from '@/constants/growth-system';
+import { TaskListItem } from '@/components/molecules/TaskListItem';
+import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
+import { RelationshipPicker } from '@/components/organisms/RelationshipPicker';
+import { AIProjectAssistPanel } from '@/components/molecules/AIProjectAssistPanel';
+import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
+import { llmConfig } from '@/lib/llm';
 
 const STATUSES: ProjectStatus[] = [...PROJECT_STATUSES];
 

@@ -19,9 +19,9 @@ import {
   Brain,
   Link as LinkIcon,
 } from 'lucide-react';
-import { useTasks } from '../../hooks/useGrowthSystem';
-import { ROUTES } from '../../routes';
-import type { Task } from '../../types/growth-system';
+import { useTasks } from '@/hooks/useGrowthSystem';
+import { ROUTES } from '@/routes';
+import type { Task } from '@/types/growth-system';
 
 const POMODORO_DURATION = 25 * 60;
 

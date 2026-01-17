@@ -21,12 +21,12 @@ import {
   coursesService,
   vaultItemsService,
   aiCourseGeneratorService,
-} from '../../services/knowledge-vault';
-import type { CourseWithDetails } from '../../services/knowledge-vault/courses.service';
-import type { CourseLesson } from '../../types/knowledge-vault';
-import type { LessonGenerationProgress } from '../../services/knowledge-vault/course-generation/types';
-import { ROUTES } from '../../routes';
-import MarkdownRenderer from '../../components/molecules/MarkdownRenderer';
+} from '@/services/knowledge-vault';
+import type { CourseWithDetails } from '@/services/knowledge-vault/courses.service';
+import type { CourseLesson } from '@/types/knowledge-vault';
+import type { LessonGenerationProgress } from '@/services/knowledge-vault/course-generation/types';
+import { ROUTES } from '@/routes';
+import MarkdownRenderer from '@/components/molecules/MarkdownRenderer';
 
 export default function CourseDetailPage() {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId?: string }>();

@@ -1,5 +1,5 @@
 import { Palette, Gamepad, Camera, Music, Star } from 'lucide-react';
-import { EmptyState } from '../../components/molecules/EmptyState';
+import { EmptyState } from '@/components/molecules/EmptyState';
 
 export default function HobbyQuestsPage() {
   return (
