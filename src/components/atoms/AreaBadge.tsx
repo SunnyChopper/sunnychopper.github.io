@@ -1,5 +1,5 @@
-import type { Area } from '../../types/growth-system';
-import { AREA_LABELS } from '../../constants/growth-system';
+import type { Area } from '@/types/growth-system';
+import { AREA_LABELS } from '@/constants/growth-system';
 
 interface AreaBadgeProps {
   area: Area;

@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import type { Area } from '../../types/growth-system';
+import type { Area } from '@/types/growth-system';
 
 interface EntityLinkChipProps {
   id: string;

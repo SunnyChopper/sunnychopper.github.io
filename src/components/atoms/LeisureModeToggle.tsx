@@ -1,5 +1,5 @@
 import { Briefcase, Waves } from 'lucide-react';
-import { useMode } from '../../contexts/Mode';
+import { useMode } from '@/contexts/Mode';
 
 export default function LeisureModeToggle() {
   const { isLeisureMode, toggleMode } = useMode();

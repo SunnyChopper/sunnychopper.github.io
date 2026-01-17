@@ -1,4 +1,4 @@
-import type { Priority } from '../../types/growth-system';
+import type { Priority } from '@/types/growth-system';
 
 interface PriorityIndicatorProps {
   priority: Priority;

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, Zap, Target } from 'lucide-react';
-import { useCelebration } from '../../hooks/useCelebration';
+import { useCelebration } from '@/hooks/useCelebration';
 
 type CelebrationType =
   | 'goal_achieved'

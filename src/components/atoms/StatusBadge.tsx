@@ -1,9 +1,9 @@
-import type { TaskStatus, ProjectStatus, GoalStatus } from '../../types/growth-system';
+import type { TaskStatus, ProjectStatus, GoalStatus } from '@/types/growth-system';
 import {
   TASK_STATUS_LABELS,
   PROJECT_STATUS_LABELS,
   GOAL_STATUS_LABELS,
-} from '../../constants/growth-system';
+} from '@/constants/growth-system';
 
 interface StatusBadgeProps {
   status: TaskStatus | ProjectStatus | GoalStatus | string;
