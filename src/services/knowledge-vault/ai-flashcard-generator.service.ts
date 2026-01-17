@@ -21,12 +21,12 @@ interface FlashcardData {
 export const aiFlashcardGeneratorService = {
   async generateFromLesson(input: GenerateFlashcardsInput): Promise<ApiResponse<Flashcard[]>> {
     try {
-      const featureConfig = getFeatureConfig('goalRefinement');
+      const featureConfig = await getFeatureConfig('goalRefinement');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error('LLM not configured. Please configure in Settings.');
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error('API key not found');
       }
@@ -124,12 +124,12 @@ Return ONLY valid JSON in this exact format:
     count: number = 5
   ): Promise<ApiResponse<FlashcardData[]>> {
     try {
-      const featureConfig = getFeatureConfig('goalRefinement');
+      const featureConfig = await getFeatureConfig('goalRefinement');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error('LLM not configured. Please configure in Settings.');
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error('API key not found');
       }

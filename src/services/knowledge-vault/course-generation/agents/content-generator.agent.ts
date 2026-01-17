@@ -15,7 +15,7 @@ export class ContentGeneratorAgent extends BaseAgent {
 
   async execute(state: CourseGenerationState): Promise<CourseGenerationStateUpdate> {
     const updatedModules = [...state.modules];
-    const stats = await this._generateContentForLessons(state, updatedModules);
+    await this._generateContentForLessons(state, updatedModules);
 
     return {
       modules: updatedModules,

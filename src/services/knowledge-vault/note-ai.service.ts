@@ -31,12 +31,12 @@ export const noteAIService = {
     context?: { title?: string; area?: Area }
   ): Promise<ApiResponse<ExpandContentOutput>> {
     try {
-      const featureConfig = getFeatureConfig('noteExpand');
+      const featureConfig = await getFeatureConfig('noteExpand');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -61,14 +61,16 @@ Provide an expanded version that:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error expanding content:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to expand content',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to expand content',
+          code: 'EXPAND_ERROR',
+        },
         success: false,
       };
     }
@@ -79,12 +81,12 @@ Provide an expanded version that:
    */
   async summarizeContent(content: string): Promise<ApiResponse<SummarizeContentOutput>> {
     try {
-      const featureConfig = getFeatureConfig('noteSummarize');
+      const featureConfig = await getFeatureConfig('noteSummarize');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -106,14 +108,16 @@ Provide:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error summarizing content:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to summarize content',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to summarize content',
+          code: 'SUMMARIZE_ERROR',
+        },
         success: false,
       };
     }
@@ -124,12 +128,12 @@ Provide:
    */
   async improveClarity(content: string): Promise<ApiResponse<ImproveClarityOutput>> {
     try {
-      const featureConfig = getFeatureConfig('noteImprove');
+      const featureConfig = await getFeatureConfig('noteImprove');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -152,14 +156,16 @@ Focus on:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error improving clarity:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to improve content',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to improve content',
+          code: 'IMPROVE_ERROR',
+        },
         success: false,
       };
     }
@@ -174,12 +180,12 @@ Focus on:
     existingTags: string[] = []
   ): Promise<ApiResponse<TagSuggestionsOutput>> {
     try {
-      const featureConfig = getFeatureConfig('noteTagSuggest');
+      const featureConfig = await getFeatureConfig('noteTagSuggest');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -205,14 +211,16 @@ Suggest 5-10 relevant tags with relevance scores.`;
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error suggesting tags:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to suggest tags',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to suggest tags',
+          code: 'TAG_SUGGESTION_ERROR',
+        },
         success: false,
       };
     }
@@ -223,12 +231,12 @@ Suggest 5-10 relevant tags with relevance scores.`;
    */
   async suggestArea(content: string, title: string): Promise<ApiResponse<AreaSuggestionOutput>> {
     try {
-      const featureConfig = getFeatureConfig('noteAreaSuggest');
+      const featureConfig = await getFeatureConfig('noteAreaSuggest');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -249,14 +257,16 @@ Consider the main topic, theme, and purpose of the note.`;
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error suggesting area:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to suggest area',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to suggest area',
+          code: 'AREA_SUGGESTION_ERROR',
+        },
         success: false,
       };
     }
@@ -267,12 +277,12 @@ Consider the main topic, theme, and purpose of the note.`;
    */
   async generateFromTitle(title: string, area: Area): Promise<ApiResponse<GenerateContentOutput>> {
     try {
-      const featureConfig = getFeatureConfig('noteGenerate');
+      const featureConfig = await getFeatureConfig('noteGenerate');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -296,14 +306,16 @@ Generate content that:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error generating content:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to generate content',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to generate content',
+          code: 'CONTENT_GENERATION_ERROR',
+        },
         success: false,
       };
     }
@@ -317,12 +329,12 @@ Generate content that:
     title: string
   ): Promise<ApiResponse<ContentAnalysisOutput>> {
     try {
-      const featureConfig = getFeatureConfig('noteAnalyze');
+      const featureConfig = await getFeatureConfig('noteAnalyze');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -347,14 +359,16 @@ Provide:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error analyzing content:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to analyze content',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to analyze content',
+          code: 'CONTENT_ANALYSIS_ERROR',
+        },
         success: false,
       };
     }
