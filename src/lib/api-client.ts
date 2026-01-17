@@ -25,7 +25,22 @@ class ApiClient {
       timeout: 30000,
     });
 
+    this.initializeTokenFromStorage();
     this.setupInterceptors();
+  }
+
+  private initializeTokenFromStorage() {
+    try {
+      const tokens = authService.getStoredTokens();
+      if (tokens?.accessToken) {
+        console.log('[ApiClient] Initializing token from storage on construction');
+        this.authToken = tokens.accessToken;
+      } else {
+        console.log('[ApiClient] No token found in storage on construction');
+      }
+    } catch (error) {
+      console.warn('[ApiClient] Error initializing token from storage:', error);
+    }
   }
 
   private setupInterceptors() {
@@ -34,6 +49,15 @@ class ApiClient {
       (config: InternalAxiosRequestConfig) => {
         if (this.authToken && config.headers) {
           config.headers.Authorization = `Bearer ${this.authToken}`;
+          console.log('[ApiClient] Request interceptor: Token attached to request', {
+            url: config.url,
+            hasToken: !!this.authToken,
+          });
+        } else {
+          console.warn('[ApiClient] Request interceptor: No token available for request', {
+            url: config.url,
+            hasToken: !!this.authToken,
+          });
         }
         return config;
       },
@@ -106,7 +130,9 @@ class ApiClient {
             }
           } catch (refreshError) {
             console.log('[ApiClient] Token refresh exception, clearing auth state:', refreshError);
-            this.processQueue(refreshError);
+            this.processQueue(
+              refreshError instanceof Error ? refreshError : new Error(String(refreshError))
+            );
             authService.clearTokensOnly();
             this.authToken = null;
 
@@ -143,6 +169,15 @@ class ApiClient {
 
   setAuthToken(token: string | null) {
     this.authToken = token;
+    console.log('[ApiClient] Token set:', {
+      hasToken: !!token,
+      tokenLength: token?.length,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : null,
+    });
+  }
+
+  getAuthToken(): string | null {
+    return this.authToken;
   }
 
   private handleError(error: unknown): ApiError {

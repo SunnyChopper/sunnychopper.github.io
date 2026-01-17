@@ -204,6 +204,40 @@ function isValidEmail(email: string | undefined): boolean {
 }
 
 /**
+ * Check if a token is expired
+ */
+function isTokenExpired(token: string | null | undefined): boolean {
+  if (!token) {
+    return true;
+  }
+
+  const decodedToken = decodeJWT(token);
+  if (!decodedToken) {
+    return true;
+  }
+
+  const exp = decodedToken.exp;
+  if (!exp || typeof exp !== 'number') {
+    return true;
+  }
+
+  const currentTime = Math.floor(Date.now() / 1000);
+  return exp < currentTime;
+}
+
+/**
+ * Check if stored tokens are expired
+ */
+function areStoredTokensExpired(): boolean {
+  const tokens = getStoredTokens();
+  if (!tokens?.accessToken) {
+    return true;
+  }
+
+  return isTokenExpired(tokens.accessToken);
+}
+
+/**
  * Validate if stored user is still valid (token not expired, email is valid)
  */
 function validateStoredUser(storedUser: User): boolean {
@@ -212,14 +246,7 @@ function validateStoredUser(storedUser: User): boolean {
     return false;
   }
 
-  const decodedToken = decodeJWT(tokens.accessToken);
-  if (!decodedToken) {
-    return false;
-  }
-
-  const exp = decodedToken.exp;
-  const isExpired = exp && typeof exp === 'number' && exp < Math.floor(Date.now() / 1000);
-  if (isExpired) {
+  if (isTokenExpired(tokens.accessToken)) {
     return false;
   }
 
@@ -235,12 +262,63 @@ function validateStoredUser(storedUser: User): boolean {
 }
 
 /**
- * Fetch user from Cognito session and extract user information
+ * Internal function to refresh tokens and store them
+ * This is used by both refreshToken method and getCurrentUser
  */
-async function fetchUserFromCognito(): Promise<User | null> {
+async function performTokenRefresh(): Promise<{ success: boolean; accessToken?: string }> {
+  if (!isCognitoConfigured()) {
+    return { success: false };
+  }
+
+  try {
+    // Force refresh to get new tokens
+    const session: AuthSession = await fetchAuthSession({ forceRefresh: true });
+
+    if (!session.tokens?.accessToken) {
+      clearTokens();
+      apiClient.setAuthToken(null);
+      return { success: false };
+    }
+
+    const accessToken = session.tokens.accessToken.toString();
+    const cognitoTokens = session.tokens as unknown as CognitoAuthTokens;
+    const refreshToken = cognitoTokens.refreshToken;
+
+    // Get existing refresh token from storage if not available in session
+    const existingTokens = getStoredTokens();
+    const storedRefreshToken = refreshToken || existingTokens?.refreshToken;
+
+    // Decode JWT to get expiration time
+    const decodedToken = decodeJWT(accessToken);
+    const exp = decodedToken?.exp;
+    const expiresIn =
+      exp && typeof exp === 'number' ? Math.max(0, exp - Math.floor(Date.now() / 1000)) : 3600;
+
+    const newTokens: AuthTokens = {
+      accessToken,
+      refreshToken: storedRefreshToken,
+      expiresIn,
+    };
+
+    storeTokens(newTokens);
+    apiClient.setAuthToken(accessToken);
+
+    return { success: true, accessToken };
+  } catch {
+    clearTokens();
+    apiClient.setAuthToken(null);
+    return { success: false };
+  }
+}
+
+/**
+ * Fetch user from Cognito session and extract user information
+ * @param forceRefresh - Whether to force refresh the auth session (use when tokens are expired)
+ */
+async function fetchUserFromCognito(forceRefresh: boolean = false): Promise<User | null> {
   // Use AWS Amplify's getCurrentUser (imported as amplifyGetCurrentUser to avoid naming conflict)
   const cognitoUser = await amplifyGetCurrentUser();
-  const session: AuthSession = await fetchAuthSession({ forceRefresh: false });
+  const session: AuthSession = await fetchAuthSession({ forceRefresh });
 
   if (!session.tokens?.accessToken) {
     return null;
@@ -553,64 +631,31 @@ export const authService = {
       };
     }
 
-    try {
-      // Force refresh to get new tokens
-      const session: AuthSession = await fetchAuthSession({ forceRefresh: true });
+    const refreshResult = await performTokenRefresh();
 
-      if (!session.tokens?.accessToken) {
-        // If refresh fails, clear tokens
-        clearTokens();
-        apiClient.setAuthToken(null);
-        return {
-          success: false,
-          error: {
-            code: 'NO_ACCESS_TOKEN',
-            message: 'Failed to refresh access token',
-          },
-        };
-      }
-
-      const accessToken = session.tokens.accessToken.toString();
-      // Access refreshToken from Cognito tokens (it exists but isn't in the base AuthTokens type)
-      // Note: Amplify v6 manages refresh tokens internally, so it may not be directly accessible
-      const cognitoTokens = session.tokens as unknown as CognitoAuthTokens;
-      const refreshToken = cognitoTokens.refreshToken;
-
-      // Get existing refresh token from storage if not available in session
-      // (Amplify manages it internally, but we store it for reference)
-      const existingTokens = getStoredTokens();
-      const storedRefreshToken = refreshToken || existingTokens?.refreshToken;
-
-      // Decode JWT to get expiration time
-      const decodedToken = decodeJWT(accessToken);
-      const exp = decodedToken?.exp;
-      const expiresIn =
-        exp && typeof exp === 'number' ? Math.max(0, exp - Math.floor(Date.now() / 1000)) : 3600;
-
-      const newTokens: AuthTokens = {
-        accessToken,
-        refreshToken: storedRefreshToken,
-        expiresIn,
-      };
-
-      storeTokens(newTokens);
-      apiClient.setAuthToken(accessToken);
-
-      return { success: true, data: newTokens };
-    } catch (error) {
-      // If refresh fails, clear tokens
-      clearTokens();
-      apiClient.setAuthToken(null);
-
-      const errorMessage = error instanceof Error ? error.message : 'Failed to refresh token';
+    if (!refreshResult.success || !refreshResult.accessToken) {
       return {
         success: false,
         error: {
           code: 'REFRESH_FAILED',
-          message: errorMessage,
+          message: 'Failed to refresh access token',
         },
       };
     }
+
+    // Get the stored tokens (which were just updated by performTokenRefresh)
+    const tokens = getStoredTokens();
+    if (!tokens) {
+      return {
+        success: false,
+        error: {
+          code: 'REFRESH_FAILED',
+          message: 'Failed to retrieve refreshed tokens',
+        },
+      };
+    }
+
+    return { success: true, data: tokens };
   },
 
   /**
@@ -637,8 +682,26 @@ export const authService = {
         };
       }
 
-      // If no stored user or token expired, get from Cognito
-      const user = await fetchUserFromCognito();
+      // If stored user is invalid or token expired, refresh tokens first
+      const tokensExpired = areStoredTokensExpired();
+      if (tokensExpired) {
+        console.log('[authService] getCurrentUser: Tokens expired, attempting refresh');
+        const refreshResult = await performTokenRefresh();
+        if (!refreshResult.success) {
+          console.warn('[authService] getCurrentUser: Token refresh failed');
+          return {
+            success: false,
+            error: {
+              code: 'TOKEN_REFRESH_FAILED',
+              message: 'Failed to refresh expired tokens',
+            },
+          };
+        }
+        console.log('[authService] getCurrentUser: Token refresh successful');
+      }
+
+      // Get from Cognito (use forceRefresh if tokens were expired to ensure fresh session)
+      const user = await fetchUserFromCognito(tokensExpired);
       if (!user) {
         return {
           success: false,
@@ -728,4 +791,9 @@ export const authService = {
       localStorage.removeItem(USER_STORAGE_KEY);
     }
   },
+
+  /**
+   * Check if stored tokens are expired
+   */
+  areStoredTokensExpired,
 };
