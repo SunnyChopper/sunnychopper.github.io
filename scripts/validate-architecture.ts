@@ -8,8 +8,8 @@
  * - File organization
  */
 
-import { readdirSync, statSync, readFileSync, existsSync } from 'fs';
-import { join, relative } from 'path';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 interface ValidationResult {
   rule: string;
@@ -58,7 +58,7 @@ function validateAtomicDesign(): ValidationResult {
 
     for (const file of files) {
       const filePath = join(dirPath, file.name);
-      const content = readFileSync(filePath, 'utf-8');
+      const content = readFileSync(filePath, 'utf-8') as string;
 
       // Check for imports from wrong atomic level
       for (const type of allowedTypes) {
@@ -106,7 +106,7 @@ function validateServiceLayer(): ValidationResult {
     .map((f) => join(servicesPath, f));
 
   for (const filePath of serviceFiles) {
-    const content = readFileSync(filePath, 'utf-8');
+    const content = readFileSync(filePath, 'utf-8') as string;
     const relativePath = relative(srcPath, filePath);
 
     // Check for ApiResponse return type
@@ -150,18 +150,15 @@ function validateImports(): ValidationResult {
 
   for (const file of componentFiles) {
     const filePath = join(srcPath, 'components', file);
-    const content = readFileSync(filePath, 'utf-8');
+    const content = readFileSync(filePath, 'utf-8') as string;
     const lines = content.split('\n');
 
-    let inImports = true;
     let lastImportLine = 0;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (line.trim().startsWith('import ')) {
         lastImportLine = i;
-      } else if (line.trim() && !line.trim().startsWith('//')) {
-        inImports = false;
       }
     }
 

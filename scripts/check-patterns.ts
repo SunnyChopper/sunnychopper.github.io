@@ -8,8 +8,8 @@
  * - Tailwind usage
  */
 
-import { readdirSync, readFileSync, existsSync } from 'fs';
-import { join, relative } from 'path';
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 interface PatternViolation {
   file: string;
@@ -22,6 +22,104 @@ const violations: PatternViolation[] = [];
 const srcPath = join(process.cwd(), 'src');
 
 /**
+ * Check for loading states in async components
+ */
+function checkLoadingStates(content: string, relativePath: string): void {
+  const hasAsyncOps =
+    content.includes('useQuery') || content.includes('fetch(') || content.includes('axios.');
+  const hasLoadingState =
+    content.includes('isLoading') || content.includes('loading') || content.includes('isPending');
+
+  if (hasAsyncOps && !hasLoadingState) {
+    violations.push({
+      file: relativePath,
+      rule: 'Loading States',
+      message: 'Component with async operations should handle loading state',
+    });
+  }
+}
+
+/**
+ * Check for error states in async components
+ */
+function checkErrorStates(content: string, relativePath: string): void {
+  const hasAsyncOps = content.includes('useQuery') || content.includes('try {');
+  const hasErrorHandling =
+    content.includes('error') || content.includes('Error') || content.includes('catch');
+
+  if (hasAsyncOps && !hasErrorHandling) {
+    violations.push({
+      file: relativePath,
+      rule: 'Error States',
+      message: 'Component with async operations should handle error state',
+    });
+  }
+}
+
+/**
+ * Check for inline styles (should use Tailwind)
+ */
+function checkInlineStyles(content: string, relativePath: string): void {
+  const inlineStyleMatch = content.match(/style=\{[^}]*\}/g);
+  if (!inlineStyleMatch) return;
+
+  for (const match of inlineStyleMatch) {
+    // Allow dynamic styles (functions, variables)
+    const isDynamic =
+      match.includes('(') ||
+      match.includes('?') ||
+      match.includes('theme') ||
+      match.includes('calc');
+    if (!isDynamic) {
+      const lineNum = content.substring(0, content.indexOf(match)).split('\n').length;
+      violations.push({
+        file: relativePath,
+        rule: 'No Inline Styles',
+        message: 'Avoid inline styles, use Tailwind classes instead',
+        line: lineNum,
+      });
+    }
+  }
+}
+
+/**
+ * Check for accessibility (keyboard navigation, ARIA)
+ */
+function checkAccessibility(content: string, relativePath: string): void {
+  const hasOnClick = content.includes('onClick');
+  const hasKeyboardSupport = content.includes('onKeyDown') || content.includes('onKeyPress');
+  const hasAriaSupport =
+    content.includes('button') || content.includes('role=') || content.includes('tabIndex');
+  const hasButton = content.match(/<button|Button/g);
+
+  if (hasOnClick && !hasKeyboardSupport && !hasAriaSupport && !hasButton) {
+    violations.push({
+      file: relativePath,
+      rule: 'Accessibility',
+      message: 'Interactive elements should support keyboard navigation',
+    });
+  }
+}
+
+/**
+ * Check for missing alt text on images
+ */
+function checkImageAltText(content: string, relativePath: string): void {
+  const imgMatches = content.matchAll(/<img[^>]*>/g);
+  for (const match of imgMatches) {
+    if (!match[0].includes('alt=')) {
+      const lineNum = content.substring(0, content.indexOf(match[0])).split('\n').length;
+      violations.push({
+        file: relativePath,
+        rule: 'Accessibility',
+        message: 'Image missing alt attribute',
+        line: lineNum,
+      });
+    }
+  }
+}
+
+/**
  * Check components for required patterns
  */
 function checkComponentPatterns(): void {
@@ -29,114 +127,19 @@ function checkComponentPatterns(): void {
   if (!existsSync(componentsPath)) return;
 
   const componentFiles = readdirSync(componentsPath, { recursive: true })
-    .filter((f) => f.endsWith('.tsx') && !f.includes('test'))
+    .filter((f): f is string => typeof f === 'string' && f.endsWith('.tsx') && !f.includes('test'))
     .slice(0, 30); // Sample first 30 files
 
   for (const file of componentFiles) {
     const filePath = join(componentsPath, file);
     const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
     const relativePath = relative(srcPath, filePath);
 
-    // Check for loading states in async components
-    if (
-      (content.includes('useQuery') || content.includes('fetch(') || content.includes('axios.')) &&
-      !content.includes('isLoading') &&
-      !content.includes('loading') &&
-      !content.includes('isPending')
-    ) {
-      violations.push({
-        file: relativePath,
-        rule: 'Loading States',
-        message: 'Component with async operations should handle loading state',
-      });
-    }
-
-    // Check for error states
-    if (
-      (content.includes('useQuery') || content.includes('try {')) &&
-      !content.includes('error') &&
-      !content.includes('Error') &&
-      !content.includes('catch')
-    ) {
-      violations.push({
-        file: relativePath,
-        rule: 'Error States',
-        message: 'Component with async operations should handle error state',
-      });
-    }
-
-    // Check for dark mode support (should use dark: classes or theme context)
-    if (
-      content.includes('className') &&
-      !content.includes('dark:') &&
-      !content.includes('useTheme') &&
-      !content.includes('ThemeProvider') &&
-      content.includes('bg-') &&
-      !file.includes('Layout')
-    ) {
-      // Only warn, not fail
-      // violations.push({
-      //   file: relativePath,
-      //   rule: 'Dark Mode',
-      //   message: 'Component should support dark mode',
-      // });
-    }
-
-    // Check for inline styles (should use Tailwind)
-    const inlineStyleMatch = content.match(/style=\{[^}]*\}/g);
-    if (inlineStyleMatch) {
-      for (const match of inlineStyleMatch) {
-        // Allow dynamic styles (functions, variables)
-        if (
-          !match.includes('(') &&
-          !match.includes('?') &&
-          !match.includes('theme') &&
-          !match.includes('calc')
-        ) {
-          const lineNum = content.substring(0, content.indexOf(match)).split('\n').length;
-          violations.push({
-            file: relativePath,
-            rule: 'No Inline Styles',
-            message: 'Avoid inline styles, use Tailwind classes instead',
-            line: lineNum,
-          });
-        }
-      }
-    }
-
-    // Check for accessibility (keyboard navigation, ARIA)
-    if (
-      content.includes('onClick') &&
-      !content.includes('onKeyDown') &&
-      !content.includes('onKeyPress') &&
-      !content.includes('button') &&
-      !content.includes('role=') &&
-      !content.includes('tabIndex')
-    ) {
-      const hasButton = content.match(/<button|Button/g);
-      if (!hasButton) {
-        violations.push({
-          file: relativePath,
-          rule: 'Accessibility',
-          message: 'Interactive elements should support keyboard navigation',
-        });
-      }
-    }
-
-    // Check for missing alt text on images
-    const imgMatches = content.matchAll(/<img[^>]*>/g);
-    for (const match of imgMatches) {
-      if (!match[0].includes('alt=')) {
-        const lineNum = content.substring(0, content.indexOf(match[0])).split('\n').length;
-        violations.push({
-          file: relativePath,
-          rule: 'Accessibility',
-          message: 'Image missing alt attribute',
-          line: lineNum,
-        });
-      }
-    }
+    checkLoadingStates(content, relativePath);
+    checkErrorStates(content, relativePath);
+    checkInlineStyles(content, relativePath);
+    checkAccessibility(content, relativePath);
+    checkImageAltText(content, relativePath);
   }
 }
 
@@ -145,7 +148,10 @@ function checkComponentPatterns(): void {
  */
 function checkForbiddenPatterns(): void {
   const allFiles = readdirSync(srcPath, { recursive: true })
-    .filter((f) => (f.endsWith('.ts') || f.endsWith('.tsx')) && !f.includes('test'))
+    .filter(
+      (f): f is string =>
+        typeof f === 'string' && (f.endsWith('.ts') || f.endsWith('.tsx')) && !f.includes('test')
+    )
     .slice(0, 50); // Sample first 50 files
 
   for (const file of allFiles) {
@@ -194,8 +200,9 @@ function checkForbiddenPatterns(): void {
  * Check Tailwind usage patterns
  */
 function checkTailwindUsage(): void {
-  const componentFiles = readdirSync(join(srcPath, 'components'), { recursive: true })
-    .filter((f) => f.endsWith('.tsx'))
+  const allFiles = readdirSync(join(srcPath, 'components'), { recursive: true });
+  const componentFiles = (Array.isArray(allFiles) ? allFiles : [])
+    .filter((f): f is string => typeof f === 'string' && f.endsWith('.tsx'))
     .slice(0, 20);
 
   for (const file of componentFiles) {

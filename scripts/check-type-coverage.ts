@@ -5,9 +5,7 @@
  * Ensures AI-generated code maintains type safety
  */
 
-import { execSync } from 'child_process';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { execSync } from 'node:child_process';
 
 const MIN_COVERAGE = 90; // Minimum type coverage percentage
 
@@ -57,7 +55,8 @@ try {
 
   console.log('✅ Type coverage meets requirements!\n');
   process.exit(0);
-} catch (error: any) {
-  console.error('❌ Error checking type coverage:', error.message);
+} catch (error: unknown) {
+  const message = error instanceof Error ? error.message : 'Unknown error';
+  console.error('❌ Error checking type coverage:', message);
   process.exit(1);
 }

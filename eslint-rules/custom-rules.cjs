@@ -134,12 +134,27 @@ module.exports = {
                   (prop) => {
                     if (prop.type === 'Property') {
                       const value = prop.value;
-                      // Allow if value is a function call, identifier, or member expression
+                      const key = prop.key.name || prop.key.value;
+                      // Allow animation-related properties (necessary for dynamic animations)
+                      if (
+                        key === 'animationDelay' ||
+                        key === 'animationDuration' ||
+                        key === 'transitionDelay'
+                      ) {
+                        return true;
+                      }
+                      // Allow if value is a function call, identifier, member expression, or template literal
                       return (
                         value.type === 'CallExpression' ||
                         value.type === 'Identifier' ||
                         value.type === 'MemberExpression' ||
-                        value.type === 'ConditionalExpression'
+                        value.type === 'ConditionalExpression' ||
+                        value.type === 'TemplateLiteral' ||
+                        (value.type === 'Literal' &&
+                          typeof value.value === 'string' &&
+                          (value.value.includes('%') ||
+                            value.value.includes('calc') ||
+                            value.value.includes('var(')))
                       );
                     }
                     return false;

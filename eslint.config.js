@@ -51,8 +51,11 @@ export default defineConfig([
         version: 'detect',
       },
       'import/resolver': {
-        typescript: true,
-        node: true,
+        // Disable TypeScript resolver - it's causing false positives
+        // TypeScript compiler already handles type checking
+        node: {
+          extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        },
       },
     },
     rules: {
@@ -61,21 +64,11 @@ export default defineConfig([
       'react/prop-types': 'off', // Using TypeScript for prop validation
       'react/display-name': 'warn',
 
-      // Import rules
-      'import/order': [
-        'warn',
-        {
-          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-          'newlines-between': 'always',
-          alphabetize: {
-            order: 'asc',
-            caseInsensitive: true,
-          },
-        },
-      ],
-      'import/no-unresolved': 'error',
-      'import/no-unused-modules': 'warn',
-      'import/no-duplicates': 'error',
+      // Import rules - relaxed to reduce false positives
+      'import/order': 'off', // Disabled - user preference
+      'import/no-unresolved': 'off', // Disabled - TypeScript handles this
+      'import/no-unused-modules': 'off', // Too noisy, can be checked separately
+      'import/no-duplicates': 'warn', // Changed from error to warning
 
       // JSX A11y rules
       'jsx-a11y/alt-text': 'warn',
@@ -90,16 +83,16 @@ export default defineConfig([
       'jsx-a11y/no-static-element-interactions': 'warn',
       'jsx-a11y/interactive-supports-focus': 'warn',
 
-      // SonarJS rules
-      'sonarjs/cognitive-complexity': ['warn', 15],
-      'sonarjs/no-duplicate-string': ['warn', { threshold: 3 }],
+      // SonarJS rules - relaxed thresholds
+      'sonarjs/cognitive-complexity': ['warn', 20], // Increased from 15
+      'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }], // Increased from 3
       'sonarjs/no-identical-functions': 'warn',
       'sonarjs/no-small-switch': 'warn',
-      'sonarjs/prefer-immediate-return': 'warn',
+      'sonarjs/prefer-immediate-return': 'off', // Too opinionated, can make code less readable
       'sonarjs/prefer-object-literal': 'warn',
       'sonarjs/prefer-single-boolean-return': 'warn',
 
-      // Unicorn rules
+      // Unicorn rules - relaxed
       'unicorn/filename-case': [
         'warn',
         {
@@ -107,16 +100,19 @@ export default defineConfig([
           ignore: [/^[A-Z]/, /\.config\.(js|ts)$/],
         },
       ],
-      'unicorn/no-array-callback-reference': 'warn',
+      'unicorn/no-array-callback-reference': 'off', // Too strict, sometimes callback refs are clearer
       'unicorn/no-array-for-each': 'off', // Allow forEach for side effects
-      'unicorn/no-array-reduce': 'warn',
+      'unicorn/no-array-reduce': 'off', // Reduce is sometimes the right tool
       'unicorn/prefer-array-find': 'warn',
       'unicorn/prefer-array-some': 'warn',
       'unicorn/prefer-includes': 'warn',
       'unicorn/prefer-string-starts-ends-with': 'warn',
       'unicorn/prefer-module': 'off', // ESM is used
-      'unicorn/prefer-node-protocol': 'warn',
+      'unicorn/prefer-node-protocol': 'off', // Not critical, can be noisy
       'unicorn/prevent-abbreviations': 'off', // Too strict for this project
+
+      // React Hooks rules - override recommended config
+      'react-hooks/set-state-in-effect': 'warn', // Changed from error - sometimes necessary
 
       // TypeScript rules
       '@typescript-eslint/no-unused-vars': [

@@ -5,7 +5,7 @@
  * Use this for comprehensive validation before commits/PRs
  */
 
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 
 interface ValidationStep {
   name: string;
@@ -35,7 +35,7 @@ const stepsToRun = isQuick ? quickSteps : steps;
 console.log(isQuick ? '⚡ Quick Validation\n' : '🔍 Full Validation\n');
 console.log('='.repeat(50) + '\n');
 
-let failedSteps: string[] = [];
+const failedSteps: string[] = [];
 
 for (const step of stepsToRun) {
   try {
@@ -45,7 +45,7 @@ for (const step of stepsToRun) {
       cwd: process.cwd(),
     });
     console.log(`✅ ${step.name} passed\n`);
-  } catch (error) {
+  } catch {
     if (step.optional) {
       console.log(`⚠️  ${step.name} failed (optional, continuing...)\n`);
     } else {
