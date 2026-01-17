@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { copyFileSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 // https://vite.dev/config/
@@ -52,6 +52,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Path alias for src directory
+      '@': resolve(__dirname, './src'),
       // Polyfill async_hooks for LangGraph
       // Handle both 'async_hooks' and 'node:async_hooks' imports
       async_hooks: join(process.cwd(), 'src/lib/polyfills/async-hooks.ts'),
