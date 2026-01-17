@@ -5,11 +5,11 @@ import {
   type LLMProvider,
   AI_FEATURE_DISPLAY_NAMES,
   PROVIDER_DISPLAY_NAMES,
-  getFeatureConfig,
   setFeatureConfig,
   getConfiguredProviders,
   getModelsForProvider,
-} from '../../lib/llm';
+} from '@/lib/llm';
+import { getFeatureConfigSync } from '@/lib/llm/config/feature-config-store';
 
 export function FeatureProviderSelector() {
   const [selectedFeature, setSelectedFeature] = useState<AIFeature>('parseTask');
@@ -20,20 +20,24 @@ export function FeatureProviderSelector() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    const providers = getConfiguredProviders();
-    setAvailableProviders(providers);
+    const loadProviders = async () => {
+      const providers = await getConfiguredProviders();
+      setAvailableProviders(providers);
 
-    if (providers.length > 0) {
-      const config = getFeatureConfig(selectedFeature);
-      if (providers.includes(config.provider)) {
-        setSelectedProvider(config.provider);
-        setSelectedModel(config.model);
-      } else {
-        setSelectedProvider(providers[0]);
-        const models = getModelsForProvider(providers[0]);
-        setSelectedModel(models.length > 0 ? models[0].name : '');
+      if (providers.length > 0) {
+        const config = getFeatureConfigSync(selectedFeature);
+        if (providers.includes(config.provider)) {
+          setSelectedProvider(config.provider);
+          setSelectedModel(config.model);
+        } else {
+          setSelectedProvider(providers[0]);
+          const models = getModelsForProvider(providers[0]);
+          setSelectedModel(models.length > 0 ? models[0].name : '');
+        }
       }
-    }
+    };
+
+    loadProviders();
   }, [selectedFeature]);
 
   useEffect(() => {
@@ -48,7 +52,7 @@ export function FeatureProviderSelector() {
     setSaveSuccess(false);
 
     try {
-      setFeatureConfig(selectedFeature, selectedProvider, selectedModel);
+      await setFeatureConfig(selectedFeature, selectedProvider, selectedModel);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (error) {
@@ -207,7 +211,7 @@ export function FeatureProviderSelector() {
         </h4>
         <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
           {features.map((feature) => {
-            const config = getFeatureConfig(feature);
+            const config = getFeatureConfigSync(feature);
             return (
               <div key={feature} className="flex justify-between">
                 <span>{AI_FEATURE_DISPLAY_NAMES[feature]}:</span>

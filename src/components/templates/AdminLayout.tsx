@@ -1,6 +1,6 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
-import { useAuth } from '../../contexts/Auth';
-import { useMode } from '../../contexts/Mode';
+import { useAuth } from '@/contexts/Auth';
+import { useMode } from '@/contexts/Mode';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -31,11 +31,11 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { CommandPalette } from '../organisms/CommandPalette';
-import LeisureModeToggle from '../atoms/LeisureModeToggle';
-import { WalletWidget } from '../molecules/WalletWidget';
-import { BackendStatusBanner } from '../molecules/BackendStatusBanner';
-import { ROUTES } from '../../routes';
+import { CommandPalette } from '@/components/organisms/CommandPalette';
+import LeisureModeToggle from '@/components/atoms/LeisureModeToggle';
+import { WalletWidget } from '@/components/molecules/WalletWidget';
+import { BackendStatusBanner } from '@/components/molecules/BackendStatusBanner';
+import { ROUTES } from '@/routes';
 
 interface NavItem {
   name: string;

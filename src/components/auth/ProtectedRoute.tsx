@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/Auth';
-import Loader from '../molecules/Loader';
-import { ROUTES } from '../../routes';
+import { useAuth } from '@/contexts/Auth';
+import Loader from '@/components/molecules/Loader';
+import { ROUTES } from '@/routes';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

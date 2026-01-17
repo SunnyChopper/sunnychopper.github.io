@@ -6,7 +6,7 @@ import {
   getApiKey,
   setApiKey,
   removeApiKey,
-} from '../../lib/llm';
+} from '@/lib/llm';
 
 interface ProviderKeyState {
   value: string;
@@ -27,28 +27,32 @@ export function ProviderApiKeyManager() {
   });
 
   useEffect(() => {
-    const providers: LLMProvider[] = [
-      'anthropic',
-      'openai',
-      'gemini',
-      'groq',
-      'grok',
-      'deepseek',
-      'cerebras',
-    ];
+    const loadKeys = async () => {
+      const providers: LLMProvider[] = [
+        'anthropic',
+        'openai',
+        'gemini',
+        'groq',
+        'grok',
+        'deepseek',
+        'cerebras',
+      ];
 
-    const loaded: Record<string, ProviderKeyState> = {};
-    providers.forEach((provider) => {
-      const key = getApiKey(provider) || '';
-      loaded[provider] = {
-        value: key,
-        showKey: false,
-        isTesting: false,
-        testResult: null,
-      };
-    });
+      const loaded: Record<string, ProviderKeyState> = {};
+      for (const provider of providers) {
+        const key = (await getApiKey(provider)) || '';
+        loaded[provider] = {
+          value: key,
+          showKey: false,
+          isTesting: false,
+          testResult: null,
+        };
+      }
 
-    setKeyStates(loaded as Record<LLMProvider, ProviderKeyState>);
+      setKeyStates(loaded as Record<LLMProvider, ProviderKeyState>);
+    };
+
+    loadKeys();
   }, []);
 
   const handleKeyChange = (provider: LLMProvider, value: string) => {
@@ -65,12 +69,22 @@ export function ProviderApiKeyManager() {
     }));
   };
 
-  const handleSave = (provider: LLMProvider) => {
+  const handleSave = async (provider: LLMProvider) => {
     const key = keyStates[provider].value.trim();
-    if (key) {
-      setApiKey(provider, key);
-    } else {
-      removeApiKey(provider);
+    try {
+      if (key) {
+        await setApiKey(provider, key);
+      } else {
+        await removeApiKey(provider);
+      }
+      // Reload keys after save
+      const updatedKey = (await getApiKey(provider)) || '';
+      setKeyStates((prev) => ({
+        ...prev,
+        [provider]: { ...prev[provider], value: updatedKey },
+      }));
+    } catch (error) {
+      console.error('Failed to save API key:', error);
     }
   };
 

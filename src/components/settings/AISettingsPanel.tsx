@@ -6,20 +6,20 @@ import {
   setCostOptimizedMix,
   PROVIDER_DISPLAY_NAMES,
   getConfiguredProviders,
-} from '../../lib/llm';
+} from '@/lib/llm';
 
 type Tab = 'api-keys' | 'features';
 
 export function AISettingsPanel() {
   const [activeTab, setActiveTab] = useState<Tab>('api-keys');
 
-  const handleQuickPreset = (preset: 'anthropic' | 'openai' | 'cost-optimized') => {
+  const handleQuickPreset = async (preset: 'anthropic' | 'openai' | 'cost-optimized') => {
     if (preset === 'cost-optimized') {
-      setCostOptimizedMix();
+      await setCostOptimizedMix();
     } else {
-      const configuredProviders = getConfiguredProviders();
+      const configuredProviders = await getConfiguredProviders();
       if (configuredProviders.includes(preset)) {
-        setAllFeaturesToProvider(preset);
+        await setAllFeaturesToProvider(preset);
       } else {
         alert(`Please configure ${PROVIDER_DISPLAY_NAMES[preset]} API key first.`);
         return;
