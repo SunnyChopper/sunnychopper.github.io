@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import type { Task } from '../../types/growth-system';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
-import { AreaBadge } from '../atoms/AreaBadge';
 import Button from '../atoms/Button';
 
 interface TaskCalendarViewProps {
@@ -62,93 +61,124 @@ export function TaskCalendarView({ tasks, onTaskClick }: TaskCalendarViewProps) 
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  const tasksWithDates = tasks.filter(t => t.dueDate).length;
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{monthName}</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+            <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{monthName}</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {tasksWithDates} {tasksWithDates === 1 ? 'task' : 'tasks'} scheduled
+            </p>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={goToToday}>
             Today
           </Button>
-          <button
-            onClick={() => navigateMonth('prev')}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
-          <button
-            onClick={() => navigateMonth('next')}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
+          <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+            <button
+              onClick={() => navigateMonth('prev')}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+            <button
+              onClick={() => navigateMonth('next')}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
-        {weekDays.map((day) => (
-          <div
-            key={day}
-            className="text-center font-semibold text-sm text-gray-700 dark:text-gray-300 py-2"
-          >
-            {day}
-          </div>
-        ))}
-
-        {days.map((day, index) => {
-          if (day === null) {
-            return <div key={`empty-${index}`} className="min-h-[120px]" />;
-          }
-
-          const date = new Date(year, month, day);
-          const isToday =
-            isCurrentMonth && day === today.getDate();
-          const dateTasks = getTasksForDate(date);
-
-          return (
+      <div className="p-4">
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map((day) => (
             <div
               key={day}
-              className={`min-h-[120px] border border-gray-200 dark:border-gray-700 rounded-lg p-2 ${
-                isToday ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500' : ''
-              }`}
+              className="text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-400 py-3"
             >
-              <div className={`text-sm font-semibold mb-2 ${
-                isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
-              }`}>
-                {day}
-              </div>
-
-              <div className="space-y-1">
-                {dateTasks.slice(0, 3).map((task) => (
-                  <button
-                    key={task.id}
-                    onClick={() => onTaskClick(task)}
-                    className="w-full text-left p-1.5 rounded text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:shadow-sm transition-shadow"
-                  >
-                    <div className="flex items-center gap-1 mb-1">
-                      <PriorityIndicator priority={task.priority} size="sm" />
-                      <span className="truncate text-gray-900 dark:text-white font-medium">
-                        {task.title}
-                      </span>
-                    </div>
-                    <AreaBadge area={task.area} size="sm" />
-                  </button>
-                ))}
-
-                {dateTasks.length > 3 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 pl-1.5">
-                    +{dateTasks.length - 3} more
-                  </div>
-                )}
-              </div>
+              {day}
             </div>
-          );
-        })}
+          ))}
+
+          {days.map((day, index) => {
+            if (day === null) {
+              return <div key={`empty-${index}`} className="aspect-square" />;
+            }
+
+            const date = new Date(year, month, day);
+            const isToday = isCurrentMonth && day === today.getDate();
+            const dateTasks = getTasksForDate(date);
+            const hasTasks = dateTasks.length > 0;
+
+            return (
+              <div
+                key={day}
+                className={`aspect-square border-2 rounded-lg p-2 transition-all ${
+                  isToday
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                    : hasTasks
+                    ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+                }`}
+              >
+                <div className="flex flex-col h-full">
+                  <div className={`text-sm font-bold mb-1 ${
+                    isToday
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : hasTasks
+                      ? 'text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-500'
+                  }`}>
+                    {day}
+                  </div>
+
+                  <div className="flex-1 space-y-1 overflow-hidden">
+                    {dateTasks.slice(0, 2).map((task) => (
+                      <button
+                        key={task.id}
+                        onClick={() => onTaskClick(task)}
+                        className="w-full text-left px-1.5 py-1 rounded text-[10px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-all group"
+                      >
+                        <div className="flex items-center gap-1">
+                          <PriorityIndicator priority={task.priority} size="sm" />
+                          <span className="truncate text-gray-900 dark:text-white font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                            {task.title}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+
+                    {dateTasks.length > 2 && (
+                      <div className="text-[10px] text-gray-500 dark:text-gray-400 pl-1.5 font-medium">
+                        +{dateTasks.length - 2} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-        {tasks.filter(t => t.dueDate).length} tasks with due dates
-      </div>
+      {tasksWithDates === 0 && (
+        <div className="px-6 py-8 text-center border-t border-gray-200 dark:border-gray-700">
+          <CalendarIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+          <p className="text-gray-600 dark:text-gray-400">
+            No tasks with due dates. Add due dates to see them on the calendar.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

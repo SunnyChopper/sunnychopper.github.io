@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sun, CheckSquare, Repeat, TrendingUp, Sparkles, ChevronRight, Rocket } from 'lucide-react';
+import { Sun, CheckSquare, Repeat, TrendingUp, Sparkles, ChevronRight, Rocket, AlertCircle } from 'lucide-react';
 import { useTasks, useHabits, useMetrics } from '../../hooks/useGrowthSystem';
 import type { Task, Habit, Metric } from '../../types/growth-system';
 import Button from '../atoms/Button';
@@ -20,15 +20,18 @@ interface DailyPlanningAssistantProps {
 
 export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantProps) {
   const [plan, setPlan] = useState<DailyPlan | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { tasks } = useTasks();
-  const { habits } = useHabits();
-  const { metrics } = useMetrics();
+  const { tasks, isLoading: tasksLoading, isError: tasksError } = useTasks();
+  const { habits, isLoading: habitsLoading, isError: habitsError } = useHabits();
+  const { metrics, isLoading: metricsLoading, isError: metricsError } = useMetrics();
+
+  const hasNetworkError = tasksError || habitsError || metricsError;
+  const isLoading = tasksLoading || habitsLoading || metricsLoading;
 
   const generateDailyPlan = async () => {
-    setIsLoading(true);
+    setIsGeneratingPlan(true);
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const today = new Date();
@@ -98,14 +101,33 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
       briefing
     });
 
-    setIsLoading(false);
+    setIsGeneratingPlan(false);
   };
 
   useEffect(() => {
     generateDailyPlan();
   }, [tasks, habits, metrics]);
 
-  if (isLoading || !plan) {
+  if (hasNetworkError) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div className="text-center py-8">
+          <AlertCircle className="w-12 h-12 text-amber-500 dark:text-amber-400 mx-auto mb-3" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Unable to load daily plan
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+            Backend connection unavailable
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-500">
+            Please check the connection status and try again
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || isGeneratingPlan || !plan) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="animate-pulse space-y-4">

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Sparkles, TrendingUp, AlertTriangle, Target, Zap, X, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Sparkles, TrendingUp, AlertTriangle, Target, Zap, X, RefreshCw, AlertCircle } from 'lucide-react';
 import { llmConfig } from '../../lib/llm';
 import { useTasks, useHabits, useMetrics, useGoals, useProjects } from '../../hooks/useGrowthSystem';
 import Button from '../atoms/Button';
@@ -22,15 +22,16 @@ export function AIInsightsWidget() {
   const [isLoading, setIsLoading] = useState(true);
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
-  const { tasks } = useTasks();
-  const { habits } = useHabits();
-  const { metrics } = useMetrics();
-  const { goals } = useGoals();
-  const { projects } = useProjects();
+  const { tasks, isError: tasksError } = useTasks();
+  const { habits, isError: habitsError } = useHabits();
+  const { metrics, isError: metricsError } = useMetrics();
+  const { goals, isError: goalsError } = useGoals();
+  const { projects, isError: projectsError } = useProjects();
 
   const isAIConfigured = llmConfig.isConfigured();
+  const hasNetworkError = tasksError || habitsError || metricsError || goalsError || projectsError;
 
-  const generateInsights = async () => {
+  const generateInsights = useCallback(async () => {
     setIsLoading(true);
 
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -146,11 +147,11 @@ export function AIInsightsWidget() {
 
     setInsights(newInsights.filter(i => !dismissedIds.includes(i.id)));
     setIsLoading(false);
-  };
+  }, [tasks, habits, metrics, goals, projects, dismissedIds]);
 
   useEffect(() => {
     generateInsights();
-  }, [tasks, habits, metrics, goals, projects]);
+  }, [generateInsights]);
 
   const handleDismiss = (insightId: string) => {
     setDismissedIds(prev => [...prev, insightId]);
@@ -210,7 +211,17 @@ export function AIInsightsWidget() {
         </button>
       </div>
 
-      {isLoading ? (
+      {hasNetworkError ? (
+        <div className="text-center py-8">
+          <AlertCircle className="w-12 h-12 text-amber-500 dark:text-amber-400 mx-auto mb-3 opacity-50" />
+          <p className="text-gray-600 dark:text-gray-400 mb-1">
+            Unable to generate insights
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-500">
+            Backend connection unavailable
+          </p>
+        </div>
+      ) : isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => (
             <div key={i} className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 animate-pulse">

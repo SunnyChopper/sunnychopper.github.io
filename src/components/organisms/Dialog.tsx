@@ -4,15 +4,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
+type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
 interface DialogProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
   className?: string;
+  size?: DialogSize;
 }
 
-export default function Dialog({ isOpen, onClose, title, children, className }: DialogProps) {
+const sizeClasses: Record<DialogSize, string> = {
+  sm: 'max-w-md',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+  full: 'max-w-[95vw] mx-auto',
+};
+
+export default function Dialog({ isOpen, onClose, title, children, className, size = 'md' }: DialogProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -33,16 +44,20 @@ export default function Dialog({ isOpen, onClose, title, children, className }: 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/50 z-[60]"
           />
-          <div className="fixed inset-0 flex items-center justify-center p-4 z-50 pointer-events-none overflow-y-auto">
+          <div className="fixed inset-0 flex items-center justify-center p-4 z-[70] pointer-events-none overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
               className={cn(
-                'bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full pointer-events-auto relative my-8 max-h-[calc(100vh-4rem)] flex flex-col',
+                'bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full pointer-events-auto relative my-4 flex flex-col',
+                sizeClasses[size],
+                size === 'full' && 'h-[calc(100vh-2rem)] max-h-[calc(100vh-2rem)]',
+                size === 'xl' && 'md:max-w-4xl max-h-[calc(100vh-4rem)]',
+                size !== 'full' && size !== 'xl' && 'max-h-[calc(100vh-4rem)]',
                 className
               )}
             >

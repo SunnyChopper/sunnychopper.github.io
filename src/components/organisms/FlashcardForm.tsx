@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Tag as TagIcon } from 'lucide-react';
-import { useKnowledgeVault } from '../../contexts/KnowledgeVaultContext';
+import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
 import type { Flashcard, CreateFlashcardInput, UpdateFlashcardInput } from '../../types/knowledge-vault';
 import type { Area } from '../../types/growth-system';
 
