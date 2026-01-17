@@ -1,4 +1,4 @@
-import type { Metric, MetricLog } from '../types/growth-system';
+import type { Metric, MetricLog } from '@/types/growth-system';
 import { calculateCorrelations } from './metric-analytics';
 
 export interface CorrelationMatrix {

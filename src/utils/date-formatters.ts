@@ -1,4 +1,4 @@
-import type { Habit, HabitLog } from '../types/growth-system';
+import type { Habit, HabitLog } from '@/types/growth-system';
 
 /**
  * Format a date as a relative string (e.g., "2 days ago", "Today", "Yesterday")

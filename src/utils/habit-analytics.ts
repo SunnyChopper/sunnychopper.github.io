@@ -1,4 +1,4 @@
-import type { Habit, HabitLog } from '../types/growth-system';
+import type { Habit, HabitLog } from '@/types/growth-system';
 
 export interface StreakData {
   current: number;

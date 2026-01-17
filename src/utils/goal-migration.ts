@@ -1,5 +1,5 @@
-import { generateId } from '../mocks/storage';
-import type { Goal, SuccessCriterion } from '../types/growth-system';
+import { generateId } from '@/mocks/storage';
+import type { Goal, SuccessCriterion } from '@/types/growth-system';
 
 /**
  * Migrate goals with old string[] successCriteria to new SuccessCriterion[] format

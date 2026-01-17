@@ -1,4 +1,4 @@
-import type { Metric, MetricLog, Goal } from '../types/growth-system';
+import type { Metric, MetricLog, Goal } from '@/types/growth-system';
 import { getTrendData, calculateProgress } from './metric-analytics';
 
 export type MetricStatus = 'On Track' | 'At Risk' | 'Stalled' | 'No Target';

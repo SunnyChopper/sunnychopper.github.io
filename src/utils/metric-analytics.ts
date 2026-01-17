@@ -1,4 +1,4 @@
-import type { Metric, MetricLog, MetricDirection } from '../types/growth-system';
+import type { Metric, MetricLog, MetricDirection } from '@/types/growth-system';
 
 // Start: Key Data Types
 export type TrendData = {
