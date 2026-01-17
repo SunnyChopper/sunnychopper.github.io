@@ -1,21 +1,24 @@
-import { getStorageAdapter } from '../../lib/storage';
-import { generateId, randomDelay } from '../../mocks/storage';
 import { llmConfig } from '../../lib/llm';
 import { taskPointsAIService } from '../ai/task-points.service';
+import { apiClient } from '../../lib/api-client';
 import type {
   Task,
   CreateTaskInput,
   UpdateTaskInput,
   TaskDependency,
-  TaskProject,
-  TaskGoal,
   FilterOptions,
   PaginatedResponse,
   DependencyGraph,
 } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
 
-const USER_ID = 'user-1';
+interface BackendPaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
 
 function applyFilters(tasks: Task[], filters?: FilterOptions): Task[] {
   let filtered = [...tasks];
@@ -64,45 +67,44 @@ function applyFilters(tasks: Task[], filters?: FilterOptions): Task[] {
 
 export const tasksService = {
   async getAll(filters?: FilterOptions): Promise<PaginatedResponse<Task>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const allTasks = await storage.getAll<Task>('tasks');
-    const filtered = applyFilters(allTasks, filters);
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    if (filters?.search) queryParams.append('search', filters.search);
+    if (filters?.status) queryParams.append('status', filters.status);
+    if (filters?.priority) queryParams.append('priority', filters.priority);
+    if (filters?.area) queryParams.append('area', filters.area);
+    if (filters?.subCategory) queryParams.append('subCategory', filters.subCategory);
+    if (filters?.projectId) queryParams.append('projectId', filters.projectId);
+    if (filters?.goalId) queryParams.append('goalId', filters.goalId);
+    if (filters?.dueDate) queryParams.append('dueDate', filters.dueDate);
+    if (filters?.page) queryParams.append('page', String(filters.page));
+    if (filters?.pageSize) queryParams.append('pageSize', String(filters.pageSize));
+    if (filters?.sortBy) queryParams.append('sortBy', filters.sortBy);
+    if (filters?.sortOrder) queryParams.append('sortOrder', filters.sortOrder);
 
-    const page = filters?.page || 1;
-    const pageSize = filters?.pageSize || 50;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const paginated = filtered.slice(start, end);
+    const endpoint = `/tasks${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await apiClient.get<BackendPaginatedResponse<Task>>(endpoint);
 
-    return {
-      data: paginated,
-      total: filtered.length,
-      page,
-      pageSize,
-      totalPages: Math.ceil(filtered.length / pageSize),
-    };
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        page: response.data.page,
+        pageSize: response.data.pageSize,
+        totalPages: Math.ceil(response.data.total / response.data.pageSize),
+      };
+    }
+
+    throw new Error(response.error?.message || 'Failed to fetch tasks');
   },
 
   async getById(id: string): Promise<ApiResponse<Task>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const task = await storage.getById<Task>('tasks', id);
-    if (!task) {
-      return {
-        data: undefined,
-        error: { message: 'Task not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: task, success: true };
+    const response = await apiClient.get<Task>(`/tasks/${id}`);
+    return response;
   },
 
   async create(input: CreateTaskInput): Promise<ApiResponse<Task>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-
+    // Calculate point value if not provided and LLM is configured
     let pointValue = input.pointValue || null;
 
     if (pointValue === null && llmConfig.isConfigured()) {
@@ -120,182 +122,117 @@ export const tasksService = {
       }
     }
 
-    const task: Task = {
-      id: generateId(),
-      title: input.title,
-      description: input.description || null,
-      extendedDescription: input.extendedDescription || null,
-      area: input.area,
-      subCategory: input.subCategory || null,
-      priority: input.priority || 'P3',
-      status: input.status || 'NotStarted',
-      size: input.size || null,
-      dueDate: input.dueDate || null,
-      scheduledDate: input.scheduledDate || null,
-      completedDate: null,
-      notes: input.notes || null,
-      isRecurring: input.isRecurring || false,
-      recurrenceRule: input.recurrenceRule || null,
+    // Prepare request body matching backend schema
+    const requestBody: CreateTaskInput = {
+      ...input,
       pointValue,
-      pointsAwarded: null,
-      userId: USER_ID,
-      createdAt: now,
-      updatedAt: now,
     };
-    await storage.create('tasks', task.id, task);
-    return { data: task, success: true };
+
+    const response = await apiClient.post<Task>('/tasks', requestBody);
+    return response;
   },
 
   async update(id: string, input: UpdateTaskInput): Promise<ApiResponse<Task>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const updated = await storage.update<Task>('tasks', id, {
-      ...input,
-      updatedAt: new Date().toISOString(),
-    });
-    if (!updated) {
-      return {
-        data: undefined,
-        error: { message: 'Task not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: updated, success: true };
+    const response = await apiClient.patch<Task>(`/tasks/${id}`, input);
+    return response;
   },
 
   async delete(id: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const deleted = await storage.delete('tasks', id);
-    if (!deleted) {
-      return {
-        data: undefined,
-        error: { message: 'Task not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-
-    const allDeps = await storage.getAll<TaskDependency>('taskDependencies');
-    for (const dep of allDeps.filter((d) => d.taskId === id || d.dependsOnTaskId === id)) {
-      await storage.delete('taskDependencies', dep.id);
-    }
-
-    const allTaskProjects = await storage.getAll<TaskProject>('taskProjects');
-    for (const tp of allTaskProjects.filter((tp) => tp.taskId === id)) {
-      await storage.deleteRelation('taskProjects', `${tp.taskId}-${tp.projectId}`);
-    }
-
-    const allTaskGoals = await storage.getAll<TaskGoal>('taskGoals');
-    for (const tg of allTaskGoals.filter((tg) => tg.taskId === id)) {
-      await storage.deleteRelation('taskGoals', `${tg.taskId}-${tg.goalId}`);
-    }
-
-    return { data: undefined, success: true };
+    const response = await apiClient.delete<void>(`/tasks/${id}`);
+    return response;
   },
 
   async addDependency(taskId: string, dependsOnTaskId: string): Promise<ApiResponse<TaskDependency>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const dependency: TaskDependency = {
-      id: generateId(),
-      taskId,
-      dependsOnTaskId,
-      createdAt: new Date().toISOString(),
-    };
-    await storage.createRelation('taskDependencies', dependency.id, dependency as unknown as Record<string, unknown>);
-    return { data: dependency, success: true };
+    const response = await apiClient.post<TaskDependency>(
+      `/tasks/${taskId}/dependencies`,
+      { dependsOnTaskId }
+    );
+    return response;
   },
 
   async removeDependency(taskId: string, dependsOnTaskId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const allDeps = await storage.getAll<TaskDependency>('taskDependencies');
-    const dep = allDeps.find((d) => d.taskId === taskId && d.dependsOnTaskId === dependsOnTaskId);
-    if (dep) {
-      await storage.delete('taskDependencies', dep.id);
-    }
-    return { data: undefined, success: true };
+    const response = await apiClient.delete<void>(`/tasks/${taskId}/dependencies/${dependsOnTaskId}`);
+    return response;
   },
 
   async getDependencies(taskId: string): Promise<ApiResponse<TaskDependency[]>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const deps = await storage.getRelations<TaskDependency>('taskDependencies', { taskId });
-    return { data: deps, success: true };
+    const response = await apiClient.get<TaskDependency[]>(`/tasks/${taskId}/dependencies`);
+    return response;
   },
 
   async linkToProject(taskId: string, projectId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const link: TaskProject = {
-      taskId,
-      projectId,
-      createdAt: new Date().toISOString(),
-    };
-    await storage.createRelation('taskProjects', `${taskId}-${projectId}`, link as unknown as Record<string, unknown>);
-    return { data: undefined, success: true };
+    const response = await apiClient.post<void>(`/projects/${projectId}/tasks`, { taskId });
+    return response;
   },
 
   async unlinkFromProject(taskId: string, projectId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    await storage.deleteRelation('taskProjects', `${taskId}-${projectId}`);
-    return { data: undefined, success: true };
+    const response = await apiClient.delete<void>(`/projects/${projectId}/tasks/${taskId}`);
+    return response;
   },
 
   async getByProject(projectId: string): Promise<ApiListResponse<Task>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const allLinks = await storage.getRelations<TaskProject>('taskProjects', { projectId });
-    const taskIds = allLinks.map((tp) => tp.taskId);
-    const allTasks = await storage.getAll<Task>('tasks');
-    const tasks = allTasks.filter((t) => taskIds.includes(t.id));
-    return { data: tasks, total: tasks.length, success: true };
+    const response = await apiClient.get<BackendPaginatedResponse<Task>>(`/projects/${projectId}/tasks`);
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+    throw new Error(response.error?.message || 'Failed to fetch tasks');
   },
 
   async linkToGoal(taskId: string, goalId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const link: TaskGoal = {
-      taskId,
-      goalId,
-      createdAt: new Date().toISOString(),
-    };
-    await storage.createRelation('taskGoals', `${taskId}-${goalId}`, link as unknown as Record<string, unknown>);
-    return { data: undefined, success: true };
+    const response = await apiClient.post<void>(`/goals/${goalId}/tasks`, { taskId });
+    return response;
   },
 
   async unlinkFromGoal(taskId: string, goalId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    await storage.deleteRelation('taskGoals', `${taskId}-${goalId}`);
-    return { data: undefined, success: true };
+    const response = await apiClient.delete<void>(`/goals/${goalId}/tasks/${taskId}`);
+    return response;
   },
 
   async getByGoal(goalId: string): Promise<ApiListResponse<Task>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const allLinks = await storage.getRelations<TaskGoal>('taskGoals', { goalId });
-    const taskIds = allLinks.map((tg) => tg.taskId);
-    const allTasks = await storage.getAll<Task>('tasks');
-    const tasks = allTasks.filter((t) => taskIds.includes(t.id));
-    return { data: tasks, total: tasks.length, success: true };
+    const response = await apiClient.get<BackendPaginatedResponse<Task>>(`/goals/${goalId}/tasks`);
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+    throw new Error(response.error?.message || 'Failed to fetch tasks');
   },
 
   async getDependencyGraph(filters?: FilterOptions): Promise<ApiResponse<DependencyGraph>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const allTasks = await storage.getAll<Task>('tasks');
-    const filtered = applyFilters(allTasks, filters);
-    const allDeps = await storage.getAll<TaskDependency>('taskDependencies');
+    // Get filtered tasks
+    const tasksResponse = await this.getAll(filters);
+    if (!tasksResponse.data) {
+      return {
+        success: false,
+        error: { code: 'FETCH_ERROR', message: 'Failed to fetch tasks' },
+      };
+    }
 
-    const taskIds = new Set(filtered.map((t) => t.id));
+    const tasks = tasksResponse.data;
+    const taskIds = new Set(tasks.map((t) => t.id));
+
+    // Get dependencies for all tasks
+    const allDeps: TaskDependency[] = [];
+    for (const task of tasks) {
+      const depsResponse = await this.getDependencies(task.id);
+      if (depsResponse.success && depsResponse.data) {
+        allDeps.push(...depsResponse.data);
+      }
+    }
+
+    // Filter dependencies to only include those between filtered tasks
     const relevantDeps = allDeps.filter(
       (d) => taskIds.has(d.taskId) && taskIds.has(d.dependsOnTaskId)
     );
 
     const graph: DependencyGraph = {
-      nodes: filtered.map((t) => ({
+      nodes: tasks.map((t) => ({
         id: t.id,
         title: t.title,
         status: t.status,

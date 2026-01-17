@@ -22,7 +22,31 @@ export interface ReviewResult {
 const DEFAULT_EASINESS_FACTOR = 2.5;
 const MIN_EASINESS_FACTOR = 1.3;
 
+import { apiClient } from '../../lib/api-client';
+import type { ApiResponse } from '../../types/api-contracts';
+
+interface ReviewSession {
+  deckId: string;
+  reviews: Array<{
+    flashcardId: string;
+    quality: number;
+  }>;
+}
+
+interface ReviewSessionResult {
+  updated: number;
+  nextReviewDates: Record<string, string>;
+}
+
 export const spacedRepetitionService = {
+  async submitReviewSession(deckId: string, reviews: Array<{ flashcardId: string; quality: number }>): Promise<ApiResponse<ReviewSessionResult>> {
+    const response = await apiClient.post<ReviewSessionResult>(
+      `/knowledge/flashcards/${deckId}/review`,
+      { reviews }
+    );
+    return response;
+  },
+
   initializeCard(): SpacedRepetitionData {
     return {
       easinessFactor: DEFAULT_EASINESS_FACTOR,

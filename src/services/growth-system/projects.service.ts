@@ -1,125 +1,106 @@
-import { getStorageAdapter } from '../../lib/storage';
-import { generateId, randomDelay } from '../../mocks/storage';
+import { apiClient } from '../../lib/api-client';
 import type {
   Project,
   CreateProjectInput,
   UpdateProjectInput,
   Task,
-  TaskProject,
 } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
 
-const USER_ID = 'user-1';
+interface BackendPaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
+interface ProjectHealth {
+  status: 'green' | 'yellow' | 'red';
+  tasksCompleted: number;
+  tasksTotal: number;
+  percentComplete: number;
+}
 
 export const projectsService = {
-  async getAll(): Promise<ApiListResponse<Project>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const projects = await storage.getAll<Project>('projects');
-    return { data: projects, total: projects.length, success: true };
+  async getAll(filters?: { area?: string; status?: string; priority?: string }): Promise<ApiListResponse<Project>> {
+    const queryParams = new URLSearchParams();
+    if (filters?.area) queryParams.append('area', filters.area);
+    if (filters?.status) queryParams.append('status', filters.status);
+    if (filters?.priority) queryParams.append('priority', filters.priority);
+
+    const endpoint = `/projects${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await apiClient.get<BackendPaginatedResponse<Project>>(endpoint);
+
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+
+    throw new Error(response.error?.message || 'Failed to fetch projects');
   },
 
   async getById(id: string): Promise<ApiResponse<Project>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const project = await storage.getById<Project>('projects', id);
-    if (!project) {
-      return {
-        data: undefined,
-        error: { message: 'Project not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: project, success: true };
+    const response = await apiClient.get<Project>(`/projects/${id}`);
+    return response;
   },
 
   async create(input: CreateProjectInput): Promise<ApiResponse<Project>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-    const project: Project = {
-      id: generateId(),
-      name: input.name,
-      description: input.description || null,
-      area: input.area,
-      subCategory: input.subCategory || null,
-      status: input.status || 'Planning',
-      priority: input.priority || 'P3',
-      impact: input.impact || 0,
-      startDate: input.startDate || null,
-      endDate: input.endDate || null,
-      completedDate: null,
-      notes: input.notes || null,
-      userId: USER_ID,
-      createdAt: now,
-      updatedAt: now,
-    };
-    await storage.create('projects', project.id, project);
-    return { data: project, success: true };
+    const response = await apiClient.post<Project>('/projects', input);
+    return response;
   },
 
   async update(id: string, input: UpdateProjectInput): Promise<ApiResponse<Project>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const updated = await storage.update<Project>('projects', id, {
-      ...input,
-      updatedAt: new Date().toISOString(),
-    });
-    if (!updated) {
-      return {
-        data: undefined,
-        error: { message: 'Project not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: updated, success: true };
+    const response = await apiClient.patch<Project>(`/projects/${id}`, input);
+    return response;
   },
 
   async delete(id: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const deleted = await storage.delete('projects', id);
-    if (!deleted) {
+    const response = await apiClient.delete<void>(`/projects/${id}`);
+    return response;
+  },
+
+  async getLinkedTasks(projectId: string): Promise<ApiListResponse<Task>> {
+    const response = await apiClient.get<BackendPaginatedResponse<Task>>(`/projects/${projectId}/tasks`);
+    if (response.success && response.data) {
       return {
-        data: undefined,
-        error: { message: 'Project not found', code: 'NOT_FOUND' },
-        success: false,
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
       };
     }
+    throw new Error(response.error?.message || 'Failed to fetch linked tasks');
+  },
 
-    // Delete related task-project links
-    const allTaskProjects = await storage.getAll<TaskProject>('taskProjects');
-    for (const tp of allTaskProjects.filter((tp) => tp.projectId === id)) {
-      await storage.deleteRelation('taskProjects', `${tp.taskId}-${tp.projectId}`);
-    }
+  async linkTask(projectId: string, taskId: string): Promise<ApiResponse<void>> {
+    const response = await apiClient.post<void>(`/projects/${projectId}/tasks`, { taskId });
+    return response;
+  },
 
-    return { data: undefined, success: true };
+  async unlinkTask(projectId: string, taskId: string): Promise<ApiResponse<void>> {
+    const response = await apiClient.delete<void>(`/projects/${projectId}/tasks/${taskId}`);
+    return response;
+  },
+
+  async getHealth(projectId: string): Promise<ApiResponse<ProjectHealth>> {
+    const response = await apiClient.get<ProjectHealth>(`/projects/${projectId}/health`);
+    return response;
   },
 
   async calculateProgress(projectId: string): Promise<ApiResponse<number>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-
-    // Get all task-project links for this project
-    const allTaskProjects = await storage.getRelations<TaskProject>('taskProjects', { projectId });
-    const taskIds = allTaskProjects.map((tp) => tp.taskId);
-
-    if (taskIds.length === 0) {
-      return { data: 0, success: true };
+    const healthResponse = await this.getHealth(projectId);
+    if (healthResponse.success && healthResponse.data) {
+      return {
+        success: true,
+        data: healthResponse.data.percentComplete,
+      };
     }
-
-    // Get all tasks linked to this project
-    const allTasks = await storage.getAll<Task>('tasks');
-    const projectTasks = allTasks.filter((t) => taskIds.includes(t.id));
-
-    if (projectTasks.length === 0) {
-      return { data: 0, success: true };
-    }
-
-    // Calculate progress based on completed tasks
-    const completedTasks = projectTasks.filter((t) => t.status === 'Done');
-    const progress = Math.round((completedTasks.length / projectTasks.length) * 100);
-
-    return { data: progress, success: true };
+    return {
+      success: false,
+      error: { code: 'FETCH_ERROR', message: 'Failed to calculate progress' },
+    };
   },
 };

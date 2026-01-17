@@ -1,142 +1,172 @@
-import { getStorageAdapter } from '../../lib/storage';
-import { generateId, randomDelay } from '../../mocks/storage';
+import { apiClient } from '../../lib/api-client';
 import type {
   Goal,
   CreateGoalInput,
   UpdateGoalInput,
-  GoalMetric,
-  GoalProject,
+  Metric,
+  Task,
+  Habit,
+  GoalProgressBreakdown,
+  SuccessCriterion,
+  GoalActivity,
 } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
+import type { PaginatedResponse } from '../../types/growth-system';
 
-const USER_ID = 'user-1';
+interface BackendPaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
 
 export const goalsService = {
-  async getAll(): Promise<ApiListResponse<Goal>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const goals = await storage.getAll<Goal>('goals');
-    return { data: goals, total: goals.length, success: true };
+  async getAll(filters?: { area?: string; status?: string; priority?: string }): Promise<ApiListResponse<Goal>> {
+    const queryParams = new URLSearchParams();
+    if (filters?.area) queryParams.append('area', filters.area);
+    if (filters?.status) queryParams.append('status', filters.status);
+    if (filters?.priority) queryParams.append('priority', filters.priority);
+
+    const endpoint = `/goals${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await apiClient.get<BackendPaginatedResponse<Goal>>(endpoint);
+
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+
+    throw new Error(response.error?.message || 'Failed to fetch goals');
   },
 
   async getById(id: string): Promise<ApiResponse<Goal>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const goal = await storage.getById<Goal>('goals', id);
-    if (!goal) {
-      return {
-        data: undefined,
-        error: { message: 'Goal not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: goal, success: true };
+    const response = await apiClient.get<Goal>(`/goals/${id}`);
+    return response;
   },
 
   async create(input: CreateGoalInput): Promise<ApiResponse<Goal>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const now = new Date().toISOString();
-    const goal: Goal = {
-      id: generateId(),
-      title: input.title,
-      description: input.description || null,
-      area: input.area,
-      subCategory: input.subCategory || null,
-      timeHorizon: input.timeHorizon || 'ShortTerm',
-      priority: input.priority || 'P3',
-      status: input.status || 'Planning',
-      targetDate: input.targetDate || null,
-      completedDate: null,
-      successCriteria: input.successCriteria || [],
-      notes: input.notes || null,
-      userId: USER_ID,
-      createdAt: now,
-      updatedAt: now,
-    };
-    await storage.create('goals', goal.id, goal);
-    return { data: goal, success: true };
+    const response = await apiClient.post<Goal>('/goals', input);
+    return response;
   },
 
   async update(id: string, input: UpdateGoalInput): Promise<ApiResponse<Goal>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const updated = await storage.update<Goal>('goals', id, {
-      ...input,
-      updatedAt: new Date().toISOString(),
-    });
-    if (!updated) {
-      return {
-        data: undefined,
-        error: { message: 'Goal not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-    return { data: updated, success: true };
+    const response = await apiClient.patch<Goal>(`/goals/${id}`, input);
+    return response;
   },
 
   async delete(id: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const deleted = await storage.delete('goals', id);
-    if (!deleted) {
-      return {
-        data: undefined,
-        error: { message: 'Goal not found', code: 'NOT_FOUND' },
-        success: false,
-      };
-    }
-
-    // Delete related goal-metric links
-    const allGoalMetrics = await storage.getAll<GoalMetric>('goalMetrics');
-    for (const gm of allGoalMetrics.filter((gm) => gm.goalId === id)) {
-      await storage.deleteRelation('goalMetrics', `${gm.goalId}-${gm.metricId}`);
-    }
-
-    // Delete related goal-project links
-    const allGoalProjects = await storage.getAll<GoalProject>('goalProjects');
-    for (const gp of allGoalProjects.filter((gp) => gp.goalId === id)) {
-      await storage.deleteRelation('goalProjects', `${gp.goalId}-${gp.projectId}`);
-    }
-
-    return { data: undefined, success: true };
+    const response = await apiClient.delete<void>(`/goals/${id}`);
+    return response;
   },
 
   async linkMetric(goalId: string, metricId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const link: GoalMetric = {
-      goalId,
-      metricId,
-      createdAt: new Date().toISOString(),
-    };
-    await storage.createRelation('goalMetrics', `${goalId}-${metricId}`, link as unknown as Record<string, unknown>);
-    return { data: undefined, success: true };
+    const response = await apiClient.post<void>(`/goals/${goalId}/metrics`, { metricId });
+    return response;
   },
 
   async unlinkMetric(goalId: string, metricId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    await storage.deleteRelation('goalMetrics', `${goalId}-${metricId}`);
-    return { data: undefined, success: true };
+    const response = await apiClient.delete<void>(`/goals/${goalId}/metrics/${metricId}`);
+    return response;
   },
 
   async linkProject(goalId: string, projectId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    const link: GoalProject = {
-      goalId,
-      projectId,
-      createdAt: new Date().toISOString(),
-    };
-    await storage.createRelation('goalProjects', `${goalId}-${projectId}`, link as unknown as Record<string, unknown>);
-    return { data: undefined, success: true };
+    // Note: Backend may not have this endpoint, using tasks endpoint pattern
+    const response = await apiClient.post<void>(`/goals/${goalId}/projects`, { projectId });
+    return response;
   },
 
   async unlinkProject(goalId: string, projectId: string): Promise<ApiResponse<void>> {
-    await randomDelay();
-    const storage = getStorageAdapter();
-    await storage.deleteRelation('goalProjects', `${goalId}-${projectId}`);
-    return { data: undefined, success: true };
+    const response = await apiClient.delete<void>(`/goals/${goalId}/projects/${projectId}`);
+    return response;
+  },
+
+  async getLinkedMetrics(goalId: string): Promise<ApiListResponse<Metric>> {
+    const response = await apiClient.get<BackendPaginatedResponse<Metric>>(`/goals/${goalId}/metrics`);
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+    throw new Error(response.error?.message || 'Failed to fetch linked metrics');
+  },
+
+  async getLinkedProjects(goalId: string): Promise<ApiListResponse<import('../../types/growth-system').Project>> {
+    // Note: Backend may not have this endpoint
+    const response = await apiClient.get<BackendPaginatedResponse<import('../../types/growth-system').Project>>(`/goals/${goalId}/projects`);
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+    throw new Error(response.error?.message || 'Failed to fetch linked projects');
+  },
+
+  async getLinkedTasks(goalId: string): Promise<ApiListResponse<Task>> {
+    const response = await apiClient.get<BackendPaginatedResponse<Task>>(`/goals/${goalId}/tasks`);
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+    throw new Error(response.error?.message || 'Failed to fetch linked tasks');
+  },
+
+  async getLinkedHabits(goalId: string): Promise<ApiListResponse<Habit>> {
+    const response = await apiClient.get<BackendPaginatedResponse<Habit>>(`/goals/${goalId}/habits`);
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+    throw new Error(response.error?.message || 'Failed to fetch linked habits');
+  },
+
+  async linkHabit(goalId: string, habitId: string): Promise<ApiResponse<void>> {
+    const response = await apiClient.post<void>(`/goals/${goalId}/habits`, { habitId });
+    return response;
+  },
+
+  async unlinkHabit(goalId: string, habitId: string): Promise<ApiResponse<void>> {
+    const response = await apiClient.delete<void>(`/goals/${goalId}/habits/${habitId}`);
+    return response;
+  },
+
+  async getProgress(goalId: string): Promise<ApiResponse<GoalProgressBreakdown>> {
+    const response = await apiClient.get<GoalProgressBreakdown>(`/goals/${goalId}/progress`);
+    return response;
+  },
+
+  async completeCriterion(goalId: string, criterionId: string): Promise<ApiResponse<Goal>> {
+    const response = await apiClient.post<Goal>(`/goals/${goalId}/criteria/${criterionId}/complete`);
+    return response;
+  },
+
+  async getActivities(goalId: string, limit?: number): Promise<ApiListResponse<GoalActivity>> {
+    const queryParams = new URLSearchParams();
+    if (limit) queryParams.append('limit', String(limit));
+
+    const endpoint = `/goals/${goalId}/activity${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await apiClient.get<BackendPaginatedResponse<GoalActivity>>(endpoint);
+
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+
+    throw new Error(response.error?.message || 'Failed to fetch goal activities');
   },
 };
