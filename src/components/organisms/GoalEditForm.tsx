@@ -8,6 +8,7 @@ import type {
   TimeHorizon,
   Priority,
   GoalStatus,
+  SuccessCriterion,
 } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
 import { AREAS, GOAL_STATUSES, GOAL_TIME_HORIZONS, PRIORITIES } from '@/constants/growth-system';
@@ -29,7 +30,12 @@ export function GoalEditForm({ goal, onSubmit, onCancel, isLoading }: GoalEditFo
     priority: goal.priority,
     status: goal.status,
     targetDate: goal.targetDate || '',
-    successCriteria: goal.successCriteria || [],
+    successCriteria:
+      goal.successCriteria && goal.successCriteria.length > 0
+        ? typeof goal.successCriteria[0] === 'string'
+          ? (goal.successCriteria as unknown as string[])
+          : (goal.successCriteria as SuccessCriterion[]).map((c) => c.text)
+        : [],
     notes: goal.notes || '',
   });
 
@@ -42,18 +48,28 @@ export function GoalEditForm({ goal, onSubmit, onCancel, isLoading }: GoalEditFo
 
   const addCriterion = () => {
     if (criterionInput.trim()) {
+      const currentCriteria = Array.isArray(formData.successCriteria)
+        ? typeof formData.successCriteria[0] === 'string'
+          ? (formData.successCriteria as string[])
+          : (formData.successCriteria as SuccessCriterion[]).map((c) => c.text)
+        : [];
       setFormData({
         ...formData,
-        successCriteria: [...(formData.successCriteria || []), criterionInput.trim()],
+        successCriteria: [...currentCriteria, criterionInput.trim()] as string[],
       });
       setCriterionInput('');
     }
   };
 
   const removeCriterion = (index: number) => {
+    const currentCriteria = Array.isArray(formData.successCriteria)
+      ? typeof formData.successCriteria[0] === 'string'
+        ? (formData.successCriteria as string[])
+        : (formData.successCriteria as SuccessCriterion[]).map((c) => c.text)
+      : [];
     setFormData({
       ...formData,
-      successCriteria: formData.successCriteria?.filter((_, i) => i !== index),
+      successCriteria: currentCriteria.filter((_, i) => i !== index) as string[],
     });
   };
 

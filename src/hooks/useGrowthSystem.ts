@@ -96,7 +96,7 @@ export const useTasks = () => {
       try {
         const result = await tasksService.getAll();
         // Record success if we got data
-        if (result.success || result.data) {
+        if (result.data) {
           recordSuccess();
         }
         return result;

@@ -50,7 +50,7 @@ export function GoalCard({
     (() => {
       if (Array.isArray(goal.successCriteria)) {
         if (typeof goal.successCriteria[0] === 'string') {
-          const completed = (goal.successCriteria as string[]).filter((c) =>
+          const completed = (goal.successCriteria as unknown as string[]).filter((c) =>
             c.includes('✓')
           ).length;
           const total = goal.successCriteria.length;

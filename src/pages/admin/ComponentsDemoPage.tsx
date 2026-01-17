@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Package } from 'lucide-react';
 import { AIConfidenceIndicator } from '@/components/atoms/AIConfidenceIndicator';
 import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';

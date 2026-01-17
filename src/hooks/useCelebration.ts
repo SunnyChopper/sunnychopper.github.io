@@ -1,10 +1,8 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 
 type CelebrationIntensity = 'small' | 'medium' | 'large' | 'epic';
 
 export function useCelebration() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   const triggerConfetti = useCallback(async (intensity: CelebrationIntensity = 'medium') => {
     // Dynamically import canvas-confetti when needed
     const confetti = (await import('canvas-confetti')).default;

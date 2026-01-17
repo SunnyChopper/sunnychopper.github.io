@@ -22,7 +22,7 @@ import {
   useHabits,
   useLogbook,
 } from '@/hooks/useGrowthSystem';
-import type { Task, Goal, Project, Metric, Habit, LogbookEntry } from '@/types/growth-system';
+import type { Goal, Metric, LogbookEntry } from '@/types/growth-system';
 import { ROUTES } from '@/routes';
 
 interface CommandItem {

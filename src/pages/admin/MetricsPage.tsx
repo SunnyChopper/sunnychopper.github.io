@@ -137,7 +137,7 @@ export default function MetricsPage() {
             if (metricResponse.success && metricResponse.data) {
               goalMetricMap.set(
                 goal.id,
-                metricResponse.data.map((gm) => gm.metricId)
+                metricResponse.data.map((gm) => gm.id)
               );
             }
           } catch {

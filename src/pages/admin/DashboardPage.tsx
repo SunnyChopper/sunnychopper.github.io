@@ -62,11 +62,11 @@ export default function DashboardPage() {
   const { status: backendStatus } = useBackendStatus();
 
   const { tasks, isLoading: tasksLoading, isError: tasksError } = useTasks();
-  const { habits, isLoading: habitsLoading, isError: habitsError } = useHabits();
-  const { metrics, isLoading: metricsLoading, isError: metricsError } = useMetrics();
-  const { goals, isLoading: goalsLoading, isError: goalsError } = useGoals();
+  const { habits, isError: habitsError } = useHabits();
+  const { metrics, isError: metricsError } = useMetrics();
+  const { goals, isError: goalsError } = useGoals();
   const { projects, isLoading: projectsLoading, isError: projectsError } = useProjects();
-  const { entries, isLoading: entriesLoading, isError: entriesError } = useLogbook();
+  const { entries, isError: entriesError } = useLogbook();
 
   // Check if any data source has a network error
   const hasNetworkError =
@@ -89,7 +89,7 @@ export default function DashboardPage() {
     goals.forEach((goal) => {
       if (Array.isArray(goal.successCriteria)) {
         if (typeof goal.successCriteria[0] === 'string') {
-          const completed = (goal.successCriteria as string[]).filter((c) =>
+          const completed = (goal.successCriteria as unknown as string[]).filter((c) =>
             c.includes('✓')
           ).length;
           const total = goal.successCriteria.length;

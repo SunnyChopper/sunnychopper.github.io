@@ -235,7 +235,7 @@ export default function ProjectsPage() {
     const query = searchQuery.toLowerCase();
     return (
       project.name.toLowerCase().includes(query) ||
-      (project.description && project.description.toLowerCase().includes(query))
+      (project.description !== null && project.description.toLowerCase().includes(query))
     );
   };
 

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { llmConfig } from '@/lib/llm';
 import { useTasks, useHabits, useMetrics, useGoals, useProjects } from '@/hooks/useGrowthSystem';
-import type { Task, Goal, Habit, Metric } from '@/types/growth-system';
+import type { Task, Goal, Habit } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
 import { ROUTES } from '@/routes';
 
