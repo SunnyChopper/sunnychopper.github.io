@@ -50,10 +50,19 @@ export function MetricMobileLogForm({
     <div
       className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:hidden"
       onClick={onCancel}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          onCancel();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Close form"
     >
       <div
         className="bg-white dark:bg-gray-800 rounded-t-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}

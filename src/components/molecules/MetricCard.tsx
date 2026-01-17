@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Target, Calendar, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Metric, MetricLog } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
@@ -20,14 +19,9 @@ export function MetricCard({ metric, logs = [], onClick, onQuickLog }: MetricCar
   const latestLog = logs.length > 0 ? logs[0] : null;
   const currentValue = latestLog?.value || 0;
 
-  const trend = useMemo(() => {
-    if (logs.length < 2) return null;
-    return getTrendData(logs, metric);
-  }, [logs, metric]);
-
-  const progress = useMemo(() => {
-    return calculateProgress(currentValue, metric.targetValue, metric.direction);
-  }, [currentValue, metric.targetValue, metric.direction]);
+  // Let React Compiler handle memoization automatically
+  const trend = logs.length < 2 ? null : getTrendData(logs, metric);
+  const progress = calculateProgress(currentValue, metric.targetValue, metric.direction);
 
   const getStatus = () => {
     if (!metric.targetValue) return 'No Target';
@@ -56,10 +50,20 @@ export function MetricCard({ metric, logs = [], onClick, onQuickLog }: MetricCar
 
   const unit = metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick(metric);
+    }
+  };
+
   return (
     <div
       className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 cursor-pointer"
       onClick={() => onClick(metric)}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">

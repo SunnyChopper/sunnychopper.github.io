@@ -28,6 +28,15 @@ export default function CourseStackCard({ course, lessons, onClick }: CourseStac
   return (
     <div
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `View course: ${course.title}` : undefined}
       className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg transition-all cursor-pointer"
     >
       <div className="flex items-start gap-3 mb-3">

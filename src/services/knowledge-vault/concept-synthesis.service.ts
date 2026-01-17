@@ -1,5 +1,4 @@
-import type { ConceptSynthesis } from '../../types/concept-graph';
-import type { ConceptNode } from '../../types/concept-graph';
+import type { ConceptSynthesis, ConceptNode } from '../../types/concept-graph';
 
 export const conceptSynthesisService = {
   async generateSynthesis(node1: ConceptNode, node2: ConceptNode): Promise<ConceptSynthesis> {

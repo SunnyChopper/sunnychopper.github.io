@@ -14,35 +14,83 @@ export class ContentGeneratorAgent extends BaseAgent {
   }
 
   async execute(state: CourseGenerationState): Promise<CourseGenerationStateUpdate> {
-    console.log('ContentGeneratorAgent.execute: Starting', {
-      modulesCount: state.modules?.length || 0,
-      totalLessons: state.modules?.reduce((sum, m) => sum + (m.lessons?.length || 0), 0) || 0,
-    });
+    const updatedModules = [...state.modules];
+    const stats = await this._generateContentForLessons(state, updatedModules);
 
-    try {
-      const updatedModules = [...state.modules];
+    return {
+      modules: updatedModules,
+      metadata: {
+        ...state.metadata,
+        currentPhase: 'generating',
+        lastModified: new Date().toISOString(),
+      },
+    };
+  }
 
-      // Generate content for all lessons that don't have it yet
-      let processedLessons = 0;
-      let skippedLessons = 0;
-      let errorCount = 0;
+  private async _generateContentForLessons(
+    state: CourseGenerationState,
+    modules: CourseGenerationState['modules']
+  ): Promise<{ processedLessons: number; skippedLessons: number; errorCount: number }> {
+    let processedLessons = 0;
+    let skippedLessons = 0;
+    let errorCount = 0;
 
-      for (const module of updatedModules) {
-        for (const lesson of module.lessons) {
-          if (lesson.content) {
-            skippedLessons++;
-            continue; // Skip if content already exists
-          }
+    for (const module of modules) {
+      for (const lesson of module.lessons) {
+        if (lesson.content) {
+          skippedLessons++;
+          continue;
+        }
 
-          try {
-            console.log(
-              `ContentGeneratorAgent: Generating content for lesson ${lesson.id} (${lesson.title})`
-            );
-            const context = getContentGeneratorContext(state, lesson.id);
+        try {
+          await this._generateLessonContent(state, lesson);
+          processedLessons++;
+        } catch (lessonError) {
+          console.error(`ContentGeneratorAgent: Error generating content for lesson ${lesson.id}`, {
+            error: lessonError,
+            errorMessage: lessonError instanceof Error ? lessonError.message : String(lessonError),
+            lessonId: lesson.id,
+            lessonTitle: lesson.title,
+          });
+          errorCount++;
+        }
+      }
+    }
 
-            const systemMessage = `You are an expert educator creating comprehensive lesson content for an online course. Your content should be engaging, well-structured, and build logically on previous lessons.`;
+    return { processedLessons, skippedLessons, errorCount };
+  }
 
-            const userMessage = `${context}
+  private async _generateLessonContent(
+    state: CourseGenerationState,
+    lesson: CourseGenerationState['modules'][0]['lessons'][0]
+  ): Promise<void> {
+    const context = getContentGeneratorContext(state, lesson.id);
+    const systemMessage = `You are an expert educator creating comprehensive lesson content for an online course. Your content should be engaging, well-structured, and build logically on previous lessons.`;
+    const userMessage = this._buildLessonPrompt(context, lesson, state.course.difficulty);
+
+    const messages = this.buildPrompt(systemMessage, userMessage);
+    const result = await this.invokeStructured(LessonContentSchema, messages);
+
+    if (result?.content) {
+      lesson.content = result.content;
+    } else {
+      throw new Error(`No content in result for lesson ${lesson.id}`);
+    }
+  }
+
+  private _buildLessonPrompt(
+    context: string,
+    lesson: CourseGenerationState['modules'][0]['lessons'][0],
+    difficulty: string
+  ): string {
+    const wordCount =
+      difficulty === 'beginner'
+        ? '500-800'
+        : difficulty === 'intermediate'
+          ? '800-1200'
+          : '1200-1500';
+
+    return `${context}
 
 ## Lesson to Generate:
 ${lesson.title}
@@ -68,74 +116,6 @@ Format the content in Markdown with:
 - **Bold** for important concepts
 - Real-world examples
 
-Generate approximately ${state.course.difficulty === 'beginner' ? '500-800' : state.course.difficulty === 'intermediate' ? '800-1200' : '1200-1500'} words of educational content.`;
-
-            const messages = this.buildPrompt(systemMessage, userMessage);
-            console.log(`ContentGeneratorAgent: Calling invokeStructured for lesson ${lesson.id}`);
-            const result = await this.invokeStructured(LessonContentSchema, messages);
-            console.log(`ContentGeneratorAgent: Received result for lesson ${lesson.id}`, {
-              hasResult: !!result,
-              hasContent: !!result?.content,
-              contentLength: result?.content?.length || 0,
-            });
-
-            if (result?.content) {
-              lesson.content = result.content;
-              processedLessons++;
-            } else {
-              console.warn(
-                `ContentGeneratorAgent: No content in result for lesson ${lesson.id}`,
-                result
-              );
-              errorCount++;
-            }
-          } catch (lessonError) {
-            console.error(
-              `ContentGeneratorAgent: Error generating content for lesson ${lesson.id}`,
-              {
-                error: lessonError,
-                errorMessage:
-                  lessonError instanceof Error ? lessonError.message : String(lessonError),
-                lessonId: lesson.id,
-                lessonTitle: lesson.title,
-              }
-            );
-            errorCount++;
-            // Continue with other lessons even if one fails
-          }
-        }
-      }
-
-      console.log('ContentGeneratorAgent.execute: Completed', {
-        processedLessons,
-        skippedLessons,
-        errorCount,
-        totalLessons: processedLessons + skippedLessons + errorCount,
-      });
-
-      const result: CourseGenerationStateUpdate = {
-        modules: updatedModules,
-        metadata: {
-          ...state.metadata,
-          currentPhase: 'generating',
-          lastModified: new Date().toISOString(),
-        },
-      };
-
-      console.log('ContentGeneratorAgent.execute: Returning result', {
-        hasModules: !!result.modules,
-        modulesCount: Array.isArray(result.modules) ? result.modules.length : 'not array',
-        hasMetadata: !!result.metadata,
-      });
-
-      return result;
-    } catch (error) {
-      console.error('ContentGeneratorAgent.execute: Fatal error', {
-        error,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-      });
-      throw error;
-    }
+Generate approximately ${wordCount} words of educational content.`;
   }
 }

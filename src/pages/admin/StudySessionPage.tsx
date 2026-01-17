@@ -246,6 +246,15 @@ export default function StudySessionPage() {
           <div
             className="min-h-[400px] flex items-center justify-center p-12 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition"
             onClick={() => setShowAnswer(!showAnswer)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setShowAnswer(!showAnswer);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label={showAnswer ? 'Hide answer' : 'Show answer'}
           >
             <div className="text-center w-full">
               {!showAnswer ? (

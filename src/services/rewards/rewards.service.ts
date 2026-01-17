@@ -18,7 +18,7 @@ interface BackendPaginatedResponse<T> {
   hasMore: boolean;
 }
 
-function canRedeemReward(
+function _canRedeemReward(
   reward: Reward,
   redemptions: RewardRedemption[]
 ): { canRedeem: boolean; cooldownMessage: string | null } {

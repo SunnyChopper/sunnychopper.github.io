@@ -60,7 +60,7 @@ export function formatDateRange(start: Date | string, end: Date | string): strin
 /**
  * Format a date with context based on the habit
  */
-export function formatDateWithContext(date: Date | string, habit: Habit): string {
+export function formatDateWithContext(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const relative = formatRelativeDate(dateObj);
 

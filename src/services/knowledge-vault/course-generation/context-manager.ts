@@ -1,5 +1,4 @@
 import type { CourseGenerationState } from './types';
-import { BaseAgent } from '../../../lib/llm/langgraph/base-agent';
 
 /**
  * Context management utilities for scalable course generation.
@@ -120,7 +119,7 @@ export function formatModuleFull(module: CourseGenerationState['modules'][0]): s
  */
 async function generateModuleSummary(
   modules: CourseGenerationState['modules'],
-  state: CourseGenerationState
+  _state: CourseGenerationState
 ): Promise<string> {
   // For now, create a simple text summary
   // In a full implementation, this could use an LLM call via BaseAgent
@@ -135,6 +134,96 @@ async function generateModuleSummary(
   return summaries.join('\n');
 }
 
+// Helper functions for getContentGeneratorContext
+function findTargetLesson(
+  state: CourseGenerationState,
+  targetLessonId: string
+): {
+  targetLesson: CourseGenerationState['modules'][0]['lessons'][0] | null;
+  targetModule: CourseGenerationState['modules'][0] | null;
+  lessonIndex: number;
+} {
+  for (const module of state.modules) {
+    const idx = module.lessons.findIndex((l) => l.id === targetLessonId);
+    if (idx !== -1) {
+      return {
+        targetLesson: module.lessons[idx],
+        targetModule: module,
+        lessonIndex: idx,
+      };
+    }
+  }
+  return { targetLesson: null, targetModule: null, lessonIndex: -1 };
+}
+
+function formatCourseContext(state: CourseGenerationState): string {
+  return `
+Course: ${state.course.title}
+Course Objectives: ${state.course.learningObjectives.join(', ')}
+Difficulty: ${state.course.difficulty}
+`;
+}
+
+function formatModuleContext(targetModule: CourseGenerationState['modules'][0]): string {
+  return `
+Module: ${targetModule.title}
+${targetModule.description || ''}
+Module Objectives: ${targetModule.learningObjectives.join(', ')}
+`;
+}
+
+function formatPreviousLessons(
+  targetModule: CourseGenerationState['modules'][0],
+  lessonIndex: number
+): string {
+  if (lessonIndex <= 0) {
+    return '';
+  }
+
+  const parts: string[] = ['## Previous Lessons in This Module:'];
+  for (let i = 0; i < lessonIndex; i++) {
+    const prevLesson = targetModule.lessons[i];
+    parts.push(`### ${prevLesson.title}`);
+    if (prevLesson.description) {
+      parts.push(prevLesson.description);
+    }
+    if (prevLesson.content) {
+      const excerpt = prevLesson.content.substring(0, 500);
+      parts.push(`Content excerpt: ${excerpt}...`);
+    }
+  }
+  return parts.join('\n');
+}
+
+function formatConceptContext(
+  targetLesson: CourseGenerationState['modules'][0]['lessons'][0],
+  conceptGraph: CourseGenerationState['conceptGraph']
+): string {
+  if (targetLesson.keyConcepts.length === 0) {
+    return '';
+  }
+
+  const parts: string[] = ['## Key Concepts for This Lesson:'];
+  for (const concept of targetLesson.keyConcepts) {
+    const conceptNode = conceptGraph.concepts.get(concept);
+    if (conceptNode && conceptNode.prerequisites.length > 0) {
+      parts.push(`- ${concept} (requires: ${conceptNode.prerequisites.join(', ')})`);
+    } else {
+      parts.push(`- ${concept}`);
+    }
+  }
+  return parts.join('\n');
+}
+
+function formatPrerequisites(
+  targetLesson: CourseGenerationState['modules'][0]['lessons'][0]
+): string {
+  if (targetLesson.prerequisites.length === 0) {
+    return '';
+  }
+  return `## Prerequisites: ${targetLesson.prerequisites.join(', ')}`;
+}
+
 /**
  * Get context for Content Generator agent
  * Includes previous lesson content and concept graph
@@ -143,78 +232,27 @@ export function getContentGeneratorContext(
   state: CourseGenerationState,
   targetLessonId: string
 ): string {
-  const contextParts: string[] = [];
-
-  // Find the target lesson
-  let targetLesson: CourseGenerationState['modules'][0]['lessons'][0] | null = null;
-  let targetModule: CourseGenerationState['modules'][0] | null = null;
-  let lessonIndex = -1;
-
-  for (const module of state.modules) {
-    const idx = module.lessons.findIndex((l) => l.id === targetLessonId);
-    if (idx !== -1) {
-      targetLesson = module.lessons[idx];
-      targetModule = module;
-      lessonIndex = idx;
-      break;
-    }
-  }
+  const { targetLesson, targetModule, lessonIndex } = findTargetLesson(state, targetLessonId);
 
   if (!targetLesson || !targetModule) {
     return '';
   }
 
-  // Course context
-  contextParts.push(`
-Course: ${state.course.title}
-Course Objectives: ${state.course.learningObjectives.join(', ')}
-Difficulty: ${state.course.difficulty}
-`);
+  const contextParts: string[] = [formatCourseContext(state), formatModuleContext(targetModule)];
 
-  // Module context
-  contextParts.push(`
-Module: ${targetModule.title}
-${targetModule.description || ''}
-Module Objectives: ${targetModule.learningObjectives.join(', ')}
-`);
-
-  // Previous lessons in same module
-  if (lessonIndex > 0) {
-    contextParts.push('## Previous Lessons in This Module:');
-    for (let i = 0; i < lessonIndex; i++) {
-      const prevLesson = targetModule.lessons[i];
-      contextParts.push(`### ${prevLesson.title}`);
-      if (prevLesson.description) {
-        contextParts.push(prevLesson.description);
-      }
-      if (prevLesson.content) {
-        // Include a summary or excerpt of previous lesson content
-        const excerpt = prevLesson.content.substring(0, 500);
-        contextParts.push(`Content excerpt: ${excerpt}...`);
-      }
-    }
+  const previousLessons = formatPreviousLessons(targetModule, lessonIndex);
+  if (previousLessons) {
+    contextParts.push(previousLessons);
   }
 
-  // Concept graph context
-  if (targetLesson.keyConcepts.length > 0) {
-    contextParts.push(`## Key Concepts for This Lesson:`);
-    for (const concept of targetLesson.keyConcepts) {
-      const conceptNode = state.conceptGraph.concepts.get(concept);
-      if (conceptNode) {
-        const prereqs =
-          conceptNode.prerequisites.length > 0
-            ? ` (requires: ${conceptNode.prerequisites.join(', ')})`
-            : '';
-        contextParts.push(`- ${concept}${prereqs}`);
-      } else {
-        contextParts.push(`- ${concept}`);
-      }
-    }
+  const conceptContext = formatConceptContext(targetLesson, state.conceptGraph);
+  if (conceptContext) {
+    contextParts.push(conceptContext);
   }
 
-  // Prerequisites
-  if (targetLesson.prerequisites.length > 0) {
-    contextParts.push(`## Prerequisites: ${targetLesson.prerequisites.join(', ')}`);
+  const prerequisites = formatPrerequisites(targetLesson);
+  if (prerequisites) {
+    contextParts.push(prerequisites);
   }
 
   return contextParts.join('\n\n');

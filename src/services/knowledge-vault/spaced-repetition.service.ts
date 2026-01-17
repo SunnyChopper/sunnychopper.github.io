@@ -25,14 +25,6 @@ const MIN_EASINESS_FACTOR = 1.3;
 import { apiClient } from '../../lib/api-client';
 import type { ApiResponse } from '../../types/api-contracts';
 
-interface ReviewSession {
-  deckId: string;
-  reviews: Array<{
-    flashcardId: string;
-    quality: number;
-  }>;
-}
-
 interface ReviewSessionResult {
   updated: number;
   nextReviewDates: Record<string, string>;

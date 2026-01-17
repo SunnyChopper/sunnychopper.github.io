@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useTasks,
   useHabits,
@@ -26,7 +26,6 @@ import { MorningLaunchpad } from '../../components/organisms/MorningLaunchpad';
 import { GoalsDashboardWidget } from '../../components/organisms/GoalsDashboardWidget';
 import { useMode } from '../../contexts/Mode';
 import { ROUTES } from '../../routes';
-import { useMemo } from 'react';
 import { useBackendStatus } from '../../contexts/BackendStatusContext';
 
 interface StatCardProps {

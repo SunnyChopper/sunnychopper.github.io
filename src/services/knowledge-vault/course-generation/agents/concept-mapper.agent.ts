@@ -1,5 +1,4 @@
 import { BaseAgent } from '../../../../lib/llm/langgraph/base-agent';
-import { ConceptGraphSchema } from '../../../../lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
 
 /**
@@ -13,7 +12,32 @@ export class ConceptMapperAgent extends BaseAgent {
   }
 
   async execute(state: CourseGenerationState): Promise<CourseGenerationStateUpdate> {
-    // Extract all concepts from lessons
+    const conceptMap = this._collectConcepts(state);
+    const dependencies = this._buildDependencies(state, conceptMap);
+    this._calculateDepths(conceptMap);
+
+    return {
+      conceptGraph: {
+        concepts: conceptMap,
+        dependencies,
+      },
+      metadata: {
+        ...state.metadata,
+        currentPhase: 'validating',
+        lastModified: new Date().toISOString(),
+      },
+    };
+  }
+
+  private _collectConcepts(state: CourseGenerationState): Map<
+    string,
+    {
+      introducedIn: string;
+      prerequisites: string[];
+      usedIn: string[];
+      depth: number;
+    }
+  > {
     const conceptMap = new Map<
       string,
       {
@@ -24,13 +48,6 @@ export class ConceptMapperAgent extends BaseAgent {
       }
     >();
 
-    const dependencies: Array<{
-      from: string;
-      to: string;
-      type: 'prerequisite' | 'builds_on' | 'extends';
-    }> = [];
-
-    // First pass: collect all concepts
     for (const module of state.modules) {
       for (const lesson of module.lessons) {
         for (const concept of lesson.keyConcepts) {
@@ -49,14 +66,37 @@ export class ConceptMapperAgent extends BaseAgent {
       }
     }
 
-    // Second pass: build dependencies from lesson prerequisites
+    return conceptMap;
+  }
+
+  private _buildDependencies(
+    state: CourseGenerationState,
+    conceptMap: Map<
+      string,
+      {
+        introducedIn: string;
+        prerequisites: string[];
+        usedIn: string[];
+        depth: number;
+      }
+    >
+  ): Array<{
+    from: string;
+    to: string;
+    type: 'prerequisite' | 'builds_on' | 'extends';
+  }> {
+    const dependencies: Array<{
+      from: string;
+      to: string;
+      type: 'prerequisite' | 'builds_on' | 'extends';
+    }> = [];
+
     for (const module of state.modules) {
       for (const lesson of module.lessons) {
         for (const concept of lesson.keyConcepts) {
           const conceptNode = conceptMap.get(concept);
           if (!conceptNode) continue;
 
-          // Add prerequisites from lesson prerequisites
           for (const prereq of lesson.prerequisites) {
             if (conceptMap.has(prereq)) {
               if (!conceptNode.prerequisites.includes(prereq)) {
@@ -73,38 +113,36 @@ export class ConceptMapperAgent extends BaseAgent {
       }
     }
 
-    // Calculate depths using topological sort
-    const calculateDepths = () => {
-      const visited = new Set<string>();
-      const visit = (concept: string, depth: number) => {
-        if (visited.has(concept)) return;
-        visited.add(concept);
-        const node = conceptMap.get(concept);
-        if (node) {
-          node.depth = Math.max(node.depth, depth);
-          for (const prereq of node.prerequisites) {
-            visit(prereq, depth + 1);
-          }
-        }
-      };
-      for (const concept of conceptMap.keys()) {
-        if (!visited.has(concept)) {
-          visit(concept, 0);
+    return dependencies;
+  }
+
+  private _calculateDepths(
+    conceptMap: Map<
+      string,
+      {
+        introducedIn: string;
+        prerequisites: string[];
+        usedIn: string[];
+        depth: number;
+      }
+    >
+  ): void {
+    const visited = new Set<string>();
+    const visit = (concept: string, depth: number) => {
+      if (visited.has(concept)) return;
+      visited.add(concept);
+      const node = conceptMap.get(concept);
+      if (node) {
+        node.depth = Math.max(node.depth, depth);
+        for (const prereq of node.prerequisites) {
+          visit(prereq, depth + 1);
         }
       }
     };
-    calculateDepths();
-
-    return {
-      conceptGraph: {
-        concepts: conceptMap,
-        dependencies,
-      },
-      metadata: {
-        ...state.metadata,
-        currentPhase: 'validating',
-        lastModified: new Date().toISOString(),
-      },
-    };
+    for (const concept of conceptMap.keys()) {
+      if (!visited.has(concept)) {
+        visit(concept, 0);
+      }
+    }
   }
 }

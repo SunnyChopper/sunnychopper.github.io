@@ -3,7 +3,6 @@ import { generateId, randomDelay } from '../../mocks/storage';
 import type { MetricInsight } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
 
-const USER_ID = 'user-1';
 const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export const metricInsightsService = {

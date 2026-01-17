@@ -2,24 +2,23 @@ import type { ApiResponse } from '../../types/api-contracts';
 import { getFeatureConfig, getApiKey, hasApiKey } from '../../lib/llm/config';
 import { createProvider } from '../../lib/llm/providers';
 import type { Area } from '../../types/growth-system';
+
+const ERROR_LLM_NOT_CONFIGURED = 'LLM not configured. Please configure in Settings.';
+const ERROR_API_KEY_NOT_FOUND = 'API key not found';
 import {
   ExpandContentOutputSchema,
   SummarizeContentOutputSchema,
   ImproveClarityOutputSchema,
   TagSuggestionsOutputSchema,
   AreaSuggestionOutputSchema,
-  LinkSuggestionsOutputSchema,
   GenerateContentOutputSchema,
-  ExtractFromUrlOutputSchema,
   ContentAnalysisOutputSchema,
   type ExpandContentOutput,
   type SummarizeContentOutput,
   type ImproveClarityOutput,
   type TagSuggestionsOutput,
   type AreaSuggestionOutput,
-  type LinkSuggestionsOutput,
   type GenerateContentOutput,
-  type ExtractFromUrlOutput,
   type ContentAnalysisOutput,
 } from '../../lib/llm/schemas/note-ai-schemas';
 
@@ -34,12 +33,12 @@ export const noteAIService = {
     try {
       const featureConfig = getFeatureConfig('noteExpand');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -82,12 +81,12 @@ Provide an expanded version that:
     try {
       const featureConfig = getFeatureConfig('noteSummarize');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -127,12 +126,12 @@ Provide:
     try {
       const featureConfig = getFeatureConfig('noteImprove');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -177,12 +176,12 @@ Focus on:
     try {
       const featureConfig = getFeatureConfig('noteTagSuggest');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -226,12 +225,12 @@ Suggest 5-10 relevant tags with relevance scores.`;
     try {
       const featureConfig = getFeatureConfig('noteAreaSuggest');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -270,12 +269,12 @@ Consider the main topic, theme, and purpose of the note.`;
     try {
       const featureConfig = getFeatureConfig('noteGenerate');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -320,12 +319,12 @@ Generate content that:
     try {
       const featureConfig = getFeatureConfig('noteAnalyze');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);

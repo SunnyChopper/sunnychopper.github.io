@@ -65,28 +65,44 @@ export const pointCalculatorService = {
   ): number {
     switch (milestoneType) {
       case 'target_reached':
-        if (!targetValue) return 0;
-        // Base 200, multiplied by target difficulty
-        const multiplier = targetValue > 100 ? 1.5 : targetValue > 50 ? 1.2 : 1.0;
-        return Math.round(200 * multiplier);
+        return this._calculateTargetReachedPoints(targetValue);
       case 'streak':
-        if (value === 7) return 350;
-        if (value === 30) return 1500;
-        if (value === 100) return 5000;
-        // 50 points per day for other streaks
-        return Math.round(value * 50);
+        return this._calculateStreakPoints(value);
       case 'improvement':
-        if (value >= 50) return 1000;
-        if (value >= 25) return 500;
-        if (value >= 10) return 200;
-        return 0;
+        return this._calculateImprovementPoints(value);
       case 'consistency':
-        if (value === 7) return 175;
-        if (value === 30) return 750;
-        // 25 points per day for other consistency
-        return Math.round(value * 25);
+        return this._calculateConsistencyPoints(value);
       default:
         return 0;
     }
+  },
+
+  _calculateTargetReachedPoints(targetValue?: number | null): number {
+    if (!targetValue) return 0;
+    // Base 200, multiplied by target difficulty
+    const multiplier = targetValue > 100 ? 1.5 : targetValue > 50 ? 1.2 : 1.0;
+    return Math.round(200 * multiplier);
+  },
+
+  _calculateStreakPoints(value: number): number {
+    if (value === 7) return 350;
+    if (value === 30) return 1500;
+    if (value === 100) return 5000;
+    // 50 points per day for other streaks
+    return Math.round(value * 50);
+  },
+
+  _calculateImprovementPoints(value: number): number {
+    if (value >= 50) return 1000;
+    if (value >= 25) return 500;
+    if (value >= 10) return 200;
+    return 0;
+  },
+
+  _calculateConsistencyPoints(value: number): number {
+    if (value === 7) return 175;
+    if (value === 30) return 750;
+    // 25 points per day for other consistency
+    return Math.round(value * 25);
   },
 };

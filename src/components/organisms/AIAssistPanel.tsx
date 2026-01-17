@@ -22,7 +22,18 @@ export function AIAssistPanel({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close AI assist panel"
+      />
       <div
         className={`fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl z-50 transform transition-transform ${
           isOpen ? 'translate-x-0' : 'translate-x-full'

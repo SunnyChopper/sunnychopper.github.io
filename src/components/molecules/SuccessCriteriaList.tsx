@@ -108,6 +108,15 @@ export function SuccessCriteriaList({
             ) : (
               <div
                 onClick={() => handleStartEdit(criterion)}
+                onKeyDown={(e) => {
+                  if (editable && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    handleStartEdit(criterion);
+                  }
+                }}
+                role={editable ? 'button' : undefined}
+                tabIndex={editable ? 0 : undefined}
+                aria-label={editable ? 'Edit criterion' : undefined}
                 className={`text-sm ${
                   criterion.isCompleted
                     ? 'line-through text-gray-500 dark:text-gray-400'

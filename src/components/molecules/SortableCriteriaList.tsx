@@ -122,14 +122,26 @@ function SortableCriterionItem({
               autoFocus
               className="w-full px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             />
+          ) : editable ? (
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              className={`text-sm text-left w-full ${
+                criterion.isCompleted
+                  ? 'line-through text-gray-500 dark:text-gray-400'
+                  : 'text-gray-900 dark:text-white'
+              } cursor-text`}
+              aria-label="Edit criterion"
+            >
+              {criterion.text}
+            </button>
           ) : (
             <div
-              onClick={handleStartEdit}
               className={`text-sm ${
                 criterion.isCompleted
                   ? 'line-through text-gray-500 dark:text-gray-400'
                   : 'text-gray-900 dark:text-white'
-              } ${editable ? 'cursor-text' : ''}`}
+              }`}
             >
               {criterion.text}
             </div>

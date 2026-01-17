@@ -34,14 +34,13 @@ import { AreaBadge } from '../../components/atoms/AreaBadge';
 import { StatusBadge } from '../../components/atoms/StatusBadge';
 import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
 import { ProgressRing } from '../../components/atoms/ProgressRing';
-import { SUBCATEGORY_LABELS } from '../../constants/growth-system';
+import { SUBCATEGORY_LABELS, PROJECT_STATUSES } from '../../constants/growth-system';
 import { TaskListItem } from '../../components/molecules/TaskListItem';
 import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
 import { RelationshipPicker } from '../../components/organisms/RelationshipPicker';
 import { AIProjectAssistPanel } from '../../components/molecules/AIProjectAssistPanel';
 import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
 import { llmConfig } from '../../lib/llm';
-import { PROJECT_STATUSES } from '../../constants/growth-system';
 
 const STATUSES: ProjectStatus[] = [...PROJECT_STATUSES];
 
@@ -231,17 +230,25 @@ export default function ProjectsPage() {
     loadProjectTasks(selectedProject.id);
   };
 
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch =
-      !searchQuery ||
-      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (project.description &&
-        project.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesArea = !filters.area || project.area === filters.area;
-    const matchesStatus = !filters.status || project.status === filters.status;
-    const matchesPriority = !filters.priority || project.priority === filters.priority;
-    return matchesSearch && matchesArea && matchesStatus && matchesPriority;
-  });
+  const matchesSearch = (project: Project): boolean => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      project.name.toLowerCase().includes(query) ||
+      (project.description && project.description.toLowerCase().includes(query))
+    );
+  };
+
+  const matchesFilters = (project: Project): boolean => {
+    if (filters.area && project.area !== filters.area) return false;
+    if (filters.status && project.status !== filters.status) return false;
+    if (filters.priority && project.priority !== filters.priority) return false;
+    return true;
+  };
+
+  const filteredProjects = projects.filter(
+    (project) => matchesSearch(project) && matchesFilters(project)
+  );
 
   const getProjectStats = (projectId: string) => {
     const tasks = projectTasks.get(projectId) || [];

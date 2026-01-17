@@ -1,3 +1,5 @@
+import type { z } from 'zod';
+import type { AIFeature } from './config/feature-types';
 import type {
   ILLMAdapter,
   LLMResponse,
@@ -22,11 +24,11 @@ import type {
   ProjectRiskInput,
   ProjectRiskOutput,
 } from '../../types/llm';
-import type { z } from 'zod';
-import type { AIFeature } from './config/feature-types';
+
 import { getFeatureConfig } from './config/feature-config-store';
 import { getApiKey, hasApiKey } from './config/api-key-store';
 import { createProvider } from './providers/provider-factory';
+
 import {
   ParseTaskOutputSchema,
   TaskBreakdownOutputSchema,
@@ -36,11 +38,13 @@ import {
   TaskCategorizationOutputSchema,
   DependencyDetectionOutputSchema,
 } from './schemas/task-schemas';
+
 import {
   ProjectHealthOutputSchema,
   ProjectTaskGenOutputSchema,
   ProjectRiskOutputSchema,
 } from './schemas/project-schemas';
+
 import {
   SYSTEM_PROMPT,
   getParseTaskPrompt,

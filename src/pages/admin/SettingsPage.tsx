@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Monitor, Moon, Sun, Database, Cloud } from 'lucide-react';
-import { storageConfig, type StorageType } from '../../lib/storage';
 import { AISettingsPanel } from '../../components/settings/AISettingsPanel';
+import { storageConfig, type StorageType } from '../../lib/storage';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -15,17 +15,6 @@ export default function SettingsPage() {
     return storageConfig.getCurrentType();
   });
 
-  useEffect(() => {
-    localStorage.setItem('theme', theme);
-    applyTheme(theme);
-  }, [theme]);
-
-  const handleStorageTypeChange = (type: StorageType) => {
-    setStorageType(type);
-    storageConfig.setStorageType(type);
-    window.location.reload();
-  };
-
   const applyTheme = (selectedTheme: Theme) => {
     let effectiveTheme = selectedTheme;
 
@@ -38,6 +27,17 @@ export default function SettingsPage() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+  };
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+    applyTheme(theme);
+  }, [theme]);
+
+  const handleStorageTypeChange = (type: StorageType) => {
+    setStorageType(type);
+    storageConfig.setStorageType(type);
+    window.location.reload();
   };
 
   const themeOptions: {

@@ -63,6 +63,15 @@ export function TaskListItem({
         onClick ? 'cursor-pointer' : ''
       }`}
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `View task: ${task.title}` : undefined}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -158,6 +167,7 @@ export function TaskListItem({
         <div
           className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
         >
           <Button
             variant="secondary"

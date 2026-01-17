@@ -322,6 +322,15 @@ export function GoalHierarchicalTimeView({
                               {/* Click to drill down */}
                               <div
                                 onClick={() => handleZoomInto(goal)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    handleZoomInto(goal);
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`Zoom into goal: ${goal.title}`}
                                 className="cursor-pointer relative"
                               >
                                 <GoalCard

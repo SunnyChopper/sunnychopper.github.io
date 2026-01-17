@@ -314,7 +314,18 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] px-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={handleClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            handleClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close command palette"
+      />
 
       <div className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">

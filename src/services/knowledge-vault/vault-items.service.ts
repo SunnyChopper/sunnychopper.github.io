@@ -6,7 +6,6 @@ import type {
   Flashcard,
   CourseLesson,
   VaultItemType,
-  VaultItemStatus,
   VaultItemFilters,
   CreateNoteInput,
   UpdateNoteInput,

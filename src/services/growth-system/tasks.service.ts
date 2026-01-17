@@ -20,7 +20,7 @@ interface BackendPaginatedResponse<T> {
   hasMore: boolean;
 }
 
-function applyFilters(tasks: Task[], filters?: FilterOptions): Task[] {
+function _applyFilters(tasks: Task[], filters?: FilterOptions): Task[] {
   let filtered = [...tasks];
 
   if (filters?.search) {

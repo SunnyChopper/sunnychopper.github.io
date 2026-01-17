@@ -1,5 +1,10 @@
 import { apiClient } from '../../lib/api-client';
-import type { Goal, Task, GoalProgressBreakdown } from '../../types/growth-system';
+import type {
+  Goal,
+  Task,
+  GoalProgressBreakdown,
+  SuccessCriterion,
+} from '../../types/growth-system';
 import type { ApiResponse } from '../../types/api-contracts';
 import { getFeatureConfig, getApiKey, hasApiKey } from '../../lib/llm/config';
 import { createProvider } from '../../lib/llm/providers';
@@ -236,7 +241,7 @@ Success Criteria:
 ${
   Array.isArray(goal.successCriteria)
     ? goal.successCriteria
-        .map((c: any) => (typeof c === 'string' ? `- ${c}` : `- ${c.text}`))
+        .map((c: string | SuccessCriterion) => (typeof c === 'string' ? `- ${c}` : `- ${c.text}`))
         .join('\n')
     : 'None defined'
 }

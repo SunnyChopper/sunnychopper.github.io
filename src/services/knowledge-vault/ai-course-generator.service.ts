@@ -283,234 +283,17 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
     input: GenerateCourseSkeletonInput
   ): Promise<ApiResponse<CourseSkeletonResult>> {
     try {
-      const featureConfig = getFeatureConfig('goalRefinement');
-      if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
-      }
+      this._validateLLMConfiguration();
+      this._setupProgressCallback(input.onProgress);
 
-      // Set up progress callback if provided
-      if (input.onProgress) {
-        setProgressCallback(input.onProgress);
-      }
+      const courseInput = this._prepareCourseInput(input);
+      const initialState = this._initializeAndValidateState(courseInput);
 
-      // Store input in a way that survives serialization
-      // This is a backup in case state serialization fails
-      const courseInput: CourseGenerationInput = {
-        topic: input.topic,
-        targetDifficulty: input.targetDifficulty,
-        assessmentResponses: input.assessmentResponses,
-      };
-      setStoredInput(courseInput);
+      const finalState = await this._executeGraph(initialState, courseInput);
 
-      // Initialize LangGraph state
-      const initialState = initializeState(courseInput);
+      this._cleanupResources();
 
-      // CRITICAL: Clear global state cache at start of new execution
-      // This ensures we don't have stale state from previous runs
-      setGlobalStateCache(null);
-
-      // Validate initial state has required fields
-      if (!initialState.metadata || !initialState.metadata.input) {
-        throw new Error('Initial state is missing required metadata or input');
-      }
-
-      // CRITICAL: Set initial state in global cache as backup
-      // This helps recover from LangGraph serialization issues
-      setGlobalStateCache(initialState);
-
-      // Log initial state for debugging
-      console.log('About to invoke graph with initial state:', {
-        hasMetadata: !!initialState.metadata,
-        hasInput: !!initialState.metadata.input,
-        stateKeys: Object.keys(initialState),
-        metadataKeys: initialState.metadata ? Object.keys(initialState.metadata) : [],
-      });
-
-      // Build and execute graph
-      const graph = buildCourseGenerationGraph();
-
-      let finalState: CourseGenerationState;
-
-      try {
-        // CRITICAL: Convert Map to plain object for serialization
-        // LangGraph serializes state internally, and Maps don't serialize to JSON
-        // This causes the state to become empty when passed to the reducer
-        // We convert the Map to a plain object, and the reducer will convert it back
-        // CRITICAL: Ensure modules is an array before serialization
-        if (!Array.isArray(initialState.modules)) {
-          console.warn('Initial state modules is not an array, using empty array');
-          initialState.modules = [];
-        }
-
-        const serializableState = {
-          course: initialState.course,
-          modules: initialState.modules, // Ensure this is an array
-          conceptGraph: {
-            concepts: Object.fromEntries(initialState.conceptGraph.concepts), // Convert Map to object
-            dependencies: initialState.conceptGraph.dependencies,
-          },
-          alignment: initialState.alignment,
-          metadata: {
-            ...initialState.metadata,
-            // Ensure input is explicitly included and not lost
-            input: courseInput,
-          },
-        };
-
-        console.log('Invoking graph with serializable state:', {
-          hasMetadata: !!serializableState.metadata,
-          hasInput: !!serializableState.metadata.input,
-          stateKeys: Object.keys(serializableState),
-          metadataKeys: serializableState.metadata ? Object.keys(serializableState.metadata) : [],
-          modulesCount: Array.isArray(serializableState.modules)
-            ? serializableState.modules.length
-            : 'not array',
-        });
-
-        console.log('About to call graph.invoke()...');
-        let result: unknown;
-        try {
-          result = await graph.invoke(serializableState);
-          console.log('graph.invoke() completed', {
-            hasResult: !!result,
-            resultType: typeof result,
-            isNull: result === null,
-            isUndefined: result === undefined,
-            resultKeys:
-              result && typeof result === 'object' ? Object.keys(result) : 'not an object',
-          });
-        } catch (invokeError) {
-          console.error('graph.invoke() threw an error:', {
-            error: invokeError,
-            errorMessage: invokeError instanceof Error ? invokeError.message : String(invokeError),
-            errorStack: invokeError instanceof Error ? invokeError.stack : undefined,
-          });
-          throw invokeError;
-        }
-
-        // Validate and cast the result
-        if (!result) {
-          console.error('Graph execution returned null/undefined result', {
-            result,
-            resultType: typeof result,
-            isNull: result === null,
-            isUndefined: result === undefined,
-          });
-          // Attempt recovery: check if we can reconstruct from stored input
-          const storedInput = getStoredInput();
-          if (storedInput) {
-            console.warn('Attempting to recover state from stored input...');
-            // This is a last resort - the graph should have returned state
-            throw new Error(
-              'Course generation failed: Graph execution returned no state. State was lost during execution.'
-            );
-          }
-          throw new Error('Course generation failed: Graph execution returned no state');
-        }
-
-        if (typeof result !== 'object') {
-          console.error('Graph execution returned non-object result:', {
-            result,
-            resultType: typeof result,
-          });
-          throw new Error('Course generation failed: Graph execution returned invalid state type');
-        }
-
-        // Type assertion needed because LangGraph returns StateType<any>
-        // We validate the structure below
-        finalState = result as CourseGenerationState;
-
-        // CRITICAL: Ensure modules exist and is an array
-        if (!finalState.modules || !Array.isArray(finalState.modules)) {
-          console.error('Final state missing modules, attempting recovery...', {
-            hasModules: !!finalState.modules,
-            modulesType: typeof finalState.modules,
-            stateKeys: Object.keys(finalState),
-          });
-          // Recovery: use empty array as fallback (should not happen with our fixes)
-          finalState.modules = [];
-        }
-
-        // CRITICAL: Reconstruct Map from serialized conceptGraph if needed
-        if (
-          finalState.conceptGraph?.concepts &&
-          !(finalState.conceptGraph.concepts instanceof Map)
-        ) {
-          console.log('Reconstructing conceptGraph Map from serialized object');
-          finalState.conceptGraph.concepts = new Map(
-            Object.entries(finalState.conceptGraph.concepts as Record<string, ConceptNode>)
-          );
-        }
-
-        // Log final state structure for debugging
-        console.log('Graph execution completed. Final state structure:', {
-          hasCourse: !!finalState.course,
-          courseTitle: finalState.course?.title,
-          hasModules: !!finalState.modules,
-          modulesCount: Array.isArray(finalState.modules) ? finalState.modules.length : 'not array',
-          hasMetadata: !!finalState.metadata,
-          hasInput: !!finalState.metadata?.input,
-          currentPhase: finalState.metadata?.currentPhase,
-          iterations: finalState.metadata?.iterations,
-          stateKeys: Object.keys(finalState),
-          fullState: JSON.stringify(
-            finalState,
-            (_key, value) => {
-              // Don't serialize Maps or functions
-              if (value instanceof Map) {
-                return { __type: 'Map', entries: Array.from(value.entries()) };
-              }
-              if (typeof value === 'function') {
-                return { __type: 'function' };
-              }
-              return value;
-            },
-            2
-          ).substring(0, 1000), // Limit to first 1000 chars
-        });
-      } catch (graphError) {
-        console.error('Graph execution error:', graphError);
-        throw new Error(
-          `Course generation failed during graph execution: ${graphError instanceof Error ? graphError.message : 'Unknown error'}`
-        );
-      }
-
-      // Clear progress callback, stored input, and global state cache
-      setProgressCallback(() => {});
-      setStoredInput(null as unknown as CourseGenerationInput); // Clear stored input
-      setGlobalStateCache(null); // Clear global state cache
-
-      // Validate final state structure
-      if (!finalState || typeof finalState !== 'object') {
-        throw new Error('Course generation failed: Graph execution returned no state');
-      }
-
-      // Validate required state properties exist
-      if (!finalState.course || !finalState.modules) {
-        throw new Error(
-          'Course generation failed: Graph execution returned incomplete state. Missing course or modules data.'
-        );
-      }
-
-      // Set topic on course (wasn't in state)
-      finalState.course = {
-        ...finalState.course,
-        // Topic is stored separately, we'll add it to the result
-      };
-
-      // Convert to existing format
-      let skeletonResult: CourseSkeletonResult;
-      try {
-        skeletonResult = convertStateToSkeletonResult(finalState);
-      } catch (conversionError) {
-        console.error('State conversion error:', conversionError);
-        throw conversionError instanceof Error
-          ? conversionError
-          : new Error('Failed to convert generated course state to skeleton format');
-      }
-
-      // Set topic from input
-      skeletonResult.course.topic = input.topic;
+      const skeletonResult = this._convertAndFinalizeState(finalState, input.topic);
 
       return {
         data: skeletonResult,
@@ -518,12 +301,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
         success: true,
       };
     } catch (error) {
-      console.error('Error generating course skeleton:', error);
-      // Clear progress callback, stored input, and global state cache on error
-      setProgressCallback(() => {});
-      setStoredInput(null as unknown as CourseGenerationInput);
-      setGlobalStateCache(null); // Clear global state cache
-
+      this._cleanupResources();
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -534,6 +312,135 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
         error: errorMessage,
         success: false,
       };
+    }
+  },
+
+  _validateLLMConfiguration(): void {
+    const featureConfig = getFeatureConfig('goalRefinement');
+    if (!featureConfig || !hasApiKey(featureConfig.provider)) {
+      throw new Error('LLM not configured. Please configure in Settings.');
+    }
+  },
+
+  _setupProgressCallback(onProgress?: (progress: CourseGenerationProgress) => void): void {
+    if (onProgress) {
+      setProgressCallback(onProgress);
+    }
+  },
+
+  _prepareCourseInput(input: GenerateCourseSkeletonInput): CourseGenerationInput {
+    const courseInput: CourseGenerationInput = {
+      topic: input.topic,
+      targetDifficulty: input.targetDifficulty,
+      assessmentResponses: input.assessmentResponses,
+    };
+    setStoredInput(courseInput);
+    return courseInput;
+  },
+
+  _initializeAndValidateState(courseInput: CourseGenerationInput): CourseGenerationState {
+    setGlobalStateCache(null);
+    const initialState = initializeState(courseInput);
+
+    if (!initialState.metadata || !initialState.metadata.input) {
+      throw new Error('Initial state is missing required metadata or input');
+    }
+
+    setGlobalStateCache(initialState);
+    return initialState;
+  },
+
+  _createSerializableState(
+    initialState: CourseGenerationState,
+    courseInput: CourseGenerationInput
+  ): Record<string, unknown> {
+    if (!Array.isArray(initialState.modules)) {
+      initialState.modules = [];
+    }
+
+    return {
+      course: initialState.course,
+      modules: initialState.modules,
+      conceptGraph: {
+        concepts: Object.fromEntries(initialState.conceptGraph.concepts),
+        dependencies: initialState.conceptGraph.dependencies,
+      },
+      alignment: initialState.alignment,
+      metadata: {
+        ...initialState.metadata,
+        input: courseInput,
+      },
+    };
+  },
+
+  _validateGraphResult(result: unknown): CourseGenerationState {
+    if (!result) {
+      const storedInput = getStoredInput();
+      if (storedInput) {
+        throw new Error(
+          'Course generation failed: Graph execution returned no state. State was lost during execution.'
+        );
+      }
+      throw new Error('Course generation failed: Graph execution returned no state');
+    }
+
+    if (typeof result !== 'object') {
+      throw new Error('Course generation failed: Graph execution returned invalid state type');
+    }
+
+    const finalState = result as CourseGenerationState;
+
+    if (!finalState.modules || !Array.isArray(finalState.modules)) {
+      finalState.modules = [];
+    }
+
+    if (finalState.conceptGraph?.concepts && !(finalState.conceptGraph.concepts instanceof Map)) {
+      finalState.conceptGraph.concepts = new Map(
+        Object.entries(finalState.conceptGraph.concepts as Record<string, ConceptNode>)
+      );
+    }
+
+    return finalState;
+  },
+
+  async _executeGraph(
+    initialState: CourseGenerationState,
+    courseInput: CourseGenerationInput
+  ): Promise<CourseGenerationState> {
+    const graph = buildCourseGenerationGraph();
+    const serializableState = this._createSerializableState(initialState, courseInput);
+
+    try {
+      const result = await graph.invoke(serializableState);
+      return this._validateGraphResult(result);
+    } catch (graphError) {
+      throw new Error(
+        `Course generation failed during graph execution: ${graphError instanceof Error ? graphError.message : 'Unknown error'}`
+      );
+    }
+  },
+
+  _cleanupResources(): void {
+    setProgressCallback(() => {});
+    setStoredInput(null as unknown as CourseGenerationInput);
+    setGlobalStateCache(null);
+  },
+
+  _convertAndFinalizeState(finalState: CourseGenerationState, topic: string): CourseSkeletonResult {
+    if (!finalState.course || !finalState.modules) {
+      throw new Error(
+        'Course generation failed: Graph execution returned incomplete state. Missing course or modules data.'
+      );
+    }
+
+    try {
+      const skeletonResult = convertStateToSkeletonResult(finalState);
+      skeletonResult.course.topic = topic;
+      return skeletonResult;
+    } catch (conversionError) {
+      throw conversionError instanceof Error
+        ? conversionError
+        : new Error('Failed to convert generated course state to skeleton format');
     }
   },
 

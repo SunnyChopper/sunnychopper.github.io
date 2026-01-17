@@ -1,10 +1,12 @@
 import { apiClient } from '../../lib/api-client';
 import type { Metric, MetricLog, Goal } from '../../types/growth-system';
 import type { ApiResponse } from '../../types/api-contracts';
-import { getLLMAdapter } from '../../lib/llm';
 import { getFeatureConfig, getApiKey, hasApiKey } from '../../lib/llm/config';
 import { createProvider } from '../../lib/llm/providers';
 import { z } from 'zod';
+
+const ERROR_LLM_NOT_CONFIGURED = 'LLM not configured. Please configure in Settings.';
+const ERROR_API_KEY_NOT_FOUND = 'API key not found';
 
 interface AIResponse<T> {
   result: T;
@@ -124,12 +126,12 @@ export const metricAIService = {
       // Fallback to direct LLM
       const featureConfig = getFeatureConfig('metricPatterns');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -207,12 +209,12 @@ Provide insights and actionable recommendations.`;
       // Fallback to direct LLM
       const featureConfig = getFeatureConfig('metricAnomalies');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -287,12 +289,12 @@ Identify:
       // Fallback to direct LLM
       const featureConfig = getFeatureConfig('metricCorrelations');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -349,17 +351,17 @@ Identify:
   async generateNarrative(
     metric: Metric,
     logs: MetricLog[],
-    insights?: any
+    insights?: Record<string, unknown>
   ): Promise<ApiResponse<z.infer<typeof NarrativeResponseSchema>>> {
     try {
       const featureConfig = getFeatureConfig('metricPatterns');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -432,12 +434,12 @@ Create a conversational summary that:
       // Fallback to direct LLM
       const featureConfig = getFeatureConfig('metricTargets');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -492,12 +494,12 @@ Predict:
     try {
       const featureConfig = getFeatureConfig('metricTargets');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
@@ -549,17 +551,17 @@ Provide recommendations for:
   async generateCoaching(
     metric: Metric,
     logs: MetricLog[],
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): Promise<ApiResponse<z.infer<typeof CoachingResponseSchema>>> {
     try {
       const featureConfig = getFeatureConfig('metricHealth');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+        throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
       const apiKey = getApiKey(featureConfig.provider);
       if (!apiKey) {
-        throw new Error('API key not found');
+        throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);

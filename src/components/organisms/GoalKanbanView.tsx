@@ -146,6 +146,8 @@ export function GoalKanbanView({
               onDragOver={(e) => handleDragOver(e, column.status)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, column.status)}
+              role="region"
+              aria-label={`${column.status} goals column`}
             >
               {/* Column Header */}
               <div className={`${column.color} px-4 py-3 rounded-t-lg shadow-sm`}>

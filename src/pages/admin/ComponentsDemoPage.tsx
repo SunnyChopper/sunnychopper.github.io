@@ -1,26 +1,36 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Package } from 'lucide-react';
-import { AreaBadge } from '../../components/atoms/AreaBadge';
-import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
-import { StatusBadge } from '../../components/atoms/StatusBadge';
-import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
-import { DateDisplay } from '../../components/atoms/DateDisplay';
-import { ProgressRing } from '../../components/atoms/ProgressRing';
-import { DependencyBadge } from '../../components/atoms/DependencyBadge';
 import { AIConfidenceIndicator } from '../../components/atoms/AIConfidenceIndicator';
 import { AIThinkingIndicator } from '../../components/atoms/AIThinkingIndicator';
-import { AIInsightBanner } from '../../components/molecules/AIInsightBanner';
-import { AIAssistPanel } from '../../components/organisms/AIAssistPanel';
-import { AISuggestionCard } from '../../components/molecules/AISuggestionCard';
-import { FilterPanel } from '../../components/molecules/FilterPanel';
-import { EmptyState } from '../../components/molecules/EmptyState';
-import { QuickActionBar } from '../../components/molecules/QuickActionBar';
+import { AreaBadge } from '../../components/atoms/AreaBadge';
 import Button from '../../components/atoms/Button';
+import { DateDisplay } from '../../components/atoms/DateDisplay';
+import { DependencyBadge } from '../../components/atoms/DependencyBadge';
+import { EntityLinkChip } from '../../components/atoms/EntityLinkChip';
+import { PriorityIndicator } from '../../components/atoms/PriorityIndicator';
+import { ProgressRing } from '../../components/atoms/ProgressRing';
+import { StatusBadge } from '../../components/atoms/StatusBadge';
+import { AIInsightBanner } from '../../components/molecules/AIInsightBanner';
+import { AISuggestionCard } from '../../components/molecules/AISuggestionCard';
+import { EmptyState } from '../../components/molecules/EmptyState';
+import { FilterPanel } from '../../components/molecules/FilterPanel';
+import { QuickActionBar } from '../../components/molecules/QuickActionBar';
+import { AIAssistPanel } from '../../components/organisms/AIAssistPanel';
 
 export default function ComponentsDemoPage() {
   const [filters, setFilters] = useState({});
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [selectedCount, setSelectedCount] = useState(0);
+
+  // Use useState with lazy initializer to calculate dates once without calling Date.now during render
+  const [demoDates] = useState(() => {
+    const now = Date.now();
+    return {
+      today: new Date(now).toISOString().split('T')[0],
+      tomorrow: new Date(now + 86400000).toISOString().split('T')[0],
+      yesterday: new Date(now - 86400000).toISOString().split('T')[0],
+    };
+  });
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-12">
@@ -139,15 +149,9 @@ export default function ComponentsDemoPage() {
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Date Display</h3>
             <div className="space-y-3">
-              <DateDisplay date={new Date().toISOString().split('T')[0]} label="Today" />
-              <DateDisplay
-                date={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-                label="Tomorrow"
-              />
-              <DateDisplay
-                date={new Date(Date.now() - 86400000).toISOString().split('T')[0]}
-                label="Yesterday (overdue)"
-              />
+              <DateDisplay date={demoDates.today} label="Today" />
+              <DateDisplay date={demoDates.tomorrow} label="Tomorrow" />
+              <DateDisplay date={demoDates.yesterday} label="Yesterday (overdue)" />
               <DateDisplay date={null} label="No date" />
             </div>
           </div>

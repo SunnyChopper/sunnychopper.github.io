@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { TrendingUp, Target, Check, ArrowRight } from 'lucide-react';
 import type { CreateMetricInput } from '../../types/growth-system';
-import { MetricCreateForm } from './MetricCreateForm';
 import Button from '../atoms/Button';
 
 interface MetricOnboardingProps {

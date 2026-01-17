@@ -304,6 +304,15 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
                 {/* Goal Bar */}
                 <div
                   onClick={() => onGoalClick(goal)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onGoalClick(goal);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View goal: ${goal.title}`}
                   className={`h-full p-2 bg-gradient-to-r ${colorClasses} rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer group border relative`}
                 >
                   <div className="flex items-center justify-between h-full">

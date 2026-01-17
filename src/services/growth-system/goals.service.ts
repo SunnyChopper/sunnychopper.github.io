@@ -1,4 +1,5 @@
 import { apiClient } from '../../lib/api-client';
+import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
 import type {
   Goal,
   CreateGoalInput,
@@ -7,11 +8,8 @@ import type {
   Task,
   Habit,
   GoalProgressBreakdown,
-  SuccessCriterion,
   GoalActivity,
 } from '../../types/growth-system';
-import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
-import type { PaginatedResponse } from '../../types/growth-system';
 
 interface BackendPaginatedResponse<T> {
   data: T[];

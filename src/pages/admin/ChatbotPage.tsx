@@ -50,32 +50,7 @@ export default function ChatbotPage() {
   const [messageBranches, setMessageBranches] = useState<{ [key: string]: MessageBranch[] }>({});
   const [currentBranchIndex, setCurrentBranchIndex] = useState<{ [key: string]: number }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    loadThreads();
-
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setSidebarCollapsed(false);
-      } else {
-        setSidebarCollapsed(true);
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (activeThread) {
-      loadMessages(activeThread.id);
-    }
-  }, [activeThread]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent]);
+  const messageIdCounterRef = useRef(0);
 
   const loadThreads = async () => {
     try {
@@ -97,6 +72,32 @@ export default function ChatbotPage() {
       console.error('Error loading messages:', error);
     }
   };
+
+  useEffect(() => {
+    loadThreads();
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarCollapsed(false);
+      } else {
+        setSidebarCollapsed(true);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [loadThreads]);
+
+  useEffect(() => {
+    if (activeThread) {
+      loadMessages(activeThread.id);
+    }
+  }, [activeThread]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingContent]);
 
   const handleCreateThread = async () => {
     try {
@@ -181,7 +182,8 @@ export default function ChatbotPage() {
         setIsSearching(false);
       }
 
-      const tempMessageId = `temp-${Date.now()}`;
+      messageIdCounterRef.current += 1;
+      const tempMessageId = `temp-${messageIdCounterRef.current}`;
       setStreamingMessageId(tempMessageId);
       setStreamingContent('');
       setStreamingThinking('');

@@ -248,7 +248,18 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
       {/* AI Assistant Panel - Fixed Right Side */}
       {showAIPanel && llmConfig.isConfigured() && (
         <>
-          <div className="fixed inset-0 bg-black/20 z-[75]" onClick={() => setShowAIPanel(false)} />
+          <div
+            className="fixed inset-0 bg-black/20 z-[75]"
+            onClick={() => setShowAIPanel(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setShowAIPanel(false);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Close AI panel"
+          />
           <NoteAIAssistPanel
             content={formData.content}
             title={formData.title}

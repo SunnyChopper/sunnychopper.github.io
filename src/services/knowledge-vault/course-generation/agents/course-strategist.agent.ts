@@ -1,7 +1,6 @@
 import { BaseAgent } from '../../../../lib/llm/langgraph/base-agent';
 import { CourseStructureSchema } from '../../../../lib/llm/schemas/course-ai-schemas';
-import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
-import type { CourseGenerationInput } from '../types';
+import type { CourseGenerationStateUpdate, CourseGenerationInput } from '../types';
 
 /**
  * Course Strategist Agent

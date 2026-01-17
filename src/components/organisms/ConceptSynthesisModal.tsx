@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { X, Sparkles, Brain, Zap, ArrowRight, Save, Loader } from 'lucide-react';
-import type { ConceptNode } from '../../types/concept-graph';
-import type { ConceptSynthesis } from '../../types/concept-graph';
+import type { ConceptNode, ConceptSynthesis } from '../../types/concept-graph';
 import { getAreaColor } from '../../constants/growth-system';
 
 interface ConceptSynthesisModalProps {

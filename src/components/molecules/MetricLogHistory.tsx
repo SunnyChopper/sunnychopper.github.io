@@ -83,6 +83,19 @@ export function MetricLogHistory({
                 : 'border-gray-200 dark:border-gray-600'
             } ${onLogClick ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600' : ''}`}
             onClick={() => onLogClick?.(log)}
+            onKeyDown={(e) => {
+              if (onLogClick && (e.key === 'Enter' || e.key === ' ')) {
+                e.preventDefault();
+                onLogClick(log);
+              }
+            }}
+            role={onLogClick ? 'button' : undefined}
+            tabIndex={onLogClick ? 0 : undefined}
+            aria-label={
+              onLogClick
+                ? `View details for log entry from ${new Date(log.loggedAt).toLocaleDateString()}`
+                : undefined
+            }
           >
             <div className="p-4">
               <div className="flex items-start justify-between mb-2">

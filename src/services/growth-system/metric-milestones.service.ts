@@ -2,10 +2,8 @@ import { getStorageAdapter } from '../../lib/storage';
 import { generateId, randomDelay } from '../../mocks/storage';
 import type { Metric, MetricLog, MetricMilestone } from '../../types/growth-system';
 import type { ApiResponse, ApiListResponse } from '../../types/api-contracts';
-import { calculateProgress, calculateStreaks, getTrendData } from '../../utils/metric-analytics';
+import { calculateProgress, calculateStreaks } from '../../utils/metric-analytics';
 import { walletService } from '../rewards/wallet.service';
-
-const USER_ID = 'user-1';
 
 // Milestone point values
 const MILESTONE_POINTS = {
@@ -33,8 +31,6 @@ export const metricMilestonesService = {
     const existingMilestones = await storage.getAll<MetricMilestone>('metricMilestones');
     const existingForMetric = existingMilestones.filter((m) => m.metricId === metric.id);
 
-    const newMilestones: MetricMilestone[] = [];
-
     if (logs.length === 0) {
       return { data: [], success: true };
     }
@@ -44,35 +40,90 @@ export const metricMilestonesService = {
       (a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime()
     );
 
-    // Check target reached
-    if (metric.targetValue) {
-      const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
+    const newMilestones: MetricMilestone[] = [];
 
-      const hasTargetMilestone = existingForMetric.some(
-        (m) => m.type === 'target_reached' && Math.abs(m.value - metric.targetValue) < 0.01
-      );
-
-      if (progress.percentage >= 100 && !hasTargetMilestone) {
-        const points = Math.round(
-          MILESTONE_POINTS.target_reached.base *
-            (metric.targetValue > 100 ? 1.5 : metric.targetValue > 50 ? 1.2 : 1.0)
-        );
-
-        const milestone: MetricMilestone = {
-          id: generateId(),
-          metricId: metric.id,
-          type: 'target_reached',
-          value: metric.targetValue,
-          achievedAt: latestLog.loggedAt,
-          pointsAwarded: points,
-          rewardId: null,
-        };
-
-        newMilestones.push(milestone);
-      }
+    // Check different milestone types
+    const targetMilestone = this._checkTargetMilestone(metric, latestLog, existingForMetric);
+    if (targetMilestone) {
+      newMilestones.push(targetMilestone);
     }
 
-    // Check streak milestones
+    const streakMilestones = this._checkStreakMilestones(
+      logs,
+      latestLog,
+      existingForMetric,
+      metric.id
+    );
+    newMilestones.push(...streakMilestones);
+
+    const improvementMilestones = this._checkImprovementMilestones(
+      sortedLogs,
+      latestLog,
+      existingForMetric,
+      metric.id
+    );
+    newMilestones.push(...improvementMilestones);
+
+    const consistencyMilestones = this._checkConsistencyMilestones(
+      logs,
+      latestLog,
+      existingForMetric,
+      metric.id
+    );
+    newMilestones.push(...consistencyMilestones);
+
+    // Save and award points for new milestones
+    for (const milestone of newMilestones) {
+      await storage.create('metricMilestones', milestone.id, milestone);
+      await this.awardPoints(milestone);
+    }
+
+    return {
+      data: newMilestones,
+      success: true,
+    };
+  },
+
+  _checkTargetMilestone(
+    metric: Metric,
+    latestLog: MetricLog,
+    existingForMetric: MetricMilestone[]
+  ): MetricMilestone | null {
+    if (!metric.targetValue) {
+      return null;
+    }
+
+    const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
+    const hasTargetMilestone = existingForMetric.some(
+      (m) => m.type === 'target_reached' && Math.abs(m.value - metric.targetValue) < 0.01
+    );
+
+    if (progress.percentage < 100 || hasTargetMilestone) {
+      return null;
+    }
+
+    const points = Math.round(
+      MILESTONE_POINTS.target_reached.base *
+        (metric.targetValue > 100 ? 1.5 : metric.targetValue > 50 ? 1.2 : 1.0)
+    );
+
+    return {
+      id: generateId(),
+      metricId: metric.id,
+      type: 'target_reached',
+      value: metric.targetValue,
+      achievedAt: latestLog.loggedAt,
+      pointsAwarded: points,
+      rewardId: null,
+    };
+  },
+
+  _checkStreakMilestones(
+    logs: MetricLog[],
+    latestLog: MetricLog,
+    existingForMetric: MetricMilestone[],
+    metricId: string
+  ): MetricMilestone[] {
     const streaks = calculateStreaks(logs);
     const streakMilestones = [
       { days: 7, type: 'streak' as const, points: MILESTONE_POINTS.streak_7 },
@@ -80,61 +131,81 @@ export const metricMilestonesService = {
       { days: 100, type: 'streak' as const, points: MILESTONE_POINTS.streak_100 },
     ];
 
+    const newMilestones: MetricMilestone[] = [];
+
     for (const { days, type, points } of streakMilestones) {
       const hasStreakMilestone = existingForMetric.some(
         (m) => m.type === type && Math.abs(m.value - days) < 1
       );
 
       if (streaks.current >= days && !hasStreakMilestone) {
-        const milestone: MetricMilestone = {
+        newMilestones.push({
           id: generateId(),
-          metricId: metric.id,
+          metricId,
           type,
           value: days,
           achievedAt: latestLog.loggedAt,
           pointsAwarded: points,
           rewardId: null,
-        };
-
-        newMilestones.push(milestone);
+        });
       }
     }
 
-    // Check improvement milestones
-    if (sortedLogs.length >= 2) {
-      const firstValue = sortedLogs[0].value;
-      const lastValue = sortedLogs[sortedLogs.length - 1].value;
-      const improvement = ((lastValue - firstValue) / firstValue) * 100;
+    return newMilestones;
+  },
 
-      const improvementMilestones = [
-        { percent: 10, points: MILESTONE_POINTS.improvement_10 },
-        { percent: 25, points: MILESTONE_POINTS.improvement_25 },
-        { percent: 50, points: MILESTONE_POINTS.improvement_50 },
-      ];
+  _checkImprovementMilestones(
+    sortedLogs: MetricLog[],
+    latestLog: MetricLog,
+    existingForMetric: MetricMilestone[],
+    metricId: string
+  ): MetricMilestone[] {
+    if (sortedLogs.length < 2) {
+      return [];
+    }
 
-      for (const { percent, points } of improvementMilestones) {
-        const hasImprovementMilestone = existingForMetric.some(
-          (m) => m.type === 'improvement' && Math.abs(m.value - percent) < 1
-        );
+    const firstValue = sortedLogs[0].value;
+    const lastValue = sortedLogs[sortedLogs.length - 1].value;
+    const improvement = ((lastValue - firstValue) / firstValue) * 100;
 
-        if (improvement >= percent && !hasImprovementMilestone) {
-          const milestone: MetricMilestone = {
-            id: generateId(),
-            metricId: metric.id,
-            type: 'improvement',
-            value: percent,
-            achievedAt: latestLog.loggedAt,
-            pointsAwarded: points,
-            rewardId: null,
-          };
+    const improvementMilestones = [
+      { percent: 10, points: MILESTONE_POINTS.improvement_10 },
+      { percent: 25, points: MILESTONE_POINTS.improvement_25 },
+      { percent: 50, points: MILESTONE_POINTS.improvement_50 },
+    ];
 
-          newMilestones.push(milestone);
-        }
+    const newMilestones: MetricMilestone[] = [];
+
+    for (const { percent, points } of improvementMilestones) {
+      const hasImprovementMilestone = existingForMetric.some(
+        (m) => m.type === 'improvement' && Math.abs(m.value - percent) < 1
+      );
+
+      if (improvement >= percent && !hasImprovementMilestone) {
+        newMilestones.push({
+          id: generateId(),
+          metricId,
+          type: 'improvement',
+          value: percent,
+          achievedAt: latestLog.loggedAt,
+          pointsAwarded: points,
+          rewardId: null,
+        });
       }
     }
 
-    // Check consistency milestones (logging frequency)
+    return newMilestones;
+  },
+
+  _checkConsistencyMilestones(
+    logs: MetricLog[],
+    latestLog: MetricLog,
+    existingForMetric: MetricMilestone[],
+    metricId: string
+  ): MetricMilestone[] {
     const consistencyDays = [7, 30];
+    const newMilestones: MetricMilestone[] = [];
+
     for (const days of consistencyDays) {
       const recentLogs = logs.filter((log) => {
         const logDate = new Date(log.loggedAt);
@@ -155,30 +226,19 @@ export const metricMilestonesService = {
         const points =
           days === 7 ? MILESTONE_POINTS.consistency_7 : MILESTONE_POINTS.consistency_30;
 
-        const milestone: MetricMilestone = {
+        newMilestones.push({
           id: generateId(),
-          metricId: metric.id,
+          metricId,
           type: 'consistency',
           value: days,
           achievedAt: latestLog.loggedAt,
           pointsAwarded: points,
           rewardId: null,
-        };
-
-        newMilestones.push(milestone);
+        });
       }
     }
 
-    // Save and award points for new milestones
-    for (const milestone of newMilestones) {
-      await storage.create('metricMilestones', milestone.id, milestone);
-      await this.awardPoints(milestone);
-    }
-
-    return {
-      data: newMilestones,
-      success: true,
-    };
+    return newMilestones;
   },
 
   /**

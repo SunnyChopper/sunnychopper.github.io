@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, CheckSquare, Target, Repeat, ArrowRight, Sparkles } from 'lucide-react';
-import { useTasks, useHabits, useMetrics, useGoals, useLogbook } from '../../hooks/useGrowthSystem';
 import Button from '../../components/atoms/Button';
+import { useTasks, useHabits, useMetrics, useGoals, useLogbook } from '../../hooks/useGrowthSystem';
 import { ROUTES } from '../../routes';
 
 interface WeeklyStats {
@@ -30,7 +30,7 @@ export default function WeeklyReviewPage() {
   const { goals } = useGoals();
   const { entries } = useLogbook();
 
-  const calculateWeeklyStats = () => {
+  const calculateWeeklyStats = useCallback(() => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -54,9 +54,9 @@ export default function WeeklyReviewPage() {
       metricsLogged: weekMetricLogs,
       journalEntries: weekEntries.length,
     });
-  };
+  }, [tasks, habits, metrics, goals, entries]);
 
-  const generateInsights = async () => {
+  const generateInsights = useCallback(async () => {
     setIsGenerating(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -125,17 +125,25 @@ export default function WeeklyReviewPage() {
 
     setInsights(newInsights);
     setIsGenerating(false);
-  };
+  }, [stats, goals]);
 
   useEffect(() => {
-    calculateWeeklyStats();
-  }, [tasks, habits, metrics, goals, entries]);
+    // Use setTimeout to avoid calling setState synchronously in effect
+    const timeoutId = setTimeout(() => {
+      calculateWeeklyStats();
+    }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [calculateWeeklyStats]);
 
   useEffect(() => {
     if (stats && currentStep === 'review') {
-      generateInsights();
+      // Use setTimeout to avoid calling setState synchronously in effect
+      const timeoutId = setTimeout(() => {
+        generateInsights();
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
-  }, [stats]);
+  }, [stats, currentStep, generateInsights]);
 
   const handleNext = () => {
     if (currentStep === 'review') {

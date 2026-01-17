@@ -7,6 +7,7 @@ import ThemeToggle from '../atoms/ThemeToggle';
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [pendingHash, setPendingHash] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,6 +19,19 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Handle hash update in useEffect to avoid React compiler error
+  useEffect(() => {
+    if (pendingHash && location.pathname === '/') {
+      const currentUrl = window.location.href.split('#')[0];
+      window.history.replaceState(null, '', `${currentUrl}#${pendingHash}`);
+      const element = document.querySelector(pendingHash);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+      setPendingHash(null);
+    }
+  }, [pendingHash, location.pathname]);
 
   const navItems = [
     { label: 'Home', href: '/#home' },
@@ -37,11 +51,8 @@ export default function Header() {
       const hash = href.substring(1);
 
       if (location.pathname === '/') {
-        window.location.hash = hash;
-        const element = document.querySelector(hash);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
+        // Set pending hash to be handled by useEffect
+        setPendingHash(hash);
       } else {
         navigate('/' + hash);
       }

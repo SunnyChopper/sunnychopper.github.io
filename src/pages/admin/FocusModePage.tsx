@@ -19,9 +19,9 @@ import {
   Brain,
   Link as LinkIcon,
 } from 'lucide-react';
-import type { Task } from '../../types/growth-system';
 import { useTasks } from '../../hooks/useGrowthSystem';
 import { ROUTES } from '../../routes';
+import type { Task } from '../../types/growth-system';
 
 const POMODORO_DURATION = 25 * 60;
 
@@ -41,9 +41,12 @@ export default function FocusModePage() {
   useEffect(() => {
     const state = location.state as { sessionTasks?: Task[] };
     if (state?.sessionTasks && state.sessionTasks.length > 0) {
-      setSessionTasks(state.sessionTasks);
+      // Use setTimeout to avoid calling setState synchronously in effect
+      setTimeout(() => {
+        setSessionTasks(state.sessionTasks ?? []);
+      }, 0);
     } else {
-      navigate(ROUTES.admin.dashboard);
+      navigate(ROUTES.admin.dashboard, { replace: true });
     }
   }, [location, navigate]);
 

@@ -14,6 +14,13 @@ import {
 } from 'lucide-react';
 import { llmConfig } from '../../lib/llm';
 import type { Goal, GoalProgressBreakdown, Task } from '../../types/growth-system';
+import type { ApiError } from '../../types/api-contracts';
+import type {
+  ProgressCoachingOutput,
+  GoalHealthScoreOutput,
+  GoalDecompositionOutput,
+  ConflictDetectionOutput,
+} from '../../lib/llm/schemas/goal-ai-schemas';
 import Button from '../atoms/Button';
 import { AIThinkingIndicator } from '../atoms/AIThinkingIndicator';
 import { AIConfidenceIndicator } from '../atoms/AIConfidenceIndicator';
@@ -31,6 +38,64 @@ type AssistMode =
   | 'health'
   | 'decompose';
 
+interface RefineResult {
+  refinedTitle: string;
+  refinedDescription: string;
+  reasoning: string;
+  confidence: number;
+  suggestedAdjustments: string[];
+}
+
+interface CriteriaResult {
+  criteria: Array<{
+    criterion: string;
+    measurable: boolean;
+    suggestedMetric?: string;
+  }>;
+  reasoning: string;
+  confidence: number;
+}
+
+interface MetricsResult {
+  metrics: Array<{
+    name: string;
+    description: string;
+    unit: string;
+    targetValue: number;
+    frequency: string;
+    reasoning: string;
+  }>;
+  overallRationale: string;
+  confidence: number;
+}
+
+interface ForecastResult {
+  probability: number;
+  expectedDate: string;
+  confidenceLevel: string;
+  factors: {
+    positive: string[];
+    negative: string[];
+  };
+  recommendations: string[];
+  reasoning: string;
+}
+
+interface GenericResult {
+  message: string;
+}
+
+type AnalysisResult =
+  | ProgressCoachingOutput
+  | GoalHealthScoreOutput
+  | GoalDecompositionOutput
+  | ConflictDetectionOutput
+  | RefineResult
+  | CriteriaResult
+  | MetricsResult
+  | ForecastResult
+  | GenericResult;
+
 interface AIGoalAssistPanelProps {
   mode: AssistMode;
   goal: Goal;
@@ -40,8 +105,8 @@ interface AIGoalAssistPanelProps {
   onClose: () => void;
   onApplyRefinement?: (title: string, description: string) => void;
   onApplyCriteria?: (criteria: string[]) => void;
-  onApplySubGoals?: (subGoals: any[]) => void;
-  onApplyTasks?: (tasks: any[]) => void;
+  onApplySubGoals?: (subGoals: GoalDecompositionOutput['subGoals']) => void;
+  onApplyTasks?: (tasks: GoalDecompositionOutput['suggestedTasks']) => void;
 }
 
 export function AIGoalAssistPanel({
@@ -58,119 +123,168 @@ export function AIGoalAssistPanel({
 }: AIGoalAssistPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
 
   const isConfigured = llmConfig.isConfigured();
+
+  const getErrorMessage = (error: ApiError | undefined, defaultMessage: string): string => {
+    if (!error) return defaultMessage;
+    return typeof error === 'string' ? error : error.message || defaultMessage;
+  };
+
+  const handleCoaching = async (): Promise<void> => {
+    if (!progress) return;
+    const response = await goalAIService.getProgressCoaching(goal, progress, linkedTasks);
+    if (response.success && response.data) {
+      setResult(response.data);
+    } else {
+      setError(getErrorMessage(response.error, 'Failed to get coaching'));
+    }
+  };
+
+  const handleHealth = async (): Promise<void> => {
+    if (!progress) return;
+    const response = await goalAIService.calculateHealthScore(goal, allGoals, progress);
+    if (response.success && response.data) {
+      setResult(response.data);
+    } else {
+      setError(getErrorMessage(response.error, 'Failed to calculate health score'));
+    }
+  };
+
+  const handleDecompose = async (): Promise<void> => {
+    const response = await goalAIService.decomposeGoal(goal);
+    if (response.success && response.data) {
+      setResult(response.data);
+    } else {
+      setError(getErrorMessage(response.error, 'Failed to decompose goal'));
+    }
+  };
+
+  const handleConflicts = async (): Promise<void> => {
+    const response = await goalAIService.detectConflicts(allGoals);
+    if (response.success && response.data) {
+      setResult(response.data);
+    } else {
+      setError(getErrorMessage(response.error, 'Failed to detect conflicts'));
+    }
+  };
+
+  const handleAIMode = async (): Promise<void> => {
+    if (mode === 'coaching') {
+      await handleCoaching();
+    } else if (mode === 'health') {
+      await handleHealth();
+    } else if (mode === 'decompose') {
+      await handleDecompose();
+    } else if (mode === 'conflicts') {
+      await handleConflicts();
+    }
+  };
+
+  const handleRefine = (): void => {
+    setResult({
+      refinedTitle: `${goal.title} (Enhanced)`,
+      refinedDescription: `This is a refined version of your goal with more specific metrics and actionable steps.`,
+      reasoning: 'Made the goal more specific and measurable',
+      confidence: 0.85,
+      suggestedAdjustments: [
+        'Add specific numbers',
+        'Define success criteria',
+        'Set intermediate milestones',
+      ],
+    });
+  };
+
+  const handleCriteria = (): void => {
+    setResult({
+      criteria: [
+        {
+          criterion: 'Complete 80% of related tasks',
+          measurable: true,
+          suggestedMetric: 'Task completion rate',
+        },
+        {
+          criterion: 'Achieve target metric values',
+          measurable: true,
+          suggestedMetric: 'Metric tracking',
+        },
+        { criterion: 'Maintain consistent progress', measurable: false },
+      ],
+      reasoning: 'These criteria cover all aspects of the goal',
+      confidence: 0.9,
+    });
+  };
+
+  const handleMetrics = (): void => {
+    setResult({
+      metrics: [
+        {
+          name: 'Weekly Progress',
+          description: 'Track weekly progress',
+          unit: 'percentage',
+          targetValue: 100,
+          frequency: 'weekly',
+          reasoning: 'Essential for tracking',
+        },
+        {
+          name: 'Daily Consistency',
+          description: 'Daily habit tracking',
+          unit: 'count',
+          targetValue: 7,
+          frequency: 'daily',
+          reasoning: 'Builds momentum',
+        },
+      ],
+      overallRationale: 'These metrics provide comprehensive tracking',
+      confidence: 0.88,
+    });
+  };
+
+  const handleForecast = (): void => {
+    setResult({
+      probability: 75,
+      expectedDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      confidenceLevel: 'high',
+      factors: {
+        positive: ['Strong initial progress', 'Clear success criteria', 'Regular tracking'],
+        negative: ['Limited time available', 'Multiple competing goals'],
+      },
+      recommendations: [
+        'Focus on high-impact tasks',
+        'Schedule dedicated time',
+        'Track metrics daily',
+      ],
+      reasoning: 'Based on current progress and historical patterns',
+    });
+  };
+
+  const handleLegacyMode = async (): Promise<void> => {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    if (mode === 'refine') {
+      handleRefine();
+    } else if (mode === 'criteria') {
+      handleCriteria();
+    } else if (mode === 'metrics') {
+      handleMetrics();
+    } else if (mode === 'forecast') {
+      handleForecast();
+    } else {
+      setResult({ message: 'AI analysis in progress...' });
+    }
+  };
 
   const handleAnalyze = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      if (mode === 'coaching' && progress) {
-        const response = await goalAIService.getProgressCoaching(goal, progress, linkedTasks);
-        if (response.success && response.data) {
-          setResult(response.data);
-        } else {
-          setError(response.error || 'Failed to get coaching');
-        }
-      } else if (mode === 'health' && progress) {
-        const response = await goalAIService.calculateHealthScore(goal, allGoals, progress);
-        if (response.success && response.data) {
-          setResult(response.data);
-        } else {
-          setError(response.error || 'Failed to calculate health score');
-        }
-      } else if (mode === 'decompose') {
-        const response = await goalAIService.decomposeGoal(goal);
-        if (response.success && response.data) {
-          setResult(response.data);
-        } else {
-          setError(response.error || 'Failed to decompose goal');
-        }
-      } else if (mode === 'conflicts') {
-        const response = await goalAIService.detectConflicts(allGoals);
-        if (response.success && response.data) {
-          setResult(response.data);
-        } else {
-          setError(response.error || 'Failed to detect conflicts');
-        }
+      const aiModes: AssistMode[] = ['coaching', 'health', 'decompose', 'conflicts'];
+      if (aiModes.includes(mode)) {
+        await handleAIMode();
       } else {
-        // Legacy mock responses for old modes
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        if (mode === 'refine') {
-          setResult({
-            refinedTitle: `${goal.title} (Enhanced)`,
-            refinedDescription: `This is a refined version of your goal with more specific metrics and actionable steps.`,
-            reasoning: 'Made the goal more specific and measurable',
-            confidence: 0.85,
-            suggestedAdjustments: [
-              'Add specific numbers',
-              'Define success criteria',
-              'Set intermediate milestones',
-            ],
-          });
-        } else if (mode === 'criteria') {
-          setResult({
-            criteria: [
-              {
-                criterion: 'Complete 80% of related tasks',
-                measurable: true,
-                suggestedMetric: 'Task completion rate',
-              },
-              {
-                criterion: 'Achieve target metric values',
-                measurable: true,
-                suggestedMetric: 'Metric tracking',
-              },
-              { criterion: 'Maintain consistent progress', measurable: false },
-            ],
-            reasoning: 'These criteria cover all aspects of the goal',
-            confidence: 0.9,
-          });
-        } else if (mode === 'metrics') {
-          setResult({
-            metrics: [
-              {
-                name: 'Weekly Progress',
-                description: 'Track weekly progress',
-                unit: 'percentage',
-                targetValue: 100,
-                frequency: 'weekly',
-                reasoning: 'Essential for tracking',
-              },
-              {
-                name: 'Daily Consistency',
-                description: 'Daily habit tracking',
-                unit: 'count',
-                targetValue: 7,
-                frequency: 'daily',
-                reasoning: 'Builds momentum',
-              },
-            ],
-            overallRationale: 'These metrics provide comprehensive tracking',
-            confidence: 0.88,
-          });
-        } else if (mode === 'forecast') {
-          setResult({
-            probability: 75,
-            expectedDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-            confidenceLevel: 'high',
-            factors: {
-              positive: ['Strong initial progress', 'Clear success criteria', 'Regular tracking'],
-              negative: ['Limited time available', 'Multiple competing goals'],
-            },
-            recommendations: [
-              'Focus on high-impact tasks',
-              'Schedule dedicated time',
-              'Track metrics daily',
-            ],
-            reasoning: 'Based on current progress and historical patterns',
-          });
-        } else {
-          setResult({ message: 'AI analysis in progress...' });
-        }
+        await handleLegacyMode();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -303,7 +417,7 @@ export function AIGoalAssistPanel({
         </div>
       )}
 
-      {result && mode === 'refine' && (
+      {result && mode === 'refine' && 'refinedTitle' in result && (
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -355,14 +469,14 @@ export function AIGoalAssistPanel({
         </div>
       )}
 
-      {result && mode === 'criteria' && (
+      {result && mode === 'criteria' && 'criteria' in result && (
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Generated Success Criteria
             </label>
             <ul className="space-y-3">
-              {result.criteria.map((c: any, i: number) => (
+              {result.criteria.map((c, i: number) => (
                 <li key={i} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
@@ -385,7 +499,7 @@ export function AIGoalAssistPanel({
           <div className="flex gap-2">
             <Button
               onClick={() => {
-                const criteria = result.criteria.map((c: any) => c.criterion);
+                const criteria = result.criteria.map((c) => c.criterion);
                 onApplyCriteria?.(criteria);
                 onClose();
               }}
@@ -400,7 +514,7 @@ export function AIGoalAssistPanel({
         </div>
       )}
 
-      {result && mode === 'forecast' && (
+      {result && mode === 'forecast' && 'probability' in result && (
         <div className="space-y-4">
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <div className="text-center">
@@ -461,7 +575,7 @@ export function AIGoalAssistPanel({
         </div>
       )}
 
-      {result && mode === 'coaching' && (
+      {result && mode === 'coaching' && 'overallAssessment' in result && (
         <div className="space-y-4">
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Assessment</h4>
@@ -471,7 +585,7 @@ export function AIGoalAssistPanel({
           <div>
             <h4 className="font-medium text-gray-900 dark:text-white mb-3">Specific Advice</h4>
             <div className="space-y-2">
-              {result.specificAdvice.map((advice: any, i: number) => (
+              {result.specificAdvice.map((advice, i: number) => (
                 <div key={i} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center gap-2 mb-1">
                     <span
@@ -503,7 +617,7 @@ export function AIGoalAssistPanel({
         </div>
       )}
 
-      {result && mode === 'health' && (
+      {result && mode === 'health' && 'score' in result && (
         <div className="space-y-4">
           <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="text-5xl font-bold text-blue-600 dark:text-blue-400 mb-2">
@@ -527,12 +641,14 @@ export function AIGoalAssistPanel({
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            {Object.entries(result.factors).map(([key, value]: [string, any]) => (
+            {Object.entries(result.factors).map(([key, value]) => (
               <div key={key} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 capitalize">
                   {key.replace(/([A-Z])/g, ' $1').trim()}
                 </div>
-                <div className="text-lg font-bold text-gray-900 dark:text-white">{value}</div>
+                <div className="text-lg font-bold text-gray-900 dark:text-white">
+                  {String(value)}
+                </div>
               </div>
             ))}
           </div>
@@ -573,13 +689,13 @@ export function AIGoalAssistPanel({
         </div>
       )}
 
-      {result && mode === 'decompose' && (
+      {result && mode === 'decompose' && 'subGoals' in result && (
         <div className="space-y-4">
           {result.subGoals && result.subGoals.length > 0 && (
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white mb-3">Sub-Goals</h4>
               <div className="space-y-2">
-                {result.subGoals.map((sg: any, i: number) => (
+                {result.subGoals.map((sg, i: number) => (
                   <div
                     key={i}
                     className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
@@ -612,43 +728,49 @@ export function AIGoalAssistPanel({
             </div>
           )}
 
-          {result.suggestedTasks && result.suggestedTasks.length > 0 && (
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Suggested Tasks</h4>
-              <div className="space-y-2">
-                {result.suggestedTasks.slice(0, 5).map((task: any, i: number) => (
-                  <div key={i} className="p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm">
-                    <div className="font-medium text-gray-900 dark:text-white">{task.title}</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                      {task.description}
+          {'suggestedTasks' in result &&
+            result.suggestedTasks &&
+            result.suggestedTasks.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Suggested Tasks</h4>
+                <div className="space-y-2">
+                  {result.suggestedTasks.slice(0, 5).map((task, i: number) => (
+                    <div key={i} className="p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm">
+                      <div className="font-medium text-gray-900 dark:text-white">{task.title}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        {task.description}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                {onApplyTasks && (
+                  <Button
+                    onClick={() => {
+                      onApplyTasks(result.suggestedTasks);
+                      onClose();
+                    }}
+                    className="w-full mt-2"
+                  >
+                    Create Tasks
+                  </Button>
+                )}
               </div>
-              {onApplyTasks && (
-                <Button
-                  onClick={() => {
-                    onApplyTasks(result.suggestedTasks);
-                    onClose();
-                  }}
-                  className="w-full mt-2"
-                >
-                  Create Tasks
-                </Button>
-              )}
+            )}
+
+          {'implementationPlan' in result && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Implementation Plan
+              </h5>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {result.implementationPlan}
+              </p>
             </div>
           )}
-
-          <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-              Implementation Plan
-            </h5>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{result.implementationPlan}</p>
-          </div>
         </div>
       )}
 
-      {result && mode === 'conflicts' && (
+      {result && mode === 'conflicts' && 'isOvercommitted' in result && (
         <div className="space-y-4">
           <div
             className={`p-4 rounded-lg border ${
@@ -676,7 +798,7 @@ export function AIGoalAssistPanel({
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white mb-3">Detected Conflicts</h4>
               <div className="space-y-2">
-                {result.conflicts.map((conflict: any, i: number) => (
+                {result.conflicts.map((conflict, i: number) => (
                   <div
                     key={i}
                     className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800"
@@ -720,10 +842,11 @@ export function AIGoalAssistPanel({
           'health',
           'decompose',
           'conflicts',
-        ].includes(mode) && (
+        ].includes(mode) &&
+        'message' in result && (
           <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              {result.message || 'Analysis complete'}
+              {(result as GenericResult).message || 'Analysis complete'}
             </p>
           </div>
         )}

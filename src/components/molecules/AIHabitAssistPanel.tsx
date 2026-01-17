@@ -8,6 +8,153 @@ import { AIConfidenceIndicator } from '../atoms/AIConfidenceIndicator';
 
 type AssistMode = 'design' | 'stack' | 'recovery' | 'patterns' | 'triggers' | 'alignment';
 
+interface FrictionStrategy {
+  strategy: string;
+  implementation: string;
+  effectiveness: 'high' | 'medium' | 'low';
+}
+
+interface DesignResult {
+  optimizedTrigger: string;
+  optimizedAction: string;
+  optimizedReward: string;
+  frictionStrategies: FrictionStrategy[];
+  targetFrequency: string;
+  reasoning: string;
+  confidence: number;
+}
+
+interface StackSuggestion {
+  existingHabit: string;
+  newHabit: string;
+  stackingPattern: string;
+  rationale: string;
+  difficulty: string;
+}
+
+interface TimingRecommendation {
+  timeOfDay: string;
+  habits: string[];
+  reasoning: string;
+}
+
+interface StackResult {
+  stackSuggestions: StackSuggestion[];
+  timingRecommendations: TimingRecommendation[];
+  confidence: number;
+}
+
+interface RecoveryAnalysis {
+  currentStreak: number;
+  longestStreak: number;
+  recentMisses: number;
+  pattern: string;
+}
+
+interface RecoveryStep {
+  step: string;
+  timeframe: string;
+  difficulty: 'easy' | 'moderate' | 'hard';
+}
+
+interface RecoveryResult {
+  analysis: RecoveryAnalysis;
+  recoveryPlan: RecoveryStep[];
+  motivationalInsights: string[];
+  adjustmentSuggestions: string[];
+  confidence: number;
+}
+
+interface CompletionPattern {
+  pattern: string;
+  frequency: string;
+  context: string;
+  strength: string;
+}
+
+interface OptimalTiming {
+  bestTimeOfDay: string;
+  bestDayOfWeek: string;
+  reasoning: string;
+}
+
+interface Correlation {
+  factor: string;
+  impact: string;
+  strength: string;
+  insights: string;
+}
+
+interface PatternsResult {
+  completionPatterns: CompletionPattern[];
+  optimalTiming: OptimalTiming;
+  correlations: Correlation[];
+  recommendations: string[];
+  confidence: number;
+}
+
+interface TriggerAnalysis {
+  clarity: string;
+  observability: string;
+  consistency: string;
+  issues: string[];
+}
+
+interface OptimizedTrigger {
+  trigger: string;
+  type: string;
+  specificity: string;
+  effectiveness: string;
+  implementation: string;
+}
+
+interface TriggersResult {
+  currentTriggerAnalysis: TriggerAnalysis;
+  optimizedTriggers: OptimizedTrigger[];
+  environmentalCues: string[];
+  confidence: number;
+}
+
+interface AlignedGoal {
+  goalTitle: string;
+  alignmentStrength: string;
+  explanation: string;
+  impact: string;
+}
+
+interface Misalignment {
+  issue: string;
+  severity: string;
+  suggestion: string;
+}
+
+interface NewHabitSuggestion {
+  habitName: string;
+  goalSupported: string;
+  rationale: string;
+  priority: string;
+}
+
+interface AlignmentResult {
+  alignedGoals: AlignedGoal[];
+  misalignments: Misalignment[];
+  newHabitSuggestions: NewHabitSuggestion[];
+  confidence: number;
+}
+
+interface GenericResult {
+  message: string;
+}
+
+type AnalysisResult =
+  | DesignResult
+  | StackResult
+  | RecoveryResult
+  | PatternsResult
+  | TriggersResult
+  | AlignmentResult
+  | GenericResult;
+
 interface AIHabitAssistPanelProps {
   mode: AssistMode;
   habit: Habit;
@@ -25,7 +172,7 @@ export function AIHabitAssistPanel({
 }: AIHabitAssistPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
 
   const isConfigured = llmConfig.isConfigured();
 
@@ -347,7 +494,7 @@ export function AIHabitAssistPanel({
         </div>
       )}
 
-      {result && mode === 'design' && (
+      {result && mode === 'design' && 'frictionStrategies' in result && (
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -370,7 +517,7 @@ export function AIHabitAssistPanel({
               Friction Strategies
             </label>
             <div className="space-y-2">
-              {result.frictionStrategies.map((s: any, i: number) => (
+              {result.frictionStrategies.map((s, i: number) => (
                 <div key={i} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -415,7 +562,7 @@ export function AIHabitAssistPanel({
         </div>
       )}
 
-      {result && mode === 'recovery' && (
+      {result && mode === 'recovery' && 'recoveryPlan' in result && (
         <div className="space-y-4">
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <div className="grid grid-cols-2 gap-4 text-center">
@@ -438,7 +585,7 @@ export function AIHabitAssistPanel({
               Recovery Plan
             </label>
             <div className="space-y-2">
-              {result.recoveryPlan.map((step: any, i: number) => (
+              {result.recoveryPlan.map((step, i: number) => (
                 <div key={i} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -489,7 +636,7 @@ export function AIHabitAssistPanel({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Completion Patterns
             </label>
-            {result.completionPatterns.map((pattern: any, i: number) => (
+            {(result as PatternsResult).completionPatterns.map((pattern, i: number) => (
               <div key={i} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-2">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -509,21 +656,23 @@ export function AIHabitAssistPanel({
             </label>
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <p className="text-sm text-gray-900 dark:text-gray-100 mb-1">
-                <span className="font-medium">Best Time:</span> {result.optimalTiming.bestTimeOfDay}
+                <span className="font-medium">Best Time:</span>{' '}
+                {(result as PatternsResult).optimalTiming.bestTimeOfDay}
               </p>
               <p className="text-sm text-gray-900 dark:text-gray-100 mb-1">
-                <span className="font-medium">Best Day:</span> {result.optimalTiming.bestDayOfWeek}
+                <span className="font-medium">Best Day:</span>{' '}
+                {(result as PatternsResult).optimalTiming.bestDayOfWeek}
               </p>
               <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                {result.optimalTiming.reasoning}
+                {(result as PatternsResult).optimalTiming.reasoning}
               </p>
             </div>
           </div>
-          <AIConfidenceIndicator confidence={result.confidence} />
+          <AIConfidenceIndicator confidence={(result as PatternsResult).confidence} />
         </div>
       )}
 
-      {result && !['design', 'recovery', 'patterns'].includes(mode) && (
+      {result && !['design', 'recovery', 'patterns'].includes(mode) && 'message' in result && (
         <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <p className="text-sm text-gray-700 dark:text-gray-300">
             {result.message || 'Analysis complete'}

@@ -87,16 +87,10 @@ class AISuggestionsService {
       if (s.dismissedAt && !this.isDismissalExpired(s.dismissedAt)) {
         return false;
       }
-
       if (entityType !== undefined && s.entityType !== entityType) {
         return false;
       }
-
-      if (entityId !== undefined && s.entityId !== entityId) {
-        return false;
-      }
-
-      return true;
+      return entityId === undefined || s.entityId === entityId;
     });
   }
 

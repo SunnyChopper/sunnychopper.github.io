@@ -29,7 +29,18 @@ export const WalletWidget = () => {
 
       {showHistory && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowHistory(false)} />
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowHistory(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setShowHistory(false);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Close wallet history"
+          />
           <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden max-h-[80vh] flex flex-col">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Wallet Balance</h3>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, BookOpen, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, BookOpen, Calendar, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Goal } from '../../types/growth-system';
 import Button from '../atoms/Button';

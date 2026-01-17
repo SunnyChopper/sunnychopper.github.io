@@ -203,6 +203,19 @@ export default function VaultItemCard({ item, onClick }: VaultItemCardProps) {
   return (
     <div
       onClick={handleClick}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={
+        onClick
+          ? `View ${item.type}: ${item.type === 'note' ? (item as Note).title : item.type === 'document' ? (item as Document).title : 'item'}`
+          : undefined
+      }
       className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg transition-all cursor-pointer"
     >
       {item.type === 'note' && <NoteCardContent note={item as Note} />}

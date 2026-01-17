@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { ConfidenceSchema } from './common-schemas';
-import { AreaSchema } from './common-schemas';
+import { AreaSchema, ConfidenceSchema } from './common-schemas';
 
 // Expand Content Output
 export const ExpandContentOutputSchema = z.object({

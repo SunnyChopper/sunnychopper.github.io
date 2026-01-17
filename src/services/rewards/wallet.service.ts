@@ -73,10 +73,10 @@ export const walletService = {
 
   async spendPoints(
     amount: number,
-    source: WalletTransaction['source'],
-    description: string,
-    sourceEntityType?: 'task' | 'reward' | null,
-    sourceEntityId?: string | null
+    _source: WalletTransaction['source'],
+    _description: string,
+    _sourceEntityType?: 'task' | 'reward' | null,
+    _sourceEntityId?: string | null
   ): Promise<ApiResponse<{ balance: WalletBalance; transaction: WalletTransaction }>> {
     // Spending is handled via reward redemption endpoint
     // This method may need to call a different endpoint or be handled differently
