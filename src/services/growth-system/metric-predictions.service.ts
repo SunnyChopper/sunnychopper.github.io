@@ -54,9 +54,9 @@ export const metricPredictionsService = {
       // Calculate risk level
       let riskLevel: 'low' | 'medium' | 'high' = 'low';
       const confidenceIntervalRange =
-        prediction.confidenceInterval.upper -
-        prediction.confidenceInterval.lower;
-      const valueRange = Math.max(...logs.map((l) => l.value)) - Math.min(...logs.map((l) => l.value));
+        prediction.confidenceInterval.upper - prediction.confidenceInterval.lower;
+      const valueRange =
+        Math.max(...logs.map((l) => l.value)) - Math.min(...logs.map((l) => l.value));
       const relativeUncertainty = confidenceIntervalRange / (valueRange || 1);
 
       if (relativeUncertainty > 0.3) {
@@ -112,11 +112,7 @@ export const metricPredictionsService = {
       }
 
       const latestLog = logs[0];
-      const progress = calculateProgress(
-        latestLog.value,
-        metric.targetValue,
-        metric.direction
-      );
+      const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
 
       if (progress.percentage >= 100) {
         return {
@@ -189,12 +185,14 @@ export const metricPredictionsService = {
   async predictRisk(
     metric: Metric,
     logs: MetricLog[]
-  ): Promise<ApiResponse<{
-    riskLevel: 'low' | 'medium' | 'high';
-    riskFactors: string[];
-    recommendations: string[];
-    confidence: number;
-  }>> {
+  ): Promise<
+    ApiResponse<{
+      riskLevel: 'low' | 'medium' | 'high';
+      riskFactors: string[];
+      recommendations: string[];
+      confidence: number;
+    }>
+  > {
     try {
       if (!metric.targetValue) {
         return {
@@ -218,11 +216,7 @@ export const metricPredictionsService = {
         };
       }
 
-      const progress = calculateProgress(
-        latestLog.value,
-        metric.targetValue,
-        metric.direction
-      );
+      const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
 
       const trend = getTrendData(logs, metric);
       const riskFactors: string[] = [];

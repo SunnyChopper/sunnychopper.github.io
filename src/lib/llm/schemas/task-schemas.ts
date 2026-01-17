@@ -1,10 +1,5 @@
 import { z } from 'zod';
-import {
-  AreaSchema,
-  SubCategorySchema,
-  PrioritySchema,
-  ConfidenceSchema,
-} from './common-schemas';
+import { AreaSchema, SubCategorySchema, PrioritySchema, ConfidenceSchema } from './common-schemas';
 
 export const ParseTaskOutputSchema = z.object({
   title: z.string().describe('The task title extracted from natural language'),
@@ -31,7 +26,10 @@ export const TaskBreakdownOutputSchema = z.object({
   subtasks: z.array(SubtaskSchema).describe('List of subtasks in logical order'),
   reasoning: z.string().describe('Explanation of how the task was broken down'),
   confidence: ConfidenceSchema.describe('Confidence in the breakdown quality'),
-  totalEstimatedEffort: z.number().optional().describe('Total estimated effort across all subtasks'),
+  totalEstimatedEffort: z
+    .number()
+    .optional()
+    .describe('Total estimated effort across all subtasks'),
 });
 
 export type TaskBreakdownOutput = z.infer<typeof TaskBreakdownOutputSchema>;

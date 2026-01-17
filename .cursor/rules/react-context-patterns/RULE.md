@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN creating React Context providers and consumers for state management."
-globs: "src/contexts/**/*.tsx"
+description: 'USE WHEN creating React Context providers and consumers for state management.'
+globs: 'src/contexts/**/*.tsx'
 alwaysApply: false
 ---
 
@@ -25,14 +25,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
@@ -86,11 +82,7 @@ export function ItemsProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'ADD_ITEM', payload: item });
   }, []);
 
-  return (
-    <ItemsContext.Provider value={{ ...state, addItem }}>
-      {children}
-    </ItemsContext.Provider>
-  );
+  return <ItemsContext.Provider value={{ ...state, addItem }}>{children}</ItemsContext.Provider>;
 }
 ```
 
@@ -106,9 +98,7 @@ export function Provider({ children }: { children: ReactNode }) {
 
   return (
     <StateContext.Provider value={state}>
-      <DispatchContext.Provider value={dispatch}>
-        {children}
-      </DispatchContext.Provider>
+      <DispatchContext.Provider value={dispatch}>{children}</DispatchContext.Provider>
     </StateContext.Provider>
   );
 }
@@ -126,9 +116,7 @@ function AppProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <NotificationProvider>
-          {children}
-        </NotificationProvider>
+        <NotificationProvider>{children}</NotificationProvider>
       </ThemeProvider>
     </AuthProvider>
   );
@@ -171,9 +159,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <DataContext.Provider value={{ data, isLoading, refresh }}>
-      {children}
-    </DataContext.Provider>
+    <DataContext.Provider value={{ data, isLoading, refresh }}>{children}</DataContext.Provider>
   );
 }
 ```
@@ -181,6 +167,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 ## When to Use Context
 
 Good use cases:
+
 - Theme/appearance settings
 - User authentication state
 - Locale/language preferences
@@ -188,6 +175,7 @@ Good use cases:
 - App-wide modals/notifications
 
 Avoid for:
+
 - Frequently changing data (use React Query)
 - Data that's only needed by few components (prop drilling is fine)
 - Complex server state (use dedicated libraries)

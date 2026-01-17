@@ -14,7 +14,14 @@ import type {
   MetricStatus,
 } from '../types/growth-system';
 
-export const AREAS: readonly Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
+export const AREAS: readonly Area[] = [
+  'Health',
+  'Wealth',
+  'Love',
+  'Happiness',
+  'Operations',
+  'DayJob',
+];
 
 export const SUBCATEGORIES_BY_AREA: Record<Area, readonly SubCategory[]> = {
   Health: ['Physical', 'Mental', 'Spiritual', 'Nutrition', 'Sleep', 'Exercise'],
@@ -27,7 +34,14 @@ export const SUBCATEGORIES_BY_AREA: Record<Area, readonly SubCategory[]> = {
 
 export const PRIORITIES: readonly Priority[] = ['P1', 'P2', 'P3', 'P4'];
 
-export const TASK_STATUSES: readonly TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold', 'Done', 'Cancelled'];
+export const TASK_STATUSES: readonly TaskStatus[] = [
+  'NotStarted',
+  'InProgress',
+  'Blocked',
+  'OnHold',
+  'Done',
+  'Cancelled',
+];
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   NotStarted: 'Not Started',
@@ -100,13 +114,37 @@ export const SUBCATEGORY_LABELS: Record<SubCategory, string> = {
   Performance: 'Performance',
 };
 
-export const GOAL_TIME_HORIZONS: readonly TimeHorizon[] = ['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly'];
-export const GOAL_STATUSES: readonly GoalStatus[] = ['Planning', 'Active', 'OnTrack', 'AtRisk', 'Achieved', 'Abandoned'];
+export const GOAL_TIME_HORIZONS: readonly TimeHorizon[] = [
+  'Daily',
+  'Weekly',
+  'Monthly',
+  'Quarterly',
+  'Yearly',
+];
+export const GOAL_STATUSES: readonly GoalStatus[] = [
+  'Planning',
+  'Active',
+  'OnTrack',
+  'AtRisk',
+  'Achieved',
+  'Abandoned',
+];
 
-export const PROJECT_STATUSES: readonly ProjectStatus[] = ['Planning', 'Active', 'OnHold', 'Completed', 'Cancelled'];
+export const PROJECT_STATUSES: readonly ProjectStatus[] = [
+  'Planning',
+  'Active',
+  'OnHold',
+  'Completed',
+  'Cancelled',
+];
 
 export const HABIT_TYPES: readonly HabitType[] = ['Build', 'Maintain', 'Reduce', 'Quit'];
-export const HABIT_FREQUENCIES: readonly HabitFrequency[] = ['Daily', 'Weekly', 'Monthly', 'Custom'];
+export const HABIT_FREQUENCIES: readonly HabitFrequency[] = [
+  'Daily',
+  'Weekly',
+  'Monthly',
+  'Custom',
+];
 
 export const METRIC_UNITS: readonly MetricUnit[] = [
   'count',
@@ -134,5 +172,3 @@ export function getAreaColor(area: Area): string {
   };
   return colors[area];
 }
-
-

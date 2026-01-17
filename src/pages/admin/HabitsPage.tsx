@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Repeat, Calendar, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Habit, HabitLog, CreateHabitInput, UpdateHabitInput, CreateHabitLogInput, HabitType, Goal } from '../../types/growth-system';
+import type {
+  Habit,
+  HabitLog,
+  CreateHabitInput,
+  UpdateHabitInput,
+  CreateHabitLogInput,
+  HabitType,
+  Goal,
+} from '../../types/growth-system';
 import { habitsService } from '../../services/growth-system/habits.service';
 import { goalsService } from '../../services/growth-system/goals.service';
 import Button from '../../components/atoms/Button';
@@ -46,7 +54,9 @@ export default function HabitsPage() {
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
 
   const [showAIAssist, setShowAIAssist] = useState(false);
-  const [aiMode, setAIMode] = useState<'design' | 'stack' | 'recovery' | 'patterns' | 'triggers' | 'alignment'>('design');
+  const [aiMode, setAIMode] = useState<
+    'design' | 'stack' | 'recovery' | 'patterns' | 'triggers' | 'alignment'
+  >('design');
   const isAIConfigured = llmConfig.isConfigured();
   const [activeTab, setActiveTab] = useState<HabitDetailTab>('overview');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -55,16 +65,16 @@ export default function HabitsPage() {
 
   const loadLinkedGoals = async (habitId: string) => {
     try {
-      const storage = await import('../../lib/storage').then(m => m.getStorageAdapter());
+      const storage = await import('../../lib/storage').then((m) => m.getStorageAdapter());
       const allHabitGoals = await storage.getAll<{ habitId: string; goalId: string }>('habitGoals');
       const linkedGoalIds = allHabitGoals
         .filter((hg: { habitId: string; goalId: string }) => hg.habitId === habitId)
         .map((hg: { goalId: string }) => hg.goalId);
-      
+
       const allGoalsResponse = await goalsService.getAll();
       if (allGoalsResponse.success && allGoalsResponse.data) {
         const goals = allGoalsResponse.data.filter((g: Goal) => linkedGoalIds.includes(g.id));
-        setLinkedGoals(prev => new Map(prev).set(habitId, goals));
+        setLinkedGoals((prev) => new Map(prev).set(habitId, goals));
       }
     } catch (error) {
       console.error('Failed to load linked goals:', error);
@@ -77,7 +87,7 @@ export default function HabitsPage() {
       const response = await habitsService.getAll();
       if (response.success && response.data) {
         setHabits(response.data);
-        response.data.forEach(habit => {
+        response.data.forEach((habit) => {
           loadHabitLogs(habit.id);
           loadLinkedGoals(habit.id);
         });
@@ -93,7 +103,7 @@ export default function HabitsPage() {
     try {
       const response = await habitsService.getLogsByHabit(habitId);
       if (response.success && response.data) {
-        setHabitLogs(prev => new Map(prev).set(habitId, response.data!));
+        setHabitLogs((prev) => new Map(prev).set(habitId, response.data!));
       }
     } catch (error) {
       console.error('Failed to load habit logs:', error);
@@ -210,8 +220,8 @@ export default function HabitsPage() {
     const logs = habitLogs.get(habitId) || [];
     if (logs.length === 0) return 0;
 
-    const sortedLogs = [...logs].sort((a, b) =>
-      new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+    const sortedLogs = [...logs].sort(
+      (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
     );
 
     let streak = 0;
@@ -241,7 +251,7 @@ export default function HabitsPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    return logs.some(log => {
+    return logs.some((log) => {
       const logDate = new Date(log.completedAt);
       logDate.setHours(0, 0, 0, 0);
       return logDate.getTime() === today.getTime();
@@ -254,7 +264,7 @@ export default function HabitsPage() {
     today.setHours(0, 0, 0, 0);
 
     return logs
-      .filter(log => {
+      .filter((log) => {
         const logDate = new Date(log.completedAt);
         logDate.setHours(0, 0, 0, 0);
         return logDate.getTime() === today.getTime();
@@ -266,20 +276,20 @@ export default function HabitsPage() {
     const logs = habitLogs.get(habitId) || [];
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     // Get Monday of current week
     const dayOfWeek = today.getDay();
     const monday = new Date(today);
     monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
     monday.setHours(0, 0, 0, 0);
-    
+
     // Get Sunday of current week
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
     return logs
-      .filter(log => {
+      .filter((log) => {
         const logDate = new Date(log.completedAt);
         return logDate >= monday && logDate <= sunday;
       })
@@ -294,30 +304,46 @@ export default function HabitsPage() {
   const getLastCompletedDate = (habitId: string): string | null => {
     const logs = habitLogs.get(habitId) || [];
     if (logs.length === 0) return null;
-    const sortedLogs = [...logs].sort((a, b) =>
-      new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+    const sortedLogs = [...logs].sort(
+      (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
     );
     return sortedLogs[0].completedAt;
   };
 
   const filteredHabits = habits.filter((habit) => {
-    const matchesSearch = !searchQuery || habit.name.toLowerCase().includes(searchQuery.toLowerCase()) || (habit.description && habit.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch =
+      !searchQuery ||
+      habit.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (habit.description && habit.description.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
 
-  const groupedByType = HABIT_TYPES.reduce((acc, type) => {
-    acc[type] = filteredHabits.filter(h => h.habitType === type);
-    return acc;
-  }, {} as Record<HabitType, Habit[]>);
+  const groupedByType = HABIT_TYPES.reduce(
+    (acc, type) => {
+      acc[type] = filteredHabits.filter((h) => h.habitType === type);
+      return acc;
+    },
+    {} as Record<HabitType, Habit[]>
+  );
 
   if (selectedHabit) {
     const logs = habitLogs.get(selectedHabit.id) || [];
     const streak = getStreak(selectedHabit.id);
-    const selectedDateLogs = selectedDate ? getLogsForDateRange(
-      logs,
-      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()),
-      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999)
-    ) : [];
+    const selectedDateLogs = selectedDate
+      ? getLogsForDateRange(
+          logs,
+          new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()),
+          new Date(
+            selectedDate.getFullYear(),
+            selectedDate.getMonth(),
+            selectedDate.getDate(),
+            23,
+            59,
+            59,
+            999
+          )
+        )
+      : [];
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -346,22 +372,40 @@ export default function HabitsPage() {
               {showAIAssist && (
                 <div className="mt-4 space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setAIMode('design')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'design' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    <button
+                      onClick={() => setAIMode('design')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'design' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                    >
                       Habit Design
                     </button>
-                    <button onClick={() => setAIMode('stack')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'stack' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    <button
+                      onClick={() => setAIMode('stack')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'stack' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                    >
                       Habit Stacking
                     </button>
-                    <button onClick={() => setAIMode('recovery')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'recovery' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    <button
+                      onClick={() => setAIMode('recovery')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'recovery' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                    >
                       Streak Recovery
                     </button>
-                    <button onClick={() => setAIMode('patterns')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    <button
+                      onClick={() => setAIMode('patterns')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                    >
                       Pattern Analysis
                     </button>
-                    <button onClick={() => setAIMode('triggers')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'triggers' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    <button
+                      onClick={() => setAIMode('triggers')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'triggers' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                    >
                       Trigger Optimization
                     </button>
-                    <button onClick={() => setAIMode('alignment')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'alignment' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    <button
+                      onClick={() => setAIMode('alignment')}
+                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'alignment' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                    >
                       Goal Alignment
                     </button>
                   </div>
@@ -485,7 +529,9 @@ export default function HabitsPage() {
                               )}
                             </div>
                             {log.notes && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{log.notes}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                {log.notes}
+                              </p>
                             )}
                           </div>
                         </button>
@@ -602,29 +648,43 @@ export default function HabitsPage() {
         ) : filteredHabits.length === 0 ? (
           <EmptyState
             title="No habits found"
-            description={searchQuery ? 'Try adjusting your search query' : 'Get started by creating your first habit'}
+            description={
+              searchQuery
+                ? 'Try adjusting your search query'
+                : 'Get started by creating your first habit'
+            }
             actionLabel="Create Habit"
             onAction={() => setIsCreateDialogOpen(true)}
           />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-            {HABIT_TYPES.map(type => {
+            {HABIT_TYPES.map((type) => {
               const typeHabits = groupedByType[type];
               return (
                 <div key={type} className="flex flex-col">
-                  <div className={`mb-3 px-3 py-2 rounded-lg ${
-                    type === 'Build' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' :
-                    type === 'Maintain' ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' :
-                    type === 'Reduce' ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' :
-                    'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-                  }`}>
+                  <div
+                    className={`mb-3 px-3 py-2 rounded-lg ${
+                      type === 'Build'
+                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                        : type === 'Maintain'
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                          : type === 'Reduce'
+                            ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+                            : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                    }`}
+                  >
                     <h2 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center justify-between">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        type === 'Build' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                        type === 'Maintain' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                        type === 'Reduce' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
-                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          type === 'Build'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : type === 'Maintain'
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                              : type === 'Reduce'
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                        }`}
+                      >
                         {type}
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -638,7 +698,7 @@ export default function HabitsPage() {
                         No {type.toLowerCase()} habits
                       </div>
                     ) : (
-                      typeHabits.map(habit => (
+                      typeHabits.map((habit) => (
                         <HabitCard
                           key={habit.id}
                           habit={habit}
@@ -696,20 +756,14 @@ export default function HabitsPage() {
         )}
       </Dialog>
 
-      <Dialog
-        isOpen={!!habitToDelete}
-        onClose={() => setHabitToDelete(null)}
-        title="Delete Habit"
-      >
+      <Dialog isOpen={!!habitToDelete} onClose={() => setHabitToDelete(null)} title="Delete Habit">
         <div className="space-y-4">
           <p className="text-gray-700 dark:text-gray-300">
             Are you sure you want to delete this habit? This action cannot be undone.
           </p>
           {habitToDelete && (
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-              <p className="font-semibold text-gray-900 dark:text-white">
-                {habitToDelete.name}
-              </p>
+              <p className="font-semibold text-gray-900 dark:text-white">{habitToDelete.name}</p>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

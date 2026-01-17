@@ -8,6 +8,7 @@
 ## Overview
 
 Authentication flow:
+
 1. User signs up/logs in via frontend
 2. Cognito issues JWT access token + refresh token
 3. Frontend stores tokens, includes access token in API requests
@@ -99,7 +100,7 @@ resources:
       Value: !Ref CognitoUserPool
       Export:
         Name: ${self:service}-${self:provider.stage}-UserPoolId
-    
+
     UserPoolClientId:
       Value: !Ref CognitoUserPoolClient
       Export:
@@ -124,7 +125,7 @@ provider:
       cognitoAuthorizer:
         type: jwt
         identitySource: $request.header.Authorization
-        issuerUrl: 
+        issuerUrl:
           Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
         audience:
           - !Ref CognitoUserPoolClient
@@ -172,9 +173,10 @@ functions:
 ### Extract User ID from JWT
 
 The JWT payload contains:
+
 ```json
 {
-  "sub": "abc-123-def-456",  // User ID
+  "sub": "abc-123-def-456", // User ID
   "email": "user@example.com",
   "iss": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_xxxxx",
   "exp": 1704931200,
@@ -206,7 +208,7 @@ def decode_jwt(token: str) -> dict:
     try:
         jwks_client = get_jwks_client()
         signing_key = jwks_client.get_signing_key_from_jwt(token)
-        
+
         payload = jwt.decode(
             token,
             signing_key.key,
@@ -231,7 +233,7 @@ async def get_current_user(
 ) -> dict:
     """
     Dependency to extract current user from JWT.
-    
+
     Usage:
         @router.get("/tasks")
         async def list_tasks(user: dict = Depends(get_current_user)):
@@ -318,7 +320,7 @@ async def signup(request: SignupRequest):
                 {"Name": "email", "Value": request.email}
             ]
         )
-        
+
         return SignupResponse(
             userId=response["UserSub"],
             email=request.email,
@@ -366,9 +368,9 @@ async def login(request: LoginRequest):
                 "PASSWORD": request.password
             }
         )
-        
+
         auth_result = response["AuthenticationResult"]
-        
+
         # Decode access token to get user info
         # (In production, you might fetch from Cognito instead)
         import jwt
@@ -376,7 +378,7 @@ async def login(request: LoginRequest):
             auth_result["AccessToken"],
             options={"verify_signature": False}
         )
-        
+
         return LoginResponse(
             accessToken=auth_result["AccessToken"],
             refreshToken=auth_result["RefreshToken"],
@@ -420,9 +422,9 @@ async def refresh_token(request: RefreshRequest):
                 "REFRESH_TOKEN": request.refreshToken
             }
         )
-        
+
         auth_result = response["AuthenticationResult"]
-        
+
         return {
             "success": True,
             "data": {
@@ -511,26 +513,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     setError(null);
     setLoading(true);
-    
+
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error?.message || 'Login failed');
       }
-      
+
       const authTokens: AuthTokens = {
         accessToken: data.data.accessToken,
         refreshToken: data.data.refreshToken,
         expiresAt: Date.now() + (data.data.expiresIn * 1000)
       };
-      
+
       localStorage.setItem(AUTH_TOKENS_KEY, JSON.stringify(authTokens));
       setTokens(authTokens);
       setUser(data.data.user);
@@ -546,20 +548,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string) => {
     setError(null);
     setLoading(true);
-    
+
     try {
       const response = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error?.message || 'Signup failed');
       }
-      
+
       // User needs to verify email before logging in
       return data.data;
     } catch (err) {
@@ -579,7 +581,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getAccessToken = async (): Promise<string | null> => {
     if (!tokens) return null;
-    
+
     // Check if token is expired (with 5 min buffer)
     if (Date.now() > tokens.expiresAt - 300000) {
       // Refresh token
@@ -589,9 +591,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken: tokens.refreshToken })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
           const newTokens: AuthTokens = {
             ...tokens,
@@ -611,7 +613,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return null;
       }
     }
-    
+
     return tokens.accessToken;
   };
 
@@ -647,27 +649,27 @@ import type { IStorageAdapter } from './storage-interface';
 
 class APIStorageAdapterImpl implements IStorageAdapter {
   private getAccessToken: () => Promise<string | null>;
-  
+
   constructor(getAccessToken: () => Promise<string | null>) {
     this.getAccessToken = getAccessToken;
   }
-  
+
   private async getHeaders(): Promise<HeadersInit> {
     const token = await this.getAccessToken();
     return {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   }
-  
+
   async getAll<T>(collection: string): Promise<T[]> {
     const response = await fetch(`${API_URL}/${collection}`, {
-      headers: await this.getHeaders()
+      headers: await this.getHeaders(),
     });
     const data = await response.json();
     return data.data || [];
   }
-  
+
   // ... rest of methods with auth headers
 }
 ```

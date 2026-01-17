@@ -117,7 +117,7 @@ const RewardStudioPage = () => {
         title: formData.title,
         description: formData.description,
         category: formData.category || 'Quick Treat',
-        existingRewards: rewards.map(r => ({
+        existingRewards: rewards.map((r) => ({
           title: r.title,
           pointCost: r.pointCost,
           category: r.category,
@@ -143,7 +143,7 @@ const RewardStudioPage = () => {
       setBrainstorming(true);
       setBrainstormDialogOpen(true);
       const results = await taskPointsAIService.brainstormRewards({
-        existingRewards: rewards.map(r => ({
+        existingRewards: rewards.map((r) => ({
           title: r.title,
           category: r.category,
         })),
@@ -179,9 +179,7 @@ const RewardStudioPage = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Palette size={32} className="text-blue-600 dark:text-blue-500" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Reward Studio
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reward Studio</h1>
           </div>
           <div className="flex gap-2">
             {isAIConfigured && (
@@ -233,11 +231,7 @@ const RewardStudioPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rewards.map((reward) => (
             <div key={reward.id} className="relative group">
-              <RewardCard
-                reward={reward}
-                onEdit={openEditDialog}
-                showEditButton
-              />
+              <RewardCard reward={reward} onEdit={openEditDialog} showEditButton />
               <button
                 onClick={() => handleDelete(reward)}
                 className="absolute top-2 left-2 p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
@@ -416,7 +410,8 @@ const RewardStudioPage = () => {
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Click on any reward to add it to your reward studio. You can customize it before saving.
+              Click on any reward to add it to your reward studio. You can customize it before
+              saving.
             </p>
             <div className="max-h-[60vh] overflow-y-auto space-y-3">
               {brainstormedRewards.map((reward, index) => (
@@ -426,9 +421,7 @@ const RewardStudioPage = () => {
                   className="w-full text-left p-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-700 rounded-lg transition-all"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {reward.title}
-                    </h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{reward.title}</h3>
                     <span className="flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-sm font-medium">
                       <Sparkles size={14} />
                       {reward.suggestedPointCost} pts

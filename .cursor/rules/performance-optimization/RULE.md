@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN optimizing React component performance and reducing re-renders."
-globs: ""
+description: 'USE WHEN optimizing React component performance and reducing re-renders.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -25,8 +25,9 @@ const TaskCard = memo(function TaskCard({ task, onEdit }: TaskCardProps) {
 
 // With custom comparison
 const TaskCard = memo(TaskCard, (prevProps, nextProps) => {
-  return prevProps.task.id === nextProps.task.id &&
-         prevProps.task.updatedAt === nextProps.task.updatedAt;
+  return (
+    prevProps.task.id === nextProps.task.id && prevProps.task.updatedAt === nextProps.task.updatedAt
+  );
 });
 ```
 
@@ -35,16 +36,14 @@ const TaskCard = memo(TaskCard, (prevProps, nextProps) => {
 ```tsx
 // Memo expensive calculations
 const sortedTasks = useMemo(() => {
-  return [...tasks].sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  return [...tasks].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 }, [tasks]);
 
 // Memo filtered results
 const filteredItems = useMemo(() => {
-  return items.filter(item =>
-    item.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  return items.filter((item) => item.title.toLowerCase().includes(searchTerm.toLowerCase()));
 }, [items, searchTerm]);
 ```
 
@@ -53,14 +52,17 @@ const filteredItems = useMemo(() => {
 ```tsx
 // Stable callback for child components
 const handleTaskUpdate = useCallback((id: string, data: Partial<Task>) => {
-  setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t));
+  setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
 }, []);
 
 // Stable callback with dependencies
-const handleSearch = useCallback((term: string) => {
-  setSearchTerm(term);
-  logSearch(term, userId);
-}, [userId]);
+const handleSearch = useCallback(
+  (term: string) => {
+    setSearchTerm(term);
+    logSearch(term, userId);
+  },
+  [userId]
+);
 ```
 
 ## List Rendering
@@ -69,10 +71,14 @@ const handleSearch = useCallback((term: string) => {
 
 ```tsx
 // Good: stable unique ID
-{tasks.map(task => <TaskCard key={task.id} task={task} />)}
+{
+  tasks.map((task) => <TaskCard key={task.id} task={task} />);
+}
 
 // Bad: array index (causes re-render issues)
-{tasks.map((task, index) => <TaskCard key={index} task={task} />)}
+{
+  tasks.map((task, index) => <TaskCard key={index} task={task} />);
+}
 ```
 
 ### Virtualization for Long Lists
@@ -93,7 +99,7 @@ function VirtualList({ items }: { items: Item[] }) {
   return (
     <div ref={parentRef} className="h-[400px] overflow-auto">
       <div style={{ height: virtualizer.getTotalSize() }}>
-        {virtualizer.getVirtualItems().map(virtualRow => (
+        {virtualizer.getVirtualItems().map((virtualRow) => (
           <div
             key={virtualRow.key}
             style={{
@@ -136,10 +142,7 @@ const [tasks, setTasks] = useState<Task[]>([]);
 const [completedCount, setCompletedCount] = useState(0);
 
 // Good: derive from source
-const completedCount = useMemo(
-  () => tasks.filter(t => t.status === 'completed').length,
-  [tasks]
-);
+const completedCount = useMemo(() => tasks.filter((t) => t.status === 'completed').length, [tasks]);
 ```
 
 ## Image Optimization
@@ -180,17 +183,14 @@ const ChartComponent = lazy(() => import('./components/ChartComponent'));
 // With suspense boundary
 <Suspense fallback={<LoadingSpinner />}>
   <ChartComponent data={data} />
-</Suspense>
+</Suspense>;
 ```
 
 ## Event Handlers
 
 ```tsx
 // Debounce search input
-const debouncedSearch = useMemo(
-  () => debounce((term: string) => search(term), 300),
-  []
-);
+const debouncedSearch = useMemo(() => debounce((term: string) => search(term), 300), []);
 
 // Throttle scroll handlers
 useEffect(() => {

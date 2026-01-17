@@ -1,7 +1,7 @@
 /**
  * Polyfill for Node.js async_hooks module
  * Provides a minimal AsyncLocalStorage implementation for browser environments
- * 
+ *
  * Note: This is a simplified polyfill. Full async context tracking is not possible
  * in browsers, so this uses a global store as a fallback.
  */

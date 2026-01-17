@@ -1,8 +1,5 @@
 import { z } from 'zod';
-import {
-  TimeHorizonSchema,
-  ConfidenceSchema,
-} from './common-schemas';
+import { TimeHorizonSchema, ConfidenceSchema } from './common-schemas';
 
 export const GoalRefinementOutputSchema = z.object({
   refinedTitle: z.string().describe('More specific and actionable goal title'),
@@ -38,9 +35,7 @@ export const MetricSuggestionsOutputSchema = z.object({
         description: z.string().describe('What this metric measures'),
         unit: z.string().describe('Unit of measurement'),
         targetValue: z.number().optional().describe('Suggested target value'),
-        frequency: z
-          .enum(['daily', 'weekly', 'monthly'])
-          .describe('How often to track'),
+        frequency: z.enum(['daily', 'weekly', 'monthly']).describe('How often to track'),
         reasoning: z.string().describe('Why this metric is relevant'),
       })
     )
@@ -81,9 +76,7 @@ export type GoalCascadeOutput = z.infer<typeof GoalCascadeOutputSchema>;
 export const AchievementForecastOutputSchema = z.object({
   probability: z.number().min(0).max(100).describe('Probability of achievement (0-100%)'),
   expectedDate: z.string().optional().describe('Expected completion date'),
-  confidenceLevel: z
-    .enum(['low', 'medium', 'high'])
-    .describe('Confidence in the forecast'),
+  confidenceLevel: z.enum(['low', 'medium', 'high']).describe('Confidence in the forecast'),
   factors: z
     .object({
       positive: z.array(z.string()).describe('Factors increasing likelihood'),

@@ -114,9 +114,7 @@ export function MetricTimeSeriesChart({
   const xScale = (index: number) =>
     padding.left + (index / (chartData.length - 1 || 1)) * plotWidth;
   const yScale = (value: number) =>
-    padding.top +
-    plotHeight -
-    ((value - minValue) / range) * plotHeight;
+    padding.top + plotHeight - ((value - minValue) / range) * plotHeight;
 
   // Build path for main line
   const pathData = chartData
@@ -146,22 +144,23 @@ export function MetricTimeSeriesChart({
     const lastValue = chartData[chartData.length - 1].value;
     const lastX = xScale(chartData.length - 1);
     const lastY = yScale(lastValue);
-    const futureX = xScale(chartData.length - 1) + (plotWidth / chartData.length) * (prediction.daysAhead / (timeRange === '7d' ? 1 : timeRange === '30d' ? 1 : timeRange === '90d' ? 7 : 30));
+    const futureX =
+      xScale(chartData.length - 1) +
+      (plotWidth / chartData.length) *
+        (prediction.daysAhead /
+          (timeRange === '7d' ? 1 : timeRange === '30d' ? 1 : timeRange === '90d' ? 7 : 30));
     const futureY = yScale(prediction.futureValue);
     predictionPath = `M ${lastX} ${lastY} L ${futureX} ${futureY}`;
   }
 
-  const unit =
-    metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
+  const unit = metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
 
   return (
     <div
       className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 ${className}`}
     >
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-          {metric.name} Trend
-        </h3>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{metric.name} Trend</h3>
 
         {/* Time range selector */}
         <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
@@ -186,9 +185,7 @@ export function MetricTimeSeriesChart({
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <div className="flex items-center justify-between text-sm">
             <div>
-              <span className="text-gray-600 dark:text-gray-400">
-                {comparison.current.period}:
-              </span>
+              <span className="text-gray-600 dark:text-gray-400">{comparison.current.period}:</span>
               <span className="font-semibold text-gray-900 dark:text-white ml-2">
                 {comparison.current.average.toFixed(1)} {unit}
               </span>
@@ -217,11 +214,7 @@ export function MetricTimeSeriesChart({
 
       {/* Chart */}
       <div className="relative">
-        <svg
-          width={chartWidth}
-          height={chartHeight}
-          className="overflow-visible"
-        >
+        <svg width={chartWidth} height={chartHeight} className="overflow-visible">
           {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
             const y = padding.top + plotHeight - ratio * plotHeight;
@@ -251,10 +244,7 @@ export function MetricTimeSeriesChart({
           })}
 
           {/* Area fill */}
-          <path
-            d={areaPath}
-            className="fill-blue-50 dark:fill-blue-900/20"
-          />
+          <path d={areaPath} className="fill-blue-50 dark:fill-blue-900/20" />
 
           {/* Main line */}
           <path
@@ -326,12 +316,7 @@ export function MetricTimeSeriesChart({
                   onMouseLeave={() => setHoveredPoint(null)}
                 />
                 {isAnomaly && (
-                  <circle
-                    cx={x}
-                    cy={y - 12}
-                    r="6"
-                    className="fill-red-500 dark:fill-red-400"
-                  />
+                  <circle cx={x} cy={y - 12} r="6" className="fill-red-500 dark:fill-red-400" />
                 )}
               </g>
             );
@@ -355,10 +340,7 @@ export function MetricTimeSeriesChart({
                 textAnchor="middle"
                 className="text-xs fill-white dark:fill-gray-900 font-medium"
               >
-                {chartData[hoveredPoint].value.toFixed(
-                  metric.unit === 'dollars' ? 0 : 1
-                )}{' '}
-                {unit}
+                {chartData[hoveredPoint].value.toFixed(metric.unit === 'dollars' ? 0 : 1)} {unit}
               </text>
               <text
                 x={xScale(hoveredPoint)}
@@ -377,32 +359,24 @@ export function MetricTimeSeriesChart({
       <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-4 h-0.5 bg-blue-600 dark:bg-blue-400"></div>
-          <span className="text-xs text-gray-600 dark:text-gray-400">
-            Actual Values
-          </span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">Actual Values</span>
         </div>
         {showTarget && metric.targetValue && (
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-orange-500 dark:bg-orange-400 border-dashed border-t-2"></div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">
-              Target
-            </span>
+            <span className="text-xs text-gray-600 dark:text-gray-400">Target</span>
           </div>
         )}
         {trendPath && (
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-green-500 dark:bg-green-400 border-dashed border-t-2"></div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">
-              Trend
-            </span>
+            <span className="text-xs text-gray-600 dark:text-gray-400">Trend</span>
           </div>
         )}
         {predictionPath && (
           <div className="flex items-center gap-2">
             <div className="w-4 h-0.5 bg-purple-500 dark:bg-purple-400 border-dashed border-t-2"></div>
-            <span className="text-xs text-gray-600 dark:text-gray-400">
-              Prediction
-            </span>
+            <span className="text-xs text-gray-600 dark:text-gray-400">Prediction</span>
           </div>
         )}
         {anomalies.length > 0 && (

@@ -6,9 +6,6 @@ export default function DashboardRedirect() {
   const { isLeisureMode } = useMode();
 
   return (
-    <Navigate
-      to={isLeisureMode ? ROUTES.admin.zenDashboard : ROUTES.admin.dashboard}
-      replace
-    />
+    <Navigate to={isLeisureMode ? ROUTES.admin.zenDashboard : ROUTES.admin.dashboard} replace />
   );
 }

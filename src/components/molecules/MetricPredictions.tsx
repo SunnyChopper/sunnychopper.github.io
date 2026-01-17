@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, AlertTriangle, Target } from 'lucide-react';
 import type { Metric, MetricLog } from '../../types/growth-system';
-import { metricPredictionsService, type PredictionResult, type TargetDatePrediction } from '../../services/growth-system/metric-predictions.service';
+import {
+  metricPredictionsService,
+  type PredictionResult,
+  type TargetDatePrediction,
+} from '../../services/growth-system/metric-predictions.service';
 import { MetricTimeSeriesChart } from './MetricTimeSeriesChart';
 
 interface MetricPredictionsProps {
@@ -90,9 +94,7 @@ export function MetricPredictions({ metric, logs }: MetricPredictionsProps) {
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Predicted Value
-              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Predicted Value</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {prediction.futureValue.toFixed(metric.unit === 'dollars' ? 0 : 1)} {unit}
               </div>
@@ -106,15 +108,16 @@ export function MetricPredictions({ metric, logs }: MetricPredictionsProps) {
               </div>
               <div className="text-sm text-gray-900 dark:text-white">
                 {prediction.confidenceInterval.lower.toFixed(metric.unit === 'dollars' ? 0 : 1)} -{' '}
-                {prediction.confidenceInterval.upper.toFixed(metric.unit === 'dollars' ? 0 : 1)} {unit}
+                {prediction.confidenceInterval.upper.toFixed(metric.unit === 'dollars' ? 0 : 1)}{' '}
+                {unit}
               </div>
               <div
                 className={`text-xs font-medium mt-1 ${
                   prediction.riskLevel === 'low'
                     ? 'text-green-600 dark:text-green-400'
                     : prediction.riskLevel === 'medium'
-                    ? 'text-yellow-600 dark:text-yellow-400'
-                    : 'text-red-600 dark:text-red-400'
+                      ? 'text-yellow-600 dark:text-yellow-400'
+                      : 'text-red-600 dark:text-red-400'
                 }`}
               >
                 Risk: {prediction.riskLevel}
@@ -181,8 +184,8 @@ export function MetricPredictions({ metric, logs }: MetricPredictionsProps) {
               risk.riskLevel === 'low'
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                 : risk.riskLevel === 'medium'
-                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
             }`}
           >
             {risk.riskLevel.toUpperCase()} Risk

@@ -58,7 +58,7 @@ export function DateDisplay({
   showWarning = true,
   variant = 'inline',
   size = 'md',
-  className = ''
+  className = '',
 }: DateDisplayProps) {
   if (!date) {
     return (
@@ -75,8 +75,8 @@ export function DateDisplay({
   const colorClass = overdue
     ? 'text-red-600 dark:text-red-400'
     : upcoming
-    ? 'text-orange-600 dark:text-orange-400'
-    : 'text-gray-600 dark:text-gray-400';
+      ? 'text-orange-600 dark:text-orange-400'
+      : 'text-gray-600 dark:text-gray-400';
 
   if (variant === 'block') {
     return (
@@ -96,7 +96,9 @@ export function DateDisplay({
   }
 
   return (
-    <span className={`inline-flex items-center gap-1.5 ${colorClass} ${sizeClasses[size]} ${className}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 ${colorClass} ${sizeClasses[size]} ${className}`}
+    >
       {showIcon && <Calendar className={iconSizes[size]} />}
       {label && <span className="font-medium">{label}:</span>}
       <span>{formattedDate}</span>

@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN creating cards, panels, and contained content blocks."
-globs: ""
+description: 'USE WHEN creating cards, panels, and contained content blocks.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -11,18 +11,16 @@ Standards for cards and content containers.
 ## Basic Card
 
 ```tsx
-<div className="
+<div
+  className="
   bg-white dark:bg-gray-800
   border border-gray-200 dark:border-gray-700
   rounded-lg
   p-6
-">
-  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-    Card Title
-  </h3>
-  <p className="text-gray-600 dark:text-gray-400">
-    Card description or content goes here.
-  </p>
+"
+>
+  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Card Title</h3>
+  <p className="text-gray-600 dark:text-gray-400">Card description or content goes here.</p>
 </div>
 ```
 
@@ -33,9 +31,7 @@ Standards for cards and content containers.
   {/* Header */}
   <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
     <div className="flex items-center justify-between">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-        Card Title
-      </h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Card Title</h3>
       <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
         <MoreVertical className="w-5 h-5 text-gray-500" />
       </button>
@@ -44,9 +40,7 @@ Standards for cards and content containers.
 
   {/* Body */}
   <div className="p-6">
-    <p className="text-gray-600 dark:text-gray-400">
-      Card content
-    </p>
+    <p className="text-gray-600 dark:text-gray-400">Card content</p>
   </div>
 
   {/* Footer (optional) */}
@@ -102,7 +96,7 @@ Standards for cards and content containers.
 
 ```tsx
 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-  {items.map(item => (
+  {items.map((item) => (
     <Card key={item.id} {...item} />
   ))}
 </div>
@@ -111,12 +105,14 @@ Standards for cards and content containers.
 ## Entity Card (Task, Goal, etc.)
 
 ```tsx
-<div className="
+<div
+  className="
   bg-white dark:bg-gray-800
   border border-gray-200 dark:border-gray-700
   rounded-lg p-4
   hover:shadow-md transition
-">
+"
+>
   <div className="flex items-start gap-4">
     {/* Status indicator */}
     <div className="flex-shrink-0">
@@ -125,9 +121,7 @@ Standards for cards and content containers.
 
     {/* Content */}
     <div className="flex-1 min-w-0">
-      <h4 className="font-medium text-gray-900 dark:text-white truncate">
-        {task.title}
-      </h4>
+      <h4 className="font-medium text-gray-900 dark:text-white truncate">{task.title}</h4>
       {task.description && (
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
           {task.description}
@@ -137,9 +131,7 @@ Standards for cards and content containers.
       {/* Meta row */}
       <div className="flex items-center gap-3 mt-3">
         <AreaBadge area={task.area} />
-        <span className="text-xs text-gray-400">
-          Due {formatDate(task.dueDate)}
-        </span>
+        <span className="text-xs text-gray-400">Due {formatDate(task.dueDate)}</span>
       </div>
     </div>
 
@@ -155,19 +147,19 @@ Standards for cards and content containers.
 
 ```tsx
 // Level 0: Flat (border only)
-className="border border-gray-200 dark:border-gray-700"
+className = 'border border-gray-200 dark:border-gray-700';
 
 // Level 1: Subtle shadow
-className="shadow-sm"
+className = 'shadow-sm';
 
 // Level 2: Medium shadow (hover states)
-className="shadow-md"
+className = 'shadow-md';
 
 // Level 3: Prominent (modals, dropdowns)
-className="shadow-lg"
+className = 'shadow-lg';
 
 // Level 4: High (floating elements)
-className="shadow-xl"
+className = 'shadow-xl';
 ```
 
 ## Best Practices

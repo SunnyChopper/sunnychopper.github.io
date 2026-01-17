@@ -2,7 +2,12 @@ import { AlertCircle, Clock, Activity, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Goal } from '../../types/growth-system';
 
-type QuickFilter = 'at_risk' | 'due_this_week' | 'needs_attention' | 'recently_completed' | 'dormant';
+type QuickFilter =
+  | 'at_risk'
+  | 'due_this_week'
+  | 'needs_attention'
+  | 'recently_completed'
+  | 'dormant';
 
 interface QuickFilterBarProps {
   goals: Goal[];
@@ -20,11 +25,11 @@ interface FilterConfig {
   filter: (goal: Goal) => boolean;
 }
 
-export function QuickFilterBar({ 
-  goals, 
-  activeFilters, 
+export function QuickFilterBar({
+  goals,
+  activeFilters,
   onFilterToggle,
-  onClearFilters 
+  onClearFilters,
 }: QuickFilterBarProps) {
   const now = new Date();
 
@@ -33,18 +38,20 @@ export function QuickFilterBar({
       id: 'at_risk',
       label: 'At Risk',
       icon: AlertCircle,
-      color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800',
-      count: (goals) => goals.filter(g => g.status === 'AtRisk').length,
+      color:
+        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800',
+      count: (goals) => goals.filter((g) => g.status === 'AtRisk').length,
       filter: (goal) => goal.status === 'AtRisk',
     },
     {
       id: 'due_this_week',
       label: 'Due This Week',
       icon: Clock,
-      color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-800',
+      color:
+        'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-800',
       count: (goals) => {
         const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        return goals.filter(g => {
+        return goals.filter((g) => {
           if (!g.targetDate) return false;
           const target = new Date(g.targetDate);
           return target >= now && target <= oneWeekFromNow;
@@ -61,17 +68,26 @@ export function QuickFilterBar({
       id: 'needs_attention',
       label: 'Needs Attention',
       icon: AlertCircle,
-      color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-800',
+      color:
+        'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-800',
       count: (goals) => {
-        return goals.filter(g => {
-          const lastActivity = g.lastActivityAt ? new Date(g.lastActivityAt) : new Date(g.createdAt);
-          const daysSinceActivity = Math.ceil((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+        return goals.filter((g) => {
+          const lastActivity = g.lastActivityAt
+            ? new Date(g.lastActivityAt)
+            : new Date(g.createdAt);
+          const daysSinceActivity = Math.ceil(
+            (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+          );
           return daysSinceActivity > 7 && g.status === 'Active';
         }).length;
       },
       filter: (goal) => {
-        const lastActivity = goal.lastActivityAt ? new Date(goal.lastActivityAt) : new Date(goal.createdAt);
-        const daysSinceActivity = Math.ceil((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+        const lastActivity = goal.lastActivityAt
+          ? new Date(goal.lastActivityAt)
+          : new Date(goal.createdAt);
+        const daysSinceActivity = Math.ceil(
+          (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+        );
         return daysSinceActivity > 7 && goal.status === 'Active';
       },
     },
@@ -79,17 +95,26 @@ export function QuickFilterBar({
       id: 'dormant',
       label: 'Dormant',
       icon: Activity,
-      color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400 border-gray-300 dark:border-gray-600',
+      color:
+        'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400 border-gray-300 dark:border-gray-600',
       count: (goals) => {
-        return goals.filter(g => {
-          const lastActivity = g.lastActivityAt ? new Date(g.lastActivityAt) : new Date(g.createdAt);
-          const daysSinceActivity = Math.ceil((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+        return goals.filter((g) => {
+          const lastActivity = g.lastActivityAt
+            ? new Date(g.lastActivityAt)
+            : new Date(g.createdAt);
+          const daysSinceActivity = Math.ceil(
+            (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+          );
           return daysSinceActivity > 14;
         }).length;
       },
       filter: (goal) => {
-        const lastActivity = goal.lastActivityAt ? new Date(goal.lastActivityAt) : new Date(goal.createdAt);
-        const daysSinceActivity = Math.ceil((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+        const lastActivity = goal.lastActivityAt
+          ? new Date(goal.lastActivityAt)
+          : new Date(goal.createdAt);
+        const daysSinceActivity = Math.ceil(
+          (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+        );
         return daysSinceActivity > 14;
       },
     },
@@ -97,10 +122,11 @@ export function QuickFilterBar({
       id: 'recently_completed',
       label: 'Recently Completed',
       icon: Activity,
-      color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800',
+      color:
+        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800',
       count: (goals) => {
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return goals.filter(g => {
+        return goals.filter((g) => {
           if (!g.completedDate) return false;
           const completed = new Date(g.completedDate);
           return completed >= sevenDaysAgo;
@@ -119,9 +145,7 @@ export function QuickFilterBar({
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-        Quick Filters:
-      </span>
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Quick Filters:</span>
 
       {filterConfigs.map((config, index) => {
         const Icon = config.icon;
@@ -146,11 +170,11 @@ export function QuickFilterBar({
             <Icon className="w-3.5 h-3.5" />
             <span>{config.label}</span>
             {count > 0 && (
-              <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                isActive 
-                  ? 'bg-white/20'
-                  : 'bg-gray-100 dark:bg-gray-700'
-              }`}>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                  isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'
+                }`}
+              >
                 {count}
               </span>
             )}

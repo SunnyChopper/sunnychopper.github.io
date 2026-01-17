@@ -15,7 +15,7 @@ function ChartItem({ data, actualPercent, expectedPercent, ratePercent, colors }
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div 
+    <div
       className="group relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -38,7 +38,7 @@ function ChartItem({ data, actualPercent, expectedPercent, ratePercent, colors }
               />
             </div>
           )}
-          
+
           {/* If no expected, show actual as standalone */}
           {data.expected === 0 && (
             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden relative">
@@ -54,9 +54,7 @@ function ChartItem({ data, actualPercent, expectedPercent, ratePercent, colors }
             {data.actual}/{data.expected || 'N/A'}
           </div>
           {data.expected > 0 && (
-            <div className="text-gray-500 dark:text-gray-400">
-              {ratePercent.toFixed(0)}%
-            </div>
+            <div className="text-gray-500 dark:text-gray-400">{ratePercent.toFixed(0)}%</div>
           )}
         </div>
       </div>
@@ -115,10 +113,7 @@ export function CompletionRateChart({ habit, logs }: CompletionRateChartProps) {
     return getCompletionRateData(logs, habit, period, days);
   }, [logs, habit, timeRange]);
 
-  const maxValue = Math.max(
-    ...chartData.map(d => Math.max(d.actual, d.expected)),
-    1
-  );
+  const maxValue = Math.max(...chartData.map((d) => Math.max(d.actual, d.expected)), 1);
 
   const colors = getHabitTypeColors(habit.habitType);
   const itemHeight = 40; // Height per item in pixels
@@ -128,7 +123,9 @@ export function CompletionRateChart({ habit, logs }: CompletionRateChartProps) {
   if (chartData.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Completion Rate</h3>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          Completion Rate
+        </h3>
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           <p className="mb-2">No data available for this period.</p>
           <p className="text-sm">Start logging completions to see your progress!</p>
@@ -141,10 +138,10 @@ export function CompletionRateChart({ habit, logs }: CompletionRateChartProps) {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Completion Rate</h3>
-        
+
         {/* Unified time range selector */}
         <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-          {(['7d', '30d', '90d', 'all'] as TimeRange[]).map(range => (
+          {(['7d', '30d', '90d', 'all'] as TimeRange[]).map((range) => (
             <button
               key={range}
               onClick={() => setTimeRange(range)}
@@ -161,11 +158,12 @@ export function CompletionRateChart({ habit, logs }: CompletionRateChartProps) {
       </div>
 
       {/* Fixed height scrollable container */}
-      <div 
+      <div
         className="space-y-2 overflow-y-auto"
-        style={{ 
+        style={{
           maxHeight: `${containerHeight}px`,
-          minHeight: chartData.length <= 5 ? 'auto' : `${Math.min(5, chartData.length) * itemHeight}px`
+          minHeight:
+            chartData.length <= 5 ? 'auto' : `${Math.min(5, chartData.length) * itemHeight}px`,
         }}
       >
         {chartData.map((data, index) => {

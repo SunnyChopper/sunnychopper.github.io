@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN working with text, headings, fonts, and typography hierarchy."
-globs: ""
+description: 'USE WHEN working with text, headings, fonts, and typography hierarchy.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -11,22 +11,22 @@ Consistent typography creates clear visual hierarchy.
 ## Font Families
 
 ```tsx
-font-sans     // Montserrat - UI, body text, labels
-font-serif    // Playfair Display - Marketing headings (use sparingly)
+font - sans; // Montserrat - UI, body text, labels
+font - serif; // Playfair Display - Marketing headings (use sparingly)
 ```
 
 ## Type Scale
 
-| Class | Size | Usage |
-|-------|------|-------|
-| `text-xs` | 12px | Captions, badges, timestamps |
-| `text-sm` | 14px | Secondary text, descriptions, form labels |
-| `text-base` | 16px | Body text, paragraphs |
-| `text-lg` | 18px | Section headings, card titles |
-| `text-xl` | 20px | Page section titles |
-| `text-2xl` | 24px | Page subtitles |
-| `text-3xl` | 30px | Page titles |
-| `text-4xl` | 36px | Hero text |
+| Class       | Size | Usage                                     |
+| ----------- | ---- | ----------------------------------------- |
+| `text-xs`   | 12px | Captions, badges, timestamps              |
+| `text-sm`   | 14px | Secondary text, descriptions, form labels |
+| `text-base` | 16px | Body text, paragraphs                     |
+| `text-lg`   | 18px | Section headings, card titles             |
+| `text-xl`   | 20px | Page section titles                       |
+| `text-2xl`  | 24px | Page subtitles                            |
+| `text-3xl`  | 30px | Page titles                               |
+| `text-4xl`  | 36px | Hero text                                 |
 
 ## Heading Hierarchy
 
@@ -79,19 +79,19 @@ font-serif    // Playfair Display - Marketing headings (use sparingly)
 ## Font Weights
 
 ```tsx
-font-normal    // 400 - Body text
-font-medium    // 500 - Labels, emphasized text
-font-semibold  // 600 - Headings, titles
-font-bold      // 700 - Page titles, CTAs
+font - normal; // 400 - Body text
+font - medium; // 500 - Labels, emphasized text
+font - semibold; // 600 - Headings, titles
+font - bold; // 700 - Page titles, CTAs
 ```
 
 ## Line Height
 
 ```tsx
-leading-tight   // 1.25 - Headings
-leading-snug    // 1.375 - Subheadings
-leading-normal  // 1.5 - Body text (default)
-leading-relaxed // 1.625 - Long-form content
+leading - tight; // 1.25 - Headings
+leading - snug; // 1.375 - Subheadings
+leading - normal; // 1.5 - Body text (default)
+leading - relaxed; // 1.625 - Long-form content
 ```
 
 ## Text Truncation

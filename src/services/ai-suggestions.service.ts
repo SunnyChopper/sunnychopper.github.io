@@ -34,7 +34,7 @@ class AISuggestionsService {
     const suggestions = this.getSuggestions();
 
     const existing = suggestions.find(
-      s =>
+      (s) =>
         s.type === suggestion.type &&
         s.entityType === suggestion.entityType &&
         s.entityId === suggestion.entityId &&
@@ -65,7 +65,7 @@ class AISuggestionsService {
 
   dismissSuggestion(id: string): void {
     const suggestions = this.getSuggestions();
-    const suggestion = suggestions.find(s => s.id === id);
+    const suggestion = suggestions.find((s) => s.id === id);
     if (suggestion) {
       suggestion.dismissedAt = new Date().toISOString();
       this.saveSuggestions(suggestions);
@@ -73,14 +73,17 @@ class AISuggestionsService {
   }
 
   removeSuggestion(id: string): void {
-    const suggestions = this.getSuggestions().filter(s => s.id !== id);
+    const suggestions = this.getSuggestions().filter((s) => s.id !== id);
     this.saveSuggestions(suggestions);
   }
 
-  getActiveSuggestions(entityType?: 'task' | 'project' | null, entityId?: string): StoredSuggestion[] {
+  getActiveSuggestions(
+    entityType?: 'task' | 'project' | null,
+    entityId?: string
+  ): StoredSuggestion[] {
     const suggestions = this.getSuggestions();
 
-    return suggestions.filter(s => {
+    return suggestions.filter((s) => {
       if (s.dismissedAt && !this.isDismissalExpired(s.dismissedAt)) {
         return false;
       }
@@ -121,7 +124,7 @@ class AISuggestionsService {
     const suggestions = this.getSuggestions();
     let changed = false;
 
-    suggestions.forEach(s => {
+    suggestions.forEach((s) => {
       if (s.dismissedAt && this.isDismissalExpired(s.dismissedAt)) {
         s.dismissedAt = null;
         changed = true;
@@ -141,7 +144,7 @@ class AISuggestionsService {
     const suggestions = this.getSuggestions();
     const active = this.getActiveSuggestions().length;
     const dismissed = suggestions.filter(
-      s => s.dismissedAt && !this.isDismissalExpired(s.dismissedAt)
+      (s) => s.dismissedAt && !this.isDismissalExpired(s.dismissedAt)
     ).length;
 
     return {

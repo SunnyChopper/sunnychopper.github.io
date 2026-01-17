@@ -1,8 +1,8 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { copyFileSync } from 'fs'
-import { join } from 'path'
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { copyFileSync } from 'fs';
+import { join } from 'path';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -25,9 +25,9 @@ export default defineConfig({
       resolveId(id) {
         // Handle both 'async_hooks' and 'node:async_hooks' imports
         if (id === 'async_hooks' || id === 'node:async_hooks') {
-          return join(process.cwd(), 'src/lib/polyfills/async-hooks.ts')
+          return join(process.cwd(), 'src/lib/polyfills/async-hooks.ts');
         }
-        return null
+        return null;
       },
     },
     // Copy CNAME file to dist after build
@@ -38,9 +38,9 @@ export default defineConfig({
           copyFileSync(
             join(process.cwd(), 'public', 'CNAME'),
             join(process.cwd(), 'dist', 'CNAME')
-          )
+          );
         } catch {
-          console.warn('CNAME file not found or already exists')
+          console.warn('CNAME file not found or already exists');
         }
       },
     },
@@ -54,7 +54,7 @@ export default defineConfig({
     alias: {
       // Polyfill async_hooks for LangGraph
       // Handle both 'async_hooks' and 'node:async_hooks' imports
-      'async_hooks': join(process.cwd(), 'src/lib/polyfills/async-hooks.ts'),
+      async_hooks: join(process.cwd(), 'src/lib/polyfills/async-hooks.ts'),
       'node:async_hooks': join(process.cwd(), 'src/lib/polyfills/async-hooks.ts'),
     },
   },
@@ -64,4 +64,4 @@ export default defineConfig({
     // Exclude async_hooks from pre-bundling since we're polyfilling it
     exclude: [],
   },
-})
+});

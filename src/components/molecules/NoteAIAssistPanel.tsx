@@ -136,7 +136,9 @@ export default function NoteAIAssistPanel({
           const result = await noteAIService.summarizeContent(content);
           if (result.success && result.data) {
             onContentChange(result.data.summary);
-            setLastResult(`Summarized from ${result.data.wordCount} to ${result.data.summaryWordCount} words`);
+            setLastResult(
+              `Summarized from ${result.data.wordCount} to ${result.data.summaryWordCount} words`
+            );
           } else {
             throw new Error(result.error?.message || 'Failed to summarize content');
           }
@@ -169,9 +171,9 @@ export default function NoteAIAssistPanel({
           const result = await noteAIService.suggestTags(content, title, tags);
           if (result.success && result.data) {
             const newTags = result.data.suggestedTags
-              .filter(t => t.relevance > 0.5)
-              .map(t => t.tag.toLowerCase())
-              .filter(t => !tags.includes(t));
+              .filter((t) => t.relevance > 0.5)
+              .map((t) => t.tag.toLowerCase())
+              .filter((t) => !tags.includes(t));
             if (newTags.length > 0) {
               onTagsChange([...tags, ...newTags]);
               setLastResult(`Added ${newTags.length} suggested tags`);
@@ -215,10 +217,10 @@ export default function NoteAIAssistPanel({
   };
 
   const groupedActions = {
-    content: actions.filter(a => a.category === 'content'),
-    generation: actions.filter(a => a.category === 'generation'),
-    intelligence: actions.filter(a => a.category === 'intelligence'),
-    analysis: actions.filter(a => a.category === 'analysis'),
+    content: actions.filter((a) => a.category === 'content'),
+    generation: actions.filter((a) => a.category === 'generation'),
+    intelligence: actions.filter((a) => a.category === 'intelligence'),
+    analysis: actions.filter((a) => a.category === 'analysis'),
   };
 
   return (
@@ -258,7 +260,7 @@ export default function NoteAIAssistPanel({
               Content
             </h4>
             <div className="grid grid-cols-1 gap-2">
-              {groupedActions.content.map(action => {
+              {groupedActions.content.map((action) => {
                 const Icon = action.icon;
                 const isActive = activeAction === action.id && loading;
                 return (
@@ -274,7 +276,10 @@ export default function NoteAIAssistPanel({
                     )}
                   >
                     {isActive ? (
-                      <Loader2 size={16} className="text-blue-600 dark:text-blue-400 animate-spin" />
+                      <Loader2
+                        size={16}
+                        className="text-blue-600 dark:text-blue-400 animate-spin"
+                      />
                     ) : (
                       <Icon size={16} className="text-gray-600 dark:text-gray-400" />
                     )}
@@ -298,7 +303,7 @@ export default function NoteAIAssistPanel({
               Generation
             </h4>
             <div className="grid grid-cols-1 gap-2">
-              {groupedActions.generation.map(action => {
+              {groupedActions.generation.map((action) => {
                 const Icon = action.icon;
                 const isActive = activeAction === action.id && loading;
                 return (
@@ -314,7 +319,10 @@ export default function NoteAIAssistPanel({
                     )}
                   >
                     {isActive ? (
-                      <Loader2 size={16} className="text-blue-600 dark:text-blue-400 animate-spin" />
+                      <Loader2
+                        size={16}
+                        className="text-blue-600 dark:text-blue-400 animate-spin"
+                      />
                     ) : (
                       <Icon size={16} className="text-gray-600 dark:text-gray-400" />
                     )}
@@ -338,7 +346,7 @@ export default function NoteAIAssistPanel({
               Intelligence
             </h4>
             <div className="grid grid-cols-1 gap-2">
-              {groupedActions.intelligence.map(action => {
+              {groupedActions.intelligence.map((action) => {
                 const Icon = action.icon;
                 const isActive = activeAction === action.id && loading;
                 return (
@@ -354,7 +362,10 @@ export default function NoteAIAssistPanel({
                     )}
                   >
                     {isActive ? (
-                      <Loader2 size={16} className="text-blue-600 dark:text-blue-400 animate-spin" />
+                      <Loader2
+                        size={16}
+                        className="text-blue-600 dark:text-blue-400 animate-spin"
+                      />
                     ) : (
                       <Icon size={16} className="text-gray-600 dark:text-gray-400" />
                     )}
@@ -378,7 +389,7 @@ export default function NoteAIAssistPanel({
               Analysis
             </h4>
             <div className="grid grid-cols-1 gap-2">
-              {groupedActions.analysis.map(action => {
+              {groupedActions.analysis.map((action) => {
                 const Icon = action.icon;
                 const isActive = activeAction === action.id && loading;
                 return (
@@ -394,7 +405,10 @@ export default function NoteAIAssistPanel({
                     )}
                   >
                     {isActive ? (
-                      <Loader2 size={16} className="text-blue-600 dark:text-blue-400 animate-spin" />
+                      <Loader2
+                        size={16}
+                        className="text-blue-600 dark:text-blue-400 animate-spin"
+                      />
                     ) : (
                       <Icon size={16} className="text-gray-600 dark:text-gray-400" />
                     )}

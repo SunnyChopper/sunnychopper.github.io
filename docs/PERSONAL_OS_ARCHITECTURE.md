@@ -86,7 +86,7 @@ graph TB
             Molecules[Molecules]
             Atoms[Atoms]
         end
-        
+
         subgraph Services [Service Layer]
             TaskSvc[Tasks Service]
             GoalSvc[Goals Service]
@@ -98,13 +98,13 @@ graph TB
             AISvc[AI Services]
             RewardSvc[Rewards Services]
         end
-        
+
         subgraph Storage [Storage Adapter Layer]
             StorageConfig[Storage Config]
             LocalAdapter[LocalStorage Adapter]
             APIAdapter[API Adapter]
         end
-        
+
         subgraph LLM [AI/LLM Layer]
             LLMConfig[LLM Config]
             DirectAdapter[Direct LLM Adapter]
@@ -114,46 +114,46 @@ graph TB
             Gemini[Gemini]
             Others[Groq/Grok/DeepSeek/Cerebras]
         end
-        
+
         subgraph State [State Management]
             Contexts[React Contexts]
             LocalState[Component State]
         end
-        
+
         LocalStorage[(localStorage)]
     end
-    
+
     ExternalAPIs[External LLM APIs]
-    
+
     Pages --> Organisms
     Organisms --> Molecules
     Molecules --> Atoms
-    
+
     Pages --> Services
     Organisms --> Services
-    
+
     Services --> StorageConfig
     Services --> AISvc
-    
+
     StorageConfig --> LocalAdapter
     StorageConfig --> APIAdapter
-    
+
     LocalAdapter --> LocalStorage
-    
+
     AISvc --> LLMConfig
     LLMConfig --> DirectAdapter
     DirectAdapter --> ProviderFactory
-    
+
     ProviderFactory --> Anthropic
     ProviderFactory --> OpenAI
     ProviderFactory --> Gemini
     ProviderFactory --> Others
-    
+
     Anthropic --> ExternalAPIs
     OpenAI --> ExternalAPIs
     Gemini --> ExternalAPIs
     Others --> ExternalAPIs
-    
+
     UI --> Contexts
     Services --> Contexts
 ```
@@ -173,10 +173,10 @@ interface Task {
   id: string;
   title: string;
   description: string | null;
-  area: Area;  // Health | Wealth | Love | Happiness | Operations | DayJob
-  priority: Priority;  // P1 | P2 | P3 | P4
-  status: TaskStatus;  // NotStarted | InProgress | Blocked | OnHold | Done | Cancelled
-  size: number | null;  // Estimated minutes
+  area: Area; // Health | Wealth | Love | Happiness | Operations | DayJob
+  priority: Priority; // P1 | P2 | P3 | P4
+  status: TaskStatus; // NotStarted | InProgress | Blocked | OnHold | Done | Cancelled
+  size: number | null; // Estimated minutes
   dueDate: string | null;
   scheduledDate: string | null;
   isRecurring: boolean;
@@ -186,6 +186,7 @@ interface Task {
 ```
 
 **Key Features:**
+
 - Dependencies between tasks
 - Project and Goal associations
 - Recurring task support
@@ -198,8 +199,8 @@ interface Project {
   id: string;
   name: string;
   area: Area;
-  status: ProjectStatus;  // Planning | Active | OnHold | Completed | Cancelled
-  impact: number;  // 1-5 scale
+  status: ProjectStatus; // Planning | Active | OnHold | Completed | Cancelled
+  impact: number; // 1-5 scale
   startDate: string | null;
   endDate: string | null;
   // ... linked tasks and goals
@@ -213,16 +214,17 @@ interface Goal {
   id: string;
   title: string;
   area: Area;
-  timeHorizon: TimeHorizon;  // Yearly | Quarterly | Monthly | Weekly | Daily
-  status: GoalStatus;  // Planning | Active | OnTrack | AtRisk | Achieved | Abandoned
-  successCriteria: SuccessCriterion[];  // Enhanced with completion tracking
-  progressConfig: GoalProgressConfig | null;  // Weighted progress calculation
-  parentGoalId: string | null;  // Goal hierarchy
+  timeHorizon: TimeHorizon; // Yearly | Quarterly | Monthly | Weekly | Daily
+  status: GoalStatus; // Planning | Active | OnTrack | AtRisk | Achieved | Abandoned
+  successCriteria: SuccessCriterion[]; // Enhanced with completion tracking
+  progressConfig: GoalProgressConfig | null; // Weighted progress calculation
+  parentGoalId: string | null; // Goal hierarchy
   // ... relationships to tasks, metrics, habits, projects
 }
 ```
 
 **Key Innovation:**
+
 - **Multi-Source Progress Calculation**: Goals track progress from:
   - Completed success criteria (40% weight by default)
   - Linked completed tasks (30% weight)
@@ -237,15 +239,16 @@ interface Metric {
   id: string;
   name: string;
   area: Area;
-  unit: MetricUnit;  // count | hours | dollars | kg | percent | etc.
-  direction: MetricDirection;  // Higher | Lower | Target
+  unit: MetricUnit; // count | hours | dollars | kg | percent | etc.
+  direction: MetricDirection; // Higher | Lower | Target
   targetValue: number | null;
-  source: MetricSource;  // Manual | App | Device
+  source: MetricSource; // Manual | App | Device
   // ... logs tracked separately
 }
 ```
 
 **Supporting Types:**
+
 - `MetricLog`: Individual data points with value, notes, timestamp
 - `MetricInsight`: Cached AI-generated insights (patterns, anomalies, predictions)
 - `MetricMilestone`: Achievements like target reached, streak milestones
@@ -257,14 +260,14 @@ interface Habit {
   id: string;
   name: string;
   area: Area;
-  habitType: HabitType;  // Build | Maintain | Reduce | Quit
-  frequency: HabitFrequency;  // Daily | Weekly | Monthly
+  habitType: HabitType; // Build | Maintain | Reduce | Quit
+  frequency: HabitFrequency; // Daily | Weekly | Monthly
   // Habit Loop Design
   trigger: string | null;
   action: string | null;
   reward: string | null;
-  frictionUp: string | null;  // Make harder (for bad habits)
-  frictionDown: string | null;  // Make easier (for good habits)
+  frictionUp: string | null; // Make harder (for bad habits)
+  frictionDown: string | null; // Make easier (for good habits)
   // ... logs tracked separately
 }
 ```
@@ -277,8 +280,8 @@ interface LogbookEntry {
   date: string;
   title: string | null;
   notes: string | null;
-  mood: LogbookMood | null;  // Low | Steady | High
-  energy: number | null;  // 1-10 scale
+  mood: LogbookMood | null; // Low | Steady | High
+  energy: number | null; // 1-10 scale
   // ... can link to tasks, goals, habits, projects
 }
 ```
@@ -316,6 +319,7 @@ interface IStorageAdapter {
 ```
 
 **Implementations:**
+
 1. **LocalStorageAdapter** (default): Persists to browser localStorage with `gs_` prefix
 2. **APIStorageAdapter** (future-ready): Can point to a real backend
 
@@ -340,12 +344,12 @@ export const tasksService = {
   async create(input: CreateTaskInput): Promise<ApiResponse<Task>>;
   async update(id: string, input: UpdateTaskInput): Promise<ApiResponse<Task>>;
   async delete(id: string): Promise<ApiResponse<void>>;
-  
+
   // Relationship methods
   async addDependency(taskId: string, dependsOnTaskId: string): Promise<ApiResponse<TaskDependency>>;
   async removeDependency(dependencyId: string): Promise<ApiResponse<void>>;
   async getDependencies(taskId: string): Promise<ApiResponse<TaskDependency[]>>;
-  
+
   // Advanced queries
   async getBlockedTasks(taskId: string): Promise<Task[]>;
   async getDependencyGraph(): Promise<DependencyGraph>;
@@ -353,6 +357,7 @@ export const tasksService = {
 ```
 
 **Similar Services:**
+
 - `goals.service.ts`: CRUD + linked entities + progress queries
 - `metrics.service.ts`: CRUD + log history + milestone tracking
 - `habits.service.ts`: CRUD + completion logs + streak calculation
@@ -377,6 +382,7 @@ export const goalProgressService = {
 ```
 
 This service aggregates progress from:
+
 1. Completed success criteria (checkboxes)
 2. Completed linked tasks
 3. Linked metrics at target thresholds
@@ -454,10 +460,12 @@ Smallest reusable UI elements ([`src/components/atoms/`](../src/components/atoms
 Single-responsibility composable components:
 
 **Entity Display Cards:**
+
 - `TaskListItem`, `GoalCard`, `MetricCard`, `HabitCard`, `ProjectCard`, `LogbookEntryCard`
 - Each card shows summary info, status, progress, and quick actions
 
 **Specialized UI:**
+
 - `FilterPanel`: Collapsible sidebar with multi-select filters
 - `QuickFilterBar`: Horizontal button group for preset filters
 - `BulkActionsBar`: Floating action bar when items selected
@@ -469,6 +477,7 @@ Single-responsibility composable components:
 - `LinkedGoalsDisplay`: Shows goal associations with navigation
 
 **AI Assist Panels:**
+
 - `AITaskAssistPanel`, `AIGoalAssistPanel`, `AIMetricAssistPanel`, etc.
 - Slide-over panels with mode selection (7-9 modes per entity type)
 
@@ -477,6 +486,7 @@ Single-responsibility composable components:
 Multi-molecule components with complex behavior:
 
 **View Components:**
+
 - **TaskKanbanBoard**: Drag-and-drop board with status columns
 - **TaskCalendarView**: Full calendar with task scheduling
 - **GoalKanbanView**: Goal board grouped by status
@@ -486,6 +496,7 @@ Multi-molecule components with complex behavior:
 - **MetricDetailTabs**: 7-tab metric detail view (Overview, Trends, Patterns, Correlations, Predictions, Goals, History)
 
 **Form Components:**
+
 - `TaskCreateForm`, `TaskEditPanel`: Create/edit with full validation
 - `GoalCreateForm`, `GoalEditForm`: Success criteria editor, time horizon picker
 - `MetricCreateForm`, `MetricEditForm`: Unit selector, target configuration
@@ -493,6 +504,7 @@ Multi-molecule components with complex behavior:
 - `LogbookEditor`: Rich text editor with mood/energy sliders
 
 **Specialized Organisms:**
+
 - **CommandPalette**: Global Cmd+K search across all entities
 - **Dialog**: Reusable modal with slide-over variants
 - **RelationshipPicker**: Multi-select modal for linking entities
@@ -510,7 +522,6 @@ Multi-molecule components with complex behavior:
   - Wallet widget display
   - Mode toggle (Work ↔ Leisure)
   - Theme toggle (Light ↔ Dark)
-  
 - **MainLayout**: Public portfolio site wrapper (header, footer)
 
 ### Pages (Route Components)
@@ -518,6 +529,7 @@ Multi-molecule components with complex behavior:
 28 page components under [`src/pages/admin/`](../src/pages/admin/):
 
 **Growth System Pages:**
+
 - `TasksPage`: List/Kanban/Calendar/Graph views with filters
 - `GoalsPage`: Vision board with 4 view modes (Time Horizon, Area, Kanban, Timeline)
 - `MetricsPage`: Metric dashboard with grouping, quick logging, detail modals
@@ -528,12 +540,15 @@ Multi-molecule components with complex behavior:
 - `WeeklyReviewPage`: 3-step guided weekly review with AI insights
 
 **Knowledge Vault Pages:**
+
 - `KnowledgeVaultPage`, `CoursesPage`, `CourseDetailPage`, `SkillTreePage`, `FlashcardsPage`, `ConceptColliderPage`
 
 **Rewards & Leisure Pages:**
+
 - `RewardsStorePage`, `RewardStudioPage`, `MediaBacklogPage`, `HobbyQuestsPage`
 
 **Supporting Pages:**
+
 - `SettingsPage`: AI provider config, feature assignment, wallet management
 - `ChatbotPage`: Conversational AI assistant
 - `ComponentsDemoPage`: Component showcase for development
@@ -541,21 +556,27 @@ Multi-molecule components with complex behavior:
 ### Key UI Patterns
 
 #### 1. Loading States
+
 All async operations show skeleton loaders or spinner states.
 
 #### 2. Empty States
+
 Contextual empty states with illustrations and CTAs (e.g., "No tasks yet. Create your first task!")
 
 #### 3. Error Handling
+
 Error boundaries catch crashes, inline error messages for failed operations.
 
 #### 4. Responsive Design
+
 Mobile-first with breakpoints: `sm:` (640px), `md:` (768px), `lg:` (1024px), `xl:` (1280px)
 
 #### 5. Dark Mode
+
 All components support dark mode via Tailwind's `dark:` variant, toggled via `ThemeToggle` atom.
 
 #### 6. Accessibility
+
 - Semantic HTML (proper headings, landmarks)
 - Keyboard navigation (Tab, Enter, Escape)
 - ARIA labels on interactive elements
@@ -612,6 +633,7 @@ Seven LLM providers with model selection:
 AI features are categorized by entity type:
 
 #### Tasks (7 features)
+
 1. `parseTask`: Natural language → structured task
 2. `breakdownTask`: Decompose complex task into subtasks
 3. `priorityAdvisor`: Suggest priority based on context
@@ -621,11 +643,13 @@ AI features are categorized by entity type:
 7. Blocker resolution (part of `dependencyDetection`)
 
 #### Projects (3 features)
+
 8. `projectHealth`: Assess project health (green/yellow/red)
 9. `projectTaskGen`: Generate comprehensive task breakdown
 10. `projectRisk`: Identify project risks
 
 #### Goals (7 features)
+
 11. `goalRefinement`: Improve goal clarity/specificity
 12. `successCriteriaGen`: Generate measurable success criteria
 13. `metricSuggestions`: Recommend metrics to track
@@ -635,6 +659,7 @@ AI features are categorized by entity type:
 17. `goalProgress`: Analyze progress trajectory
 
 #### Metrics (6 features)
+
 18. `metricPatterns`: Identify trends, cycles, plateaus
 19. `metricAnomalies`: Flag unusual data points
 20. `metricCorrelations`: Discover metric relationships
@@ -642,6 +667,7 @@ AI features are categorized by entity type:
 22. `metricHealth`: Assess tracking consistency
 
 #### Habits (6 features)
+
 23. `habitDesign`: Optimize trigger-action-reward loop
 24. `habitStack`: Suggest habit combinations (habit stacking)
 25. `streakRecovery`: Get back on track after missed days
@@ -650,6 +676,7 @@ AI features are categorized by entity type:
 28. `habitGoalAlignment`: Check alignment with goals
 
 #### Logbook (6 features)
+
 29. `reflectionPrompts`: Generate thoughtful journaling questions
 30. `dailyDigest`: Summarize day's activities
 31. `logbookPatterns`: Discover patterns in journaling
@@ -666,6 +693,7 @@ Users configure AI features in Settings:
 3. **Cost-Optimized Mix**: Preset configuration using cheaper models for simple tasks
 
 Example configuration:
+
 ```typescript
 {
   parseTask: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },  // Fast, cheap
@@ -682,11 +710,13 @@ All AI outputs use Zod schemas for type safety and validation:
 
 ```typescript
 export const TaskBreakdownOutputSchema = z.object({
-  subtasks: z.array(z.object({
-    title: z.string(),
-    description: z.string(),
-    estimatedSize: z.number().nullable(),
-  })),
+  subtasks: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      estimatedSize: z.number().nullable(),
+    })
+  ),
   reasoning: z.string(),
 });
 ```
@@ -705,6 +735,7 @@ The LLM adapter uses LangChain's `.withStructuredOutput(schema)` to enforce JSON
 - **Reasoning**: Expandable section explaining AI logic
 
 **Example Flow:**
+
 1. User opens Goal detail
 2. Clicks "AI Goal Tools" button
 3. Selects "Generate Success Criteria" mode
@@ -715,6 +746,7 @@ The LLM adapter uses LangChain's `.withStructuredOutput(schema)` to enforce JSON
 ### Fallback & Mock Mode
 
 If no API keys configured:
+
 - AI features return mock/placeholder data
 - System remains fully functional for testing
 - UI clearly indicates "Mock AI Mode"
@@ -735,12 +767,14 @@ If no API keys configured:
 ### 2. Theming & Dark Mode
 
 **Theme System:**
+
 - Tailwind CSS with `dark:` variant throughout
 - Theme preference stored in localStorage
 - `useTheme` hook toggles theme
 - `ThemeToggle` atom in header
 
 **Colors:**
+
 - Light mode: Gray scale (50-900) with green accents
 - Dark mode: Dark gray (800-950) with green accents
 - Semantic colors: Blue (info), Yellow (warning), Red (danger), Green (success)
@@ -750,6 +784,7 @@ If no API keys configured:
 Minimal global state:
 
 **React Contexts:**
+
 - `AuthContext`: User auth state
 - `ModeContext`: Work vs Leisure mode toggle
 - `WalletContext`: Points balance
@@ -757,6 +792,7 @@ Minimal global state:
 - `KnowledgeVaultContext`: Knowledge management state
 
 **Local Component State:**
+
 - Most pages use `useState` for UI state (loading, filters, selections)
 - `useEffect` for data fetching
 - No Redux/Zustand for entity data (services called directly)
@@ -771,9 +807,9 @@ Minimal global state:
     <Route path="/" element={<HomePage />} />
     <Route path="/products" element={<ProductsPage />} />
   </Route>
-  
+
   <Route path="/admin/login" element={<LoginPage />} />
-  
+
   <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
     <Route path="dashboard" element={<DashboardPage />} />
     <Route path="tasks" element={<TasksPage />} />
@@ -798,12 +834,14 @@ All routes defined in [`src/routes.ts`](../src/routes.ts) as constants for type 
 ### 6. Rewards & Gamification
 
 **Points System:**
+
 - Tasks award points on completion (size × priority × area multipliers)
 - Metric milestones award points (target reached, streaks)
 - Points stored in wallet (`WalletContext`)
 - Spendable in Rewards Store
 
 **Point Calculation** ([`point-calculator.service.ts`](../src/services/rewards/point-calculator.service.ts)):
+
 ```
 Base = size (minutes) × 10 points/min
 Priority Multiplier: P1=2x, P2=1.5x, P3=1.2x, P4=1x
@@ -1034,12 +1072,14 @@ npm run build
 ### Deployment
 
 **GitHub Pages (automatic):**
+
 ```bash
 git push origin main
 # GitHub Actions workflow deploys to https://sunnysingh.tech
 ```
 
 **Manual:**
+
 ```bash
 npm run deploy
 # Deploys to gh-pages branch
@@ -1054,6 +1094,7 @@ Based on the architecture, potential next steps:
 ### 1. Backend Integration
 
 Replace `LocalStorageAdapter` with real API:
+
 - Implement `APIStorageAdapter` with axios calls
 - Set up backend (Node.js, Python, or serverless)
 - Add authentication (JWT tokens)

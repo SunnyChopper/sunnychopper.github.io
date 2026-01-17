@@ -7,13 +7,13 @@ export function formatRelativeDate(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const targetDate = new Date(dateObj);
   targetDate.setHours(0, 0, 0, 0);
-  
+
   const diffTime = today.getTime() - targetDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   if (diffDays === -1) return 'Tomorrow';
@@ -27,7 +27,7 @@ export function formatRelativeDate(date: Date | string): string {
     const months = Math.floor(diffDays / 30);
     return `${months} month${months > 1 ? 's' : ''} ago`;
   }
-  
+
   return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -37,23 +37,23 @@ export function formatRelativeDate(date: Date | string): string {
 export function formatDateRange(start: Date | string, end: Date | string): string {
   const startDate = typeof start === 'string' ? new Date(start) : start;
   const endDate = typeof end === 'string' ? new Date(end) : end;
-  
+
   const startYear = startDate.getFullYear();
   const endYear = endDate.getFullYear();
   const sameYear = startYear === endYear;
-  
+
   if (sameYear) {
     const startMonth = startDate.getMonth();
     const endMonth = endDate.getMonth();
     const sameMonth = startMonth === endMonth;
-    
+
     if (sameMonth) {
       return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`;
     }
-    
+
     return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }
-  
+
   return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 }
 
@@ -63,49 +63,53 @@ export function formatDateRange(start: Date | string, end: Date | string): strin
 export function formatDateWithContext(date: Date | string, habit: Habit): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const relative = formatRelativeDate(dateObj);
-  
+
   // For recent dates, use relative format
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const targetDate = new Date(dateObj);
   targetDate.setHours(0, 0, 0, 0);
   const diffDays = Math.floor((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   if (Math.abs(diffDays) <= 7) {
     return relative;
   }
-  
+
   // For older dates, use formatted date
-  return dateObj.toLocaleDateString('en-US', { 
+  return dateObj.toLocaleDateString('en-US', {
     weekday: 'short',
-    month: 'short', 
+    month: 'short',
     day: 'numeric',
-    year: dateObj.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+    year: dateObj.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
   });
 }
 
 /**
  * Calculate the next expected completion date for a habit
  */
-export function getNextExpectedDate(habit: Habit, lastCompletedDate: Date | string | null): Date | null {
+export function getNextExpectedDate(
+  habit: Habit,
+  lastCompletedDate: Date | string | null
+): Date | null {
   if (!lastCompletedDate) {
     // If never completed, next expected is today (for daily) or start of next period
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     if (habit.frequency === 'Daily') {
       return today;
     }
-    
+
     // For weekly/monthly, calculate based on frequency
     return today;
   }
-  
-  const lastDate = typeof lastCompletedDate === 'string' ? new Date(lastCompletedDate) : lastCompletedDate;
+
+  const lastDate =
+    typeof lastCompletedDate === 'string' ? new Date(lastCompletedDate) : lastCompletedDate;
   lastDate.setHours(0, 0, 0, 0);
-  
+
   const nextDate = new Date(lastDate);
-  
+
   switch (habit.frequency) {
     case 'Daily':
       nextDate.setDate(nextDate.getDate() + 1);
@@ -119,7 +123,7 @@ export function getNextExpectedDate(habit: Habit, lastCompletedDate: Date | stri
     default:
       return null;
   }
-  
+
   return nextDate;
 }
 
@@ -128,11 +132,11 @@ export function getNextExpectedDate(habit: Habit, lastCompletedDate: Date | stri
  */
 export function getLastCompletedDateFromLogs(logs: HabitLog[]): Date | null {
   if (logs.length === 0) return null;
-  
-  const sortedLogs = [...logs].sort((a, b) => 
-    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+
+  const sortedLogs = [...logs].sort(
+    (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
   );
-  
+
   return new Date(sortedLogs[0].completedAt);
 }
 
@@ -143,19 +147,19 @@ export function formatCompletionDate(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const targetDate = new Date(dateObj);
   targetDate.setHours(0, 0, 0, 0);
-  
+
   const diffDays = Math.floor((today.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays} days ago`;
-  
-  return dateObj.toLocaleDateString('en-US', { 
-    month: 'short', 
+
+  return dateObj.toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
-    year: dateObj.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+    year: dateObj.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
   });
 }

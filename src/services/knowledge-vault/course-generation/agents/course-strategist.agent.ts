@@ -13,9 +13,7 @@ export class CourseStrategistAgent extends BaseAgent {
     super('goalRefinement'); // Using existing feature config
   }
 
-  async execute(
-    input: CourseGenerationInput
-  ): Promise<CourseGenerationStateUpdate> {
+  async execute(input: CourseGenerationInput): Promise<CourseGenerationStateUpdate> {
     const responsesText = Object.entries(input.assessmentResponses)
       .map(([q, a]) => `${q}: ${a}`)
       .join('\n');

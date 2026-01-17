@@ -17,7 +17,7 @@ import {
   TrendingUp,
   Code,
   Brain,
-  Link as LinkIcon
+  Link as LinkIcon,
 } from 'lucide-react';
 import type { Task } from '../../types/growth-system';
 import { useTasks } from '../../hooks/useGrowthSystem';
@@ -61,7 +61,7 @@ export default function FocusModePage() {
 
     if (isTimerRunning && timeRemaining > 0) {
       interval = setInterval(() => {
-        setTimeRemaining(prev => {
+        setTimeRemaining((prev) => {
           if (prev <= 1) {
             setIsTimerRunning(false);
             return 0;
@@ -100,13 +100,13 @@ export default function FocusModePage() {
       input: {
         status: 'Done',
         completedDate: new Date().toISOString(),
-      }
+      },
     });
 
-    setCompletedTasks(prev => [...prev, currentTask.id]);
+    setCompletedTasks((prev) => [...prev, currentTask.id]);
 
     if (currentTaskIndex < sessionTasks.length - 1) {
-      setCurrentTaskIndex(prev => prev + 1);
+      setCurrentTaskIndex((prev) => prev + 1);
       setTimeRemaining(POMODORO_DURATION);
       setIsTimerRunning(false);
     }
@@ -118,7 +118,7 @@ export default function FocusModePage() {
 
   const handlePreviousTask = () => {
     if (currentTaskIndex > 0) {
-      setCurrentTaskIndex(prev => prev - 1);
+      setCurrentTaskIndex((prev) => prev - 1);
       setTimeRemaining(POMODORO_DURATION);
       setIsTimerRunning(false);
     }
@@ -126,7 +126,7 @@ export default function FocusModePage() {
 
   const handleNextTask = () => {
     if (currentTaskIndex < sessionTasks.length - 1) {
-      setCurrentTaskIndex(prev => prev + 1);
+      setCurrentTaskIndex((prev) => prev + 1);
       setTimeRemaining(POMODORO_DURATION);
       setIsTimerRunning(false);
     }
@@ -157,28 +157,33 @@ export default function FocusModePage() {
         insights: [
           'Market Sentiment: Bullish trend today',
           'VOO is up 0.8% in pre-market',
-          'Consider reviewing your portfolio allocation'
+          'Consider reviewing your portfolio allocation',
         ],
         quickLinks: [
           { label: 'Brokerage Login', url: '#' },
-          { label: 'Portfolio Dashboard', url: '#' }
-        ]
+          { label: 'Portfolio Dashboard', url: '#' },
+        ],
       };
     }
 
-    if (area === 'dayjob' || title.includes('code') || title.includes('dev') || description.includes('implement')) {
+    if (
+      area === 'dayjob' ||
+      title.includes('code') ||
+      title.includes('dev') ||
+      description.includes('implement')
+    ) {
       return {
         icon: Code,
         title: 'Development Context',
         insights: [
           'Last modified: auth-provider.ts (2 hours ago)',
           'Open PR: Feature/user-authentication (#47)',
-          '3 pending code review comments'
+          '3 pending code review comments',
         ],
         quickLinks: [
           { label: 'View PR', url: '#' },
-          { label: 'Open in VSCode', url: '#' }
-        ]
+          { label: 'Open in VSCode', url: '#' },
+        ],
       };
     }
 
@@ -189,12 +194,12 @@ export default function FocusModePage() {
         insights: [
           'Workout streak: 5 days',
           'Avg heart rate this week: 72 bpm',
-          'Sleep quality: 85% (7.5h last night)'
+          'Sleep quality: 85% (7.5h last night)',
         ],
         quickLinks: [
           { label: 'Fitness App', url: '#' },
-          { label: 'Meal Planner', url: '#' }
-        ]
+          { label: 'Meal Planner', url: '#' },
+        ],
       };
     }
 
@@ -204,12 +209,12 @@ export default function FocusModePage() {
       insights: [
         'Focus time optimal: Morning hours ahead',
         'Similar tasks completed: 12 this month',
-        'Est. completion rate: 87% success'
+        'Est. completion rate: 87% success',
       ],
       quickLinks: [
         { label: 'Related Tasks', url: '#' },
-        { label: 'Past Notes', url: '#' }
-      ]
+        { label: 'Past Notes', url: '#' },
+      ],
     };
   };
 
@@ -278,12 +283,17 @@ export default function FocusModePage() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
             >
-              <span className={`inline-block px-4 py-2 rounded-full text-sm font-semibold mb-6 ${
-                currentTask.priority === 'P1' ? 'bg-red-500/20 text-red-300 border border-red-500/50' :
-                currentTask.priority === 'P2' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/50' :
-                currentTask.priority === 'P3' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50' :
-                'bg-green-500/20 text-green-300 border border-green-500/50'
-              }`}>
+              <span
+                className={`inline-block px-4 py-2 rounded-full text-sm font-semibold mb-6 ${
+                  currentTask.priority === 'P1'
+                    ? 'bg-red-500/20 text-red-300 border border-red-500/50'
+                    : currentTask.priority === 'P2'
+                      ? 'bg-orange-500/20 text-orange-300 border border-orange-500/50'
+                      : currentTask.priority === 'P3'
+                        ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
+                        : 'bg-green-500/20 text-green-300 border border-green-500/50'
+                }`}
+              >
                 {currentTask.priority} • {currentTask.area}
               </span>
             </motion.div>
@@ -369,81 +379,86 @@ export default function FocusModePage() {
             </button>
 
             <AnimatePresence>
-              {isContextOpen && (() => {
-                const aiContext = getAIContextForTask(currentTask);
-                const ContextIcon = aiContext.icon;
+              {isContextOpen &&
+                (() => {
+                  const aiContext = getAIContextForTask(currentTask);
+                  const ContextIcon = aiContext.icon;
 
-                return (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="max-w-2xl mx-auto mt-4 p-6 bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border border-cyan-500/30 rounded-xl">
-                      <div className="flex items-center gap-3 mb-4">
-                        <ContextIcon className="w-5 h-5 text-cyan-400" />
-                        <h3 className="text-lg font-bold text-cyan-100">{aiContext.title}</h3>
-                      </div>
+                  return (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="max-w-2xl mx-auto mt-4 p-6 bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border border-cyan-500/30 rounded-xl">
+                        <div className="flex items-center gap-3 mb-4">
+                          <ContextIcon className="w-5 h-5 text-cyan-400" />
+                          <h3 className="text-lg font-bold text-cyan-100">{aiContext.title}</h3>
+                        </div>
 
-                      <div className="space-y-2 mb-6">
-                        {aiContext.insights.map((insight, idx) => (
-                          <div key={idx} className="flex items-start gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2 flex-shrink-0" />
-                            <p className="text-gray-300 text-sm leading-relaxed">{insight}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {aiContext.quickLinks.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pt-4 border-t border-white/10">
-                          {aiContext.quickLinks.map((link, idx) => (
-                            <a
-                              key={idx}
-                              href={link.url}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm text-cyan-200 hover:text-cyan-100 transition-colors"
-                            >
-                              <LinkIcon className="w-3 h-3" />
-                              {link.label}
-                            </a>
+                        <div className="space-y-2 mb-6">
+                          {aiContext.insights.map((insight, idx) => (
+                            <div key={idx} className="flex items-start gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-2 flex-shrink-0" />
+                              <p className="text-gray-300 text-sm leading-relaxed">{insight}</p>
+                            </div>
                           ))}
                         </div>
-                      )}
 
-                      {currentTask.description && (
-                        <div className="mt-6 pt-6 border-t border-white/10">
-                          <h4 className="text-sm font-semibold text-white/80 mb-2">Task Details</h4>
-                          <p className="text-gray-300 text-sm leading-relaxed">
-                            {currentTask.description}
-                          </p>
-                          {currentTask.extendedDescription && (
-                            <p className="text-gray-400 text-sm leading-relaxed mt-3">
-                              {currentTask.extendedDescription}
+                        {aiContext.quickLinks.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-4 border-t border-white/10">
+                            {aiContext.quickLinks.map((link, idx) => (
+                              <a
+                                key={idx}
+                                href={link.url}
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm text-cyan-200 hover:text-cyan-100 transition-colors"
+                              >
+                                <LinkIcon className="w-3 h-3" />
+                                {link.label}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+
+                        {currentTask.description && (
+                          <div className="mt-6 pt-6 border-t border-white/10">
+                            <h4 className="text-sm font-semibold text-white/80 mb-2">
+                              Task Details
+                            </h4>
+                            <p className="text-gray-300 text-sm leading-relaxed">
+                              {currentTask.description}
                             </p>
+                            {currentTask.extendedDescription && (
+                              <p className="text-gray-400 text-sm leading-relaxed mt-3">
+                                {currentTask.extendedDescription}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-3 mt-6">
+                          {currentTask.size && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
+                              <Clock className="w-4 h-4 text-cyan-400" />
+                              <span className="text-sm text-white">
+                                {currentTask.size}h estimated
+                              </span>
+                            </div>
+                          )}
+                          {currentTask.dueDate && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
+                              <Target className="w-4 h-4 text-cyan-400" />
+                              <span className="text-sm text-white">
+                                Due {new Date(currentTask.dueDate).toLocaleDateString()}
+                              </span>
+                            </div>
                           )}
                         </div>
-                      )}
-
-                      <div className="flex flex-wrap gap-3 mt-6">
-                        {currentTask.size && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
-                            <Clock className="w-4 h-4 text-cyan-400" />
-                            <span className="text-sm text-white">{currentTask.size}h estimated</span>
-                          </div>
-                        )}
-                        {currentTask.dueDate && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg">
-                            <Target className="w-4 h-4 text-cyan-400" />
-                            <span className="text-sm text-white">
-                              Due {new Date(currentTask.dueDate).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  </motion.div>
-                );
-              })()}
+                    </motion.div>
+                  );
+                })()}
             </AnimatePresence>
           </motion.div>
         </motion.div>
@@ -471,8 +486,8 @@ export default function FocusModePage() {
                   index < currentTaskIndex
                     ? 'bg-green-500'
                     : index === currentTaskIndex
-                    ? 'bg-blue-500'
-                    : 'bg-gray-700'
+                      ? 'bg-blue-500'
+                      : 'bg-gray-700'
                 }`}
               />
             ))}

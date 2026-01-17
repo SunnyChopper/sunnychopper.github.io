@@ -23,7 +23,14 @@ const sizeClasses: Record<DialogSize, string> = {
   full: 'max-w-[95vw] mx-auto',
 };
 
-export default function Dialog({ isOpen, onClose, title, children, className, size = 'md' }: DialogProps) {
+export default function Dialog({
+  isOpen,
+  onClose,
+  title,
+  children,
+  className,
+  size = 'md',
+}: DialogProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -74,7 +81,9 @@ export default function Dialog({ isOpen, onClose, title, children, className, si
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto px-6 py-4 text-gray-700 dark:text-gray-300">{children}</div>
+              <div className="flex-1 overflow-y-auto px-6 py-4 text-gray-700 dark:text-gray-300">
+                {children}
+              </div>
             </motion.div>
           </div>
         </>

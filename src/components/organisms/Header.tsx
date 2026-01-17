@@ -56,12 +56,15 @@ export default function Header() {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-gray-900 dark:text-white hover:text-primary dark:hover:text-blue-400 transition-colors">
+          <Link
+            to="/"
+            className="text-2xl font-bold text-gray-900 dark:text-white hover:text-primary dark:hover:text-blue-400 transition-colors"
+          >
             Sunny Singh
           </Link>
 
           <nav className="hidden xl:flex items-center gap-8">
-            {navItems.map((item) => (
+            {navItems.map((item) =>
               item.href.startsWith('/#') ? (
                 <a
                   key={item.label}
@@ -80,7 +83,7 @@ export default function Header() {
                   {item.label}
                 </Link>
               )
-            ))}
+            )}
             <ThemeToggle />
           </nav>
 
@@ -105,7 +108,7 @@ export default function Header() {
             className="xl:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 overflow-hidden"
           >
             <nav className="container mx-auto px-4 py-6 flex flex-col gap-4">
-              {navItems.map((item) => (
+              {navItems.map((item) =>
                 item.href.startsWith('/#') ? (
                   <a
                     key={item.label}
@@ -125,7 +128,7 @@ export default function Header() {
                     {item.label}
                   </Link>
                 )
-              ))}
+              )}
             </nav>
           </motion.div>
         )}

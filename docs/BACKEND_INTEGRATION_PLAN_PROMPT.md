@@ -288,6 +288,7 @@ For each phase, produce:
 ## Verification Checklist for Phase 1
 
 After completing Phase 1, verify:
+
 - [ ] Health endpoint responds correctly
 - [ ] Can list tasks from backend
 - [ ] Can create a new task
@@ -300,6 +301,7 @@ After completing Phase 1, verify:
 ## Next Steps After Verification
 
 Once Phase 1 is complete and verified:
+
 1. Document any learnings or adjustments needed
 2. Use the same pattern for remaining endpoints
 3. Consider using Cursor agents to automate repetitive integration tasks

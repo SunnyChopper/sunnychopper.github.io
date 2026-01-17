@@ -1,12 +1,12 @@
 import { goalsService } from './goals.service';
 import { metricsService } from './metrics.service';
-import type { 
-  Goal, 
-  GoalProgressBreakdown, 
+import type {
+  Goal,
+  GoalProgressBreakdown,
   SuccessCriterion,
   Task,
   Metric,
-  Habit
+  Habit,
 } from '../../types/growth-system';
 import { randomDelay } from '../../mocks/storage';
 
@@ -29,28 +29,28 @@ const DEFAULT_WEIGHTS = {
 export const goalProgressService = {
   async computeProgress(goalId: string): Promise<GoalProgressBreakdown> {
     await randomDelay();
-    
+
     const goalResponse = await goalsService.getById(goalId);
     if (!goalResponse.success || !goalResponse.data) {
       throw new Error('Goal not found');
     }
-    
+
     const goal = goalResponse.data;
     const weights = goal.progressConfig || DEFAULT_WEIGHTS;
 
     // Calculate criteria progress
     const criteriaProgress = this.calculateCriteriaProgress(goal.successCriteria);
-    
+
     // Calculate tasks progress
     const tasksResponse = await goalsService.getLinkedTasks(goalId);
     const tasks = tasksResponse.success ? tasksResponse.data || [] : [];
     const tasksProgress = this.calculateTasksProgress(tasks);
-    
+
     // Calculate metrics progress
     const metricsResponse = await goalsService.getLinkedMetrics(goalId);
     const metricLinks = metricsResponse.success ? metricsResponse.data || [] : [];
-    const metricsProgress = await this.calculateMetricsProgress(metricLinks.map(m => m.metricId));
-    
+    const metricsProgress = await this.calculateMetricsProgress(metricLinks.map((m) => m.metricId));
+
     // Calculate habits progress
     const habitsResponse = await goalsService.getLinkedHabits(goalId);
     const habits = habitsResponse.success ? habitsResponse.data || [] : [];
@@ -58,15 +58,16 @@ export const goalProgressService = {
 
     // Calculate weighted overall progress
     let overall = 0;
-    const totalWeight = weights.criteriaWeight + weights.tasksWeight + weights.metricsWeight + weights.habitsWeight;
-    
+    const totalWeight =
+      weights.criteriaWeight + weights.tasksWeight + weights.metricsWeight + weights.habitsWeight;
+
     if (totalWeight > 0) {
-      overall = (
-        (criteriaProgress.percentage * weights.criteriaWeight / 100) +
-        (tasksProgress.percentage * weights.tasksWeight / 100) +
-        (metricsProgress.percentage * weights.metricsWeight / 100) +
-        (habitsProgress.consistency * weights.habitsWeight / 100)
-      ) / (totalWeight / 100);
+      overall =
+        ((criteriaProgress.percentage * weights.criteriaWeight) / 100 +
+          (tasksProgress.percentage * weights.tasksWeight) / 100 +
+          (metricsProgress.percentage * weights.metricsWeight) / 100 +
+          (habitsProgress.consistency * weights.habitsWeight) / 100) /
+        (totalWeight / 100);
     }
 
     return {
@@ -78,14 +79,18 @@ export const goalProgressService = {
     };
   },
 
-  calculateCriteriaProgress(criteria: SuccessCriterion[] | string[]): { completed: number; total: number; percentage: number } {
+  calculateCriteriaProgress(criteria: SuccessCriterion[] | string[]): {
+    completed: number;
+    total: number;
+    percentage: number;
+  } {
     if (criteria.length === 0) {
       return { completed: 0, total: 0, percentage: 0 };
     }
 
     // Handle old string format
     if (typeof criteria[0] === 'string') {
-      const completed = (criteria as string[]).filter(c => c.includes('✓')).length;
+      const completed = (criteria as string[]).filter((c) => c.includes('✓')).length;
       const total = criteria.length;
       return {
         completed,
@@ -96,7 +101,7 @@ export const goalProgressService = {
 
     // Handle new SuccessCriterion format
     const typedCriteria = criteria as SuccessCriterion[];
-    const completed = typedCriteria.filter(c => c.isCompleted).length;
+    const completed = typedCriteria.filter((c) => c.isCompleted).length;
     const total = typedCriteria.length;
 
     return {
@@ -111,7 +116,7 @@ export const goalProgressService = {
       return { completed: 0, total: 0, percentage: 0 };
     }
 
-    const completed = tasks.filter(t => t.status === 'Done').length;
+    const completed = tasks.filter((t) => t.status === 'Done').length;
     const total = tasks.length;
 
     return {
@@ -121,7 +126,9 @@ export const goalProgressService = {
     };
   },
 
-  async calculateMetricsProgress(metricIds: string[]): Promise<{ atTarget: number; total: number; percentage: number }> {
+  async calculateMetricsProgress(
+    metricIds: string[]
+  ): Promise<{ atTarget: number; total: number; percentage: number }> {
     if (metricIds.length === 0) {
       return { atTarget: 0, total: 0, percentage: 0 };
     }
@@ -134,7 +141,7 @@ export const goalProgressService = {
 
       const metric = metricResponse.data;
       const logsResponse = await metricsService.getHistory(metricId);
-      
+
       if (!logsResponse.success || !logsResponse.data || logsResponse.data.length === 0) continue;
 
       const latestLog = logsResponse.data[0];
@@ -168,7 +175,9 @@ export const goalProgressService = {
     return false;
   },
 
-  async calculateHabitsProgress(habits: Habit[]): Promise<{ streakDays: number; consistency: number }> {
+  async calculateHabitsProgress(
+    habits: Habit[]
+  ): Promise<{ streakDays: number; consistency: number }> {
     if (habits.length === 0) {
       return { streakDays: 0, consistency: 0 };
     }
@@ -193,27 +202,30 @@ export const goalProgressService = {
 
   async calculateHealth(goal: Goal, progress: GoalProgressBreakdown): Promise<GoalHealthData> {
     await randomDelay();
-    
+
     if (!goal) {
       throw new Error('Goal is required for health calculation');
     }
-    
+
     const now = new Date();
     const targetDate = goal.targetDate ? new Date(goal.targetDate) : null;
     const createdDate = new Date(goal.createdAt);
     const lastActivity = goal.lastActivityAt ? new Date(goal.lastActivityAt) : createdDate;
 
     // Calculate days remaining
-    const daysRemaining = targetDate 
+    const daysRemaining = targetDate
       ? Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
       : null;
 
     // Calculate momentum (days since last activity)
-    const daysSinceActivity = Math.ceil((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceActivity = Math.ceil(
+      (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const momentum: 'active' | 'dormant' = daysSinceActivity <= 7 ? 'active' : 'dormant';
 
     // Calculate velocity score (progress per day)
-    const totalDays = Math.ceil((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+    const totalDays =
+      Math.ceil((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
     const velocityScore = progress.overall / totalDays;
 
     // Determine health status
@@ -222,10 +234,11 @@ export const goalProgressService = {
     if (momentum === 'dormant') {
       status = 'dormant';
     } else if (daysRemaining !== null && targetDate) {
-      const totalProjectDays = Math.ceil((targetDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-      const expectedProgress = totalProjectDays > 0 
-        ? ((totalProjectDays - daysRemaining) / totalProjectDays) * 100
-        : 0;
+      const totalProjectDays = Math.ceil(
+        (targetDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const expectedProgress =
+        totalProjectDays > 0 ? ((totalProjectDays - daysRemaining) / totalProjectDays) * 100 : 0;
 
       if (progress.overall < expectedProgress - 20) {
         status = 'behind';
@@ -242,7 +255,9 @@ export const goalProgressService = {
     };
   },
 
-  getLinkedCounts: async (goalId: string): Promise<{ tasks: number; metrics: number; habits: number; projects: number }> => {
+  getLinkedCounts: async (
+    goalId: string
+  ): Promise<{ tasks: number; metrics: number; habits: number; projects: number }> => {
     await randomDelay();
 
     const [tasksRes, metricsRes, habitsRes, projectsRes] = await Promise.all([
@@ -253,10 +268,10 @@ export const goalProgressService = {
     ]);
 
     return {
-      tasks: tasksRes.success ? (tasksRes.data?.length || 0) : 0,
-      metrics: metricsRes.success ? (metricsRes.data?.length || 0) : 0,
-      habits: habitsRes.success ? (habitsRes.data?.length || 0) : 0,
-      projects: projectsRes.success ? (projectsRes.data?.length || 0) : 0,
+      tasks: tasksRes.success ? tasksRes.data?.length || 0 : 0,
+      metrics: metricsRes.success ? metricsRes.data?.length || 0 : 0,
+      habits: habitsRes.success ? habitsRes.data?.length || 0 : 0,
+      projects: projectsRes.success ? projectsRes.data?.length || 0 : 0,
     };
   },
 };

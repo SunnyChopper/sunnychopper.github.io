@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN designing component APIs with composition patterns."
-globs: ""
+description: 'USE WHEN designing component APIs with composition patterns.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -13,18 +13,14 @@ Standards for building composable, flexible component APIs.
 ```tsx
 // Basic children composition
 function Card({ children, className }: CardProps) {
-  return (
-    <div className={cn('p-4 bg-white rounded-lg border', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('p-4 bg-white rounded-lg border', className)}>{children}</div>;
 }
 
 // Usage
 <Card>
   <h3>Title</h3>
   <p>Content goes here</p>
-</Card>
+</Card>;
 ```
 
 ## Compound Components
@@ -73,7 +69,7 @@ Card.Footer = CardFooter;
   <Card.Footer>
     <Button>Action</Button>
   </Card.Footer>
-</Card>
+</Card>;
 ```
 
 ## Render Props
@@ -101,7 +97,7 @@ function List<T>({ items, renderItem, keyExtractor }: ListProps<T>) {
   items={tasks}
   keyExtractor={(task) => task.id}
   renderItem={(task) => <TaskCard task={task} />}
-/>
+/>;
 ```
 
 ## Slot Pattern
@@ -131,13 +127,9 @@ function PageLayout({ header, sidebar, children, footer }: PageLayoutProps) {
 }
 
 // Usage
-<PageLayout
-  header={<NavBar />}
-  sidebar={<SideMenu />}
-  footer={<Footer />}
->
+<PageLayout header={<NavBar />} sidebar={<SideMenu />} footer={<Footer />}>
   <h1>Page Content</h1>
-</PageLayout>
+</PageLayout>;
 ```
 
 ## Polymorphic Components
@@ -182,23 +174,21 @@ function Button<T extends React.ElementType = 'button'>({
 
 ```tsx
 // Forward ref to inner element
-const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, ...props }, ref) => {
-    return (
-      <div>
-        {label && <label>{label}</label>}
-        <input ref={ref} {...props} />
-        {error && <span className="text-red-500">{error}</span>}
-      </div>
-    );
-  }
-);
+const Input = forwardRef<HTMLInputElement, InputProps>(({ label, error, ...props }, ref) => {
+  return (
+    <div>
+      {label && <label>{label}</label>}
+      <input ref={ref} {...props} />
+      {error && <span className="text-red-500">{error}</span>}
+    </div>
+  );
+});
 
 Input.displayName = 'Input';
 
 // Usage with ref
 const inputRef = useRef<HTMLInputElement>(null);
-<Input ref={inputRef} label="Email" />
+<Input ref={inputRef} label="Email" />;
 ```
 
 ## Controlled vs Uncontrolled

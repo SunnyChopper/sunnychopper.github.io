@@ -75,8 +75,8 @@ export function GoalReviewPrompt({
   };
 
   const prompts = getReviewPrompts();
-  const activeGoals = goals.filter(g => 
-    g.status === 'Active' || g.status === 'OnTrack' || g.status === 'AtRisk'
+  const activeGoals = goals.filter(
+    (g) => g.status === 'Active' || g.status === 'OnTrack' || g.status === 'AtRisk'
   );
 
   const handleSubmit = () => {
@@ -84,9 +84,9 @@ export function GoalReviewPrompt({
       type: reviewType,
       date: new Date().toISOString(),
       goalsReviewed: selectedGoals,
-      wins: wins.split('\n').filter(w => w.trim()),
-      challenges: challenges.split('\n').filter(c => c.trim()),
-      adjustments: adjustments.split('\n').filter(a => a.trim()),
+      wins: wins.split('\n').filter((w) => w.trim()),
+      challenges: challenges.split('\n').filter((c) => c.trim()),
+      adjustments: adjustments.split('\n').filter((a) => a.trim()),
       nextFocus,
     };
 
@@ -95,10 +95,8 @@ export function GoalReviewPrompt({
   };
 
   const toggleGoal = (goalId: string) => {
-    setSelectedGoals(prev => 
-      prev.includes(goalId) 
-        ? prev.filter(id => id !== goalId)
-        : [...prev, goalId]
+    setSelectedGoals((prev) =>
+      prev.includes(goalId) ? prev.filter((id) => id !== goalId) : [...prev, goalId]
     );
   };
 
@@ -165,11 +163,13 @@ export function GoalReviewPrompt({
                       }`}
                     >
                       <div className="flex items-start gap-2">
-                        <div className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${
-                          selectedGoals.includes(goal.id)
-                            ? 'bg-blue-500 border-blue-500'
-                            : 'border-gray-300 dark:border-gray-600'
-                        }`}>
+                        <div
+                          className={`mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            selectedGoals.includes(goal.id)
+                              ? 'bg-blue-500 border-blue-500'
+                              : 'border-gray-300 dark:border-gray-600'
+                          }`}
+                        >
                           {selectedGoals.includes(goal.id) && (
                             <CheckCircle className="w-3 h-3 text-white" />
                           )}
@@ -253,7 +253,8 @@ export function GoalReviewPrompt({
                     Save to Logbook
                   </p>
                   <p className="text-xs text-blue-800 dark:text-blue-200">
-                    This review will be saved to your logbook and linked to the selected goals for future reference.
+                    This review will be saved to your logbook and linked to the selected goals for
+                    future reference.
                   </p>
                 </div>
               </div>
@@ -265,11 +266,7 @@ export function GoalReviewPrompt({
             <Button variant="secondary" onClick={onClose}>
               Skip for Now
             </Button>
-            <Button
-              variant="primary"
-              onClick={handleSubmit}
-              disabled={selectedGoals.length === 0}
-            >
+            <Button variant="primary" onClick={handleSubmit} disabled={selectedGoals.length === 0}>
               Save Review
             </Button>
           </div>

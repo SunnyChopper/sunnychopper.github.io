@@ -8,22 +8,25 @@ interface GoalActivityTimelineProps {
   showEmpty?: boolean;
 }
 
-export function GoalActivityTimeline({ 
-  activities, 
+export function GoalActivityTimeline({
+  activities,
   maxItems,
-  showEmpty = true 
+  showEmpty = true,
 }: GoalActivityTimelineProps) {
   const displayActivities = maxItems ? activities.slice(0, maxItems) : activities;
 
   // Group activities by date
-  const groupedByDate = displayActivities.reduce((acc, activity) => {
-    const date = new Date(activity.createdAt).toLocaleDateString();
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(activity);
-    return acc;
-  }, {} as Record<string, GoalActivity[]>);
+  const groupedByDate = displayActivities.reduce(
+    (acc, activity) => {
+      const date = new Date(activity.createdAt).toLocaleDateString();
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(activity);
+      return acc;
+    },
+    {} as Record<string, GoalActivity[]>
+  );
 
   const getActivityIcon = (type: GoalActivity['type']) => {
     switch (type) {
@@ -77,17 +80,13 @@ export function GoalActivityTimeline({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Recent Activity
-      </h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
 
       <div className="space-y-6">
         {Object.entries(groupedByDate).map(([date, dateActivities], dateIndex) => (
           <div key={date}>
             {/* Date Header */}
-            <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
-              {date}
-            </div>
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">{date}</div>
 
             {/* Activities for this date */}
             <div className="space-y-2 relative">
@@ -99,7 +98,7 @@ export function GoalActivityTimeline({
                   key={activity.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: (dateIndex * 0.1) + (activityIndex * 0.05) }}
+                  transition={{ delay: dateIndex * 0.1 + activityIndex * 0.05 }}
                   className="relative pl-8 pb-3"
                 >
                   {/* Icon */}

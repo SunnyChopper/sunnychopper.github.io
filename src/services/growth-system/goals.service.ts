@@ -22,7 +22,11 @@ interface BackendPaginatedResponse<T> {
 }
 
 export const goalsService = {
-  async getAll(filters?: { area?: string; status?: string; priority?: string }): Promise<ApiListResponse<Goal>> {
+  async getAll(filters?: {
+    area?: string;
+    status?: string;
+    priority?: string;
+  }): Promise<ApiListResponse<Goal>> {
     const queryParams = new URLSearchParams();
     if (filters?.area) queryParams.append('area', filters.area);
     if (filters?.status) queryParams.append('status', filters.status);
@@ -84,7 +88,9 @@ export const goalsService = {
   },
 
   async getLinkedMetrics(goalId: string): Promise<ApiListResponse<Metric>> {
-    const response = await apiClient.get<BackendPaginatedResponse<Metric>>(`/goals/${goalId}/metrics`);
+    const response = await apiClient.get<BackendPaginatedResponse<Metric>>(
+      `/goals/${goalId}/metrics`
+    );
     if (response.success && response.data) {
       return {
         data: response.data.data,
@@ -95,9 +101,13 @@ export const goalsService = {
     throw new Error(response.error?.message || 'Failed to fetch linked metrics');
   },
 
-  async getLinkedProjects(goalId: string): Promise<ApiListResponse<import('../../types/growth-system').Project>> {
+  async getLinkedProjects(
+    goalId: string
+  ): Promise<ApiListResponse<import('../../types/growth-system').Project>> {
     // Note: Backend may not have this endpoint
-    const response = await apiClient.get<BackendPaginatedResponse<import('../../types/growth-system').Project>>(`/goals/${goalId}/projects`);
+    const response = await apiClient.get<
+      BackendPaginatedResponse<import('../../types/growth-system').Project>
+    >(`/goals/${goalId}/projects`);
     if (response.success && response.data) {
       return {
         data: response.data.data,
@@ -121,7 +131,9 @@ export const goalsService = {
   },
 
   async getLinkedHabits(goalId: string): Promise<ApiListResponse<Habit>> {
-    const response = await apiClient.get<BackendPaginatedResponse<Habit>>(`/goals/${goalId}/habits`);
+    const response = await apiClient.get<BackendPaginatedResponse<Habit>>(
+      `/goals/${goalId}/habits`
+    );
     if (response.success && response.data) {
       return {
         data: response.data.data,
@@ -148,7 +160,9 @@ export const goalsService = {
   },
 
   async completeCriterion(goalId: string, criterionId: string): Promise<ApiResponse<Goal>> {
-    const response = await apiClient.post<Goal>(`/goals/${goalId}/criteria/${criterionId}/complete`);
+    const response = await apiClient.post<Goal>(
+      `/goals/${goalId}/criteria/${criterionId}/complete`
+    );
     return response;
   },
 

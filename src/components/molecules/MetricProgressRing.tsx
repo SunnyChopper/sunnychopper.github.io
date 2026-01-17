@@ -25,11 +25,7 @@ export function MetricProgressRing({
   className = '',
 }: MetricProgressRingProps) {
   const { dimension, fontSize, strokeWidth } = sizeConfig[size];
-  const progress = calculateProgress(
-    currentValue,
-    metric.targetValue,
-    metric.direction
-  );
+  const progress = calculateProgress(currentValue, metric.targetValue, metric.direction);
 
   const normalizedProgress = Math.min(Math.max(progress.percentage, 0), 100);
   const radius = (dimension - strokeWidth) / 2;
@@ -47,17 +43,12 @@ export function MetricProgressRing({
     }
   };
 
-  const unit =
-    metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
+  const unit = metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
 
   return (
     <div className={`relative inline-flex flex-col items-center ${className}`}>
       <div className="relative inline-flex items-center justify-center">
-        <svg
-          width={dimension}
-          height={dimension}
-          className="transform -rotate-90"
-        >
+        <svg width={dimension} height={dimension} className="transform -rotate-90">
           {/* Background circle */}
           <circle
             cx={dimension / 2}
@@ -97,16 +88,10 @@ export function MetricProgressRing({
         </svg>
         {showLabel && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span
-              className={`font-bold ${fontSize} text-gray-900 dark:text-white`}
-            >
+            <span className={`font-bold ${fontSize} text-gray-900 dark:text-white`}>
               {currentValue.toFixed(metric.unit === 'dollars' ? 0 : 1)}
             </span>
-            {unit && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {unit}
-              </span>
-            )}
+            {unit && <span className="text-xs text-gray-500 dark:text-gray-400">{unit}</span>}
           </div>
         )}
       </div>

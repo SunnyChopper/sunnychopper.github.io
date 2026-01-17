@@ -45,12 +45,12 @@ const isNetworkError = (error: unknown): boolean => {
 // Helper to extract ApiError from React Query error
 const extractApiError = (error: unknown): ApiError | null => {
   if (!error) return null;
-  
+
   // If it's already an ApiError
   if (typeof error === 'object' && 'code' in error && 'message' in error) {
     return error as ApiError;
   }
-  
+
   // If it's wrapped in an object with error property
   if (typeof error === 'object' && 'error' in error) {
     const wrappedError = (error as { error: unknown }).error;
@@ -58,7 +58,7 @@ const extractApiError = (error: unknown): ApiError | null => {
       return wrappedError as ApiError;
     }
   }
-  
+
   // If it's an Error object, try to extract network error info from message
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
@@ -71,15 +71,16 @@ const extractApiError = (error: unknown): ApiError | null => {
     ) {
       return {
         message: error.message,
-        code: message.includes('connection refused') || message.includes('econnrefused')
-          ? 'ERR_CONNECTION_REFUSED'
-          : message.includes('timeout')
-          ? 'ETIMEDOUT'
-          : 'NETWORK_ERROR',
+        code:
+          message.includes('connection refused') || message.includes('econnrefused')
+            ? 'ERR_CONNECTION_REFUSED'
+            : message.includes('timeout')
+              ? 'ETIMEDOUT'
+              : 'NETWORK_ERROR',
       };
     }
   }
-  
+
   return null;
 };
 
@@ -134,7 +135,7 @@ export const useTasks = () => {
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
   return {
-    tasks: isError && isNetworkErr ? [] : (data?.data || []),
+    tasks: isError && isNetworkErr ? [] : data?.data || [],
     isLoading: isLoading && !isError,
     isError,
     error: apiError || error,
@@ -201,7 +202,7 @@ export const useHabits = () => {
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
   return {
-    habits: isError && isNetworkErr ? [] : (data?.data || []),
+    habits: isError && isNetworkErr ? [] : data?.data || [],
     isLoading: isLoading && !isError,
     isError,
     error: apiError || error || data?.error,
@@ -262,7 +263,7 @@ export const useMetrics = () => {
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
   return {
-    metrics: isError && isNetworkErr ? [] : (data?.data || []),
+    metrics: isError && isNetworkErr ? [] : data?.data || [],
     isLoading: isLoading && !isError,
     isError,
     error: apiError || error || data?.error,
@@ -322,7 +323,7 @@ export const useGoals = () => {
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
   return {
-    goals: isError && isNetworkErr ? [] : (data?.data || []),
+    goals: isError && isNetworkErr ? [] : data?.data || [],
     isLoading: isLoading && !isError,
     isError,
     error: apiError || error || data?.error,
@@ -382,7 +383,7 @@ export const useProjects = () => {
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
   return {
-    projects: isError && isNetworkErr ? [] : (data?.data || []),
+    projects: isError && isNetworkErr ? [] : data?.data || [],
     isLoading: isLoading && !isError,
     isError,
     error: apiError || error || data?.error,
@@ -442,7 +443,7 @@ export const useLogbook = () => {
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
   return {
-    entries: isError && isNetworkErr ? [] : (data?.data || []),
+    entries: isError && isNetworkErr ? [] : data?.data || [],
     isLoading: isLoading && !isError,
     isError,
     error: apiError || error || data?.error,

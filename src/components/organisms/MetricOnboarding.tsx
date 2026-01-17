@@ -36,10 +36,7 @@ const EXAMPLE_METRICS = [
   },
 ];
 
-export function MetricOnboarding({
-  onComplete,
-  onCreateMetric,
-}: MetricOnboardingProps) {
+export function MetricOnboarding({ onComplete, onCreateMetric }: MetricOnboardingProps) {
   const [step, setStep] = useState(0);
   const [selectedExample, setSelectedExample] = useState<number | null>(null);
 
@@ -73,9 +70,7 @@ export function MetricOnboarding({
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      {example.name}
-                    </h4>
+                    <h4 className="font-medium text-gray-900 dark:text-white">{example.name}</h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {example.description}
                     </p>
@@ -115,27 +110,21 @@ export function MetricOnboarding({
     <div className="max-w-2xl mx-auto py-12 px-4">
       <div className="text-center mb-8">
         <Target className="w-16 h-16 text-green-600 dark:text-green-400 mx-auto mb-4" />
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          You're all set!
-        </h2>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">You're all set!</h2>
         <p className="text-gray-600 dark:text-gray-400">
           Start logging values to track your progress
         </p>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Next Steps
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Next Steps</h3>
         <div className="space-y-3">
           <div className="flex items-start gap-3">
             <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm font-medium flex-shrink-0">
               1
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                Log your first value
-              </h4>
+              <h4 className="font-medium text-gray-900 dark:text-white">Log your first value</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Click "Log Value" on your metric card to record your first measurement
               </p>
@@ -146,9 +135,7 @@ export function MetricOnboarding({
               2
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                Track consistently
-              </h4>
+              <h4 className="font-medium text-gray-900 dark:text-white">Track consistently</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Log values regularly to see trends and unlock achievements
               </p>
@@ -159,9 +146,7 @@ export function MetricOnboarding({
               3
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">
-                Explore insights
-              </h4>
+              <h4 className="font-medium text-gray-900 dark:text-white">Explore insights</h4>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Use AI insights to discover patterns and get recommendations
               </p>

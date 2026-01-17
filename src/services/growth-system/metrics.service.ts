@@ -100,7 +100,10 @@ export const metricsService = {
     return response;
   },
 
-  async getHistory(metricId: string, filters?: { startDate?: string; endDate?: string; limit?: number }): Promise<ApiListResponse<MetricLog>> {
+  async getHistory(
+    metricId: string,
+    filters?: { startDate?: string; endDate?: string; limit?: number }
+  ): Promise<ApiListResponse<MetricLog>> {
     const queryParams = new URLSearchParams();
     if (filters?.startDate) queryParams.append('startDate', filters.startDate);
     if (filters?.endDate) queryParams.append('endDate', filters.endDate);
@@ -140,7 +143,9 @@ export const metricsService = {
   },
 
   async getMilestones(metricId: string): Promise<ApiListResponse<MetricMilestone>> {
-    const response = await apiClient.get<BackendPaginatedResponse<MetricMilestone>>(`/metrics/${metricId}/milestones`);
+    const response = await apiClient.get<BackendPaginatedResponse<MetricMilestone>>(
+      `/metrics/${metricId}/milestones`
+    );
     if (response.success && response.data) {
       return {
         data: response.data.data,

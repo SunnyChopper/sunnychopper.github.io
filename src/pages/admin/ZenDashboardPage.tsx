@@ -10,9 +10,21 @@ const getGreeting = () => {
 
 const digitalDetoxSuggestions = [
   { icon: Book, text: 'Read a physical book', color: 'text-amber-600 dark:text-amber-400' },
-  { icon: Footprints, text: 'Go for a walk in nature', color: 'text-green-600 dark:text-green-400' },
-  { icon: Coffee, text: 'Enjoy a mindful cup of tea', color: 'text-orange-600 dark:text-orange-400' },
-  { icon: TreePine, text: 'Practice meditation outdoors', color: 'text-teal-600 dark:text-teal-400' },
+  {
+    icon: Footprints,
+    text: 'Go for a walk in nature',
+    color: 'text-green-600 dark:text-green-400',
+  },
+  {
+    icon: Coffee,
+    text: 'Enjoy a mindful cup of tea',
+    color: 'text-orange-600 dark:text-orange-400',
+  },
+  {
+    icon: TreePine,
+    text: 'Practice meditation outdoors',
+    color: 'text-teal-600 dark:text-teal-400',
+  },
   { icon: Sparkles, text: 'Journal your thoughts', color: 'text-purple-600 dark:text-purple-400' },
 ];
 
@@ -47,17 +59,24 @@ export default function ZenDashboardPage() {
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Energy Level</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Energy Level
+                </span>
                 <span className="text-2xl font-bold text-green-600 dark:text-green-400">85%</span>
               </div>
               <div className="h-3 bg-green-100 dark:bg-green-900/30 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 dark:bg-green-600 rounded-full" style={{ width: '85%' }}></div>
+                <div
+                  className="h-full bg-green-500 dark:bg-green-600 rounded-full"
+                  style={{ width: '85%' }}
+                ></div>
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Rest Quality</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Rest Quality
+                </span>
                 <span className="text-2xl font-bold text-green-600 dark:text-green-400">Good</span>
               </div>
               <p className="text-xs text-gray-600 dark:text-gray-400">

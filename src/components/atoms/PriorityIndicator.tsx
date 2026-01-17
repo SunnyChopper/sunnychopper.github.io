@@ -9,12 +9,29 @@ interface PriorityIndicatorProps {
 
 const priorityColors: Record<Priority, { bg: string; text: string; border: string }> = {
   P1: { bg: 'bg-red-500', text: 'text-red-700 dark:text-red-400', border: 'border-red-500' },
-  P2: { bg: 'bg-orange-500', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-500' },
-  P3: { bg: 'bg-yellow-500', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-yellow-500' },
-  P4: { bg: 'bg-green-500', text: 'text-green-700 dark:text-green-400', border: 'border-green-500' },
+  P2: {
+    bg: 'bg-orange-500',
+    text: 'text-orange-700 dark:text-orange-400',
+    border: 'border-orange-500',
+  },
+  P3: {
+    bg: 'bg-yellow-500',
+    text: 'text-yellow-700 dark:text-yellow-400',
+    border: 'border-yellow-500',
+  },
+  P4: {
+    bg: 'bg-green-500',
+    text: 'text-green-700 dark:text-green-400',
+    border: 'border-green-500',
+  },
 };
 
-export function PriorityIndicator({ priority, variant = 'badge', size = 'md', className = '' }: PriorityIndicatorProps) {
+export function PriorityIndicator({
+  priority,
+  variant = 'badge',
+  size = 'md',
+  className = '',
+}: PriorityIndicatorProps) {
   const colors = priorityColors[priority];
 
   if (variant === 'dot') {
@@ -23,7 +40,9 @@ export function PriorityIndicator({ priority, variant = 'badge', size = 'md', cl
       md: 'w-2 h-2',
       lg: 'w-3 h-3',
     };
-    return <span className={`inline-block rounded-full ${colors.bg} ${dotSizes[size]} ${className}`} />;
+    return (
+      <span className={`inline-block rounded-full ${colors.bg} ${dotSizes[size]} ${className}`} />
+    );
   }
 
   if (variant === 'bar') {
@@ -32,7 +51,9 @@ export function PriorityIndicator({ priority, variant = 'badge', size = 'md', cl
       md: 'w-1 h-6',
       lg: 'w-1.5 h-8',
     };
-    return <span className={`inline-block rounded-full ${colors.bg} ${barSizes[size]} ${className}`} />;
+    return (
+      <span className={`inline-block rounded-full ${colors.bg} ${barSizes[size]} ${className}`} />
+    );
   }
 
   const badgeSizes = {

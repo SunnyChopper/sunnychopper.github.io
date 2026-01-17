@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Sun, CheckSquare, Repeat, TrendingUp, Sparkles, ChevronRight, Rocket, AlertCircle } from 'lucide-react';
+import {
+  Sun,
+  CheckSquare,
+  Repeat,
+  TrendingUp,
+  Sparkles,
+  ChevronRight,
+  Rocket,
+  AlertCircle,
+} from 'lucide-react';
 import { useTasks, useHabits, useMetrics } from '../../hooks/useGrowthSystem';
 import type { Task, Habit, Metric } from '../../types/growth-system';
 import Button from '../atoms/Button';
@@ -32,7 +41,7 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
 
   const generateDailyPlan = async () => {
     setIsGeneratingPlan(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const today = new Date();
     const hour = today.getHours();
@@ -42,11 +51,11 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
     else if (hour < 18) energyLevel = 'afternoon';
     else energyLevel = 'evening';
 
-    const activeTasks = tasks.filter(t =>
-      t.status === 'NotStarted' || t.status === 'InProgress'
-    ).filter(t => t.status !== 'Blocked');
+    const activeTasks = tasks
+      .filter((t) => t.status === 'NotStarted' || t.status === 'InProgress')
+      .filter((t) => t.status !== 'Blocked');
 
-    const scoredTasks = activeTasks.map(task => {
+    const scoredTasks = activeTasks.map((task) => {
       let score = 0;
 
       if (task.priority === 'P1') score += 40;
@@ -56,7 +65,9 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
 
       if (task.dueDate) {
         const dueDate = new Date(task.dueDate);
-        const daysUntilDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        const daysUntilDue = Math.floor(
+          (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
         if (daysUntilDue <= 0) score += 50;
         else if (daysUntilDue <= 2) score += 30;
         else if (daysUntilDue <= 7) score += 10;
@@ -78,11 +89,11 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
     });
 
     scoredTasks.sort((a, b) => b.score - a.score);
-    const topTasks = scoredTasks.slice(0, 3).map(s => s.task);
+    const topTasks = scoredTasks.slice(0, 3).map((s) => s.task);
 
-    const dailyHabits = habits.filter(h => h.frequency === 'Daily');
+    const dailyHabits = habits.filter((h) => h.frequency === 'Daily');
 
-    const activeMetrics = metrics.filter(m => m.status === 'Active');
+    const activeMetrics = metrics.filter((m) => m.status === 'Active');
 
     let briefing = '';
     if (energyLevel === 'morning') {
@@ -98,7 +109,7 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
       habitsToComplete: dailyHabits,
       metricsToLog: activeMetrics.slice(0, 3),
       energyLevel,
-      briefing
+      briefing,
     });
 
     setIsGeneratingPlan(false);
@@ -184,7 +195,10 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
               <CheckSquare className="w-4 h-4" />
               Top 3 Tasks for Today
             </h3>
-            <Link to={ROUTES.admin.tasks} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <Link
+              to={ROUTES.admin.tasks}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
               View All
             </Link>
           </div>
@@ -199,17 +213,26 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
                     {idx + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-white truncate">{task.title}</p>
+                    <p className="font-medium text-gray-900 dark:text-white truncate">
+                      {task.title}
+                    </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        task.priority === 'P1' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
-                        task.priority === 'P2' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
-                        task.priority === 'P3' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
-                        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      }`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${
+                          task.priority === 'P1'
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            : task.priority === 'P2'
+                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                              : task.priority === 'P3'
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                        }`}
+                      >
                         {task.priority}
                       </span>
-                      <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">{task.size}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+                        {task.size}
+                      </span>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -231,13 +254,16 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
                   <Repeat className="w-4 h-4" />
                   Habits to Complete
                 </h3>
-                <Link to={ROUTES.admin.habits} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <Link
+                  to={ROUTES.admin.habits}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
                   View All
                 </Link>
               </div>
               {plan.habitsToComplete.length > 0 ? (
                 <div className="space-y-2">
-                  {plan.habitsToComplete.slice(0, 5).map(habit => (
+                  {plan.habitsToComplete.slice(0, 5).map((habit) => (
                     <div
                       key={habit.id}
                       className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex items-center gap-3"
@@ -246,7 +272,9 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
                         type="checkbox"
                         className="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                       />
-                      <p className="flex-1 font-medium text-gray-900 dark:text-white">{habit.name}</p>
+                      <p className="flex-1 font-medium text-gray-900 dark:text-white">
+                        {habit.name}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -263,13 +291,16 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
                   <TrendingUp className="w-4 h-4" />
                   Metrics to Log
                 </h3>
-                <Link to={ROUTES.admin.metrics} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <Link
+                  to={ROUTES.admin.metrics}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
                   View All
                 </Link>
               </div>
               {plan.metricsToLog.length > 0 ? (
                 <div className="space-y-2">
-                  {plan.metricsToLog.map(metric => (
+                  {plan.metricsToLog.map((metric) => (
                     <div
                       key={metric.id}
                       className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex items-center justify-between"
@@ -290,11 +321,7 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
           </>
         )}
 
-        <Button
-          variant="secondary"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full"
-        >
+        <Button variant="secondary" onClick={() => setIsExpanded(!isExpanded)} className="w-full">
           {isExpanded ? 'Show Less' : 'Show More'}
         </Button>
       </div>

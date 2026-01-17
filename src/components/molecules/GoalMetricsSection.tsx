@@ -18,12 +18,12 @@ interface GoalMetricsSectionProps {
   showEmpty?: boolean;
 }
 
-export function GoalMetricsSection({ 
-  metrics, 
-  onLinkMetric, 
+export function GoalMetricsSection({
+  metrics,
+  onLinkMetric,
   onLogMetric,
   onMetricClick,
-  showEmpty = true 
+  showEmpty = true,
 }: GoalMetricsSectionProps) {
   if (metrics.length === 0 && showEmpty) {
     return (
@@ -38,7 +38,7 @@ export function GoalMetricsSection({
           icon={BarChart3}
           title="No metrics linked"
           description="Link metrics to track progress toward this goal automatically"
-          actionLabel={onLinkMetric ? "Link Metric" : undefined}
+          actionLabel={onLinkMetric ? 'Link Metric' : undefined}
           onAction={onLinkMetric}
         />
       </div>
@@ -46,9 +46,12 @@ export function GoalMetricsSection({
   }
 
   const getProgressColor = (progress: number, direction: string) => {
-    if (progress >= 90) return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
-    if (progress >= 70) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
-    if (direction === 'Lower' && progress < 50) return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
+    if (progress >= 90)
+      return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
+    if (progress >= 70)
+      return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
+    if (direction === 'Lower' && progress < 50)
+      return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30';
     return 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30';
   };
 
@@ -109,7 +112,9 @@ export function GoalMetricsSection({
               <div className="mb-3">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-gray-600 dark:text-gray-400">
-                    {latestLog ? `${latestLog.value} ${metric.customUnit || metric.unit}` : 'No data'}
+                    {latestLog
+                      ? `${latestLog.value} ${metric.customUnit || metric.unit}`
+                      : 'No data'}
                   </span>
                   {metric.targetValue && (
                     <span className="text-gray-600 dark:text-gray-400">

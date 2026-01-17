@@ -26,8 +26,8 @@ export default function TagInput({
   // Get all existing tags from vault items with frequency
   const allTags = useMemo(() => {
     const tagMap = new Map<string, number>();
-    vaultItems.forEach(item => {
-      item.tags.forEach(tag => {
+    vaultItems.forEach((item) => {
+      item.tags.forEach((tag) => {
         tagMap.set(tag, (tagMap.get(tag) || 0) + 1);
       });
     });
@@ -79,7 +79,7 @@ export default function TagInput({
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    onChange(value.filter(tag => tag !== tagToRemove));
+    onChange(value.filter((tag) => tag !== tagToRemove));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -93,12 +93,10 @@ export default function TagInput({
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       setShowSuggestions(true);
-      setHighlightedIndex(prev =>
-        prev < suggestions.length - 1 ? prev + 1 : prev
-      );
+      setHighlightedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlightedIndex(prev => (prev > 0 ? prev - 1 : -1));
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : -1));
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
       setHighlightedIndex(-1);
@@ -167,7 +165,7 @@ export default function TagInput({
 
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {value.map(tag => (
+          {value.map((tag) => (
             <span
               key={tag}
               className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium"

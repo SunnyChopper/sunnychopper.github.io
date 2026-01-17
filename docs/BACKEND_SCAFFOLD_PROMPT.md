@@ -12,29 +12,29 @@ Create a serverless Python backend API for **Personal OS**, a personal productiv
 
 ### Technical Stack
 
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| **Runtime** | Python 3.12 | LangChain native support, AWS Lambda compatibility |
-| **Framework** | FastAPI + Mangum | Modern async API, auto OpenAPI docs, Lambda adapter |
-| **IaC** | Serverless Framework | Easy deployment, multi-environment, plugin ecosystem |
-| **Database** | DynamoDB (single-table) | Serverless, pay-per-use, scales to zero |
-| **Authentication** | AWS Cognito User Pool | Managed auth, JWT tokens, email/password |
-| **Secrets** | AWS Secrets Manager | Secure LLM API key storage |
-| **API Gateway** | HTTP API (v2) | Lower cost, faster than REST API |
-| **Domain** | api.sunnysingh.tech | Custom domain via ACM + API Gateway |
+| Component          | Technology              | Rationale                                            |
+| ------------------ | ----------------------- | ---------------------------------------------------- |
+| **Runtime**        | Python 3.12             | LangChain native support, AWS Lambda compatibility   |
+| **Framework**      | FastAPI + Mangum        | Modern async API, auto OpenAPI docs, Lambda adapter  |
+| **IaC**            | Serverless Framework    | Easy deployment, multi-environment, plugin ecosystem |
+| **Database**       | DynamoDB (single-table) | Serverless, pay-per-use, scales to zero              |
+| **Authentication** | AWS Cognito User Pool   | Managed auth, JWT tokens, email/password             |
+| **Secrets**        | AWS Secrets Manager     | Secure LLM API key storage                           |
+| **API Gateway**    | HTTP API (v2)           | Lower cost, faster than REST API                     |
+| **Domain**         | api.sunnysingh.tech     | Custom domain via ACM + API Gateway                  |
 
 ### Environments
 
-| Environment | Purpose | API Endpoint |
-|-------------|---------|--------------|
-| **dev** | Development/testing | `dev-api.sunnysingh.tech` or API Gateway default |
-| **prod** | Production | `api.sunnysingh.tech` |
+| Environment | Purpose             | API Endpoint                                     |
+| ----------- | ------------------- | ------------------------------------------------ |
+| **dev**     | Development/testing | `dev-api.sunnysingh.tech` or API Gateway default |
+| **prod**    | Production          | `api.sunnysingh.tech`                            |
 
 ---
 
 ## Prompt: Scaffold Backend Project
 
-```
+````
 You are an expert Python backend developer. Create a complete serverless backend project for Personal OS with the following specifications:
 
 ### Project Structure
@@ -263,7 +263,7 @@ app.include_router(ai.router, prefix="/ai", tags=["AI"])
 
 # Lambda handler
 handler = Mangum(app)
-```
+````
 
 ### API Endpoints
 
@@ -279,13 +279,15 @@ See docs/backend/API_ENDPOINTS.md for complete endpoint specifications.
 ### Goal Progress Calculation (Backend)
 
 Move progress calculation to backend:
+
 1. When task completes → trigger progress recalculation
 2. When metric logged → check milestones + update goal progress
 3. Store `cachedProgress` on Goal entity
 4. Return cached value on read, recalculate on write
 
 Generate the complete project with all files. Use type hints throughout. Follow Python best practices (Black formatting, type annotations, docstrings).
-```
+
+````
 
 ---
 
@@ -329,7 +331,7 @@ serverless logs -f tasks -t --stage dev
 
 # Run tests
 pytest tests/ -v
-```
+````
 
 ---
 

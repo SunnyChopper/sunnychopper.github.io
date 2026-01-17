@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN adding icons, choosing icon styles, and sizing icons."
-globs: ""
+description: 'USE WHEN adding icons, choosing icon styles, and sizing icons.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -97,12 +97,15 @@ Match icon size to context:
 ## Icon in Navigation
 
 ```tsx
-<NavLink to={href} className={({ isActive }) => cn(
-  'flex items-center gap-3 px-3 py-2 rounded-lg',
-  isActive
-    ? 'text-blue-600 dark:text-blue-400'
-    : 'text-gray-600 dark:text-gray-400'
-)}>
+<NavLink
+  to={href}
+  className={({ isActive }) =>
+    cn(
+      'flex items-center gap-3 px-3 py-2 rounded-lg',
+      isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'
+    )
+  }
+>
   <Icon className="w-5 h-5" />
   <span>{label}</span>
 </NavLink>
@@ -134,21 +137,21 @@ Match icon size to context:
 
 ## Icon Selection Guidelines
 
-| Use Case | Icons |
-|----------|-------|
-| Add/Create | Plus, PlusCircle |
-| Edit | Pencil, Edit2, PenSquare |
-| Delete | Trash2, X |
-| Save | Save, Check |
-| Close | X, XCircle |
-| Back | ArrowLeft, ChevronLeft |
-| Forward | ArrowRight, ChevronRight |
-| Menu | Menu, MoreVertical, MoreHorizontal |
-| Search | Search |
-| Settings | Settings, Cog |
-| User | User, UserCircle |
-| Expand | ChevronDown, PlusCircle |
-| Collapse | ChevronUp, MinusCircle |
+| Use Case   | Icons                              |
+| ---------- | ---------------------------------- |
+| Add/Create | Plus, PlusCircle                   |
+| Edit       | Pencil, Edit2, PenSquare           |
+| Delete     | Trash2, X                          |
+| Save       | Save, Check                        |
+| Close      | X, XCircle                         |
+| Back       | ArrowLeft, ChevronLeft             |
+| Forward    | ArrowRight, ChevronRight           |
+| Menu       | Menu, MoreVertical, MoreHorizontal |
+| Search     | Search                             |
+| Settings   | Settings, Cog                      |
+| User       | User, UserCircle                   |
+| Expand     | ChevronDown, PlusCircle            |
+| Collapse   | ChevronUp, MinusCircle             |
 
 ## Accessibility
 

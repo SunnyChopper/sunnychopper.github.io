@@ -11,7 +11,12 @@ interface MetricCoachingProps {
 }
 
 export function MetricCoaching({ metric, logs }: MetricCoachingProps) {
-  const [coaching, setCoaching] = useState<{ message: string; tone: string; tips: string[]; confidence: number } | null>(null);
+  const [coaching, setCoaching] = useState<{
+    message: string;
+    tone: string;
+    tips: string[];
+    confidence: number;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadCoaching = useCallback(async () => {
@@ -66,18 +71,14 @@ export function MetricCoaching({ metric, logs }: MetricCoachingProps) {
   const calculatedCoaching = useMemo(() => {
     if (logs.length === 0) {
       return {
-        message: "Start logging values to track your progress!",
+        message: 'Start logging values to track your progress!',
         tone: 'encouragement' as const,
         tips: ['Log your first value today', 'Set a reminder to log regularly'],
       };
     }
 
     const latestLog = logs[0];
-    const progress = calculateProgress(
-      latestLog.value,
-      metric.targetValue,
-      metric.direction
-    );
+    const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
     const trend = getTrendData(logs, metric);
 
     if (progress.percentage >= 100) {
@@ -92,7 +93,7 @@ export function MetricCoaching({ metric, logs }: MetricCoachingProps) {
       return {
         message: `You're ${progress.percentage.toFixed(0)}% of the way to your target! Keep up the great work!`,
         tone: 'encouragement' as const,
-        tips: ['Maintain your current pace', 'You\'re on track to reach your goal'],
+        tips: ['Maintain your current pace', "You're on track to reach your goal"],
       };
     }
 
@@ -157,9 +158,7 @@ export function MetricCoaching({ metric, logs }: MetricCoachingProps) {
           <h3 className="font-semibold mb-2">Personalized Coaching</h3>
           <p className="text-sm leading-relaxed">{activeCoaching.message}</p>
         </div>
-        {coaching && (
-          <Sparkles className="w-4 h-4 opacity-50" />
-        )}
+        {coaching && <Sparkles className="w-4 h-4 opacity-50" />}
       </div>
 
       {activeCoaching.tips && activeCoaching.tips.length > 0 && (

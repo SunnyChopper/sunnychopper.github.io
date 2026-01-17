@@ -1,8 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, BookOpen, Clock, CircleCheck as CheckCircle2, Circle, ChevronRight, Sparkles, Play, Copy, Check, PanelLeftClose, PanelLeftOpen, SkipBack, SkipForward } from 'lucide-react';
-import { coursesService, vaultItemsService, aiCourseGeneratorService } from '../../services/knowledge-vault';
+import {
+  ArrowLeft,
+  BookOpen,
+  Clock,
+  CircleCheck as CheckCircle2,
+  Circle,
+  ChevronRight,
+  Sparkles,
+  Play,
+  Copy,
+  Check,
+  PanelLeftClose,
+  PanelLeftOpen,
+  SkipBack,
+  SkipForward,
+} from 'lucide-react';
+import {
+  coursesService,
+  vaultItemsService,
+  aiCourseGeneratorService,
+} from '../../services/knowledge-vault';
 import type { CourseWithDetails } from '../../services/knowledge-vault/courses.service';
 import type { CourseLesson } from '../../types/knowledge-vault';
 import type { LessonGenerationProgress } from '../../services/knowledge-vault/course-generation/types';
@@ -16,7 +35,9 @@ export default function CourseDetailPage() {
   const [selectedLesson, setSelectedLesson] = useState<CourseLesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingContent, setGeneratingContent] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState<LessonGenerationProgress | null>(null);
+  const [generationProgress, setGenerationProgress] = useState<LessonGenerationProgress | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -27,9 +48,7 @@ export default function CourseDetailPage() {
 
   useEffect(() => {
     if (lessonId && courseData) {
-      const lesson = courseData.modules
-        .flatMap(m => m.lessons)
-        .find(l => l.id === lessonId);
+      const lesson = courseData.modules.flatMap((m) => m.lessons).find((l) => l.id === lessonId);
       if (lesson) {
         loadLessonContent(lesson);
       }
@@ -77,9 +96,7 @@ export default function CourseDetailPage() {
     };
 
     try {
-      const module = courseData.modules.find(m =>
-        m.lessons.some(l => l.id === lesson.id)
-      );
+      const module = courseData.modules.find((m) => m.lessons.some((l) => l.id === lesson.id));
 
       if (!module) return;
 
@@ -100,7 +117,7 @@ export default function CourseDetailPage() {
           content: response.data,
         });
 
-        setSelectedLesson(prev => prev ? { ...prev, content: response.data } : null);
+        setSelectedLesson((prev) => (prev ? { ...prev, content: response.data } : null));
 
         const updatedCourseData = await coursesService.getCourseWithModulesAndLessons(courseId!);
         if (updatedCourseData.success && updatedCourseData.data) {
@@ -125,11 +142,11 @@ export default function CourseDetailPage() {
     await vaultItemsService.markLessonComplete(selectedLesson.id);
     await loadCourseData();
 
-    const currentModuleLessons = courseData?.modules
-      .find(m => m.lessons.some(l => l.id === selectedLesson.id))
-      ?.lessons || [];
+    const currentModuleLessons =
+      courseData?.modules.find((m) => m.lessons.some((l) => l.id === selectedLesson.id))?.lessons ||
+      [];
 
-    const currentIndex = currentModuleLessons.findIndex(l => l.id === selectedLesson.id);
+    const currentIndex = currentModuleLessons.findIndex((l) => l.id === selectedLesson.id);
     const nextLesson = currentModuleLessons[currentIndex + 1];
 
     if (nextLesson) {
@@ -142,10 +159,12 @@ export default function CourseDetailPage() {
   };
 
   const getCompletedLessons = () => {
-    return courseData?.modules.reduce(
-      (acc, m) => acc + m.lessons.filter(l => l.completedAt).length,
-      0
-    ) || 0;
+    return (
+      courseData?.modules.reduce(
+        (acc, m) => acc + m.lessons.filter((l) => l.completedAt).length,
+        0
+      ) || 0
+    );
   };
 
   const getProgressPercentage = () => {
@@ -156,20 +175,20 @@ export default function CourseDetailPage() {
 
   const getAllLessons = (): CourseLesson[] => {
     if (!courseData) return [];
-    return courseData.modules.flatMap(m => m.lessons);
+    return courseData.modules.flatMap((m) => m.lessons);
   };
 
   const getPreviousLesson = (): CourseLesson | null => {
     if (!selectedLesson || !courseData) return null;
     const allLessons = getAllLessons();
-    const currentIndex = allLessons.findIndex(l => l.id === selectedLesson.id);
+    const currentIndex = allLessons.findIndex((l) => l.id === selectedLesson.id);
     return currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   };
 
   const getNextLesson = (): CourseLesson | null => {
     if (!selectedLesson || !courseData) return null;
     const allLessons = getAllLessons();
-    const currentIndex = allLessons.findIndex(l => l.id === selectedLesson.id);
+    const currentIndex = allLessons.findIndex((l) => l.id === selectedLesson.id);
     return currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
   };
 
@@ -179,7 +198,9 @@ export default function CourseDetailPage() {
     try {
       // Create a formatted markdown document with lesson metadata
       const markdown = `# ${selectedLesson.title}\n\n${
-        selectedLesson.estimatedMinutes ? `**Duration:** ${selectedLesson.estimatedMinutes} minutes\n\n` : ''
+        selectedLesson.estimatedMinutes
+          ? `**Duration:** ${selectedLesson.estimatedMinutes} minutes\n\n`
+          : ''
       }${selectedLesson.content}`;
 
       await navigator.clipboard.writeText(markdown);
@@ -241,7 +262,7 @@ export default function CourseDetailPage() {
                   >
                     <ArrowLeft size={18} className="text-gray-600 dark:text-gray-400" />
                   </button>
-                  
+
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                       {selectedLesson.title}
@@ -263,7 +284,7 @@ export default function CourseDetailPage() {
                     >
                       <SkipBack size={20} className="text-gray-700 dark:text-gray-300" />
                     </button>
-                    
+
                     <button
                       onClick={() => nextLesson && handleLessonClick(nextLesson)}
                       disabled={!nextLesson}
@@ -273,7 +294,7 @@ export default function CourseDetailPage() {
                       <SkipForward size={20} className="text-gray-700 dark:text-gray-300" />
                     </button>
                   </div>
-                  
+
                   {/* Progress Bar */}
                   <div className="w-64 flex items-center gap-2">
                     <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
@@ -312,104 +333,109 @@ export default function CourseDetailPage() {
                 transition={springConfig}
                 className="lg:col-span-1 space-y-6 min-w-0"
               >
-        <div>
-          <button
-            onClick={() => navigate(ROUTES.admin.knowledgeVaultCourses)}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
-          >
-            <ArrowLeft size={20} />
-            <span>Back to Courses</span>
-          </button>
+                <div>
+                  <button
+                    onClick={() => navigate(ROUTES.admin.knowledgeVaultCourses)}
+                    className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
+                  >
+                    <ArrowLeft size={20} />
+                    <span>Back to Courses</span>
+                  </button>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              {courseData.course.title}
-            </h1>
-            {courseData.course.description && (
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                {courseData.course.description}
-              </p>
-            )}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      {courseData.course.title}
+                    </h1>
+                    {courseData.course.description && (
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        {courseData.course.description}
+                      </p>
+                    )}
 
-            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
-              <span className="flex items-center gap-1">
-                <BookOpen size={16} />
-                {getTotalLessons()} lessons
-              </span>
-              {courseData.course.estimatedHours && (
-                <span className="flex items-center gap-1">
-                  <Clock size={16} />
-                  {courseData.course.estimatedHours}h
-                </span>
-              )}
-            </div>
-
-            <div className="mb-2">
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-gray-600 dark:text-gray-400">Progress</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {getProgressPercentage()}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-green-600 h-2 rounded-full transition-all"
-                  style={{ width: `${getProgressPercentage()}%` }}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {getCompletedLessons()} of {getTotalLessons()} lessons completed
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 max-h-[600px] overflow-y-auto">
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Course Content</h2>
-
-          <div className="space-y-4">
-            {courseData.modules.map((moduleData, moduleIndex) => (
-              <div key={moduleData.module.id}>
-                <h3 className="font-medium text-gray-900 dark:text-white mb-2">
-                  Module {moduleIndex + 1}: {moduleData.module.title}
-                </h3>
-
-                <div className="space-y-1">
-                  {moduleData.lessons.map((lesson) => (
-                    <button
-                      key={lesson.id}
-                      onClick={() => handleLessonClick(lesson)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition ${
-                        selectedLesson?.id === lesson.id
-                          ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {lesson.completedAt ? (
-                        <CheckCircle2 size={20} className="text-green-600 dark:text-green-400 flex-shrink-0" />
-                      ) : (
-                        <Circle size={20} className="text-gray-400 flex-shrink-0" />
+                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      <span className="flex items-center gap-1">
+                        <BookOpen size={16} />
+                        {getTotalLessons()} lessons
+                      </span>
+                      {courseData.course.estimatedHours && (
+                        <span className="flex items-center gap-1">
+                          <Clock size={16} />
+                          {courseData.course.estimatedHours}h
+                        </span>
                       )}
+                    </div>
 
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {lesson.title}
-                        </p>
-                        {lesson.estimatedMinutes && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {lesson.estimatedMinutes} min
-                          </p>
-                        )}
+                    <div className="mb-2">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {getProgressPercentage()}%
+                        </span>
                       </div>
-
-                      <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
-                    </button>
-                  ))}
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div
+                          className="bg-green-600 h-2 rounded-full transition-all"
+                          style={{ width: `${getProgressPercentage()}%` }}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {getCompletedLessons()} of {getTotalLessons()} lessons completed
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 max-h-[600px] overflow-y-auto">
+                  <h2 className="font-semibold text-gray-900 dark:text-white mb-4">
+                    Course Content
+                  </h2>
+
+                  <div className="space-y-4">
+                    {courseData.modules.map((moduleData, moduleIndex) => (
+                      <div key={moduleData.module.id}>
+                        <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                          Module {moduleIndex + 1}: {moduleData.module.title}
+                        </h3>
+
+                        <div className="space-y-1">
+                          {moduleData.lessons.map((lesson) => (
+                            <button
+                              key={lesson.id}
+                              onClick={() => handleLessonClick(lesson)}
+                              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition ${
+                                selectedLesson?.id === lesson.id
+                                  ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800'
+                                  : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                              }`}
+                            >
+                              {lesson.completedAt ? (
+                                <CheckCircle2
+                                  size={20}
+                                  className="text-green-600 dark:text-green-400 flex-shrink-0"
+                                />
+                              ) : (
+                                <Circle size={20} className="text-gray-400 flex-shrink-0" />
+                              )}
+
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                  {lesson.title}
+                                </p>
+                                {lesson.estimatedMinutes && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {lesson.estimatedMinutes} min
+                                  </p>
+                                )}
+                              </div>
+
+                              <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -421,218 +447,219 @@ export default function CourseDetailPage() {
             transition={springConfig}
             style={{ minWidth: 0 }}
           >
-        {selectedLesson ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8">
-            <div className="mb-6">
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <div className="flex-1">
-                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    {selectedLesson.title}
-                  </h2>
-                  {selectedLesson.estimatedMinutes && (
-                    <p className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                      <Clock size={16} />
-                      {selectedLesson.estimatedMinutes} minutes
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {selectedLesson.content && (
-                    <button
-                      onClick={handleCopyToMarkdown}
-                      className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition font-medium"
-                      title="Copy lesson content as Markdown"
-                    >
-                      {copySuccess ? (
-                        <>
-                          <Check size={16} className="text-green-600 dark:text-green-400" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={16} />
-                          <span>Copy to Markdown</span>
-                        </>
+            {selectedLesson ? (
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8">
+                <div className="mb-6">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <div className="flex-1">
+                      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        {selectedLesson.title}
+                      </h2>
+                      {selectedLesson.estimatedMinutes && (
+                        <p className="text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                          <Clock size={16} />
+                          {selectedLesson.estimatedMinutes} minutes
+                        </p>
                       )}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-                    title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-                  >
-                    {sidebarCollapsed ? (
-                      <PanelLeftOpen size={20} />
-                    ) : (
-                      <PanelLeftClose size={20} />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {generatingContent ? (
-              <div className="py-12">
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-6">
-                    <Sparkles size={32} className="text-green-600 dark:text-green-400 animate-pulse" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {selectedLesson.content && (
+                        <button
+                          onClick={handleCopyToMarkdown}
+                          className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition font-medium"
+                          title="Copy lesson content as Markdown"
+                        >
+                          {copySuccess ? (
+                            <>
+                              <Check size={16} className="text-green-600 dark:text-green-400" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={16} />
+                              <span>Copy to Markdown</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                        className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                        title={sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+                      >
+                        {sidebarCollapsed ? (
+                          <PanelLeftOpen size={20} />
+                        ) : (
+                          <PanelLeftClose size={20} />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    Generating Lesson Content
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    AI is creating comprehensive content for this lesson...
-                  </p>
                 </div>
 
-                {generationProgress && (
-                  <div className="space-y-6">
-                    {/* Progress Bar */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {generationProgress.phaseName}
-                        </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {generationProgress.progress}%
-                        </span>
+                {generatingContent ? (
+                  <div className="py-12">
+                    <div className="text-center mb-8">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-6">
+                        <Sparkles
+                          size={32}
+                          className="text-green-600 dark:text-green-400 animate-pulse"
+                        />
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                        <div
-                          className="bg-green-600 h-2.5 rounded-full transition-all duration-300"
-                          style={{ width: `${generationProgress.progress}%` }}
-                        ></div>
-                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        Generating Lesson Content
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        AI is creating comprehensive content for this lesson...
+                      </p>
                     </div>
 
-                    {/* Phase Summary */}
-                    {generationProgress.summary && (
-                      <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {generationProgress.summary}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Phase Indicators */}
-                    <div className="space-y-3">
-                      {[
-                        { phase: 'analyzing', label: 'Analyzing Lesson Context', icon: '🔍' },
-                        { phase: 'structuring', label: 'Structuring Content', icon: '📋' },
-                        { phase: 'writing', label: 'Writing Lesson Content', icon: '✍️' },
-                        { phase: 'polishing', label: 'Polishing Content', icon: '✨' },
-                      ].map((phaseInfo, index) => {
-                        const isActive = generationProgress.phase === phaseInfo.phase;
-                        const isCompleted = [
-                          'analyzing',
-                          'structuring',
-                          'writing',
-                          'polishing',
-                        ].indexOf(generationProgress.phase) > index;
-                        
-                        return (
-                          <div
-                            key={phaseInfo.phase}
-                            className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                              isActive
-                                ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500'
-                                : isCompleted
-                                ? 'bg-gray-50 dark:bg-gray-900/50 opacity-60'
-                                : 'bg-gray-50 dark:bg-gray-900/30'
-                            }`}
-                          >
+                    {generationProgress && (
+                      <div className="space-y-6">
+                        {/* Progress Bar */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {generationProgress.phaseName}
+                            </span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
+                              {generationProgress.progress}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                             <div
-                              className={`text-xl ${
-                                isActive ? 'animate-pulse' : isCompleted ? 'opacity-50' : ''
-                              }`}
-                            >
-                              {phaseInfo.icon}
-                            </div>
-                            <div className="flex-1">
-                              <p
-                                className={`text-sm font-medium ${
+                              className="bg-green-600 h-2.5 rounded-full transition-all duration-300"
+                              style={{ width: `${generationProgress.progress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Phase Summary */}
+                        {generationProgress.summary && (
+                          <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {generationProgress.summary}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Phase Indicators */}
+                        <div className="space-y-3">
+                          {[
+                            { phase: 'analyzing', label: 'Analyzing Lesson Context', icon: '🔍' },
+                            { phase: 'structuring', label: 'Structuring Content', icon: '📋' },
+                            { phase: 'writing', label: 'Writing Lesson Content', icon: '✍️' },
+                            { phase: 'polishing', label: 'Polishing Content', icon: '✨' },
+                          ].map((phaseInfo, index) => {
+                            const isActive = generationProgress.phase === phaseInfo.phase;
+                            const isCompleted =
+                              ['analyzing', 'structuring', 'writing', 'polishing'].indexOf(
+                                generationProgress.phase
+                              ) > index;
+
+                            return (
+                              <div
+                                key={phaseInfo.phase}
+                                className={`flex items-center gap-3 p-3 rounded-lg transition ${
                                   isActive
-                                    ? 'text-green-700 dark:text-green-300'
+                                    ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500'
                                     : isCompleted
-                                    ? 'text-gray-500 dark:text-gray-400'
-                                    : 'text-gray-400 dark:text-gray-500'
+                                      ? 'bg-gray-50 dark:bg-gray-900/50 opacity-60'
+                                      : 'bg-gray-50 dark:bg-gray-900/30'
                                 }`}
                               >
-                                {phaseInfo.label}
-                              </p>
-                            </div>
-                            {isActive && (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                            )}
-                            {isCompleted && (
-                              <div className="text-green-600 dark:text-green-400">✓</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                                <div
+                                  className={`text-xl ${
+                                    isActive ? 'animate-pulse' : isCompleted ? 'opacity-50' : ''
+                                  }`}
+                                >
+                                  {phaseInfo.icon}
+                                </div>
+                                <div className="flex-1">
+                                  <p
+                                    className={`text-sm font-medium ${
+                                      isActive
+                                        ? 'text-green-700 dark:text-green-300'
+                                        : isCompleted
+                                          ? 'text-gray-500 dark:text-gray-400'
+                                          : 'text-gray-400 dark:text-gray-500'
+                                    }`}
+                                  >
+                                    {phaseInfo.label}
+                                  </p>
+                                </div>
+                                {isActive && (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                                )}
+                                {isCompleted && (
+                                  <div className="text-green-600 dark:text-green-400">✓</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
-                {!generationProgress && (
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                    {!generationProgress && (
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                      </div>
+                    )}
+                  </div>
+                ) : selectedLesson.content ? (
+                  <>
+                    <div className="mb-8">
+                      <MarkdownRenderer content={selectedLesson.content} />
+                    </div>
+
+                    {!selectedLesson.completedAt && (
+                      <button
+                        onClick={handleMarkComplete}
+                        className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium"
+                      >
+                        <CheckCircle2 size={20} />
+                        <span>Mark as Complete</span>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <Play size={48} className="mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      Content not yet generated
+                    </p>
+                    <button
+                      onClick={() => generateLessonContent(selectedLesson)}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                    >
+                      <Sparkles size={20} />
+                      <span>Generate Lesson Content</span>
+                    </button>
                   </div>
                 )}
               </div>
-            ) : selectedLesson.content ? (
-              <>
-                <div className="mb-8">
-                  <MarkdownRenderer content={selectedLesson.content} />
-                </div>
-
-                {!selectedLesson.completedAt && (
-                  <button
-                    onClick={handleMarkComplete}
-                    className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-medium"
-                  >
-                    <CheckCircle2 size={20} />
-                    <span>Mark as Complete</span>
-                  </button>
-                )}
-              </>
             ) : (
-              <div className="text-center py-12">
-                <Play size={48} className="mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Content not yet generated
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
+                <div className="flex items-center justify-center gap-4 mb-4">
+                  <BookOpen size={48} className="text-gray-400" />
+                  {sidebarCollapsed && (
+                    <button
+                      onClick={() => setSidebarCollapsed(false)}
+                      className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                      title="Show sidebar"
+                    >
+                      <PanelLeftOpen size={24} />
+                    </button>
+                  )}
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {sidebarCollapsed
+                    ? 'Use the button above to show the sidebar and select a lesson'
+                    : 'Select a lesson from the sidebar to begin learning'}
                 </p>
-                <button
-                  onClick={() => generateLessonContent(selectedLesson)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
-                >
-                  <Sparkles size={20} />
-                  <span>Generate Lesson Content</span>
-                </button>
               </div>
             )}
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <BookOpen size={48} className="text-gray-400" />
-              {sidebarCollapsed && (
-                <button
-                  onClick={() => setSidebarCollapsed(false)}
-                  className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
-                  title="Show sidebar"
-                >
-                  <PanelLeftOpen size={24} />
-                </button>
-              )}
-            </div>
-            <p className="text-gray-600 dark:text-gray-400">
-              {sidebarCollapsed 
-                ? 'Use the button above to show the sidebar and select a lesson'
-                : 'Select a lesson from the sidebar to begin learning'}
-            </p>
-          </div>
-        )}
           </motion.div>
         </div>
       </div>

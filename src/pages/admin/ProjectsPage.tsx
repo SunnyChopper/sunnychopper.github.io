@@ -1,6 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, Target, CheckSquare, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Project, CreateProjectInput, UpdateProjectInput, ProjectStatus, Task, EntitySummary, FilterOptions } from '../../types/growth-system';
+import {
+  Plus,
+  Search,
+  ArrowLeft,
+  Edit2,
+  Trash2,
+  Target,
+  CheckSquare,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+import type {
+  Project,
+  CreateProjectInput,
+  UpdateProjectInput,
+  ProjectStatus,
+  Task,
+  EntitySummary,
+  FilterOptions,
+} from '../../types/growth-system';
 import { projectsService } from '../../services/growth-system/projects.service';
 import { tasksService } from '../../services/growth-system/tasks.service';
 import { goalsService } from '../../services/growth-system/goals.service';
@@ -66,7 +85,7 @@ export default function ProjectsPage() {
     try {
       const response = await tasksService.getByProject(projectId);
       if (response.success && response.data) {
-        setProjectTasks(prev => new Map(prev).set(projectId, response.data!));
+        setProjectTasks((prev) => new Map(prev).set(projectId, response.data!));
       }
     } catch (error) {
       console.error('Failed to load project tasks:', error);
@@ -77,7 +96,7 @@ export default function ProjectsPage() {
     try {
       const response = await goalsService.getAll();
       if (response.success && response.data) {
-        const goalEntities: EntitySummary[] = response.data.map(g => ({
+        const goalEntities: EntitySummary[] = response.data.map((g) => ({
           id: g.id,
           title: g.title,
           type: 'goal',
@@ -181,23 +200,25 @@ export default function ProjectsPage() {
 
   const handleGoalSave = () => {
     if (!selectedProject) return;
-    const currentIds = new Set(projectGoals.get(selectedProject.id)?.map(g => g.id) || []);
+    const currentIds = new Set(projectGoals.get(selectedProject.id)?.map((g) => g.id) || []);
     const newIds = new Set(selectedGoalIds);
 
-    currentIds.forEach(id => {
+    currentIds.forEach((id) => {
       if (!newIds.has(id)) {
         handleGoalUnlink(selectedProject.id, id);
       }
     });
 
-    newIds.forEach(id => {
+    newIds.forEach((id) => {
       if (!currentIds.has(id)) {
         handleGoalLink(selectedProject.id, id);
       }
     });
   };
 
-  const handleCreateTasksFromAI = async (newTasks: import('../../types/growth-system').CreateTaskInput[]) => {
+  const handleCreateTasksFromAI = async (
+    newTasks: import('../../types/growth-system').CreateTaskInput[]
+  ) => {
     if (!selectedProject) return;
 
     for (const task of newTasks) {
@@ -211,7 +232,11 @@ export default function ProjectsPage() {
   };
 
   const filteredProjects = projects.filter((project) => {
-    const matchesSearch = !searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase()) || (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch =
+      !searchQuery ||
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (project.description &&
+        project.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesArea = !filters.area || project.area === filters.area;
     const matchesStatus = !filters.status || project.status === filters.status;
     const matchesPriority = !filters.priority || project.priority === filters.priority;
@@ -220,7 +245,7 @@ export default function ProjectsPage() {
 
   const getProjectStats = (projectId: string) => {
     const tasks = projectTasks.get(projectId) || [];
-    const completedTasks = tasks.filter(t => t.status === 'Done').length;
+    const completedTasks = tasks.filter((t) => t.status === 'Done').length;
     const goals = projectGoals.get(projectId) || [];
     return {
       taskCount: tasks.length,
@@ -231,7 +256,7 @@ export default function ProjectsPage() {
 
   if (selectedProject) {
     const tasks = projectTasks.get(selectedProject.id) || [];
-    const completedTasks = tasks.filter(t => t.status === 'Done').length;
+    const completedTasks = tasks.filter((t) => t.status === 'Done').length;
     const progress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
     const goals = projectGoals.get(selectedProject.id) || [];
 
@@ -274,11 +299,7 @@ export default function ProjectsPage() {
               <div className="flex flex-col items-center gap-4">
                 <ProgressRing progress={progress} size="lg" showLabel />
                 <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setIsEditDialogOpen(true)}
-                  >
+                  <Button variant="secondary" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                     <Edit2 className="w-4 h-4 mr-1" />
                     Edit
                   </Button>
@@ -299,7 +320,9 @@ export default function ProjectsPage() {
               {selectedProject.impact > 0 && (
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Impact Score</div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{selectedProject.impact}/10</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {selectedProject.impact}/10
+                  </div>
                 </div>
               )}
               {selectedProject.startDate && (
@@ -323,7 +346,9 @@ export default function ProjectsPage() {
             {selectedProject.notes && (
               <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{selectedProject.notes}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                  {selectedProject.notes}
+                </p>
               </div>
             )}
 
@@ -401,13 +426,8 @@ export default function ProjectsPage() {
                 />
               ) : (
                 <div className="space-y-3">
-                  {tasks.map(task => (
-                    <TaskListItem
-                      key={task.id}
-                      task={task}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                    />
+                  {tasks.map((task) => (
+                    <TaskListItem key={task.id} task={task} onEdit={() => {}} onDelete={() => {}} />
                   ))}
                 </div>
               )}
@@ -423,7 +443,7 @@ export default function ProjectsPage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => {
-                    setSelectedGoalIds(goals.map(g => g.id));
+                    setSelectedGoalIds(goals.map((g) => g.id));
                     setIsGoalPickerOpen(true);
                   }}
                 >
@@ -439,7 +459,7 @@ export default function ProjectsPage() {
                 />
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {goals.map(goal => (
+                  {goals.map((goal) => (
                     <EntityLinkChip
                       key={goal.id}
                       id={goal.id}
@@ -587,9 +607,7 @@ export default function ProjectsPage() {
           </p>
           {projectToDelete && (
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-              <p className="font-semibold text-gray-900 dark:text-white">
-                {projectToDelete.name}
-              </p>
+              <p className="font-semibold text-gray-900 dark:text-white">{projectToDelete.name}</p>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

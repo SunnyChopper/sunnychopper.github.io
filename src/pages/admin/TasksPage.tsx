@@ -1,6 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, List, Kanban, Calendar as CalendarIcon, Network, Filter, X } from 'lucide-react';
-import type { Task, CreateTaskInput, UpdateTaskInput, Area, Priority, TaskStatus, EntitySummary, TaskDependency } from '../../types/growth-system';
+import {
+  Plus,
+  Search,
+  List,
+  Kanban,
+  Calendar as CalendarIcon,
+  Network,
+  Filter,
+  X,
+} from 'lucide-react';
+import type {
+  Task,
+  CreateTaskInput,
+  UpdateTaskInput,
+  Area,
+  Priority,
+  TaskStatus,
+  EntitySummary,
+  TaskDependency,
+} from '../../types/growth-system';
 import { tasksService } from '../../services/growth-system/tasks.service';
 import { projectsService } from '../../services/growth-system/projects.service';
 import { goalsService } from '../../services/growth-system/goals.service';
@@ -14,7 +32,13 @@ import DependencyGraph from '../../components/organisms/DependencyGraph';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
 import { AISuggestionBanner } from '../../components/molecules/AISuggestionBanner';
-import { AREAS, PRIORITIES, TASK_STATUSES, AREA_LABELS, TASK_STATUS_LABELS } from '../../constants/growth-system';
+import {
+  AREAS,
+  PRIORITIES,
+  TASK_STATUSES,
+  AREA_LABELS,
+  TASK_STATUS_LABELS,
+} from '../../constants/growth-system';
 
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'graph';
 
@@ -52,22 +76,22 @@ export default function TasksPage() {
     const depMap = new Map<string, string[]>();
     const blockedMap = new Map<string, string[]>();
     const deps: TaskDependency[] = [];
-    const taskMap = new Map(taskList.map(t => [t.id, t]));
+    const taskMap = new Map(taskList.map((t) => [t.id, t]));
 
     await Promise.all(
       taskList.map(async (task) => {
         const depsResponse = await tasksService.getDependencies(task.id);
         if (depsResponse.success && depsResponse.data) {
           deps.push(...depsResponse.data);
-          const depIds = depsResponse.data.map(d => d.dependsOnTaskId);
+          const depIds = depsResponse.data.map((d) => d.dependsOnTaskId);
           depMap.set(task.id, depIds);
 
-          const incompleteDeps = depIds.filter(depId => {
+          const incompleteDeps = depIds.filter((depId) => {
             const depTask = taskMap.get(depId);
             return depTask && depTask.status !== 'Done';
           });
 
-          incompleteDeps.forEach(depId => {
+          incompleteDeps.forEach((depId) => {
             const current = blockedMap.get(task.id) || [];
             blockedMap.set(task.id, [...current, depId]);
           });
@@ -105,13 +129,15 @@ export default function TasksPage() {
     try {
       const response = await projectsService.getAll();
       if (response.success && response.data) {
-        setAllProjects(response.data.map(p => ({
-          id: p.id,
-          title: p.name,
-          type: 'project' as const,
-          area: p.area,
-          status: p.status
-        })));
+        setAllProjects(
+          response.data.map((p) => ({
+            id: p.id,
+            title: p.name,
+            type: 'project' as const,
+            area: p.area,
+            status: p.status,
+          }))
+        );
       }
     } catch (error) {
       console.error('Failed to load projects:', error);
@@ -122,13 +148,15 @@ export default function TasksPage() {
     try {
       const response = await goalsService.getAll();
       if (response.success && response.data) {
-        setAllGoals(response.data.map(g => ({
-          id: g.id,
-          title: g.title,
-          type: 'goal' as const,
-          area: g.area,
-          status: g.status
-        })));
+        setAllGoals(
+          response.data.map((g) => ({
+            id: g.id,
+            title: g.title,
+            type: 'goal' as const,
+            area: g.area,
+            status: g.status,
+          }))
+        );
       }
     } catch (error) {
       console.error('Failed to load goals:', error);
@@ -249,22 +277,22 @@ export default function TasksPage() {
 
   const getTaskDependencies = (taskId: string): Task[] => {
     const depIds = taskDependencies.get(taskId) || [];
-    return tasks.filter(t => depIds.includes(t.id));
+    return tasks.filter((t) => depIds.includes(t.id));
   };
 
   const getTaskBlockedBy = (taskId: string): Task[] => {
     const blockedIds = taskBlockedBy.get(taskId) || [];
-    return tasks.filter(t => blockedIds.includes(t.id));
+    return tasks.filter((t) => blockedIds.includes(t.id));
   };
 
   const getLinkedProjects = (taskId: string): EntitySummary[] => {
     const projIds = taskProjects.get(taskId) || [];
-    return allProjects.filter(p => projIds.includes(p.id));
+    return allProjects.filter((p) => projIds.includes(p.id));
   };
 
   const getLinkedGoals = (taskId: string): EntitySummary[] => {
     const goalIds = taskGoals.get(taskId) || [];
-    return allGoals.filter(g => goalIds.includes(g.id));
+    return allGoals.filter((g) => goalIds.includes(g.id));
   };
 
   const activeFilterCount = [selectedArea, selectedStatus, selectedPriority].filter(Boolean).length;
@@ -392,12 +420,14 @@ export default function TasksPage() {
               </label>
               <select
                 value={selectedArea || ''}
-                onChange={(e) => setSelectedArea(e.target.value as Area || undefined)}
+                onChange={(e) => setSelectedArea((e.target.value as Area) || undefined)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Areas</option>
-                {AREA_OPTIONS.map(area => (
-                  <option key={area} value={area}>{AREA_LABELS[area]}</option>
+                {AREA_OPTIONS.map((area) => (
+                  <option key={area} value={area}>
+                    {AREA_LABELS[area]}
+                  </option>
                 ))}
               </select>
             </div>
@@ -407,12 +437,14 @@ export default function TasksPage() {
               </label>
               <select
                 value={selectedStatus || ''}
-                onChange={(e) => setSelectedStatus(e.target.value as TaskStatus || undefined)}
+                onChange={(e) => setSelectedStatus((e.target.value as TaskStatus) || undefined)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Statuses</option>
-                {STATUS_OPTIONS.map(status => (
-                  <option key={status} value={status}>{TASK_STATUS_LABELS[status]}</option>
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {TASK_STATUS_LABELS[status]}
+                  </option>
                 ))}
               </select>
             </div>
@@ -422,12 +454,14 @@ export default function TasksPage() {
               </label>
               <select
                 value={selectedPriority || ''}
-                onChange={(e) => setSelectedPriority(e.target.value as Priority || undefined)}
+                onChange={(e) => setSelectedPriority((e.target.value as Priority) || undefined)}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Priorities</option>
-                {PRIORITY_OPTIONS.map(priority => (
-                  <option key={priority} value={priority}>{priority}</option>
+                {PRIORITY_OPTIONS.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
                 ))}
               </select>
             </div>
@@ -495,10 +529,7 @@ export default function TasksPage() {
       )}
 
       {viewMode === 'calendar' && (
-        <TaskCalendarView
-          tasks={filteredTasks}
-          onTaskClick={handleEditTask}
-        />
+        <TaskCalendarView tasks={filteredTasks} onTaskClick={handleEditTask} />
       )}
 
       {viewMode === 'graph' && (
@@ -506,7 +537,7 @@ export default function TasksPage() {
           tasks={filteredTasks}
           dependencies={allDependencies}
           onTaskClick={(taskId) => {
-            const task = filteredTasks.find(t => t.id === taskId);
+            const task = filteredTasks.find((t) => t.id === taskId);
             if (task) handleEditTask(task);
           }}
         />
@@ -556,11 +587,7 @@ export default function TasksPage() {
         />
       )}
 
-      <Dialog
-        isOpen={!!taskToDelete}
-        onClose={() => setTaskToDelete(null)}
-        title="Delete Task"
-      >
+      <Dialog isOpen={!!taskToDelete} onClose={() => setTaskToDelete(null)} title="Delete Task">
         <div className="space-y-4">
           <p className="text-gray-700 dark:text-gray-300">
             Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
@@ -569,7 +596,11 @@ export default function TasksPage() {
             <Button variant="secondary" onClick={() => setTaskToDelete(null)}>
               Cancel
             </Button>
-            <Button variant="primary" onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            <Button
+              variant="primary"
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
               Delete
             </Button>
           </div>

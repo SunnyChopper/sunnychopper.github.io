@@ -9,6 +9,7 @@
 ## Overview
 
 The implementation is divided into 6 phases, each delivering a working vertical slice that can be tested end-to-end. This approach allows for:
+
 - Early validation of architecture decisions
 - Incremental value delivery
 - Easier debugging and testing
@@ -114,11 +115,13 @@ Handle all Cognito exceptions with appropriate HTTP errors.
 ### Tasks
 
 #### DynamoDB Layer
+
 - [ ] Create `src/db/dynamodb.py` with table client wrapper
 - [ ] Create `src/db/models.py` with entity helpers
 - [ ] Create `src/utils/ids.py` for ID generation (ULID)
 
 #### Tasks Service
+
 - [ ] Implement `TasksService` with CRUD operations
 - [ ] Implement task dependencies (separate items)
 - [ ] Implement task completion (points calculation)
@@ -126,6 +129,7 @@ Handle all Cognito exceptions with appropriate HTTP errors.
 - [ ] Test task CRUD via API
 
 #### Goals Service
+
 - [ ] Implement `GoalsService` with CRUD operations
 - [ ] Implement success criteria (embedded)
 - [ ] Implement goal-task linking (separate items)
@@ -133,12 +137,14 @@ Handle all Cognito exceptions with appropriate HTTP errors.
 - [ ] Test goal CRUD via API
 
 #### Goal Progress
+
 - [ ] Implement `GoalProgressService`
 - [ ] Calculate progress from criteria, tasks
 - [ ] Cache progress on goal entity
 - [ ] Trigger recalculation on task completion
 
 #### Frontend Integration
+
 - [ ] Update `APIStorageAdapter` to include auth headers
 - [ ] Test Tasks page against API
 - [ ] Test Goals page against API
@@ -196,6 +202,7 @@ Include GSI attributes for status/area queries.
 ### Tasks
 
 #### Metrics Service
+
 - [ ] Implement `MetricsService` with CRUD
 - [ ] Implement metric logs (separate items, time-sorted SK)
 - [ ] Implement milestone detection
@@ -203,6 +210,7 @@ Include GSI attributes for status/area queries.
 - [ ] Create metric routes with all endpoints
 
 #### Habits Service
+
 - [ ] Implement `HabitsService` with CRUD
 - [ ] Implement habit logs (date-based SK)
 - [ ] Implement streak calculation
@@ -210,11 +218,13 @@ Include GSI attributes for status/area queries.
 - [ ] Create `/habits/today` endpoint
 
 #### Goal Progress Extension
+
 - [ ] Add metrics progress to goal calculation
 - [ ] Add habits progress to goal calculation
 - [ ] Implement goal-metric and goal-habit linking
 
 #### Frontend Integration
+
 - [ ] Test Metrics page against API
 - [ ] Test Habits page against API
 
@@ -264,23 +274,27 @@ Implement Metrics service for personal-os-api:
 ### Tasks
 
 #### Projects Service
+
 - [ ] Implement `ProjectsService` with CRUD
 - [ ] Implement project-task linking
 - [ ] Implement project health calculation
 - [ ] Create project routes
 
 #### Logbook Service
+
 - [ ] Implement `LogbookService` with CRUD
 - [ ] Implement entity linking (embedded arrays)
 - [ ] Create logbook routes
 
 #### Rewards Service
+
 - [ ] Implement `RewardsService` with CRUD
 - [ ] Implement `WalletService`
 - [ ] Implement reward redemption
 - [ ] Create rewards and wallet routes
 
 #### Frontend Integration
+
 - [ ] Test Projects page
 - [ ] Test Logbook page
 - [ ] Test Rewards page
@@ -300,12 +314,14 @@ Implement Metrics service for personal-os-api:
 ### Tasks
 
 #### AI Infrastructure
+
 - [ ] Implement Secrets Manager integration (`src/ai/config.py`)
 - [ ] Implement provider factory (`src/ai/providers/`)
 - [ ] Create base provider abstract class
 - [ ] Implement Anthropic, OpenAI, Gemini, Groq providers
 
 #### AI Schemas
+
 - [ ] Port all Zod schemas to Pydantic (`src/ai/schemas/`)
 - [ ] Task schemas (parse, breakdown, priority, effort, categorize)
 - [ ] Goal schemas (refine, criteria, cascade, forecast)
@@ -313,6 +329,7 @@ Implement Metrics service for personal-os-api:
 - [ ] Habit schemas (design, stack, recovery)
 
 #### AI Features
+
 - [ ] Implement Task AI features (7 features)
 - [ ] Implement Goal AI features (7 features)
 - [ ] Implement Metric AI features (6 features)
@@ -321,10 +338,12 @@ Implement Metrics service for personal-os-api:
 - [ ] Implement Logbook AI features (6 features)
 
 #### AI Routes
+
 - [ ] Create `/ai/*` routes
 - [ ] Implement caching for expensive operations
 
 #### Frontend Integration
+
 - [ ] Update `llm-config.ts` to use API adapter
 - [ ] Create `APILLMAdapter` implementation
 - [ ] Test AI features via UI
@@ -382,12 +401,14 @@ Use same prompts as frontend (port from llm-prompts.ts).
 ### Tasks
 
 #### Knowledge Vault
+
 - [ ] Implement courses service
 - [ ] Implement flashcards service
 - [ ] Implement skill tree service
 - [ ] Create knowledge routes
 
 #### Production Hardening
+
 - [ ] Add comprehensive error handling
 - [ ] Add request validation
 - [ ] Add rate limiting
@@ -396,11 +417,13 @@ Use same prompts as frontend (port from llm-prompts.ts).
 - [ ] Security audit
 
 #### Testing
+
 - [ ] Write unit tests for services
 - [ ] Write integration tests for routes
 - [ ] Load testing
 
 #### Production Deployment
+
 - [ ] Deploy to `prod` environment
 - [ ] Configure `api.sunnysingh.tech`
 - [ ] Update frontend to use prod API
@@ -418,39 +441,46 @@ Use same prompts as frontend (port from llm-prompts.ts).
 ## Implementation Checklist Summary
 
 ### Phase 0: Setup
+
 - [ ] Project structure created
 - [ ] Infrastructure deployed (DynamoDB, Cognito)
 - [ ] Custom domain configured
 - [ ] Health check working
 
 ### Phase 1: Auth
+
 - [ ] Signup/Login/Refresh working
 - [ ] JWT validation working
 - [ ] Frontend auth integrated
 
 ### Phase 2: Tasks & Goals
+
 - [ ] Tasks CRUD working
 - [ ] Goals CRUD working
 - [ ] Task-Goal linking working
 - [ ] Goal progress calculation working
 
 ### Phase 3: Metrics & Habits
+
 - [ ] Metrics CRUD + logs working
 - [ ] Habits CRUD + logs working
 - [ ] Milestones + wallet working
 - [ ] Complete goal progress
 
 ### Phase 4: Projects, Logbook, Rewards
+
 - [ ] Projects working
 - [ ] Logbook working
 - [ ] Rewards + wallet working
 
 ### Phase 5: AI Features
+
 - [ ] 33 AI features ported
 - [ ] Secrets Manager integration
 - [ ] Frontend using API for AI
 
 ### Phase 6: Knowledge Vault & Production
+
 - [ ] Knowledge Vault working
 - [ ] Production deployed
 - [ ] All features tested
@@ -459,13 +489,13 @@ Use same prompts as frontend (port from llm-prompts.ts).
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
+| Risk               | Mitigation                                         |
+| ------------------ | -------------------------------------------------- |
 | Cold start latency | Use provisioned concurrency for critical functions |
-| LLM API costs | Implement caching, use cost-optimized model mix |
-| DynamoDB costs | Start with on-demand, monitor usage |
-| Scope creep | Stick to phased plan, defer nice-to-haves |
-| Auth complexity | Use Cognito managed service, minimal custom code |
+| LLM API costs      | Implement caching, use cost-optimized model mix    |
+| DynamoDB costs     | Start with on-demand, monitor usage                |
+| Scope creep        | Stick to phased plan, defer nice-to-haves          |
+| Auth complexity    | Use Cognito managed service, minimal custom code   |
 
 ---
 

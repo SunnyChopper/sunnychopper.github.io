@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN adding animations, transitions, and motion to the UI."
-globs: ""
+description: 'USE WHEN adding animations, transitions, and motion to the UI.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -12,22 +12,22 @@ Standards for smooth, purposeful animations.
 
 ```tsx
 // Simple transition
-className="transition"
-className="transition-colors"
-className="transition-opacity"
-className="transition-transform"
-className="transition-all"
+className = 'transition';
+className = 'transition-colors';
+className = 'transition-opacity';
+className = 'transition-transform';
+className = 'transition-all';
 
 // With duration
-className="transition duration-150"  // Fast (interactions)
-className="transition duration-200"  // Default
-className="transition duration-300"  // Medium
-className="transition duration-500"  // Slow (page transitions)
+className = 'transition duration-150'; // Fast (interactions)
+className = 'transition duration-200'; // Default
+className = 'transition duration-300'; // Medium
+className = 'transition duration-500'; // Slow (page transitions)
 
 // With easing
-className="transition ease-in"
-className="transition ease-out"
-className="transition ease-in-out"
+className = 'transition ease-in';
+className = 'transition ease-out';
+className = 'transition ease-in-out';
 ```
 
 ## Common Transitions
@@ -36,26 +36,23 @@ className="transition ease-in-out"
 
 ```tsx
 // Color change
-className="transition-colors hover:bg-gray-100"
+className = 'transition-colors hover:bg-gray-100';
 
 // Scale on hover
-className="transition-transform hover:scale-105"
+className = 'transition-transform hover:scale-105';
 
 // Opacity change
-className="transition-opacity opacity-80 hover:opacity-100"
+className = 'transition-opacity opacity-80 hover:opacity-100';
 
 // Shadow change
-className="transition-shadow hover:shadow-lg"
+className = 'transition-shadow hover:shadow-lg';
 ```
 
 ### Fade In/Out
 
 ```tsx
 // Conditional render with opacity
-<div className={cn(
-  'transition-opacity duration-200',
-  isVisible ? 'opacity-100' : 'opacity-0'
-)}>
+<div className={cn('transition-opacity duration-200', isVisible ? 'opacity-100' : 'opacity-0')}>
   Content
 </div>
 ```
@@ -106,31 +103,29 @@ className="transition-shadow hover:shadow-lg"
 
 ```tsx
 // Spin (loading)
-className="animate-spin"
+className = 'animate-spin';
 
 // Ping (notification)
-className="animate-ping"
+className = 'animate-ping';
 
 // Pulse (skeleton loading)
-className="animate-pulse"
+className = 'animate-pulse';
 
 // Bounce
-className="animate-bounce"
+className = 'animate-bounce';
 ```
 
 ## Staggered Animations
 
 ```tsx
 // Stagger children entry
-{items.map((item, index) => (
-  <div
-    key={item.id}
-    className="animate-fadeIn"
-    style={{ animationDelay: `${index * 50}ms` }}
-  >
-    {item.content}
-  </div>
-))}
+{
+  items.map((item, index) => (
+    <div key={item.id} className="animate-fadeIn" style={{ animationDelay: `${index * 50}ms` }}>
+      {item.content}
+    </div>
+  ));
+}
 ```
 
 ## Framer Motion Patterns
@@ -190,12 +185,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 ### Purpose
 
 Animations should:
+
 - Provide feedback on interactions
 - Guide attention to changes
 - Create spatial relationships
 - Maintain context during transitions
 
 Animations should NOT:
+
 - Distract from content
 - Block user actions
 - Cause motion sickness
@@ -205,11 +202,9 @@ Animations should NOT:
 
 ```tsx
 // Respect user's motion preferences
-className="motion-safe:animate-bounce"
-className="motion-reduce:transition-none"
+className = 'motion-safe:animate-bounce';
+className = 'motion-reduce:transition-none';
 
 // Or check in JS
-const prefersReducedMotion = window.matchMedia(
-  '(prefers-reduced-motion: reduce)'
-).matches;
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 ```

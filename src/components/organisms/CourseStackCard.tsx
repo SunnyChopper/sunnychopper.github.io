@@ -14,11 +14,11 @@ function formatDate(dateString: string | null): string {
 }
 
 export default function CourseStackCard({ course, lessons, onClick }: CourseStackCardProps) {
-  const completedLessons = lessons.filter(l => l.completedAt).length;
+  const completedLessons = lessons.filter((l) => l.completedAt).length;
   const totalLessons = lessons.length;
   const completionPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
   const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.estimatedMinutes || 0), 0);
-  const totalHours = Math.round(totalMinutes / 60 * 10) / 10;
+  const totalHours = Math.round((totalMinutes / 60) * 10) / 10;
 
   const mostRecentUpdate = lessons.reduce((latest, lesson) => {
     const lessonDate = new Date(lesson.updatedAt);
@@ -93,7 +93,10 @@ export default function CourseStackCard({ course, lessons, onClick }: CourseStac
                 className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400"
               >
                 {lesson.completedAt ? (
-                  <CheckCircle2 size={14} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                  <CheckCircle2
+                    size={14}
+                    className="text-green-600 dark:text-green-400 flex-shrink-0"
+                  />
                 ) : (
                   <div className="w-3 h-3 rounded-full border-2 border-gray-300 dark:border-gray-600 flex-shrink-0" />
                 )}

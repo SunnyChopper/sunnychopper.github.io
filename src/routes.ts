@@ -60,5 +60,3 @@ export const ADMIN_CHILD_ROUTES = {
   knowledgeVaultFlashcards: 'knowledge-vault/flashcards' as const,
   knowledgeVaultCollider: 'knowledge-vault/collider' as const,
 } as const;
-
-

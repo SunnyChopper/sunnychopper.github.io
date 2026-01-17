@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN implementing conditional rendering patterns in React components."
-globs: ""
+description: 'USE WHEN implementing conditional rendering patterns in React components.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -14,35 +14,46 @@ Standards for conditional rendering patterns in React.
 
 ```tsx
 // Show element when condition is true
-{isLoggedIn && <UserMenu />}
+{
+  isLoggedIn && <UserMenu />;
+}
 
 // With multiple conditions
-{isAdmin && hasPermission && <AdminPanel />}
+{
+  isAdmin && hasPermission && <AdminPanel />;
+}
 
 // CAUTION: Avoid with numbers (0 renders as "0")
 // Bad:
-{count && <Badge>{count}</Badge>}  // Renders "0" when count is 0
+{
+  count && <Badge>{count}</Badge>;
+} // Renders "0" when count is 0
 
 // Good:
-{count > 0 && <Badge>{count}</Badge>}
-{count ? <Badge>{count}</Badge> : null}
+{
+  count > 0 && <Badge>{count}</Badge>;
+}
+{
+  count ? <Badge>{count}</Badge> : null;
+}
 ```
 
 ### Ternary Operator
 
 ```tsx
 // Choose between two elements
-{isLoading ? <Spinner /> : <Content />}
+{
+  isLoading ? <Spinner /> : <Content />;
+}
 
 // With null fallback
-{error ? <ErrorMessage error={error} /> : null}
+{
+  error ? <ErrorMessage error={error} /> : null;
+}
 
 // Nested (avoid deep nesting)
-{isLoading
-  ? <Spinner />
-  : error
-    ? <ErrorMessage />
-    : <Content />
+{
+  isLoading ? <Spinner /> : error ? <ErrorMessage /> : <Content />;
 }
 ```
 
@@ -88,7 +99,9 @@ function TaskList() {
 
   return (
     <ul>
-      {data.map(task => <TaskCard key={task.id} task={task} />)}
+      {data.map((task) => (
+        <TaskCard key={task.id} task={task} />
+      ))}
     </ul>
   );
 }
@@ -172,7 +185,7 @@ function Show({
 // Usage
 <Show when={isAdmin} fallback={<AccessDenied />}>
   <AdminPanel />
-</Show>
+</Show>;
 
 // Reusable Switch component
 function Switch({
@@ -196,7 +209,7 @@ function Switch({
     completed: <CompletedBadge />,
   }}
   default={<UnknownBadge />}
-/>
+/>;
 ```
 
 ## Avoid These Patterns
@@ -204,14 +217,20 @@ function Switch({
 ```tsx
 // Don't use index as conditional
 // Bad:
-{items.length && <List items={items} />}  // Renders 0
+{
+  items.length && <List items={items} />;
+} // Renders 0
 
 // Good:
-{items.length > 0 && <List items={items} />}
+{
+  items.length > 0 && <List items={items} />;
+}
 
 // Don't deeply nest ternaries
 // Bad:
-{a ? b ? c : d : e ? f : g}
+{
+  a ? (b ? c : d) : e ? f : g;
+}
 
 // Good: Use early returns or extract to variables
 const content = useMemo(() => {
@@ -223,8 +242,12 @@ const content = useMemo(() => {
 
 // Don't mix && and ternary confusingly
 // Bad:
-{isLoading && data ? <Content /> : <Empty />}
+{
+  isLoading && data ? <Content /> : <Empty />;
+}
 
 // Good:
-{isLoading ? <Spinner /> : data ? <Content /> : <Empty />}
+{
+  isLoading ? <Spinner /> : data ? <Content /> : <Empty />;
+}
 ```

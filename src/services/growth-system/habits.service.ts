@@ -78,13 +78,18 @@ export const habitsService = {
   async logCompletion(input: CreateHabitLogInput): Promise<ApiResponse<HabitLog>> {
     const response = await apiClient.post<HabitLog>(`/habits/${input.habitId}/logs`, {
       completed: true,
-      date: input.completedAt ? new Date(input.completedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      date: input.completedAt
+        ? new Date(input.completedAt).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
       notes: input.notes,
     });
     return response;
   },
 
-  async getLogsByHabit(habitId: string, filters?: { startDate?: string; endDate?: string }): Promise<ApiListResponse<HabitLog>> {
+  async getLogsByHabit(
+    habitId: string,
+    filters?: { startDate?: string; endDate?: string }
+  ): Promise<ApiListResponse<HabitLog>> {
     const queryParams = new URLSearchParams();
     if (filters?.startDate) queryParams.append('startDate', filters.startDate);
     if (filters?.endDate) queryParams.append('endDate', filters.endDate);

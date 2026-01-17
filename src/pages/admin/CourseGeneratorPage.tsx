@@ -112,7 +112,7 @@ export default function CourseGeneratorPage() {
   };
 
   const handleAnswerChange = (questionId: string, answer: string) => {
-    setAssessmentResponses(prev => ({
+    setAssessmentResponses((prev) => ({
       ...prev,
       [questionId]: answer,
     }));
@@ -137,15 +137,21 @@ export default function CourseGeneratorPage() {
 
       <div className="flex items-center justify-center mb-8">
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'topic' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'topic' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}
+          >
             1
           </div>
           <div className="w-16 h-1 bg-gray-300 dark:bg-gray-700" />
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'assessment' || step === 'generating' || step === 'review' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'assessment' || step === 'generating' || step === 'review' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}
+          >
             2
           </div>
           <div className="w-16 h-1 bg-gray-300 dark:bg-gray-700" />
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'review' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'review' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}
+          >
             3
           </div>
         </div>
@@ -182,7 +188,7 @@ export default function CourseGeneratorPage() {
                 Target Difficulty Level
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {DIFFICULTIES.map(level => (
+                {DIFFICULTIES.map((level) => (
                   <button
                     key={level}
                     onClick={() => setDifficulty(level)}
@@ -266,7 +272,9 @@ export default function CourseGeneratorPage() {
             </button>
             <button
               onClick={handleAssessmentSubmit}
-              disabled={loading || Object.keys(assessmentResponses).length < assessmentQuestions.length}
+              disabled={
+                loading || Object.keys(assessmentResponses).length < assessmentQuestions.length
+              }
               className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg transition font-medium"
             >
               <Sparkles size={20} />
@@ -330,15 +338,16 @@ export default function CourseGeneratorPage() {
                   { phase: 'generating', label: 'Generating Content', icon: '✍️' },
                 ].map((phaseInfo, index) => {
                   const isActive = generationProgress.phase === phaseInfo.phase;
-                  const isCompleted = [
-                    'strategizing',
-                    'architecting',
-                    'mapping',
-                    'validating',
-                    'refining',
-                    'generating',
-                  ].indexOf(generationProgress.phase) > index;
-                  
+                  const isCompleted =
+                    [
+                      'strategizing',
+                      'architecting',
+                      'mapping',
+                      'validating',
+                      'refining',
+                      'generating',
+                    ].indexOf(generationProgress.phase) > index;
+
                   return (
                     <div
                       key={phaseInfo.phase}
@@ -346,8 +355,8 @@ export default function CourseGeneratorPage() {
                         isActive
                           ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500'
                           : isCompleted
-                          ? 'bg-gray-50 dark:bg-gray-900/50 opacity-60'
-                          : 'bg-gray-50 dark:bg-gray-900/30'
+                            ? 'bg-gray-50 dark:bg-gray-900/50 opacity-60'
+                            : 'bg-gray-50 dark:bg-gray-900/30'
                       }`}
                     >
                       <div
@@ -363,8 +372,8 @@ export default function CourseGeneratorPage() {
                             isActive
                               ? 'text-green-700 dark:text-green-300'
                               : isCompleted
-                              ? 'text-gray-500 dark:text-gray-400'
-                              : 'text-gray-400 dark:text-gray-500'
+                                ? 'text-gray-500 dark:text-gray-400'
+                                : 'text-gray-400 dark:text-gray-500'
                           }`}
                         >
                           {phaseInfo.label}
@@ -373,9 +382,7 @@ export default function CourseGeneratorPage() {
                       {isActive && (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
                       )}
-                      {isCompleted && (
-                        <div className="text-green-600 dark:text-green-400">✓</div>
-                      )}
+                      {isCompleted && <div className="text-green-600 dark:text-green-400">✓</div>}
                     </div>
                   );
                 })}

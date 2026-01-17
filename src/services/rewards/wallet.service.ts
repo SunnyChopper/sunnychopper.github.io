@@ -1,8 +1,5 @@
 import { apiClient } from '../../lib/api-client';
-import type {
-  WalletBalance,
-  WalletTransaction,
-} from '../../types/rewards';
+import type { WalletBalance, WalletTransaction } from '../../types/rewards';
 import type { ApiResponse } from '../../types/api-contracts';
 
 interface WalletResponse {
@@ -54,16 +51,16 @@ export const walletService = {
     sourceEntityType?: 'task' | 'reward' | null,
     sourceEntityId?: string | null
   ): Promise<ApiResponse<{ balance: WalletBalance; transaction: WalletTransaction }>> {
-    const response = await apiClient.post<{ balance: WalletBalance; transaction: WalletTransaction }>(
-      '/wallet/add',
-      {
-        amount,
-        source,
-        description,
-        sourceEntityType,
-        sourceEntityId,
-      }
-    );
+    const response = await apiClient.post<{
+      balance: WalletBalance;
+      transaction: WalletTransaction;
+    }>('/wallet/add', {
+      amount,
+      source,
+      description,
+      sourceEntityType,
+      sourceEntityId,
+    });
     if (response.success && response.data) {
       return { data: response.data, error: null, success: true };
     }

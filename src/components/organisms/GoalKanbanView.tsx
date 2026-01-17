@@ -8,16 +8,33 @@ import { PriorityIndicator } from '../atoms/PriorityIndicator';
 interface GoalKanbanViewProps {
   goals: Goal[];
   goalsProgress: Map<string, GoalProgressBreakdown>;
-  goalsLinkedCounts: Map<string, { tasks: number; metrics: number; habits: number; projects: number }>;
-  goalsHealth: Map<string, { status: 'healthy' | 'at_risk' | 'behind' | 'dormant'; daysRemaining: number | null; momentum: 'active' | 'dormant' }>;
+  goalsLinkedCounts: Map<
+    string,
+    { tasks: number; metrics: number; habits: number; projects: number }
+  >;
+  goalsHealth: Map<
+    string,
+    {
+      status: 'healthy' | 'at_risk' | 'behind' | 'dormant';
+      daysRemaining: number | null;
+      momentum: 'active' | 'dormant';
+    }
+  >;
   onGoalClick: (goal: Goal) => void;
-  onQuickAction?: (goalId: string, action: 'add_task' | 'log_metric' | 'complete_criterion') => void;
+  onQuickAction?: (
+    goalId: string,
+    action: 'add_task' | 'log_metric' | 'complete_criterion'
+  ) => void;
   onGoalUpdate?: (goalId: string, updates: Partial<Goal>) => Promise<void>;
   onCreateGoal?: (status: GoalStatus) => void;
 }
 
 const KANBAN_COLUMNS: { status: GoalStatus; label: string; color: string }[] = [
-  { status: 'Planning', label: 'Planning', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' },
+  {
+    status: 'Planning',
+    label: 'Planning',
+    color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
+  },
   { status: 'Active', label: 'Active', color: 'bg-blue-500 text-white' },
   { status: 'OnTrack', label: 'On Track', color: 'bg-green-500 text-white' },
   { status: 'AtRisk', label: 'At Risk', color: 'bg-orange-500 text-white' },
@@ -133,9 +150,7 @@ export function GoalKanbanView({
               {/* Column Header */}
               <div className={`${column.color} px-4 py-3 rounded-t-lg shadow-sm`}>
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-bold text-sm uppercase tracking-wide">
-                    {column.label}
-                  </h3>
+                  <h3 className="font-bold text-sm uppercase tracking-wide">{column.label}</h3>
                   <div className="flex items-center gap-1">
                     {onCreateGoal && (
                       <button
@@ -154,7 +169,7 @@ export function GoalKanbanView({
                       >
                         <MoreVertical className="w-4 h-4" />
                       </button>
-                      
+
                       {openMenuStatus === column.status && (
                         <div
                           ref={(el) => {
@@ -167,20 +182,24 @@ export function GoalKanbanView({
                           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                             Move All Goals
                           </div>
-                          {KANBAN_COLUMNS.filter((s) => s.status !== column.status).map((targetColumn) => (
-                            <button
-                              key={targetColumn.status}
-                              onClick={() => handleMoveAllGoals(column.status, targetColumn.status)}
-                              disabled={statusGoals.length === 0}
-                              className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <ArrowRight className="w-4 h-4" />
-                              <span>To {targetColumn.label}</span>
-                            </button>
-                          ))}
-                          
+                          {KANBAN_COLUMNS.filter((s) => s.status !== column.status).map(
+                            (targetColumn) => (
+                              <button
+                                key={targetColumn.status}
+                                onClick={() =>
+                                  handleMoveAllGoals(column.status, targetColumn.status)
+                                }
+                                disabled={statusGoals.length === 0}
+                                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <ArrowRight className="w-4 h-4" />
+                                <span>To {targetColumn.label}</span>
+                              </button>
+                            )
+                          )}
+
                           <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                          
+
                           {/* Column info */}
                           <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
                             {statusGoals.length} {statusGoals.length === 1 ? 'goal' : 'goals'}
@@ -192,7 +211,9 @@ export function GoalKanbanView({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-xs opacity-90">
-                  <span>{statusGoals.length} {statusGoals.length === 1 ? 'goal' : 'goals'}</span>
+                  <span>
+                    {statusGoals.length} {statusGoals.length === 1 ? 'goal' : 'goals'}
+                  </span>
                   {statusGoals.length > 0 && (
                     <>
                       <span>•</span>
@@ -203,9 +224,13 @@ export function GoalKanbanView({
               </div>
 
               {/* Column Content */}
-              <div className={`flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg p-3 space-y-2.5 overflow-y-auto shadow-sm transition-colors ${
-                isDragOver ? 'ring-2 ring-blue-400 dark:ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
-              }`}>
+              <div
+                className={`flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg p-3 space-y-2.5 overflow-y-auto shadow-sm transition-colors ${
+                  isDragOver
+                    ? 'ring-2 ring-blue-400 dark:ring-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : ''
+                }`}
+              >
                 {statusGoals.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
@@ -276,7 +301,9 @@ export function GoalKanbanView({
                           <div className="mb-3">
                             <div className="flex items-center justify-between text-xs mb-1">
                               <span className="text-gray-600 dark:text-gray-400">Progress</span>
-                              <span className="font-semibold text-gray-900 dark:text-white">{progress.overall}%</span>
+                              <span className="font-semibold text-gray-900 dark:text-white">
+                                {progress.overall}%
+                              </span>
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                               <div
@@ -307,13 +334,15 @@ export function GoalKanbanView({
                             </>
                           )}
                           {health && health.daysRemaining !== null && (
-                            <span className={`text-xs px-2 py-1 rounded font-medium ${
-                              health.daysRemaining < 7
-                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                                : health.daysRemaining < 30
-                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                            }`}>
+                            <span
+                              className={`text-xs px-2 py-1 rounded font-medium ${
+                                health.daysRemaining < 7
+                                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                  : health.daysRemaining < 30
+                                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                    : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                              }`}
+                            >
                               {health.daysRemaining}d left
                             </span>
                           )}

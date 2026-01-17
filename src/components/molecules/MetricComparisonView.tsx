@@ -24,9 +24,7 @@ export function MetricComparisonView({
   }, [primaryMetric.id, allMetrics, allLogs]);
 
   const strongCorrelations = useMemo(() => {
-    return correlations.filter(
-      (c) => c.strength === 'moderate' || c.strength === 'strong'
-    );
+    return correlations.filter((c) => c.strength === 'moderate' || c.strength === 'strong');
   }, [correlations]);
 
   return (
@@ -40,10 +38,7 @@ export function MetricComparisonView({
           <div className="space-y-3">
             {strongCorrelations.map((corr) => {
               const otherLogs = allLogs.get(corr.otherMetric.id) || [];
-              const correlationResult = calculateCorrelations(
-                primaryLogs,
-                otherLogs
-              );
+              const correlationResult = calculateCorrelations(primaryLogs, otherLogs);
 
               return (
                 <div
@@ -83,8 +78,11 @@ export function MetricComparisonView({
                       {correlationResult.strength === 'strong'
                         ? 'Strong relationship: '
                         : 'Moderate relationship: '}
-                      When {primaryMetric.name} changes, {corr.otherMetric.name}{' '}
-                      tends to {corr.direction === 'positive' ? 'move in the same direction' : 'move in the opposite direction'}.
+                      When {primaryMetric.name} changes, {corr.otherMetric.name} tends to{' '}
+                      {corr.direction === 'positive'
+                        ? 'move in the same direction'
+                        : 'move in the opposite direction'}
+                      .
                     </p>
                   )}
                   {onMetricSelect && (

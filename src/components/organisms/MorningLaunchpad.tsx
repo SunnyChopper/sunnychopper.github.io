@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Calendar, Target, CheckCircle2, ArrowRight, Sparkles, Flame, Rocket, ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  X,
+  Clock,
+  Calendar,
+  Target,
+  CheckCircle2,
+  ArrowRight,
+  Sparkles,
+  Flame,
+  Rocket,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
 import { useTasks, useHabits, useGoals } from '../../hooks/useGrowthSystem';
 import type { Task } from '../../types/growth-system';
 import { Link, useNavigate } from 'react-router-dom';
@@ -32,17 +44,15 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toDateString();
 
-    const activeTasks = tasks.filter(task => {
+    const activeTasks = tasks.filter((task) => {
       if (task.status === 'Done' || task.status === 'Cancelled') return false;
 
-      const isScheduledForToday = task.scheduledDate &&
-        new Date(task.scheduledDate).toDateString() === todayStr;
+      const isScheduledForToday =
+        task.scheduledDate && new Date(task.scheduledDate).toDateString() === todayStr;
 
-      const isOverdue = task.dueDate &&
-        new Date(task.dueDate) < today;
+      const isOverdue = task.dueDate && new Date(task.dueDate) < today;
 
-      const isDueToday = task.dueDate &&
-        new Date(task.dueDate).toDateString() === todayStr;
+      const isDueToday = task.dueDate && new Date(task.dueDate).toDateString() === todayStr;
 
       return isScheduledForToday || isOverdue || isDueToday;
     });
@@ -87,14 +97,14 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
 
   const handleMarkAsDone = async (task: Task) => {
     setCompletingTaskId(task.id);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     await updateTask({
       id: task.id,
       input: {
         status: 'Done',
         completedDate: new Date().toISOString(),
-      }
+      },
     });
 
     setCompletingTaskId(null);
@@ -109,7 +119,7 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
       id: task.id,
       input: {
         scheduledDate: tomorrow.toISOString(),
-      }
+      },
     });
   };
 
@@ -135,14 +145,17 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
     else if (hour >= 18) greeting = 'Good evening';
 
     const taskCount = orderedTasks.length;
-    const highPriorityCount = orderedTasks.filter(t => t.priority === 'P1' || t.priority === 'P2').length;
-    const dailyHabits = habits.filter(h => h.frequency === 'Daily');
-    const activeGoals = goals.filter(g => g.status === 'Active');
+    const highPriorityCount = orderedTasks.filter(
+      (t) => t.priority === 'P1' || t.priority === 'P2'
+    ).length;
+    const dailyHabits = habits.filter((h) => h.frequency === 'Daily');
+    const activeGoals = goals.filter((g) => g.status === 'Active');
 
     let briefingText = `${greeting}! `;
 
     if (taskCount === 0) {
-      briefingText += "You have no tasks scheduled for today. This is a great opportunity to plan ahead, work on personal projects, or take some well-deserved rest.";
+      briefingText +=
+        'You have no tasks scheduled for today. This is a great opportunity to plan ahead, work on personal projects, or take some well-deserved rest.';
     } else {
       briefingText += `You have ${taskCount} task${taskCount !== 1 ? 's' : ''} scheduled for today`;
       if (highPriorityCount > 0) {
@@ -151,11 +164,14 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
       briefingText += '. ';
 
       if (hour < 12) {
-        briefingText += 'Start your day by tackling the most important tasks first. Your fresh morning energy is perfect for challenging work.';
+        briefingText +=
+          'Start your day by tackling the most important tasks first. Your fresh morning energy is perfect for challenging work.';
       } else if (hour < 18) {
-        briefingText += 'Keep your momentum going. Review your progress and adjust your focus as needed.';
+        briefingText +=
+          'Keep your momentum going. Review your progress and adjust your focus as needed.';
       } else {
-        briefingText += 'As the day winds down, focus on completing key tasks and preparing for tomorrow.';
+        briefingText +=
+          'As the day winds down, focus on completing key tasks and preparing for tomorrow.';
       }
     }
 
@@ -173,10 +189,8 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
   const completedToday = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return tasks.filter(t =>
-      t.status === 'Done' &&
-      t.completedDate &&
-      new Date(t.completedDate) >= today
+    return tasks.filter(
+      (t) => t.status === 'Done' && t.completedDate && new Date(t.completedDate) >= today
     ).length;
   }, [tasks]);
 
@@ -265,13 +279,17 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                               visible: { opacity: 1, x: 0 },
                             }}
                             className={`bg-gray-800 border border-gray-700 rounded-xl p-6 transition-all ${
-                              completingTaskId === task.id ? 'scale-95 opacity-50' : 'hover:border-blue-500/50'
+                              completingTaskId === task.id
+                                ? 'scale-95 opacity-50'
+                                : 'hover:border-blue-500/50'
                             }`}
                           >
                             <div className="flex items-start gap-4">
                               <div className="flex flex-col items-center gap-2 flex-shrink-0">
                                 <div className="w-12 h-12 rounded-full bg-blue-500/20 border-2 border-blue-500 flex items-center justify-center">
-                                  <span className="text-xl font-bold text-blue-300">{index + 1}</span>
+                                  <span className="text-xl font-bold text-blue-300">
+                                    {index + 1}
+                                  </span>
                                 </div>
                                 <div className="flex flex-col gap-1">
                                   <button
@@ -321,7 +339,9 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
 
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-4 mb-3">
-                                  <h3 className="text-xl font-bold text-white leading-tight">{task.title}</h3>
+                                  <h3 className="text-xl font-bold text-white leading-tight">
+                                    {task.title}
+                                  </h3>
                                   <span
                                     className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-semibold border ${getPriorityColor(
                                       task.priority
@@ -332,7 +352,9 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                                 </div>
 
                                 {task.description && (
-                                  <p className="text-gray-300 mb-4 line-clamp-2">{task.description}</p>
+                                  <p className="text-gray-300 mb-4 line-clamp-2">
+                                    {task.description}
+                                  </p>
                                 )}
 
                                 <div className="flex flex-wrap items-center gap-4 mb-4">
@@ -435,7 +457,10 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                         </div>
                         <p className="text-3xl font-bold">{new Date().getDate()}</p>
                         <p className="text-sm text-cyan-200 mt-1">
-                          {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                          {new Date().toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                          })}
                         </p>
                       </div>
 
@@ -455,7 +480,9 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
                           <Flame className="w-5 h-5 text-cyan-300" />
                           <h4 className="font-semibold text-cyan-100">Habits</h4>
                         </div>
-                        <p className="text-3xl font-bold">{habits.filter(h => h.frequency === 'Daily').length}</p>
+                        <p className="text-3xl font-bold">
+                          {habits.filter((h) => h.frequency === 'Daily').length}
+                        </p>
                         <p className="text-sm text-cyan-200 mt-1">Daily routines</p>
                       </div>
                     </div>

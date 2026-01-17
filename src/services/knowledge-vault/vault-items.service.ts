@@ -53,8 +53,8 @@ export const vaultItemsService = {
 
     if (response.success && response.data) {
       return {
-        data: response.data.data.sort((a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        data: response.data.data.sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         ),
         error: null,
         success: true,
@@ -137,7 +137,8 @@ export const vaultItemsService = {
 
   async update(id: string, updates: Partial<VaultItem>): Promise<ApiResponse<VaultItem>> {
     // Determine endpoint based on type or try notes first
-    const endpoint = updates.type === 'flashcard' ? `/knowledge/flashcards/${id}` : `/knowledge/notes/${id}`;
+    const endpoint =
+      updates.type === 'flashcard' ? `/knowledge/flashcards/${id}` : `/knowledge/notes/${id}`;
     const response = await apiClient.patch<VaultItem>(endpoint, updates);
     if (response.success && response.data) {
       return { data: response.data, error: null, success: true };
@@ -190,15 +191,18 @@ export const vaultItemsService = {
 
   async createCourseLesson(input: CreateCourseLessonInput): Promise<ApiResponse<CourseLesson>> {
     // Course lessons may be created via courses endpoint
-    const response = await apiClient.post<CourseLesson>(`/knowledge/courses/${input.courseId}/lessons`, {
-      title: input.title,
-      moduleId: input.moduleId,
-      lessonIndex: input.lessonIndex,
-      estimatedMinutes: input.estimatedMinutes,
-      area: input.area,
-      tags: input.tags,
-      content: input.content,
-    });
+    const response = await apiClient.post<CourseLesson>(
+      `/knowledge/courses/${input.courseId}/lessons`,
+      {
+        title: input.title,
+        moduleId: input.moduleId,
+        lessonIndex: input.lessonIndex,
+        estimatedMinutes: input.estimatedMinutes,
+        area: input.area,
+        tags: input.tags,
+        content: input.content,
+      }
+    );
     if (response.success && response.data) {
       return { data: response.data, error: null, success: true };
     }

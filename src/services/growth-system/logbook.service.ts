@@ -15,7 +15,12 @@ interface BackendPaginatedResponse<T> {
 }
 
 export const logbookService = {
-  async getAll(filters?: { startDate?: string; endDate?: string; page?: number; pageSize?: number }): Promise<ApiListResponse<LogbookEntry>> {
+  async getAll(filters?: {
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<ApiListResponse<LogbookEntry>> {
     const queryParams = new URLSearchParams();
     if (filters?.startDate) queryParams.append('startDate', filters.startDate);
     if (filters?.endDate) queryParams.append('endDate', filters.endDate);
@@ -61,8 +66,12 @@ export const logbookService = {
     return response;
   },
 
-  async getLinks(entryId: string): Promise<ApiListResponse<{ entityType: string; entityId: string }>> {
-    const response = await apiClient.get<BackendPaginatedResponse<{ entityType: string; entityId: string }>>(`/logbook/${entryId}/links`);
+  async getLinks(
+    entryId: string
+  ): Promise<ApiListResponse<{ entityType: string; entityId: string }>> {
+    const response = await apiClient.get<
+      BackendPaginatedResponse<{ entityType: string; entityId: string }>
+    >(`/logbook/${entryId}/links`);
     if (response.success && response.data) {
       return {
         data: response.data.data,
@@ -108,7 +117,9 @@ export const logbookService = {
   async unlinkHabit(entryId: string, habitId: string): Promise<ApiResponse<void>> {
     const linksResponse = await this.getLinks(entryId);
     if (linksResponse.success && linksResponse.data) {
-      const link = linksResponse.data.find((l) => l.entityType === 'habit' && l.entityId === habitId);
+      const link = linksResponse.data.find(
+        (l) => l.entityType === 'habit' && l.entityId === habitId
+      );
       if (link) {
         const response = await apiClient.delete<void>(`/logbook/${entryId}/links/${link.entityId}`);
         return response;

@@ -34,7 +34,7 @@ export default function WeeklyReviewPage() {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const completedTasks = tasks.filter(t => {
+    const completedTasks = tasks.filter((t) => {
       if (t.status !== 'Done') return false;
       return new Date(t.updatedAt) >= oneWeekAgo;
     });
@@ -43,26 +43,22 @@ export default function WeeklyReviewPage() {
 
     const weekMetricLogs = metrics.length * 3;
 
-    const activeGoals = goals.filter(g =>
-      g.status === 'Active' || g.status === 'OnTrack'
-    );
+    const activeGoals = goals.filter((g) => g.status === 'Active' || g.status === 'OnTrack');
 
-    const weekEntries = entries.filter(e =>
-      new Date(e.date) >= oneWeekAgo
-    );
+    const weekEntries = entries.filter((e) => new Date(e.date) >= oneWeekAgo);
 
     setStats({
       tasksCompleted: completedTasks.length,
       habitsCompleted: weekHabitLogs,
       goalsProgressed: activeGoals.length,
       metricsLogged: weekMetricLogs,
-      journalEntries: weekEntries.length
+      journalEntries: weekEntries.length,
     });
   };
 
   const generateInsights = async () => {
     setIsGenerating(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const newInsights: WeeklyInsight[] = [];
 
@@ -71,13 +67,13 @@ export default function WeeklyReviewPage() {
         newInsights.push({
           category: 'Productivity',
           observation: `You completed ${stats.tasksCompleted} tasks this week - excellent progress!`,
-          recommendation: 'Maintain this momentum by scheduling high-priority tasks for next week.'
+          recommendation: 'Maintain this momentum by scheduling high-priority tasks for next week.',
         });
       } else if (stats.tasksCompleted < 5) {
         newInsights.push({
           category: 'Productivity',
           observation: 'Task completion was lower than ideal this week.',
-          recommendation: 'Break down larger tasks into smaller chunks to build momentum.'
+          recommendation: 'Break down larger tasks into smaller chunks to build momentum.',
         });
       }
 
@@ -86,9 +82,10 @@ export default function WeeklyReviewPage() {
         newInsights.push({
           category: 'Habits',
           observation: `You logged habits ${stats.habitsCompleted} times (avg ${avgPerDay.toFixed(1)} per day).`,
-          recommendation: avgPerDay < 1
-            ? 'Focus on consistency - aim for at least one habit completion daily.'
-            : 'Great habit consistency! Consider adding a new keystone habit.'
+          recommendation:
+            avgPerDay < 1
+              ? 'Focus on consistency - aim for at least one habit completion daily.'
+              : 'Great habit consistency! Consider adding a new keystone habit.',
         });
       }
 
@@ -96,7 +93,7 @@ export default function WeeklyReviewPage() {
         newInsights.push({
           category: 'Tracking',
           observation: `You logged ${stats.metricsLogged} metric entries this week.`,
-          recommendation: 'Regular tracking is key. Set reminders for consistent metric logging.'
+          recommendation: 'Regular tracking is key. Set reminders for consistent metric logging.',
         });
       }
 
@@ -104,22 +101,24 @@ export default function WeeklyReviewPage() {
         newInsights.push({
           category: 'Reflection',
           observation: 'Outstanding journaling consistency this week!',
-          recommendation: 'Use your journal insights to identify patterns and adjust strategies.'
+          recommendation: 'Use your journal insights to identify patterns and adjust strategies.',
         });
       } else if (stats.journalEntries === 0) {
         newInsights.push({
           category: 'Reflection',
           observation: 'No journal entries this week.',
-          recommendation: 'Daily reflection helps identify what\'s working and what needs adjustment.'
+          recommendation:
+            "Daily reflection helps identify what's working and what needs adjustment.",
         });
       }
 
-      const atRiskGoals = goals.filter(g => g.status === 'AtRisk');
+      const atRiskGoals = goals.filter((g) => g.status === 'AtRisk');
       if (atRiskGoals.length > 0) {
         newInsights.push({
           category: 'Goals',
           observation: `${atRiskGoals.length} goals are at risk.`,
-          recommendation: 'Review and adjust these goals. Consider breaking them down or adjusting timelines.'
+          recommendation:
+            'Review and adjust these goals. Consider breaking them down or adjusting timelines.',
         });
       }
     }
@@ -154,7 +153,9 @@ export default function WeeklyReviewPage() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Weekly Review & Planning</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Weekly Review & Planning
+        </h1>
         <p className="text-gray-600 dark:text-gray-400">
           Reflect on the past week and plan for success ahead
         </p>
@@ -162,22 +163,34 @@ export default function WeeklyReviewPage() {
 
       <div className="flex items-center justify-center mb-8">
         <div className="flex items-center gap-4">
-          <div className={`flex items-center gap-2 ${currentStep === 'review' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-600'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'review' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600'}`}>
+          <div
+            className={`flex items-center gap-2 ${currentStep === 'review' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-600'}`}
+          >
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'review' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600'}`}
+            >
               1
             </div>
             <span className="font-medium">Review</span>
           </div>
           <ArrowRight className="w-5 h-5 text-gray-400" />
-          <div className={`flex items-center gap-2 ${currentStep === 'plan' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-600'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'plan' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600'}`}>
+          <div
+            className={`flex items-center gap-2 ${currentStep === 'plan' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-600'}`}
+          >
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'plan' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600'}`}
+            >
               2
             </div>
             <span className="font-medium">Plan</span>
           </div>
           <ArrowRight className="w-5 h-5 text-gray-400" />
-          <div className={`flex items-center gap-2 ${currentStep === 'complete' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-600'}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'complete' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600'}`}>
+          <div
+            className={`flex items-center gap-2 ${currentStep === 'complete' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-600'}`}
+          >
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'complete' ? 'bg-blue-600 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-600'}`}
+            >
               3
             </div>
             <span className="font-medium">Complete</span>
@@ -231,10 +244,12 @@ export default function WeeklyReviewPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 animate-pulse" />
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Generating AI Insights...</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Generating AI Insights...
+                </h2>
               </div>
               <div className="space-y-3">
-                {[1, 2, 3].map(i => (
+                {[1, 2, 3].map((i) => (
                   <div key={i} className="animate-pulse">
                     <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
                     <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
@@ -250,9 +265,16 @@ export default function WeeklyReviewPage() {
               </h2>
               <div className="space-y-4">
                 {insights.map((insight, idx) => (
-                  <div key={idx} className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r-lg">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{insight.category}</h3>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{insight.observation}</p>
+                  <div
+                    key={idx}
+                    className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r-lg"
+                  >
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                      {insight.category}
+                    </h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                      {insight.observation}
+                    </p>
                     <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
                       💡 {insight.recommendation}
                     </p>
@@ -283,7 +305,7 @@ export default function WeeklyReviewPage() {
                   What are your top 3 priorities for next week?
                 </h3>
                 <div className="space-y-2">
-                  {[1, 2, 3].map(i => (
+                  {[1, 2, 3].map((i) => (
                     <input
                       key={i}
                       type="text"
@@ -341,13 +363,17 @@ export default function WeeklyReviewPage() {
             Weekly Review Complete!
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-            You've reviewed your progress and planned for the week ahead. Time to take action on your priorities!
+            You've reviewed your progress and planned for the week ahead. Time to take action on
+            your priorities!
           </p>
           <div className="flex justify-center gap-4">
             <Button variant="secondary" onClick={handleRestart}>
               Start Another Review
             </Button>
-            <Button variant="primary" onClick={() => window.location.href = ROUTES.admin.dashboard}>
+            <Button
+              variant="primary"
+              onClick={() => (window.location.href = ROUTES.admin.dashboard)}
+            >
               Back to Dashboard
             </Button>
           </div>

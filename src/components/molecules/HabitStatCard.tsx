@@ -36,7 +36,9 @@ export function HabitStatCard({
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 ${className}`}>
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 ${className}`}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
@@ -61,15 +63,17 @@ export function HabitStatCard({
         </div>
         {icon}
       </div>
-      
+
       <div className="flex items-baseline gap-2 mb-2">
-        <span className="text-2xl font-bold text-gray-900 dark:text-white">
-          {value}
-        </span>
+        <span className="text-2xl font-bold text-gray-900 dark:text-white">{value}</span>
         {trend && trend.changePercent !== 0 && (
-          <div className={`flex items-center gap-1 text-xs ${
-            trend.isImproving ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}>
+          <div
+            className={`flex items-center gap-1 text-xs ${
+              trend.isImproving
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-red-600 dark:text-red-400'
+            }`}
+          >
             <span>{trend.isImproving ? '↑' : '↓'}</span>
             <span>{Math.abs(trend.changePercent).toFixed(0)}%</span>
           </div>

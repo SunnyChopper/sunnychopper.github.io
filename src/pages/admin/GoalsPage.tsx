@@ -1,6 +1,30 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Target, LayoutGrid, Layers, Calendar, Kanban, Filter, X } from 'lucide-react';
-import type { Goal, CreateGoalInput, UpdateGoalInput, GoalStatus, EntitySummary, FilterOptions, GoalProgressBreakdown, Task, Metric, MetricLog, Habit, Priority, Area } from '../../types/growth-system';
+import {
+  Plus,
+  Search,
+  Target,
+  LayoutGrid,
+  Layers,
+  Calendar,
+  Kanban,
+  Filter,
+  X,
+} from 'lucide-react';
+import type {
+  Goal,
+  CreateGoalInput,
+  UpdateGoalInput,
+  GoalStatus,
+  EntitySummary,
+  FilterOptions,
+  GoalProgressBreakdown,
+  Task,
+  Metric,
+  MetricLog,
+  Habit,
+  Priority,
+  Area,
+} from '../../types/growth-system';
 import { goalsService } from '../../services/growth-system/goals.service';
 import { goalProgressService } from '../../services/growth-system/goal-progress.service';
 import Button from '../../components/atoms/Button';
@@ -26,7 +50,12 @@ const AREA_OPTIONS: Area[] = [...AREAS];
 const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 
 type ViewMode = 'timeHorizon' | 'area' | 'kanban' | 'timeline';
-type QuickFilter = 'at_risk' | 'due_this_week' | 'needs_attention' | 'recently_completed' | 'dormant';
+type QuickFilter =
+  | 'at_risk'
+  | 'due_this_week'
+  | 'needs_attention'
+  | 'recently_completed'
+  | 'dormant';
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -50,11 +79,32 @@ export default function GoalsPage() {
   const [goalMetricLogs, setGoalMetricLogs] = useState<Map<string, MetricLog[]>>(new Map());
   const [goalHabits, setGoalHabits] = useState<Map<string, Habit[]>>(new Map());
   const [goalsProgress, setGoalsProgress] = useState<Map<string, GoalProgressBreakdown>>(new Map());
-  const [goalsLinkedCounts, setGoalsLinkedCounts] = useState<Map<string, { tasks: number; metrics: number; habits: number; projects: number }>>(new Map());
-  const [goalsHealth, setGoalsHealth] = useState<Map<string, { status: 'healthy' | 'at_risk' | 'behind' | 'dormant'; daysRemaining: number | null; momentum: 'active' | 'dormant' }>>(new Map());
+  const [goalsLinkedCounts, setGoalsLinkedCounts] = useState<
+    Map<string, { tasks: number; metrics: number; habits: number; projects: number }>
+  >(new Map());
+  const [goalsHealth, setGoalsHealth] = useState<
+    Map<
+      string,
+      {
+        status: 'healthy' | 'at_risk' | 'behind' | 'dormant';
+        daysRemaining: number | null;
+        momentum: 'active' | 'dormant';
+      }
+    >
+  >(new Map());
 
-  type CelebrationType = 'goal_achieved' | 'criteria_completed' | 'milestone_25' | 'milestone_50' | 'milestone_75' | 'streak';
-  const [celebration, setCelebration] = useState<{ show: boolean; type: CelebrationType; message?: string }>({ show: false, type: 'milestone_25' });
+  type CelebrationType =
+    | 'goal_achieved'
+    | 'criteria_completed'
+    | 'milestone_25'
+    | 'milestone_50'
+    | 'milestone_75'
+    | 'streak';
+  const [celebration, setCelebration] = useState<{
+    show: boolean;
+    type: CelebrationType;
+    message?: string;
+  }>({ show: false, type: 'milestone_25' });
 
   const loadGoalData = async (goalId: string) => {
     try {
@@ -67,18 +117,18 @@ export default function GoalsPage() {
       ]);
 
       if (tasksRes.success && tasksRes.data) {
-        setGoalTasks(prev => new Map(prev).set(goalId, tasksRes.data!));
+        setGoalTasks((prev) => new Map(prev).set(goalId, tasksRes.data!));
       }
 
       if (habitsRes.success && habitsRes.data) {
-        setGoalHabits(prev => new Map(prev).set(goalId, habitsRes.data!));
+        setGoalHabits((prev) => new Map(prev).set(goalId, habitsRes.data!));
       }
 
       if (metricsRes.success && metricsRes.data) {
         // Load metrics details
         const metricsDetails: Metric[] = [];
         const storage = getStorageAdapter();
-        
+
         for (const metricLink of metricsRes.data) {
           const metric = await storage.getById<Metric>('metrics', metricLink.metricId);
           if (metric) {
@@ -86,21 +136,26 @@ export default function GoalsPage() {
             // Load logs for each metric
             const allLogs = await storage.getAll<MetricLog>('metricLogs');
             const metricLogs = allLogs
-              .filter(log => log.metricId === metricLink.metricId)
+              .filter((log) => log.metricId === metricLink.metricId)
               .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime());
-            setGoalMetricLogs(prev => new Map(prev).set(metricLink.metricId, metricLogs));
+            setGoalMetricLogs((prev) => new Map(prev).set(metricLink.metricId, metricLogs));
           }
         }
-        setGoalMetrics(prev => new Map(prev).set(goalId, metricsDetails));
+        setGoalMetrics((prev) => new Map(prev).set(goalId, metricsDetails));
       }
 
       if (projectsRes.success && projectsRes.data) {
         // Convert to EntitySummary
         const projectEntities: EntitySummary[] = [];
         const storage = getStorageAdapter();
-        
+
         for (const projectLink of projectsRes.data) {
-          const project = await storage.getById<{ id: string; name: string; area: Goal['area']; status: string }>('projects', projectLink.projectId);
+          const project = await storage.getById<{
+            id: string;
+            name: string;
+            area: Goal['area'];
+            status: string;
+          }>('projects', projectLink.projectId);
           if (project) {
             projectEntities.push({
               id: project.id,
@@ -111,12 +166,12 @@ export default function GoalsPage() {
             });
           }
         }
-        setGoalProjects(prev => new Map(prev).set(goalId, projectEntities));
+        setGoalProjects((prev) => new Map(prev).set(goalId, projectEntities));
       }
 
       // Load progress
       const progressData = await goalProgressService.computeProgress(goalId);
-      setGoalsProgress(prev => new Map(prev).set(goalId, progressData));
+      setGoalsProgress((prev) => new Map(prev).set(goalId, progressData));
 
       // Fetch goal for health calculation
       const goalResponse = await goalsService.getById(goalId);
@@ -126,12 +181,12 @@ export default function GoalsPage() {
           goalResponse.data,
           progressData
         );
-        setGoalsHealth(prev => new Map(prev).set(goalId, healthData));
+        setGoalsHealth((prev) => new Map(prev).set(goalId, healthData));
       }
 
       // Load linked counts
       const counts = await goalProgressService.getLinkedCounts(goalId);
-      setGoalsLinkedCounts(prev => new Map(prev).set(goalId, counts));
+      setGoalsLinkedCounts((prev) => new Map(prev).set(goalId, counts));
     } catch (error) {
       console.error('Failed to load goal data:', error);
     }
@@ -143,17 +198,17 @@ export default function GoalsPage() {
       const response = await goalsService.getAll();
       if (response.success && response.data) {
         let loadedGoals = response.data;
-        
+
         // Migrate goals if needed
         const needsMigrationCheck = loadedGoals.some(needsMigration);
         if (needsMigrationCheck) {
           loadedGoals = migrateGoals(loadedGoals);
         }
-        
+
         setGoals(loadedGoals);
 
         // Load data for each goal
-        loadedGoals.forEach(goal => {
+        loadedGoals.forEach((goal) => {
           loadGoalData(goal.id);
         });
       }
@@ -232,8 +287,6 @@ export default function GoalsPage() {
     setSelectedGoal(null);
   };
 
-
-
   const handleToggleCriterion = async (criterionId: string, isCompleted: boolean) => {
     if (!selectedGoal) return;
 
@@ -245,8 +298,8 @@ export default function GoalsPage() {
 
       if (response.success && response.data) {
         setSelectedGoal(response.data);
-        setGoals(goals.map(g => g.id === response.data!.id ? response.data! : g));
-        
+        setGoals(goals.map((g) => (g.id === response.data!.id ? response.data! : g)));
+
         // Log activity
         await goalsService.logActivity(selectedGoal.id, {
           goalId: selectedGoal.id,
@@ -259,12 +312,19 @@ export default function GoalsPage() {
 
         // Check for celebrations
         const criteria = response.data.successCriteria;
-        const allCompleted = Array.isArray(criteria) && criteria.length > 0 && criteria.every((c: unknown) => 
-          typeof c === 'string' ? c.includes('✓') : (c as { isCompleted: boolean }).isCompleted
-        );
+        const allCompleted =
+          Array.isArray(criteria) &&
+          criteria.length > 0 &&
+          criteria.every((c: unknown) =>
+            typeof c === 'string' ? c.includes('✓') : (c as { isCompleted: boolean }).isCompleted
+          );
 
         if (allCompleted) {
-          setCelebration({ show: true, type: 'criteria_completed', message: 'All Success Criteria Met!' });
+          setCelebration({
+            show: true,
+            type: 'criteria_completed',
+            message: 'All Success Criteria Met!',
+          });
         }
 
         // Reload progress
@@ -302,10 +362,8 @@ export default function GoalsPage() {
   };
 
   const handleQuickFilterToggle = (filter: QuickFilter) => {
-    setQuickFilters(prev =>
-      prev.includes(filter)
-        ? prev.filter(f => f !== filter)
-        : [...prev, filter]
+    setQuickFilters((prev) =>
+      prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
     );
   };
 
@@ -313,26 +371,40 @@ export default function GoalsPage() {
     setFilters({});
   };
 
-  const activeFilterCount = [filters.area, filters.status, filters.priority, filters.momentum, filters.hasLinkedTasks, filters.hasLinkedMetrics].filter(Boolean).length;
+  const activeFilterCount = [
+    filters.area,
+    filters.status,
+    filters.priority,
+    filters.momentum,
+    filters.hasLinkedTasks,
+    filters.hasLinkedMetrics,
+  ].filter(Boolean).length;
 
   const filteredGoals = useMemo(() => {
     return goals.filter((goal) => {
-      const matchesSearch = !searchQuery || goal.title.toLowerCase().includes(searchQuery.toLowerCase()) || (goal.description && goal.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch =
+        !searchQuery ||
+        goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (goal.description && goal.description.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesArea = !filters.area || goal.area === filters.area;
       const matchesStatus = !filters.status || goal.status === filters.status;
       const matchesPriority = !filters.priority || goal.priority === filters.priority;
-      const matchesMomentum = !filters.momentum || (
-        filters.momentum === 'active' ? (goalsHealth.get(goal.id)?.momentum === 'active') :
-        filters.momentum === 'dormant' ? (goalsHealth.get(goal.id)?.momentum === 'dormant') :
-        true
-      );
-      const matchesHasLinkedTasks = !filters.hasLinkedTasks || (goalsLinkedCounts.get(goal.id)?.tasks || 0) > 0;
-      const matchesHasLinkedMetrics = !filters.hasLinkedMetrics || (goalsLinkedCounts.get(goal.id)?.metrics || 0) > 0;
+      const matchesMomentum =
+        !filters.momentum ||
+        (filters.momentum === 'active'
+          ? goalsHealth.get(goal.id)?.momentum === 'active'
+          : filters.momentum === 'dormant'
+            ? goalsHealth.get(goal.id)?.momentum === 'dormant'
+            : true);
+      const matchesHasLinkedTasks =
+        !filters.hasLinkedTasks || (goalsLinkedCounts.get(goal.id)?.tasks || 0) > 0;
+      const matchesHasLinkedMetrics =
+        !filters.hasLinkedMetrics || (goalsLinkedCounts.get(goal.id)?.metrics || 0) > 0;
 
       // Quick filters
       if (quickFilters.length > 0) {
         const now = new Date();
-        const matchesQuickFilters = quickFilters.every(qf => {
+        const matchesQuickFilters = quickFilters.every((qf) => {
           switch (qf) {
             case 'at_risk':
               return goal.status === 'AtRisk';
@@ -343,8 +415,12 @@ export default function GoalsPage() {
               return target >= now && target <= oneWeekFromNow;
             }
             case 'needs_attention': {
-              const lastActivity = goal.lastActivityAt ? new Date(goal.lastActivityAt) : new Date(goal.createdAt);
-              const daysSinceActivity = Math.ceil((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+              const lastActivity = goal.lastActivityAt
+                ? new Date(goal.lastActivityAt)
+                : new Date(goal.createdAt);
+              const daysSinceActivity = Math.ceil(
+                (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+              );
               return daysSinceActivity > 7 && goal.status === 'Active';
             }
             case 'dormant':
@@ -362,24 +438,35 @@ export default function GoalsPage() {
         if (!matchesQuickFilters) return false;
       }
 
-      return matchesSearch && matchesArea && matchesStatus && matchesPriority && matchesMomentum && matchesHasLinkedTasks && matchesHasLinkedMetrics;
+      return (
+        matchesSearch &&
+        matchesArea &&
+        matchesStatus &&
+        matchesPriority &&
+        matchesMomentum &&
+        matchesHasLinkedTasks &&
+        matchesHasLinkedMetrics
+      );
     });
   }, [goals, searchQuery, filters, quickFilters, goalsHealth, goalsLinkedCounts]);
 
-  const groupedByArea = filteredGoals.reduce((acc, goal) => {
-    if (!acc[goal.area]) acc[goal.area] = [];
-    acc[goal.area].push(goal);
-    return acc;
-  }, {} as Record<string, Goal[]>);
+  const groupedByArea = filteredGoals.reduce(
+    (acc, goal) => {
+      if (!acc[goal.area]) acc[goal.area] = [];
+      acc[goal.area].push(goal);
+      return acc;
+    },
+    {} as Record<string, Goal[]>
+  );
 
   if (selectedGoal) {
     const tasks = goalTasks.get(selectedGoal.id) || [];
-    const metrics = (goalMetrics.get(selectedGoal.id) || []).map(m => ({
+    const metrics = (goalMetrics.get(selectedGoal.id) || []).map((m) => ({
       metric: m,
       latestLog: (goalMetricLogs.get(m.id) || [])[0] || null,
       progress: 0, // Would calculate from logs
     }));
-    const habits = (goalHabits.get(selectedGoal.id) || []).map(h => ({
+    const habits = (goalHabits.get(selectedGoal.id) || []).map((h) => ({
       habit: h,
       currentStreak: 0,
       completedToday: false,
@@ -566,12 +653,16 @@ export default function GoalsPage() {
               </label>
               <select
                 value={filters.area || ''}
-                onChange={(e) => setFilters({ ...filters, area: e.target.value as Area || undefined })}
+                onChange={(e) =>
+                  setFilters({ ...filters, area: (e.target.value as Area) || undefined })
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Areas</option>
-                {AREA_OPTIONS.map(area => (
-                  <option key={area} value={area}>{AREA_LABELS[area]}</option>
+                {AREA_OPTIONS.map((area) => (
+                  <option key={area} value={area}>
+                    {AREA_LABELS[area]}
+                  </option>
                 ))}
               </select>
             </div>
@@ -585,8 +676,10 @@ export default function GoalsPage() {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Statuses</option>
-                {STATUSES.map(status => (
-                  <option key={status} value={status}>{status}</option>
+                {STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
                 ))}
               </select>
             </div>
@@ -596,12 +689,16 @@ export default function GoalsPage() {
               </label>
               <select
                 value={filters.priority || ''}
-                onChange={(e) => setFilters({ ...filters, priority: e.target.value as Priority || undefined })}
+                onChange={(e) =>
+                  setFilters({ ...filters, priority: (e.target.value as Priority) || undefined })
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Priorities</option>
-                {PRIORITY_OPTIONS.map(priority => (
-                  <option key={priority} value={priority}>{priority}</option>
+                {PRIORITY_OPTIONS.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
                 ))}
               </select>
             </div>
@@ -628,7 +725,9 @@ export default function GoalsPage() {
                   <input
                     type="checkbox"
                     checked={!!filters.hasLinkedTasks}
-                    onChange={(e) => setFilters({ ...filters, hasLinkedTasks: e.target.checked || undefined })}
+                    onChange={(e) =>
+                      setFilters({ ...filters, hasLinkedTasks: e.target.checked || undefined })
+                    }
                     className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Tasks</span>
@@ -637,7 +736,9 @@ export default function GoalsPage() {
                   <input
                     type="checkbox"
                     checked={!!filters.hasLinkedMetrics}
-                    onChange={(e) => setFilters({ ...filters, hasLinkedMetrics: e.target.checked || undefined })}
+                    onChange={(e) =>
+                      setFilters({ ...filters, hasLinkedMetrics: e.target.checked || undefined })
+                    }
                     className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">Metrics</span>
@@ -649,108 +750,117 @@ export default function GoalsPage() {
       )}
 
       {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-400">Loading goals...</p>
-                </div>
-              </div>
-            ) : filteredGoals.length === 0 ? (
-              <EmptyState
-                icon={Target}
-                title="No goals found"
-                description={
-                  searchQuery || filters.area || filters.status || filters.priority || quickFilters.length > 0
-                    ? 'Try adjusting your filters or search query'
-                    : 'Get started by creating your first goal'
-                }
-                actionLabel="Create Goal"
-                onAction={() => setIsCreateDialogOpen(true)}
-                variant={goals.length === 0 ? 'onboarding' : 'default'}
-                onboardingSteps={goals.length === 0 ? [
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading goals...</p>
+          </div>
+        </div>
+      ) : filteredGoals.length === 0 ? (
+        <EmptyState
+          icon={Target}
+          title="No goals found"
+          description={
+            searchQuery ||
+            filters.area ||
+            filters.status ||
+            filters.priority ||
+            quickFilters.length > 0
+              ? 'Try adjusting your filters or search query'
+              : 'Get started by creating your first goal'
+          }
+          actionLabel="Create Goal"
+          onAction={() => setIsCreateDialogOpen(true)}
+          variant={goals.length === 0 ? 'onboarding' : 'default'}
+          onboardingSteps={
+            goals.length === 0
+              ? [
                   'Start with a yearly goal that represents your big vision',
                   'Break it down into quarterly and monthly milestones',
                   'Define 3-5 success criteria to measure achievement',
                   'Link tasks, metrics, and habits to track progress',
-                ] : []}
-                proTips={goals.length === 0 ? [
+                ]
+              : []
+          }
+          proTips={
+            goals.length === 0
+              ? [
                   'Use SMART criteria: Specific, Measurable, Achievable, Relevant, Time-bound',
                   'Start with 1-3 goals per area to avoid overwhelm',
                   'Review your goals weekly to stay on track',
-                ] : []}
-              />
-            ) : viewMode === 'kanban' ? (
-              <GoalKanbanView
-                goals={filteredGoals}
-                goalsProgress={goalsProgress}
-                goalsLinkedCounts={goalsLinkedCounts}
-                goalsHealth={goalsHealth}
-                onGoalClick={handleGoalClick}
-                onGoalUpdate={async (goalId, updates) => {
-                  await handleUpdateGoal(goalId, updates as UpdateGoalInput);
-                  await loadGoals(); // Reload to reflect changes
-                }}
-                onCreateGoal={(status) => {
-                  // TODO: Set initial status for new goal
-                  console.log('Create goal with status:', status);
-                  setIsCreateDialogOpen(true);
-                }}
-              />
-            ) : viewMode === 'timeline' ? (
-              <GoalTimelineView
-                goals={filteredGoals}
-                onGoalClick={handleGoalClick}
-              />
-            ) : viewMode === 'timeHorizon' ? (
-              <GoalHierarchicalTimeView
-                goals={filteredGoals}
-                goalsProgress={goalsProgress}
-                goalsLinkedCounts={goalsLinkedCounts}
-                goalsHealth={goalsHealth}
-                onGoalClick={handleGoalClick}
-                onCreateSubgoal={(parentGoal) => {
-                  // TODO: Implement create subgoal with parentGoalId set
-                  console.log('Create subgoal for:', parentGoal.title);
-                  setIsCreateDialogOpen(true);
-                }}
-              />
-            ) : (
-              <div className="space-y-8">
-                {Object.entries(groupedByArea).map(([area, areaGoals]) => (
-                  <div key={area}>
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                      <AreaBadge area={area as Goal['area']} />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        ({areaGoals.length} {areaGoals.length === 1 ? 'goal' : 'goals'})
-                      </span>
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {areaGoals.map(goal => (
-                        <GoalCard
-                          key={goal.id}
-                          goal={goal}
-                          onClick={handleGoalClick}
-                          progress={goalsProgress.get(goal.id)}
-                          linkedCounts={goalsLinkedCounts.get(goal.id)}
-                          healthStatus={goalsHealth.get(goal.id)?.status}
-                          daysRemaining={goalsHealth.get(goal.id)?.daysRemaining}
-                          momentum={goalsHealth.get(goal.id)?.momentum}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                ]
+              : []
+          }
+        />
+      ) : viewMode === 'kanban' ? (
+        <GoalKanbanView
+          goals={filteredGoals}
+          goalsProgress={goalsProgress}
+          goalsLinkedCounts={goalsLinkedCounts}
+          goalsHealth={goalsHealth}
+          onGoalClick={handleGoalClick}
+          onGoalUpdate={async (goalId, updates) => {
+            await handleUpdateGoal(goalId, updates as UpdateGoalInput);
+            await loadGoals(); // Reload to reflect changes
+          }}
+          onCreateGoal={(status) => {
+            // TODO: Set initial status for new goal
+            console.log('Create goal with status:', status);
+            setIsCreateDialogOpen(true);
+          }}
+        />
+      ) : viewMode === 'timeline' ? (
+        <GoalTimelineView goals={filteredGoals} onGoalClick={handleGoalClick} />
+      ) : viewMode === 'timeHorizon' ? (
+        <GoalHierarchicalTimeView
+          goals={filteredGoals}
+          goalsProgress={goalsProgress}
+          goalsLinkedCounts={goalsLinkedCounts}
+          goalsHealth={goalsHealth}
+          onGoalClick={handleGoalClick}
+          onCreateSubgoal={(parentGoal) => {
+            // TODO: Implement create subgoal with parentGoalId set
+            console.log('Create subgoal for:', parentGoal.title);
+            setIsCreateDialogOpen(true);
+          }}
+        />
+      ) : (
+        <div className="space-y-8">
+          {Object.entries(groupedByArea).map(([area, areaGoals]) => (
+            <div key={area}>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <AreaBadge area={area as Goal['area']} />
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  ({areaGoals.length} {areaGoals.length === 1 ? 'goal' : 'goals'})
+                </span>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {areaGoals.map((goal) => (
+                  <GoalCard
+                    key={goal.id}
+                    goal={goal}
+                    onClick={handleGoalClick}
+                    progress={goalsProgress.get(goal.id)}
+                    linkedCounts={goalsLinkedCounts.get(goal.id)}
+                    healthStatus={goalsHealth.get(goal.id)?.status}
+                    daysRemaining={goalsHealth.get(goal.id)?.daysRemaining}
+                    momentum={goalsHealth.get(goal.id)?.momentum}
+                  />
                 ))}
               </div>
-            )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Bulk Actions Bar */}
-        <BulkActionsBar
-          selectedCount={selectedGoalIds.length}
-          onStatusChange={handleBulkStatusChange}
-          onPriorityChange={handleBulkPriorityChange}
-          onDelete={handleBulkDelete}
-          onClearSelection={() => setSelectedGoalIds([])}
-        />
+      <BulkActionsBar
+        selectedCount={selectedGoalIds.length}
+        onStatusChange={handleBulkStatusChange}
+        onPriorityChange={handleBulkPriorityChange}
+        onDelete={handleBulkDelete}
+        onClearSelection={() => setSelectedGoalIds([])}
+      />
 
       {/* Celebration Effect */}
       <CelebrationEffect
@@ -773,20 +883,14 @@ export default function GoalsPage() {
         />
       </Dialog>
 
-      <Dialog
-        isOpen={!!goalToDelete}
-        onClose={() => setGoalToDelete(null)}
-        title="Delete Goal"
-      >
+      <Dialog isOpen={!!goalToDelete} onClose={() => setGoalToDelete(null)} title="Delete Goal">
         <div className="space-y-4">
           <p className="text-gray-700 dark:text-gray-300">
             Are you sure you want to delete this goal? This action cannot be undone.
           </p>
           {goalToDelete && (
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-              <p className="font-semibold text-gray-900 dark:text-white">
-                {goalToDelete.title}
-              </p>
+              <p className="font-semibold text-gray-900 dark:text-white">{goalToDelete.title}</p>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

@@ -28,7 +28,7 @@ export function EmptyState({
   variant = 'default',
   onboardingSteps = [],
   proTips = [],
-  className = ''
+  className = '',
 }: EmptyStateProps) {
   if (variant === 'onboarding') {
     return (
@@ -43,7 +43,7 @@ export function EmptyState({
             <Icon className="w-10 h-10 text-blue-600 dark:text-blue-400" />
           </motion.div>
         )}
-        
+
         <motion.h3
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -52,7 +52,7 @@ export function EmptyState({
         >
           {title}
         </motion.h3>
-        
+
         {description && (
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -82,15 +82,13 @@ export function EmptyState({
                   key={index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + (index * 0.1) }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
                   className="flex items-start gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
                 >
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-sm">
                     {index + 1}
                   </div>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 pt-0.5">
-                    {step}
-                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 pt-0.5">{step}</p>
                 </motion.div>
               ))}
             </div>
@@ -102,7 +100,7 @@ export function EmptyState({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 + (onboardingSteps.length * 0.1) }}
+            transition={{ delay: 0.5 + onboardingSteps.length * 0.1 }}
             className="mb-8 text-left max-w-md mx-auto"
           >
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
@@ -112,7 +110,10 @@ export function EmptyState({
               </h4>
               <ul className="space-y-2">
                 {proTips.map((tip, index) => (
-                  <li key={index} className="text-sm text-amber-800 dark:text-amber-200 flex items-start gap-2">
+                  <li
+                    key={index}
+                    className="text-sm text-amber-800 dark:text-amber-200 flex items-start gap-2"
+                  >
                     <span className="text-amber-600 dark:text-amber-400 mt-0.5">•</span>
                     <span>{tip}</span>
                   </li>
@@ -127,7 +128,7 @@ export function EmptyState({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 + (onboardingSteps.length * 0.1) }}
+            transition={{ delay: 0.6 + onboardingSteps.length * 0.1 }}
             className="flex gap-3 justify-center"
           >
             {actionLabel && onAction && (
@@ -148,7 +149,9 @@ export function EmptyState({
 
   // Default variant
   return (
-    <div className={`flex flex-col items-center justify-center py-12 px-4 text-center ${className}`}>
+    <div
+      className={`flex flex-col items-center justify-center py-12 px-4 text-center ${className}`}
+    >
       {Icon && (
         <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
           <Icon className="w-8 h-8 text-gray-400 dark:text-gray-600" />

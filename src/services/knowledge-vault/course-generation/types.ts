@@ -49,7 +49,13 @@ export interface CourseGenerationState {
 
   // Generation metadata
   metadata: {
-    currentPhase: 'strategizing' | 'architecting' | 'mapping' | 'validating' | 'refining' | 'generating';
+    currentPhase:
+      | 'strategizing'
+      | 'architecting'
+      | 'mapping'
+      | 'validating'
+      | 'refining'
+      | 'generating';
     iterations: number;
     lastModified: string;
     input?: CourseGenerationInput; // Store input for first node

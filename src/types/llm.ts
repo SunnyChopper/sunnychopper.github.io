@@ -1,4 +1,12 @@
-import type { Task, CreateTaskInput, Project, Area, SubCategory, Priority, AIInsight } from './growth-system';
+import type {
+  Task,
+  CreateTaskInput,
+  Project,
+  Area,
+  SubCategory,
+  Priority,
+  AIInsight,
+} from './growth-system';
 
 export type LLMAdapterType = 'direct' | 'api';
 
@@ -79,7 +87,12 @@ export interface DependencyDetectionInput {
 }
 
 export interface DependencyDetectionOutput {
-  suggestedDependencies: Array<{ taskId: string; taskTitle: string; reason: string; confidence: number }>;
+  suggestedDependencies: Array<{
+    taskId: string;
+    taskTitle: string;
+    reason: string;
+    confidence: number;
+  }>;
 }
 
 export interface ProjectHealthInput {
@@ -122,7 +135,14 @@ export interface ProjectRiskOutput {
 
 export interface StoredSuggestion {
   id: string;
-  type: 'task_breakdown' | 'dependency_detection' | 'priority_adjustment' | 'effort_estimation' | 'project_health' | 'project_risk' | 'task_suggestion';
+  type:
+    | 'task_breakdown'
+    | 'dependency_detection'
+    | 'priority_adjustment'
+    | 'effort_estimation'
+    | 'project_health'
+    | 'project_risk'
+    | 'task_suggestion';
   title: string;
   description: string;
   data: Record<string, unknown>;
@@ -158,7 +178,9 @@ export interface ILLMAdapter {
   advisePriority(input: PriorityAdvisorInput): Promise<LLMResponse<PriorityAdvisorOutput>>;
   estimateEffort(input: EffortEstimationInput): Promise<LLMResponse<EffortEstimationOutput>>;
   categorizeTask(input: TaskCategorizationInput): Promise<LLMResponse<TaskCategorizationOutput>>;
-  detectDependencies(input: DependencyDetectionInput): Promise<LLMResponse<DependencyDetectionOutput>>;
+  detectDependencies(
+    input: DependencyDetectionInput
+  ): Promise<LLMResponse<DependencyDetectionOutput>>;
   analyzeProjectHealth(input: ProjectHealthInput): Promise<LLMResponse<ProjectHealthOutput>>;
   generateProjectTasks(input: ProjectTaskGenInput): Promise<LLMResponse<ProjectTaskGenOutput>>;
   identifyProjectRisks(input: ProjectRiskInput): Promise<LLMResponse<ProjectRiskOutput>>;

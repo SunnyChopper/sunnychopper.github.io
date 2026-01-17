@@ -11,8 +11,21 @@ import type {
   DifficultyLevel,
   ApiResponse,
 } from '../../types/knowledge-vault';
-import { buildCourseGenerationGraph, initializeState, setProgressCallback, setStoredInput, getStoredInput, setGlobalStateCache } from './course-generation/course-graph';
-import type { CourseGenerationState, CourseGenerationProgress, LessonGenerationProgress, CourseGenerationInput, ConceptNode } from './course-generation/types';
+import {
+  buildCourseGenerationGraph,
+  initializeState,
+  setProgressCallback,
+  setStoredInput,
+  getStoredInput,
+  setGlobalStateCache,
+} from './course-generation/course-graph';
+import type {
+  CourseGenerationState,
+  CourseGenerationProgress,
+  LessonGenerationProgress,
+  CourseGenerationInput,
+  ConceptNode,
+} from './course-generation/types';
 import { PreAssessmentSchema } from '../../lib/llm/schemas/course-ai-schemas';
 
 interface GeneratePreAssessmentInput {
@@ -55,20 +68,20 @@ interface GenerateLessonContentInput {
 /**
  * Convert LangGraph state to CourseSkeletonResult format
  */
-function convertStateToSkeletonResult(
-  state: CourseGenerationState
-): CourseSkeletonResult {
+function convertStateToSkeletonResult(state: CourseGenerationState): CourseSkeletonResult {
   // Validate state has required data
   if (!state.course || !state.course.title) {
     throw new Error('Course generation failed: Course data is missing');
   }
 
   if (!state.modules || !Array.isArray(state.modules) || state.modules.length === 0) {
-    throw new Error('Course generation failed: No modules were generated. The course structure could not be created.');
+    throw new Error(
+      'Course generation failed: No modules were generated. The course structure could not be created.'
+    );
   }
 
   const timestamp = new Date().toISOString();
-  
+
   const course: Course = {
     id: generateId(),
     title: state.course.title,
@@ -203,10 +216,12 @@ AVOID:
 - Generic scenarios that don't require expert-level analysis`,
       };
 
-      const guidance = difficultyGuidance[input.targetDifficulty] || difficultyGuidance.intermediate;
+      const guidance =
+        difficultyGuidance[input.targetDifficulty] || difficultyGuidance.intermediate;
 
-      const isAdvancedLevel = input.targetDifficulty === 'advanced' || input.targetDifficulty === 'expert';
-      
+      const isAdvancedLevel =
+        input.targetDifficulty === 'advanced' || input.targetDifficulty === 'expert';
+
       const prompt = `You are an expert curriculum designer specializing in creating meaningful, topic-specific assessments.
 
 Generate a pre-assessment quiz for the topic: "${input.topic}"
@@ -246,7 +261,7 @@ Focus on creating questions that will accurately identify:
 ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophisticated concepts, theoretical frameworks, and complex applications' : ''}`;
 
       const result = await provider.invokeStructured(PreAssessmentSchema, [
-        { role: 'user', content: prompt }
+        { role: 'user', content: prompt },
       ]);
 
       return {
@@ -289,7 +304,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
 
       // Initialize LangGraph state
       const initialState = initializeState(courseInput);
-      
+
       // CRITICAL: Clear global state cache at start of new execution
       // This ensures we don't have stale state from previous runs
       setGlobalStateCache(null);
@@ -298,7 +313,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
       if (!initialState.metadata || !initialState.metadata.input) {
         throw new Error('Initial state is missing required metadata or input');
       }
-      
+
       // CRITICAL: Set initial state in global cache as backup
       // This helps recover from LangGraph serialization issues
       setGlobalStateCache(initialState);
@@ -313,9 +328,9 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
 
       // Build and execute graph
       const graph = buildCourseGenerationGraph();
-      
+
       let finalState: CourseGenerationState;
-      
+
       try {
         // CRITICAL: Convert Map to plain object for serialization
         // LangGraph serializes state internally, and Maps don't serialize to JSON
@@ -326,7 +341,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
           console.warn('Initial state modules is not an array, using empty array');
           initialState.modules = [];
         }
-        
+
         const serializableState = {
           course: initialState.course,
           modules: initialState.modules, // Ensure this is an array
@@ -341,15 +356,17 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
             input: courseInput,
           },
         };
-        
+
         console.log('Invoking graph with serializable state:', {
           hasMetadata: !!serializableState.metadata,
           hasInput: !!serializableState.metadata.input,
           stateKeys: Object.keys(serializableState),
           metadataKeys: serializableState.metadata ? Object.keys(serializableState.metadata) : [],
-          modulesCount: Array.isArray(serializableState.modules) ? serializableState.modules.length : 'not array',
+          modulesCount: Array.isArray(serializableState.modules)
+            ? serializableState.modules.length
+            : 'not array',
         });
-        
+
         console.log('About to call graph.invoke()...');
         let result: unknown;
         try {
@@ -359,7 +376,8 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
             resultType: typeof result,
             isNull: result === null,
             isUndefined: result === undefined,
-            resultKeys: result && typeof result === 'object' ? Object.keys(result) : 'not an object',
+            resultKeys:
+              result && typeof result === 'object' ? Object.keys(result) : 'not an object',
           });
         } catch (invokeError) {
           console.error('graph.invoke() threw an error:', {
@@ -369,7 +387,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
           });
           throw invokeError;
         }
-        
+
         // Validate and cast the result
         if (!result) {
           console.error('Graph execution returned null/undefined result', {
@@ -383,11 +401,13 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
           if (storedInput) {
             console.warn('Attempting to recover state from stored input...');
             // This is a last resort - the graph should have returned state
-            throw new Error('Course generation failed: Graph execution returned no state. State was lost during execution.');
+            throw new Error(
+              'Course generation failed: Graph execution returned no state. State was lost during execution.'
+            );
           }
           throw new Error('Course generation failed: Graph execution returned no state');
         }
-        
+
         if (typeof result !== 'object') {
           console.error('Graph execution returned non-object result:', {
             result,
@@ -395,11 +415,11 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
           });
           throw new Error('Course generation failed: Graph execution returned invalid state type');
         }
-        
+
         // Type assertion needed because LangGraph returns StateType<any>
         // We validate the structure below
         finalState = result as CourseGenerationState;
-        
+
         // CRITICAL: Ensure modules exist and is an array
         if (!finalState.modules || !Array.isArray(finalState.modules)) {
           console.error('Final state missing modules, attempting recovery...', {
@@ -410,15 +430,18 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
           // Recovery: use empty array as fallback (should not happen with our fixes)
           finalState.modules = [];
         }
-        
+
         // CRITICAL: Reconstruct Map from serialized conceptGraph if needed
-        if (finalState.conceptGraph?.concepts && !(finalState.conceptGraph.concepts instanceof Map)) {
+        if (
+          finalState.conceptGraph?.concepts &&
+          !(finalState.conceptGraph.concepts instanceof Map)
+        ) {
           console.log('Reconstructing conceptGraph Map from serialized object');
           finalState.conceptGraph.concepts = new Map(
             Object.entries(finalState.conceptGraph.concepts as Record<string, ConceptNode>)
           );
         }
-        
+
         // Log final state structure for debugging
         console.log('Graph execution completed. Final state structure:', {
           hasCourse: !!finalState.course,
@@ -430,16 +453,20 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
           currentPhase: finalState.metadata?.currentPhase,
           iterations: finalState.metadata?.iterations,
           stateKeys: Object.keys(finalState),
-          fullState: JSON.stringify(finalState, (_key, value) => {
-            // Don't serialize Maps or functions
-            if (value instanceof Map) {
-              return { __type: 'Map', entries: Array.from(value.entries()) };
-            }
-            if (typeof value === 'function') {
-              return { __type: 'function' };
-            }
-            return value;
-          }, 2).substring(0, 1000), // Limit to first 1000 chars
+          fullState: JSON.stringify(
+            finalState,
+            (_key, value) => {
+              // Don't serialize Maps or functions
+              if (value instanceof Map) {
+                return { __type: 'Map', entries: Array.from(value.entries()) };
+              }
+              if (typeof value === 'function') {
+                return { __type: 'function' };
+              }
+              return value;
+            },
+            2
+          ).substring(0, 1000), // Limit to first 1000 chars
         });
       } catch (graphError) {
         console.error('Graph execution error:', graphError);
@@ -457,10 +484,12 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
       if (!finalState || typeof finalState !== 'object') {
         throw new Error('Course generation failed: Graph execution returned no state');
       }
-      
+
       // Validate required state properties exist
       if (!finalState.course || !finalState.modules) {
-        throw new Error('Course generation failed: Graph execution returned incomplete state. Missing course or modules data.');
+        throw new Error(
+          'Course generation failed: Graph execution returned incomplete state. Missing course or modules data.'
+        );
       }
 
       // Set topic on course (wasn't in state)
@@ -475,11 +504,11 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
         skeletonResult = convertStateToSkeletonResult(finalState);
       } catch (conversionError) {
         console.error('State conversion error:', conversionError);
-        throw conversionError instanceof Error 
-          ? conversionError 
+        throw conversionError instanceof Error
+          ? conversionError
           : new Error('Failed to convert generated course state to skeleton format');
       }
-      
+
       // Set topic from input
       skeletonResult.course.topic = input.topic;
 
@@ -494,11 +523,12 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
       setProgressCallback(() => {});
       setStoredInput(null as unknown as CourseGenerationInput);
       setGlobalStateCache(null); // Clear global state cache
-      
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Failed to generate course. Please check your LLM configuration and try again.';
-      
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to generate course. Please check your LLM configuration and try again.';
+
       return {
         data: null,
         error: errorMessage,
@@ -507,9 +537,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
     }
   },
 
-  async generateLessonContent(
-    input: GenerateLessonContentInput
-  ): Promise<ApiResponse<string>> {
+  async generateLessonContent(input: GenerateLessonContentInput): Promise<ApiResponse<string>> {
     try {
       const featureConfig = getFeatureConfig('goalRefinement');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
@@ -534,7 +562,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
       }
 
       // Simulate analysis phase
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Phase 2: Structuring
       if (input.onProgress) {
@@ -547,7 +575,7 @@ ${isAdvancedLevel ? '- For advanced/expert: Whether the learner can handle sophi
       }
 
       // Simulate structuring phase
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Phase 3: Writing
       if (input.onProgress) {
@@ -581,9 +609,7 @@ Format the content in Markdown with:
 
 Generate approximately ${input.difficulty === 'beginner' ? '500-800' : input.difficulty === 'intermediate' ? '800-1200' : '1200-1500'} words of educational content.`;
 
-      const content = await provider.invoke([
-        { role: 'user', content: prompt }
-      ]);
+      const content = await provider.invoke([{ role: 'user', content: prompt }]);
 
       // Phase 4: Polishing
       if (input.onProgress) {
@@ -596,7 +622,7 @@ Generate approximately ${input.difficulty === 'beginner' ? '500-800' : input.dif
       }
 
       // Simulate polishing phase
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       if (input.onProgress) {
         input.onProgress({

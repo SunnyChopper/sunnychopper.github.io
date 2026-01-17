@@ -8,13 +8,9 @@ export const MetricSuggestionForGoalOutputSchema = z.object({
         name: z.string().describe('Metric name'),
         description: z.string().describe('What this metric measures'),
         unit: z.string().describe('Unit of measurement'),
-        direction: z
-          .enum(['Higher', 'Lower', 'Target'])
-          .describe('Direction of improvement'),
+        direction: z.enum(['Higher', 'Lower', 'Target']).describe('Direction of improvement'),
         targetValue: z.number().optional().describe('Suggested target value'),
-        frequency: z
-          .enum(['daily', 'weekly', 'monthly'])
-          .describe('How often to track'),
+        frequency: z.enum(['daily', 'weekly', 'monthly']).describe('How often to track'),
         reasoning: z.string().describe('Why this metric is relevant'),
       })
     )
@@ -35,10 +31,7 @@ export const PatternRecognitionOutputSchema = z.object({
         description: z.string().describe('Description of the pattern'),
         significance: z.enum(['low', 'medium', 'high']).describe('Pattern significance'),
         startDate: z.string().optional().describe('When pattern started'),
-        dataPoints: z
-          .array(z.number())
-          .optional()
-          .describe('Relevant data points'),
+        dataPoints: z.array(z.number()).optional().describe('Relevant data points'),
         insights: z.string().describe('What this pattern means'),
         recommendations: z.array(z.string()).describe('Actions based on this pattern'),
       })

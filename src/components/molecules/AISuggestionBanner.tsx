@@ -48,7 +48,7 @@ export function AISuggestionBanner({
 
   const handleDismiss = (id: string) => {
     aiSuggestionsService.dismissSuggestion(id);
-    setSuggestions(suggestions.filter(s => s.id !== id));
+    setSuggestions(suggestions.filter((s) => s.id !== id));
   };
 
   const handleRefresh = async () => {

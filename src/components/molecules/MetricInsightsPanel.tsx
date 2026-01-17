@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, X, RefreshCw, AlertCircle, TrendingUp, Zap, Activity, Target, Lightbulb } from 'lucide-react';
+import {
+  Sparkles,
+  X,
+  RefreshCw,
+  AlertCircle,
+  TrendingUp,
+  Zap,
+  Activity,
+  Target,
+  Lightbulb,
+} from 'lucide-react';
 import { llmConfig } from '../../lib/llm';
 import type { Metric, MetricLog, MetricInsight } from '../../types/growth-system';
 import { metricInsightsService } from '../../services/growth-system/metric-insights.service';
@@ -128,27 +138,36 @@ export function MetricInsightsPanel({
     }
   };
 
-  const filteredInsights = selectedType === 'all'
-    ? insights
-    : insights.filter((i) => i.type === selectedType);
+  const filteredInsights =
+    selectedType === 'all' ? insights : insights.filter((i) => i.type === selectedType);
 
   const getTypeIcon = (type: InsightType) => {
     switch (type) {
-      case 'pattern': return <TrendingUp className="w-4 h-4" />;
-      case 'anomaly': return <Zap className="w-4 h-4" />;
-      case 'correlation': return <Activity className="w-4 h-4" />;
-      case 'prediction': return <Target className="w-4 h-4" />;
-      case 'milestone': return <Target className="w-4 h-4" />;
+      case 'pattern':
+        return <TrendingUp className="w-4 h-4" />;
+      case 'anomaly':
+        return <Zap className="w-4 h-4" />;
+      case 'correlation':
+        return <Activity className="w-4 h-4" />;
+      case 'prediction':
+        return <Target className="w-4 h-4" />;
+      case 'milestone':
+        return <Target className="w-4 h-4" />;
     }
   };
 
   const getTypeColor = (type: InsightType) => {
     switch (type) {
-      case 'pattern': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
-      case 'anomaly': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
-      case 'correlation': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
-      case 'prediction': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
-      case 'milestone': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
+      case 'pattern':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+      case 'anomaly':
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+      case 'correlation':
+        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+      case 'prediction':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+      case 'milestone':
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300';
     }
   };
 
@@ -160,7 +179,10 @@ export function MetricInsightsPanel({
             <Sparkles className="w-5 h-5 text-amber-500" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI Insights</h3>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -168,7 +190,9 @@ export function MetricInsightsPanel({
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">AI Not Configured</p>
+              <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">
+                AI Not Configured
+              </p>
               <p className="text-sm text-amber-800 dark:text-amber-200">
                 Configure an AI provider in Settings to use AI insights.
               </p>
@@ -186,14 +210,18 @@ export function MetricInsightsPanel({
           <Sparkles className="w-5 h-5 text-amber-500" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI Insights</h3>
         </div>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        >
           <X className="w-5 h-5" />
         </button>
       </div>
 
       <div className="mb-6">
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Metric: <span className="font-medium text-gray-900 dark:text-gray-100">{metric.name}</span>
+          Metric:{' '}
+          <span className="font-medium text-gray-900 dark:text-gray-100">{metric.name}</span>
         </p>
 
         <div className="flex items-center gap-2 mb-4">
@@ -228,20 +256,22 @@ export function MetricInsightsPanel({
         >
           All
         </button>
-        {(['pattern', 'anomaly', 'correlation', 'prediction', 'milestone'] as InsightType[]).map((type) => (
-          <button
-            key={type}
-            onClick={() => setSelectedType(type)}
-            className={`px-3 py-1.5 text-xs rounded-full transition flex items-center gap-1 ${
-              selectedType === type
-                ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            {getTypeIcon(type)}
-            {type.charAt(0).toUpperCase() + type.slice(1)}
-          </button>
-        ))}
+        {(['pattern', 'anomaly', 'correlation', 'prediction', 'milestone'] as InsightType[]).map(
+          (type) => (
+            <button
+              key={type}
+              onClick={() => setSelectedType(type)}
+              className={`px-3 py-1.5 text-xs rounded-full transition flex items-center gap-1 ${
+                selectedType === type
+                  ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              {getTypeIcon(type)}
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          )
+        )}
       </div>
 
       {isRefreshing && (
@@ -281,7 +311,9 @@ export function MetricInsightsPanel({
                   <span className="font-medium text-gray-900 dark:text-gray-100">
                     {insight.title}
                   </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${getTypeColor(insight.type as InsightType)}`}>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${getTypeColor(insight.type as InsightType)}`}
+                  >
                     {insight.type}
                   </span>
                 </div>

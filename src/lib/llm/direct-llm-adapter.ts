@@ -102,25 +102,20 @@ export class DirectLLMAdapter implements ILLMAdapter {
   async parseNaturalLanguageTask(input: ParseTaskInput): Promise<LLMResponse<ParseTaskOutput>> {
     const prompt = getParseTaskPrompt(input.text);
 
-    return this.callLLMForFeature(
-      'parseTask',
-      ParseTaskOutputSchema,
-      prompt,
-      (schemaOutput) => ({
-        task: {
-          title: schemaOutput.title,
-          description: schemaOutput.description,
-          area: schemaOutput.area,
-          subCategory: schemaOutput.subCategory,
-          priority: schemaOutput.priority,
-          dueDate: schemaOutput.dueDate,
-          scheduledDate: schemaOutput.scheduledDate,
-          size: schemaOutput.size,
-        },
-        confidence: schemaOutput.confidence,
-        extractedEntities: [],
-      })
-    );
+    return this.callLLMForFeature('parseTask', ParseTaskOutputSchema, prompt, (schemaOutput) => ({
+      task: {
+        title: schemaOutput.title,
+        description: schemaOutput.description,
+        area: schemaOutput.area,
+        subCategory: schemaOutput.subCategory,
+        priority: schemaOutput.priority,
+        dueDate: schemaOutput.dueDate,
+        scheduledDate: schemaOutput.scheduledDate,
+        size: schemaOutput.size,
+      },
+      confidence: schemaOutput.confidence,
+      extractedEntities: [],
+    }));
   }
 
   async breakdownTask(input: TaskBreakdownInput): Promise<LLMResponse<TaskBreakdownOutput>> {
@@ -265,9 +260,7 @@ export class DirectLLMAdapter implements ILLMAdapter {
     );
   }
 
-  async analyzeProjectHealth(
-    input: ProjectHealthInput
-  ): Promise<LLMResponse<ProjectHealthOutput>> {
+  async analyzeProjectHealth(input: ProjectHealthInput): Promise<LLMResponse<ProjectHealthOutput>> {
     const tasks = input.tasks.map((t) => ({
       title: t.title,
       status: t.status,
@@ -286,7 +279,12 @@ export class DirectLLMAdapter implements ILLMAdapter {
           type: 'health_analysis' as const,
           title: issue.description,
           content: `${issue.impact}\n\nRecommendation: ${issue.recommendation}`,
-          severity: issue.severity === 'critical' || issue.severity === 'high' ? 'critical' : issue.severity === 'medium' ? 'warning' : 'info' as 'info' | 'warning' | 'critical',
+          severity:
+            issue.severity === 'critical' || issue.severity === 'high'
+              ? 'critical'
+              : issue.severity === 'medium'
+                ? 'warning'
+                : ('info' as 'info' | 'warning' | 'critical'),
           relatedEntities: [{ type: 'project', id: input.project.id }],
           createdAt: new Date().toISOString(),
           viewedAt: null,
@@ -352,7 +350,8 @@ export class DirectLLMAdapter implements ILLMAdapter {
           mitigation: risk.mitigation,
           affectedTasks: [],
         })),
-        overallRiskLevel: schemaOutput.overallRiskLevel === 'critical' ? 'high' : schemaOutput.overallRiskLevel,
+        overallRiskLevel:
+          schemaOutput.overallRiskLevel === 'critical' ? 'high' : schemaOutput.overallRiskLevel,
         summary: schemaOutput.summary,
       })
     );

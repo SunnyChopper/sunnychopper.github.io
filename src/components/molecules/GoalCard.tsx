@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Target, Calendar, TrendingUp, CheckSquare, Activity, Zap, Moon, Plus, BarChart3, Repeat } from 'lucide-react';
+import {
+  Target,
+  Calendar,
+  TrendingUp,
+  CheckSquare,
+  Activity,
+  Zap,
+  Moon,
+  Plus,
+  BarChart3,
+  Repeat,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Goal, GoalProgressBreakdown, SuccessCriterion } from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
@@ -21,9 +32,9 @@ interface GoalCardProps {
   onQuickAction?: (action: 'add_task' | 'log_metric' | 'complete_criterion') => void;
 }
 
-export function GoalCard({ 
-  goal, 
-  onClick, 
+export function GoalCard({
+  goal,
+  onClick,
   progress,
   linkedCounts = { tasks: 0, metrics: 0, habits: 0, projects: 0 },
   healthStatus = 'healthy',
@@ -34,43 +45,67 @@ export function GoalCard({
   const [isHovered, setIsHovered] = useState(false);
 
   // Fallback progress calculation if not provided
-  const criteriaProgress = progress?.criteria.percentage || (() => {
-    if (Array.isArray(goal.successCriteria)) {
-      if (typeof goal.successCriteria[0] === 'string') {
-        const completed = (goal.successCriteria as string[]).filter(c => c.includes('✓')).length;
+  const criteriaProgress =
+    progress?.criteria.percentage ||
+    (() => {
+      if (Array.isArray(goal.successCriteria)) {
+        if (typeof goal.successCriteria[0] === 'string') {
+          const completed = (goal.successCriteria as string[]).filter((c) =>
+            c.includes('✓')
+          ).length;
+          const total = goal.successCriteria.length;
+          return total > 0 ? Math.round((completed / total) * 100) : 0;
+        }
+        const completed = (goal.successCriteria as SuccessCriterion[]).filter(
+          (c) => c.isCompleted
+        ).length;
         const total = goal.successCriteria.length;
         return total > 0 ? Math.round((completed / total) * 100) : 0;
       }
-      const completed = (goal.successCriteria as SuccessCriterion[]).filter((c) => c.isCompleted).length;
-      const total = goal.successCriteria.length;
-      return total > 0 ? Math.round((completed / total) * 100) : 0;
-    }
-    return 0;
-  })();
+      return 0;
+    })();
 
   const overallProgress = progress?.overall || criteriaProgress;
 
   const getUrgencyColor = () => {
     if (!daysRemaining) return 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700';
-    if (daysRemaining < 0) return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 animate-pulse';
-    if (daysRemaining <= 7) return 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30';
-    if (daysRemaining <= 30) return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
+    if (daysRemaining < 0)
+      return 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 animate-pulse';
+    if (daysRemaining <= 7)
+      return 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30';
+    if (daysRemaining <= 30)
+      return 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30';
     return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30';
   };
 
   const getHealthBadge = () => {
     const configs = {
-      healthy: { color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400', label: 'On Track' },
-      at_risk: { color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400', label: 'At Risk' },
-      behind: { color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400', label: 'Behind' },
-      dormant: { color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400', label: 'Dormant' },
+      healthy: {
+        color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+        label: 'On Track',
+      },
+      at_risk: {
+        color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+        label: 'At Risk',
+      },
+      behind: {
+        color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+        label: 'Behind',
+      },
+      dormant: {
+        color: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400',
+        label: 'Dormant',
+      },
     };
     return configs[healthStatus];
   };
 
   const healthBadge = getHealthBadge();
 
-  const handleQuickAction = (e: React.MouseEvent, action: 'add_task' | 'log_metric' | 'complete_criterion') => {
+  const handleQuickAction = (
+    e: React.MouseEvent,
+    action: 'add_task' | 'log_metric' | 'complete_criterion'
+  ) => {
     e.stopPropagation();
     onQuickAction?.(action);
   };
@@ -158,18 +193,20 @@ export function GoalCard({
           {progress && progress.criteria.total > 0 && (
             <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
               <TrendingUp className="w-3.5 h-3.5" />
-              <span>{progress.criteria.completed}/{progress.criteria.total}</span>
+              <span>
+                {progress.criteria.completed}/{progress.criteria.total}
+              </span>
             </div>
           )}
           {daysRemaining !== null && (
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${getUrgencyColor()}`}>
               <Calendar className="w-3.5 h-3.5" />
               <span className="font-medium">
-                {daysRemaining < 0 
+                {daysRemaining < 0
                   ? `${Math.abs(daysRemaining)}d overdue`
-                  : daysRemaining === 0 
-                  ? 'Due today'
-                  : `${daysRemaining}d left`}
+                  : daysRemaining === 0
+                    ? 'Due today'
+                    : `${daysRemaining}d left`}
               </span>
             </div>
           )}

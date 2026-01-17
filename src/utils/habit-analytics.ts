@@ -60,13 +60,13 @@ export function getAllStreaks(logs: HabitLog[]): StreakData {
   }
 
   // Sort logs by date (newest first)
-  const sortedLogs = [...logs].sort((a, b) =>
-    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  const sortedLogs = [...logs].sort(
+    (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
   );
 
   // Group logs by date
   const logsByDate = new Map<string, HabitLog[]>();
-  sortedLogs.forEach(log => {
+  sortedLogs.forEach((log) => {
     const date = new Date(log.completedAt);
     date.setHours(0, 0, 0, 0);
     const dateKey = date.toISOString().split('T')[0];
@@ -87,7 +87,7 @@ export function getAllStreaks(logs: HabitLog[]): StreakData {
   // Calculate streaks by iterating through dates backwards from today
   const checkDate = new Date(today);
   checkDate.setHours(0, 0, 0, 0);
-  
+
   let currentStreakStart: string | null = null;
   let currentStreakEnd: string | null = null;
   let isInStreak = false;
@@ -140,20 +140,18 @@ export function getAllStreaks(logs: HabitLog[]): StreakData {
   }
 
   // Find longest streak from all streaks
-  const longestFromAll = allStreaks.reduce((max, streak) => 
-    Math.max(max, streak.length), 0
-  );
+  const longestFromAll = allStreaks.reduce((max, streak) => Math.max(max, streak.length), 0);
   longestStreak = Math.max(longestStreak, longestFromAll);
-  
+
   // Get current streak (the active one or the most recent)
-  const activeStreak = allStreaks.find(s => s.isActive);
+  const activeStreak = allStreaks.find((s) => s.isActive);
   currentStreak = activeStreak ? activeStreak.length : 0;
 
   return {
     current: currentStreak,
     longest: longestStreak,
-    allStreaks: allStreaks.sort((a, b) => 
-      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+    allStreaks: allStreaks.sort(
+      (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
     ),
   };
 }
@@ -172,7 +170,7 @@ export function calculateCompletionRate(
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
 
-  const filteredLogs = logs.filter(log => {
+  const filteredLogs = logs.filter((log) => {
     const logDate = new Date(log.completedAt);
     return logDate >= start && logDate <= end;
   });
@@ -210,10 +208,7 @@ export function calculateCompletionRate(
 /**
  * Calculate consistency score (0-100)
  */
-export function calculateConsistencyScore(
-  logs: HabitLog[],
-  habit: Habit
-): number {
+export function calculateConsistencyScore(logs: HabitLog[], habit: Habit): number {
   if (logs.length === 0) return 0;
 
   // Base score: completion rate (70% weight)
@@ -222,11 +217,11 @@ export function calculateConsistencyScore(
 
   // Recency bonus: more recent completions weighted higher (20% weight)
   const now = new Date();
-  const sortedLogs = [...logs].sort((a, b) =>
-    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  const sortedLogs = [...logs].sort(
+    (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
   );
   const recentDays = 30;
-  const recentLogs = sortedLogs.filter(log => {
+  const recentLogs = sortedLogs.filter((log) => {
     const logDate = new Date(log.completedAt);
     const daysAgo = Math.ceil((now.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24));
     return daysAgo <= recentDays;
@@ -253,9 +248,12 @@ export function calculateTrend(
   const previousRate = calculateCompletionRate(previousLogs, habit);
 
   const change = currentRate.actual - previousRate.actual;
-  const changePercent = previousRate.actual > 0
-    ? ((currentRate.actual - previousRate.actual) / previousRate.actual) * 100
-    : currentRate.actual > 0 ? 100 : 0;
+  const changePercent =
+    previousRate.actual > 0
+      ? ((currentRate.actual - previousRate.actual) / previousRate.actual) * 100
+      : currentRate.actual > 0
+        ? 100
+        : 0;
 
   return {
     value: currentRate.actual,
@@ -269,10 +267,7 @@ export function calculateTrend(
 /**
  * Generate heatmap data for calendar visualization
  */
-export function generateHeatmapData(
-  logs: HabitLog[],
-  months: number = 6
-): HeatmapDay[] {
+export function generateHeatmapData(logs: HabitLog[], months: number = 6): HeatmapDay[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const startDate = new Date(today);
@@ -281,7 +276,7 @@ export function generateHeatmapData(
 
   // Group logs by date
   const logsByDate = new Map<string, number>();
-  logs.forEach(log => {
+  logs.forEach((log) => {
     const logDate = new Date(log.completedAt);
     logDate.setHours(0, 0, 0, 0);
     if (logDate >= startDate) {
@@ -299,7 +294,7 @@ export function generateHeatmapData(
   while (currentDate <= today) {
     const dateKey = currentDate.toISOString().split('T')[0];
     const count = logsByDate.get(dateKey) || 0;
-    
+
     // Calculate intensity (0-4)
     let intensity = 0;
     if (count > 0) {
@@ -325,12 +320,8 @@ export function generateHeatmapData(
 /**
  * Get logs for a specific date range
  */
-export function getLogsForDateRange(
-  logs: HabitLog[],
-  startDate: Date,
-  endDate: Date
-): HabitLog[] {
-  return logs.filter(log => {
+export function getLogsForDateRange(logs: HabitLog[], startDate: Date, endDate: Date): HabitLog[] {
+  return logs.filter((log) => {
     const logDate = new Date(log.completedAt);
     return logDate >= startDate && logDate <= endDate;
   });
@@ -350,13 +341,13 @@ export function getWeeklyData(
 
   for (let i = 0; i < weeks; i++) {
     const weekEnd = new Date(today);
-    weekEnd.setDate(today.getDate() - (i * 7));
-    
+    weekEnd.setDate(today.getDate() - i * 7);
+
     const dayOfWeek = weekEnd.getDay();
     const sunday = new Date(weekEnd);
     sunday.setDate(weekEnd.getDate() - (dayOfWeek === 0 ? 0 : dayOfWeek));
     sunday.setHours(23, 59, 59, 999);
-    
+
     const monday = new Date(sunday);
     monday.setDate(sunday.getDate() - 6);
     monday.setHours(0, 0, 0, 0);
@@ -395,17 +386,17 @@ export function getMonthlyData(
   for (let i = 0; i < months; i++) {
     const monthEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
     monthEnd.setHours(23, 59, 59, 999);
-    
+
     const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1);
     monthStart.setHours(0, 0, 0, 0);
 
     const monthLogs = getLogsForDateRange(logs, monthStart, monthEnd);
     const completions = monthLogs.reduce((sum, log) => sum + (log.amount || 1), 0);
     const daysInMonth = monthEnd.getDate();
-    const expected = habit.dailyTarget 
-      ? habit.dailyTarget * daysInMonth 
-      : habit.weeklyTarget 
-        ? habit.weeklyTarget * 4 
+    const expected = habit.dailyTarget
+      ? habit.dailyTarget * daysInMonth
+      : habit.weeklyTarget
+        ? habit.weeklyTarget * 4
         : daysInMonth;
     const rate = (completions / expected) * 100;
 
@@ -441,7 +432,7 @@ export function getCompletionRateData(
       const date = new Date(today);
       date.setDate(today.getDate() - i);
       date.setHours(0, 0, 0, 0);
-      
+
       const nextDate = new Date(date);
       nextDate.setDate(date.getDate() + 1);
       nextDate.setHours(0, 0, 0, 0);
@@ -459,14 +450,14 @@ export function getCompletionRateData(
       });
     }
   } else if (period === 'week') {
-    return getWeeklyData(logs, habit, Math.ceil(days / 7)).map(week => ({
+    return getWeeklyData(logs, habit, Math.ceil(days / 7)).map((week) => ({
       period: week.period,
       actual: week.completions,
       expected: week.expected,
       rate: week.rate,
     }));
   } else {
-    return getMonthlyData(logs, habit, Math.ceil(days / 30)).map(month => ({
+    return getMonthlyData(logs, habit, Math.ceil(days / 30)).map((month) => ({
       period: month.period,
       actual: month.completions,
       expected: month.expected,
@@ -480,11 +471,7 @@ export function getCompletionRateData(
 /**
  * Generate calendar days for a specific month
  */
-export function generateCalendarDays(
-  year: number,
-  month: number,
-  logs: HabitLog[]
-): CalendarDay[] {
+export function generateCalendarDays(year: number, month: number, logs: HabitLog[]): CalendarDay[] {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const daysInMonth = lastDay.getDate();
@@ -495,7 +482,7 @@ export function generateCalendarDays(
 
   // Group logs by date
   const logsByDate = new Map<string, HabitLog[]>();
-  logs.forEach(log => {
+  logs.forEach((log) => {
     const logDate = new Date(log.completedAt);
     logDate.setHours(0, 0, 0, 0);
     const dateKey = logDate.toISOString().split('T')[0];

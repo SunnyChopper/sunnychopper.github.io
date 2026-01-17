@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle, XCircle, RotateCcw, Sparkles } from 'lucide-react';
 import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
-import { aiFlashcardGeneratorService, spacedRepetitionService } from '../../services/knowledge-vault';
+import {
+  aiFlashcardGeneratorService,
+  spacedRepetitionService,
+} from '../../services/knowledge-vault';
 import type { Flashcard } from '../../types/knowledge-vault';
 import { ROUTES } from '../../routes';
 
@@ -36,7 +39,7 @@ export default function StudySessionPage() {
           nextReviewDate: fc.nextReviewDate,
           lastReviewDate: fc.lastAccessedAt,
           reviewHistory: [],
-        }
+        },
       }));
 
       const cards = cramMode
@@ -53,33 +56,36 @@ export default function StudySessionPage() {
 
   const currentCard = dueFlashcards[currentIndex];
 
-  const handleReview = useCallback(async (quality: ReviewQuality) => {
-    if (!currentCard || reviewing) return;
+  const handleReview = useCallback(
+    async (quality: ReviewQuality) => {
+      if (!currentCard || reviewing) return;
 
-    setReviewing(true);
+      setReviewing(true);
 
-    try {
-      await aiFlashcardGeneratorService.reviewFlashcard(currentCard.id, quality);
+      try {
+        await aiFlashcardGeneratorService.reviewFlashcard(currentCard.id, quality);
 
-      setStats(prev => ({
-        correct: prev.correct + (quality >= 3 ? 1 : 0),
-        incorrect: prev.incorrect + (quality < 3 ? 1 : 0),
-        total: prev.total + 1,
-      }));
+        setStats((prev) => ({
+          correct: prev.correct + (quality >= 3 ? 1 : 0),
+          incorrect: prev.incorrect + (quality < 3 ? 1 : 0),
+          total: prev.total + 1,
+        }));
 
-      if (currentIndex + 1 >= dueFlashcards.length) {
-        setSessionComplete(true);
-        await refreshVaultItems();
-      } else {
-        setCurrentIndex(prev => prev + 1);
-        setShowAnswer(false);
+        if (currentIndex + 1 >= dueFlashcards.length) {
+          setSessionComplete(true);
+          await refreshVaultItems();
+        } else {
+          setCurrentIndex((prev) => prev + 1);
+          setShowAnswer(false);
+        }
+      } catch (error) {
+        console.error('Error reviewing flashcard:', error);
+      } finally {
+        setReviewing(false);
       }
-    } catch (error) {
-      console.error('Error reviewing flashcard:', error);
-    } finally {
-      setReviewing(false);
-    }
-  }, [currentCard, reviewing, currentIndex, dueFlashcards.length, refreshVaultItems]);
+    },
+    [currentCard, reviewing, currentIndex, dueFlashcards.length, refreshVaultItems]
+  );
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -230,7 +236,7 @@ export default function StudySessionPage() {
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div
             className="bg-green-600 h-2 rounded-full transition-all"
-            style={{ width: `${((currentIndex) / dueFlashcards.length) * 100}%` }}
+            style={{ width: `${(currentIndex / dueFlashcards.length) * 100}%` }}
           />
         </div>
       </div>
@@ -251,7 +257,9 @@ export default function StudySessionPage() {
                     {currentCard.front}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-8">
-                    Press <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">Space</kbd> to reveal
+                    Press{' '}
+                    <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">Space</kbd> to
+                    reveal
                   </p>
                 </>
               ) : (
@@ -281,7 +289,12 @@ export default function StudySessionPage() {
                 >
                   <XCircle size={20} />
                   <div className="text-left">
-                    <div className="font-semibold">Forgot <kbd className="ml-1 px-1.5 py-0.5 bg-red-200 dark:bg-red-900 rounded text-xs">1</kbd></div>
+                    <div className="font-semibold">
+                      Forgot{' '}
+                      <kbd className="ml-1 px-1.5 py-0.5 bg-red-200 dark:bg-red-900 rounded text-xs">
+                        1
+                      </kbd>
+                    </div>
                     <div className="text-xs opacity-75">Complete blackout</div>
                   </div>
                 </button>
@@ -293,7 +306,12 @@ export default function StudySessionPage() {
                 >
                   <RotateCcw size={20} />
                   <div className="text-left">
-                    <div className="font-semibold">Hard <kbd className="ml-1 px-1.5 py-0.5 bg-amber-200 dark:bg-amber-900 rounded text-xs">2</kbd></div>
+                    <div className="font-semibold">
+                      Hard{' '}
+                      <kbd className="ml-1 px-1.5 py-0.5 bg-amber-200 dark:bg-amber-900 rounded text-xs">
+                        2
+                      </kbd>
+                    </div>
                     <div className="text-xs opacity-75">Incorrect but familiar</div>
                   </div>
                 </button>
@@ -305,7 +323,12 @@ export default function StudySessionPage() {
                 >
                   <CheckCircle size={20} />
                   <div className="text-left">
-                    <div className="font-semibold">Good <kbd className="ml-1 px-1.5 py-0.5 bg-blue-200 dark:bg-blue-900 rounded text-xs">3</kbd></div>
+                    <div className="font-semibold">
+                      Good{' '}
+                      <kbd className="ml-1 px-1.5 py-0.5 bg-blue-200 dark:bg-blue-900 rounded text-xs">
+                        3
+                      </kbd>
+                    </div>
                     <div className="text-xs opacity-75">Correct with effort</div>
                   </div>
                 </button>
@@ -317,14 +340,20 @@ export default function StudySessionPage() {
                 >
                   <Sparkles size={20} />
                   <div className="text-left">
-                    <div className="font-semibold">Easy <kbd className="ml-1 px-1.5 py-0.5 bg-green-200 dark:bg-green-900 rounded text-xs">4</kbd></div>
+                    <div className="font-semibold">
+                      Easy{' '}
+                      <kbd className="ml-1 px-1.5 py-0.5 bg-green-200 dark:bg-green-900 rounded text-xs">
+                        4
+                      </kbd>
+                    </div>
                     <div className="text-xs opacity-75">Perfect recall</div>
                   </div>
                 </button>
               </div>
 
               <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-                Use keyboard shortcuts: <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">1</kbd> Forgot,{' '}
+                Use keyboard shortcuts:{' '}
+                <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">1</kbd> Forgot,{' '}
                 <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">2</kbd> Hard,{' '}
                 <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">3</kbd> Good,{' '}
                 <kbd className="px-1.5 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">4</kbd> Easy

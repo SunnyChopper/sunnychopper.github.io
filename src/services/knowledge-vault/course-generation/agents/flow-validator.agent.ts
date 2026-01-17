@@ -12,9 +12,7 @@ export class FlowValidatorAgent extends BaseAgent {
     super('goalRefinement');
   }
 
-  async execute(
-    state: CourseGenerationState
-  ): Promise<CourseGenerationStateUpdate> {
+  async execute(state: CourseGenerationState): Promise<CourseGenerationStateUpdate> {
     // Build context for validation
     const courseContext = `
 Course: ${state.course.title}
@@ -41,11 +39,14 @@ Total Lessons: ${state.modules.reduce((sum, m) => sum + m.lessons.length, 0)}
     const userMessage = `${courseContext}
 
 ## Course Structure:
-${lessonsContext.map((l, idx) => 
-  `${idx + 1}. Module ${l.moduleIndex + 1}, Lesson ${l.lessonIndex + 1}: ${l.title}
+${lessonsContext
+  .map(
+    (l, idx) =>
+      `${idx + 1}. Module ${l.moduleIndex + 1}, Lesson ${l.lessonIndex + 1}: ${l.title}
    Concepts: ${l.keyConcepts.join(', ')}
    Prerequisites: ${l.prerequisites.join(', ')}`
-).join('\n')}
+  )
+  .join('\n')}
 
 Analyze the course structure and identify:
 1. Lesson-to-lesson transitions (flow quality)
@@ -60,14 +61,14 @@ Provide alignment scores and specific recommendations.`;
     const result = await this.invokeStructured(AlignmentSchema, messages);
 
     // Convert to state format
-    const issues = result.issues.map(issue => ({
+    const issues = result.issues.map((issue) => ({
       type: issue.type as 'gap' | 'redundancy' | 'prerequisite_missing' | 'difficulty_jump',
       severity: issue.severity as 'low' | 'medium' | 'high',
       description: issue.description,
       affectedLessons: issue.affectedLessons,
     }));
 
-    const transitions = result.lessonTransitions.map(trans => ({
+    const transitions = result.lessonTransitions.map((trans) => ({
       from: trans.from,
       to: trans.to,
       flowScore: trans.flowScore,

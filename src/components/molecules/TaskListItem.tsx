@@ -27,7 +27,7 @@ export function TaskListItem({
   blockedByCount = 0,
   blockedByTasks = [],
   projectCount = 0,
-  goalCount = 0
+  goalCount = 0,
 }: TaskListItemProps) {
   const handleClick = () => {
     if (onClick) {
@@ -114,10 +114,10 @@ export function TaskListItem({
                     dueInfo.overdue
                       ? 'text-red-600 dark:text-red-400'
                       : dueInfo.urgent
-                      ? 'text-orange-600 dark:text-orange-400'
-                      : dueInfo.warning
-                      ? 'text-yellow-600 dark:text-yellow-400'
-                      : 'text-gray-500 dark:text-gray-400'
+                        ? 'text-orange-600 dark:text-orange-400'
+                        : dueInfo.warning
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
                   {dueInfo.text}
@@ -140,7 +140,7 @@ export function TaskListItem({
                 count={blockedByCount}
                 tooltip={
                   blockedByTasks.length > 0
-                    ? `Blocked by:\n${blockedByTasks.map(t => `• ${t.title}`).join('\n')}`
+                    ? `Blocked by:\n${blockedByTasks.map((t) => `• ${t.title}`).join('\n')}`
                     : undefined
                 }
               />
@@ -155,7 +155,10 @@ export function TaskListItem({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button
             variant="secondary"
             size="sm"

@@ -112,11 +112,16 @@ export default function AdminLayout() {
   const { user, signOut } = useAuth();
   const { isLeisureMode } = useMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Growth System', 'Knowledge Vault']);
+  const [expandedItems, setExpandedItems] = useState<string[]>([
+    'Growth System',
+    'Knowledge Vault',
+  ]);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
-    return stored ? Math.max(getMinWidth(), Math.min(getMaxWidth(), parseInt(stored, 10))) : DEFAULT_SIDEBAR_WIDTH;
+    return stored
+      ? Math.max(getMinWidth(), Math.min(getMaxWidth(), parseInt(stored, 10)))
+      : DEFAULT_SIDEBAR_WIDTH;
   });
   const [isResizing, setIsResizing] = useState(false);
   const [isLargeScreen, setIsLargeScreen] = useState(() => {
@@ -177,24 +182,30 @@ export default function AdminLayout() {
     localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-    resizeStartX.current = e.clientX;
-    resizeStartWidth.current = sidebarWidth;
-  }, [sidebarWidth]);
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsResizing(true);
+      resizeStartX.current = e.clientX;
+      resizeStartWidth.current = sidebarWidth;
+    },
+    [sidebarWidth]
+  );
 
-  const handleResizeMove = useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
+  const handleResizeMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing) return;
 
-    const deltaX = e.clientX - resizeStartX.current;
-    const newWidth = resizeStartWidth.current + deltaX;
-    const minWidth = getMinWidth();
-    const maxWidth = getMaxWidth();
-    
-    const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
-    setSidebarWidth(constrainedWidth);
-  }, [isResizing]);
+      const deltaX = e.clientX - resizeStartX.current;
+      const newWidth = resizeStartWidth.current + deltaX;
+      const minWidth = getMinWidth();
+      const maxWidth = getMaxWidth();
+
+      const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+      setSidebarWidth(constrainedWidth);
+    },
+    [isResizing]
+  );
 
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
@@ -206,7 +217,7 @@ export default function AdminLayout() {
       document.addEventListener('mouseup', handleResizeEnd);
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
-      
+
       return () => {
         document.removeEventListener('mousemove', handleResizeMove);
         document.removeEventListener('mouseup', handleResizeEnd);
@@ -219,10 +230,7 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <BackendStatusBanner />
-      <CommandPalette
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-      />
+      <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
 
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
@@ -249,7 +257,7 @@ export default function AdminLayout() {
         className={`fixed inset-y-0 left-0 z-40 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isResizing ? 'select-none transition-none' : 'transition-transform duration-200 ease-in-out'}`}
-        style={{ 
+        style={{
           width: `${sidebarWidth}px`,
           minWidth: `${getMinWidth()}px`,
           maxWidth: `${getMaxWidth()}px`,
@@ -262,7 +270,7 @@ export default function AdminLayout() {
             className={`absolute top-0 right-0 w-1 h-full cursor-col-resize z-50 lg:block hidden ${
               isResizing ? 'bg-blue-500' : 'hover:bg-blue-400/50'
             }`}
-            style={{ 
+            style={{
               touchAction: 'none',
               // Make it easier to grab by extending the hit area
               marginRight: '-2px',
@@ -272,7 +280,7 @@ export default function AdminLayout() {
             role="separator"
             aria-orientation="vertical"
           />
-          
+
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user?.email}</p>
@@ -285,7 +293,9 @@ export default function AdminLayout() {
             >
               <Command size={16} />
               <span className="flex-1 text-left">Quick Search</span>
-              <kbd className="px-1.5 py-0.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">⌘K</kbd>
+              <kbd className="px-1.5 py-0.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">
+                ⌘K
+              </kbd>
             </button>
           </div>
 
@@ -387,7 +397,7 @@ export default function AdminLayout() {
         />
       )}
 
-      <div 
+      <div
         className="min-h-screen transition-all duration-200"
         style={{ marginLeft: isLargeScreen ? `${sidebarWidth}px` : '0' }}
       >

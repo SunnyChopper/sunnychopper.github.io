@@ -37,7 +37,7 @@ export function AIInsightBanner({
   content,
   severity = 'info',
   onDismiss,
-  className = ''
+  className = '',
 }: AIInsightBannerProps) {
   const config = severityConfig[severity];
   const Icon = config.icon;
@@ -57,9 +57,7 @@ export function AIInsightBanner({
                 <Icon className="w-4 h-4" />
                 {title}
               </div>
-              <div className={`text-sm ${config.textColor} opacity-90`}>
-                {content}
-              </div>
+              <div className={`text-sm ${config.textColor} opacity-90`}>{content}</div>
             </div>
             {onDismiss && (
               <button

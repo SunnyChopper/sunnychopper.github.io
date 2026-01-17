@@ -21,10 +21,14 @@ const queryClient = new QueryClient({
         if (error) {
           // Check for error code in object
           if (typeof error === 'object') {
-            const errorObj = error as { code?: string; error?: { code?: string }; message?: string };
+            const errorObj = error as {
+              code?: string;
+              error?: { code?: string };
+              message?: string;
+            };
             const errorCode = errorObj.code || errorObj.error?.code;
             const errorMessage = (errorObj.message || '').toLowerCase();
-            
+
             if (
               errorCode === 'NETWORK_ERROR' ||
               errorCode === 'ERR_CONNECTION_REFUSED' ||
@@ -39,7 +43,7 @@ const queryClient = new QueryClient({
               return false;
             }
           }
-          
+
           // Check for Error object with network-related messages
           if (error instanceof Error) {
             const message = error.message.toLowerCase();
@@ -73,5 +77,5 @@ createRoot(document.getElementById('root')!).render(
         </WalletProvider>
       </AuthProvider>
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
 );

@@ -58,14 +58,14 @@ Response includes:
 
 ## Authentication (`/auth`)
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/auth/signup` | Create new user account | No |
-| POST | `/auth/login` | Authenticate and get tokens | No |
-| POST | `/auth/refresh` | Refresh access token | No (requires refresh token) |
-| POST | `/auth/logout` | Invalidate refresh token | Yes |
-| GET | `/auth/me` | Get current user profile | Yes |
-| PATCH | `/auth/me` | Update user profile | Yes |
+| Method | Endpoint        | Description                 | Auth Required               |
+| ------ | --------------- | --------------------------- | --------------------------- |
+| POST   | `/auth/signup`  | Create new user account     | No                          |
+| POST   | `/auth/login`   | Authenticate and get tokens | No                          |
+| POST   | `/auth/refresh` | Refresh access token        | No (requires refresh token) |
+| POST   | `/auth/logout`  | Invalidate refresh token    | Yes                         |
+| GET    | `/auth/me`      | Get current user profile    | Yes                         |
+| PATCH  | `/auth/me`      | Update user profile         | Yes                         |
 
 ### POST `/auth/signup`
 
@@ -115,33 +115,33 @@ Response includes:
 
 ## Tasks (`/tasks`)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/tasks` | List all tasks (with filters) |
-| GET | `/tasks/{id}` | Get single task |
-| POST | `/tasks` | Create task |
-| PATCH | `/tasks/{id}` | Update task |
-| DELETE | `/tasks/{id}` | Delete task |
-| GET | `/tasks/{id}/dependencies` | Get task dependencies |
-| POST | `/tasks/{id}/dependencies` | Add dependency |
-| DELETE | `/tasks/{id}/dependencies/{depId}` | Remove dependency |
-| POST | `/tasks/{id}/complete` | Mark task complete (awards points) |
+| Method | Endpoint                           | Description                        |
+| ------ | ---------------------------------- | ---------------------------------- |
+| GET    | `/tasks`                           | List all tasks (with filters)      |
+| GET    | `/tasks/{id}`                      | Get single task                    |
+| POST   | `/tasks`                           | Create task                        |
+| PATCH  | `/tasks/{id}`                      | Update task                        |
+| DELETE | `/tasks/{id}`                      | Delete task                        |
+| GET    | `/tasks/{id}/dependencies`         | Get task dependencies              |
+| POST   | `/tasks/{id}/dependencies`         | Add dependency                     |
+| DELETE | `/tasks/{id}/dependencies/{depId}` | Remove dependency                  |
+| POST   | `/tasks/{id}/complete`             | Mark task complete (awards points) |
 
 ### Query Parameters for GET `/tasks`
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `search` | string | Search in title/description |
-| `status` | string | Filter by status |
-| `priority` | string | Filter by priority (P1-P4) |
-| `area` | string | Filter by life area |
-| `projectId` | string | Filter by linked project |
-| `goalId` | string | Filter by linked goal |
-| `dueDate` | string | Filter by due date (ISO) |
-| `page` | number | Page number (default: 1) |
-| `pageSize` | number | Items per page (default: 50) |
-| `sortBy` | string | Sort field |
-| `sortOrder` | string | `asc` or `desc` |
+| Parameter   | Type   | Description                  |
+| ----------- | ------ | ---------------------------- |
+| `search`    | string | Search in title/description  |
+| `status`    | string | Filter by status             |
+| `priority`  | string | Filter by priority (P1-P4)   |
+| `area`      | string | Filter by life area          |
+| `projectId` | string | Filter by linked project     |
+| `goalId`    | string | Filter by linked goal        |
+| `dueDate`   | string | Filter by due date (ISO)     |
+| `page`      | number | Page number (default: 1)     |
+| `pageSize`  | number | Items per page (default: 50) |
+| `sortBy`    | string | Sort field                   |
+| `sortOrder` | string | `asc` or `desc`              |
 
 ### POST `/tasks` Request Body
 
@@ -193,23 +193,23 @@ Response includes:
 
 ## Goals (`/goals`)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/goals` | List all goals |
-| GET | `/goals/{id}` | Get goal with progress |
-| POST | `/goals` | Create goal |
-| PATCH | `/goals/{id}` | Update goal |
-| DELETE | `/goals/{id}` | Delete goal |
-| GET | `/goals/{id}/progress` | Get detailed progress breakdown |
-| POST | `/goals/{id}/criteria/{criteriaId}/complete` | Mark criterion complete |
-| GET | `/goals/{id}/tasks` | Get linked tasks |
-| POST | `/goals/{id}/tasks` | Link tasks to goal |
-| DELETE | `/goals/{id}/tasks/{taskId}` | Unlink task |
-| GET | `/goals/{id}/metrics` | Get linked metrics |
-| POST | `/goals/{id}/metrics` | Link metrics to goal |
-| GET | `/goals/{id}/habits` | Get linked habits |
-| POST | `/goals/{id}/habits` | Link habits to goal |
-| GET | `/goals/{id}/activity` | Get goal activity timeline |
+| Method | Endpoint                                     | Description                     |
+| ------ | -------------------------------------------- | ------------------------------- |
+| GET    | `/goals`                                     | List all goals                  |
+| GET    | `/goals/{id}`                                | Get goal with progress          |
+| POST   | `/goals`                                     | Create goal                     |
+| PATCH  | `/goals/{id}`                                | Update goal                     |
+| DELETE | `/goals/{id}`                                | Delete goal                     |
+| GET    | `/goals/{id}/progress`                       | Get detailed progress breakdown |
+| POST   | `/goals/{id}/criteria/{criteriaId}/complete` | Mark criterion complete         |
+| GET    | `/goals/{id}/tasks`                          | Get linked tasks                |
+| POST   | `/goals/{id}/tasks`                          | Link tasks to goal              |
+| DELETE | `/goals/{id}/tasks/{taskId}`                 | Unlink task                     |
+| GET    | `/goals/{id}/metrics`                        | Get linked metrics              |
+| POST   | `/goals/{id}/metrics`                        | Link metrics to goal            |
+| GET    | `/goals/{id}/habits`                         | Get linked habits               |
+| POST   | `/goals/{id}/habits`                         | Link habits to goal             |
+| GET    | `/goals/{id}/activity`                       | Get goal activity timeline      |
 
 ### Goal Response Schema
 
@@ -291,19 +291,19 @@ Response includes:
 
 ## Metrics (`/metrics`)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/metrics` | List all metrics |
-| GET | `/metrics/{id}` | Get metric with recent logs |
-| POST | `/metrics` | Create metric |
-| PATCH | `/metrics/{id}` | Update metric |
-| DELETE | `/metrics/{id}` | Delete metric |
-| GET | `/metrics/{id}/logs` | Get metric logs |
-| POST | `/metrics/{id}/logs` | Add metric log (triggers milestone check) |
-| DELETE | `/metrics/{id}/logs/{logId}` | Delete log |
-| GET | `/metrics/{id}/milestones` | Get metric milestones |
-| GET | `/metrics/{id}/analytics` | Get computed analytics (trend, predictions) |
-| GET | `/metrics/{id}/insights` | Get cached AI insights |
+| Method | Endpoint                     | Description                                 |
+| ------ | ---------------------------- | ------------------------------------------- |
+| GET    | `/metrics`                   | List all metrics                            |
+| GET    | `/metrics/{id}`              | Get metric with recent logs                 |
+| POST   | `/metrics`                   | Create metric                               |
+| PATCH  | `/metrics/{id}`              | Update metric                               |
+| DELETE | `/metrics/{id}`              | Delete metric                               |
+| GET    | `/metrics/{id}/logs`         | Get metric logs                             |
+| POST   | `/metrics/{id}/logs`         | Add metric log (triggers milestone check)   |
+| DELETE | `/metrics/{id}/logs/{logId}` | Delete log                                  |
+| GET    | `/metrics/{id}/milestones`   | Get metric milestones                       |
+| GET    | `/metrics/{id}/analytics`    | Get computed analytics (trend, predictions) |
+| GET    | `/metrics/{id}/insights`     | Get cached AI insights                      |
 
 ### Metric Response Schema
 
@@ -374,18 +374,18 @@ Response includes:
 
 ## Habits (`/habits`)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/habits` | List all habits |
-| GET | `/habits/{id}` | Get habit with streak info |
-| POST | `/habits` | Create habit |
-| PATCH | `/habits/{id}` | Update habit |
-| DELETE | `/habits/{id}` | Delete habit |
-| GET | `/habits/{id}/logs` | Get completion logs |
-| POST | `/habits/{id}/logs` | Log habit completion |
-| DELETE | `/habits/{id}/logs/{date}` | Remove completion |
-| GET | `/habits/{id}/heatmap` | Get calendar heatmap data |
-| GET | `/habits/today` | Get habits due today with status |
+| Method | Endpoint                   | Description                      |
+| ------ | -------------------------- | -------------------------------- |
+| GET    | `/habits`                  | List all habits                  |
+| GET    | `/habits/{id}`             | Get habit with streak info       |
+| POST   | `/habits`                  | Create habit                     |
+| PATCH  | `/habits/{id}`             | Update habit                     |
+| DELETE | `/habits/{id}`             | Delete habit                     |
+| GET    | `/habits/{id}/logs`        | Get completion logs              |
+| POST   | `/habits/{id}/logs`        | Log habit completion             |
+| DELETE | `/habits/{id}/logs/{date}` | Remove completion                |
+| GET    | `/habits/{id}/heatmap`     | Get calendar heatmap data        |
+| GET    | `/habits/today`            | Get habits due today with status |
 
 ### Habit Response Schema
 
@@ -418,17 +418,17 @@ Response includes:
 
 ## Projects (`/projects`)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/projects` | List all projects |
-| GET | `/projects/{id}` | Get project with health status |
-| POST | `/projects` | Create project |
-| PATCH | `/projects/{id}` | Update project |
-| DELETE | `/projects/{id}` | Delete project |
-| GET | `/projects/{id}/tasks` | Get linked tasks |
-| POST | `/projects/{id}/tasks` | Link tasks |
-| GET | `/projects/{id}/goals` | Get linked goals |
-| GET | `/projects/{id}/health` | Get computed health status |
+| Method | Endpoint                | Description                    |
+| ------ | ----------------------- | ------------------------------ |
+| GET    | `/projects`             | List all projects              |
+| GET    | `/projects/{id}`        | Get project with health status |
+| POST   | `/projects`             | Create project                 |
+| PATCH  | `/projects/{id}`        | Update project                 |
+| DELETE | `/projects/{id}`        | Delete project                 |
+| GET    | `/projects/{id}/tasks`  | Get linked tasks               |
+| POST   | `/projects/{id}/tasks`  | Link tasks                     |
+| GET    | `/projects/{id}/goals`  | Get linked goals               |
+| GET    | `/projects/{id}/health` | Get computed health status     |
 
 ### Project Response Schema
 
@@ -462,15 +462,15 @@ Response includes:
 
 ## Logbook (`/logbook`)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/logbook` | List entries (paginated by date) |
-| GET | `/logbook/{date}` | Get entry for specific date |
-| POST | `/logbook` | Create entry |
-| PATCH | `/logbook/{id}` | Update entry |
-| DELETE | `/logbook/{id}` | Delete entry |
-| GET | `/logbook/{id}/links` | Get linked entities |
-| POST | `/logbook/{id}/links` | Link entities to entry |
+| Method | Endpoint              | Description                      |
+| ------ | --------------------- | -------------------------------- |
+| GET    | `/logbook`            | List entries (paginated by date) |
+| GET    | `/logbook/{date}`     | Get entry for specific date      |
+| POST   | `/logbook`            | Create entry                     |
+| PATCH  | `/logbook/{id}`       | Update entry                     |
+| DELETE | `/logbook/{id}`       | Delete entry                     |
+| GET    | `/logbook/{id}/links` | Get linked entities              |
+| POST   | `/logbook/{id}/links` | Link entities to entry           |
 
 ### Logbook Entry Response
 
@@ -495,16 +495,16 @@ Response includes:
 
 ## Rewards (`/rewards`)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/rewards` | List available rewards |
-| GET | `/rewards/{id}` | Get reward details |
-| POST | `/rewards` | Create custom reward |
-| PATCH | `/rewards/{id}` | Update reward |
-| DELETE | `/rewards/{id}` | Delete reward |
-| POST | `/rewards/{id}/redeem` | Redeem reward (deduct points) |
-| GET | `/wallet` | Get wallet balance and history |
-| POST | `/wallet/add` | Manually add points |
+| Method | Endpoint               | Description                    |
+| ------ | ---------------------- | ------------------------------ |
+| GET    | `/rewards`             | List available rewards         |
+| GET    | `/rewards/{id}`        | Get reward details             |
+| POST   | `/rewards`             | Create custom reward           |
+| PATCH  | `/rewards/{id}`        | Update reward                  |
+| DELETE | `/rewards/{id}`        | Delete reward                  |
+| POST   | `/rewards/{id}/redeem` | Redeem reward (deduct points)  |
+| GET    | `/wallet`              | Get wallet balance and history |
+| POST   | `/wallet/add`          | Manually add points            |
 
 ### Wallet Response
 
@@ -530,15 +530,15 @@ Response includes:
 
 ## Knowledge Vault (`/knowledge`)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/knowledge/courses` | List courses |
-| GET | `/knowledge/courses/{id}` | Get course with lessons |
-| POST | `/knowledge/courses` | Create course (AI-generated) |
-| GET | `/knowledge/flashcards` | List flashcard decks |
-| POST | `/knowledge/flashcards/{deckId}/review` | Submit review session |
-| GET | `/knowledge/skills` | Get skill tree |
-| POST | `/knowledge/skills/{id}/progress` | Update skill progress |
+| Method | Endpoint                                | Description                  |
+| ------ | --------------------------------------- | ---------------------------- |
+| GET    | `/knowledge/courses`                    | List courses                 |
+| GET    | `/knowledge/courses/{id}`               | Get course with lessons      |
+| POST   | `/knowledge/courses`                    | Create course (AI-generated) |
+| GET    | `/knowledge/flashcards`                 | List flashcard decks         |
+| POST   | `/knowledge/flashcards/{deckId}/review` | Submit review session        |
+| GET    | `/knowledge/skills`                     | Get skill tree               |
+| POST   | `/knowledge/skills/{id}/progress`       | Update skill progress        |
 
 ---
 
@@ -546,27 +546,27 @@ Response includes:
 
 All AI endpoints proxy to LLM providers using stored API keys.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/ai/tasks/parse` | Parse natural language → task |
-| POST | `/ai/tasks/breakdown` | Break task into subtasks |
-| POST | `/ai/tasks/prioritize` | Get priority recommendation |
-| POST | `/ai/tasks/estimate` | Estimate effort |
-| POST | `/ai/tasks/categorize` | Auto-categorize task |
-| POST | `/ai/tasks/dependencies` | Detect dependencies |
-| POST | `/ai/goals/refine` | Refine goal text |
-| POST | `/ai/goals/criteria` | Generate success criteria |
-| POST | `/ai/goals/cascade` | Break goal into sub-goals |
-| POST | `/ai/goals/forecast` | Predict achievement |
-| POST | `/ai/metrics/patterns` | Analyze metric patterns |
-| POST | `/ai/metrics/anomalies` | Detect anomalies |
-| POST | `/ai/metrics/correlations` | Find correlations |
-| POST | `/ai/metrics/predict` | Predict trajectory |
-| POST | `/ai/habits/design` | Optimize habit loop |
-| POST | `/ai/habits/stack` | Suggest habit stacking |
-| POST | `/ai/logbook/prompts` | Generate reflection prompts |
-| POST | `/ai/logbook/digest` | Generate daily digest |
-| POST | `/ai/weekly-review` | Generate weekly review |
+| Method | Endpoint                   | Description                   |
+| ------ | -------------------------- | ----------------------------- |
+| POST   | `/ai/tasks/parse`          | Parse natural language → task |
+| POST   | `/ai/tasks/breakdown`      | Break task into subtasks      |
+| POST   | `/ai/tasks/prioritize`     | Get priority recommendation   |
+| POST   | `/ai/tasks/estimate`       | Estimate effort               |
+| POST   | `/ai/tasks/categorize`     | Auto-categorize task          |
+| POST   | `/ai/tasks/dependencies`   | Detect dependencies           |
+| POST   | `/ai/goals/refine`         | Refine goal text              |
+| POST   | `/ai/goals/criteria`       | Generate success criteria     |
+| POST   | `/ai/goals/cascade`        | Break goal into sub-goals     |
+| POST   | `/ai/goals/forecast`       | Predict achievement           |
+| POST   | `/ai/metrics/patterns`     | Analyze metric patterns       |
+| POST   | `/ai/metrics/anomalies`    | Detect anomalies              |
+| POST   | `/ai/metrics/correlations` | Find correlations             |
+| POST   | `/ai/metrics/predict`      | Predict trajectory            |
+| POST   | `/ai/habits/design`        | Optimize habit loop           |
+| POST   | `/ai/habits/stack`         | Suggest habit stacking        |
+| POST   | `/ai/logbook/prompts`      | Generate reflection prompts   |
+| POST   | `/ai/logbook/digest`       | Generate daily digest         |
+| POST   | `/ai/weekly-review`        | Generate weekly review        |
 
 ### AI Request Format
 
@@ -609,29 +609,30 @@ All AI endpoints proxy to LLM providers using stored API keys.
 
 ## Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `VALIDATION_ERROR` | 400 | Invalid request body |
-| `UNAUTHORIZED` | 401 | Missing or invalid JWT |
-| `FORBIDDEN` | 403 | Access denied |
-| `NOT_FOUND` | 404 | Resource not found |
-| `CONFLICT` | 409 | Resource already exists |
-| `RATE_LIMITED` | 429 | Too many requests |
-| `INTERNAL_ERROR` | 500 | Server error |
-| `LLM_ERROR` | 502 | LLM provider error |
-| `LLM_NOT_CONFIGURED` | 503 | LLM API key not set |
+| Code                 | HTTP Status | Description             |
+| -------------------- | ----------- | ----------------------- |
+| `VALIDATION_ERROR`   | 400         | Invalid request body    |
+| `UNAUTHORIZED`       | 401         | Missing or invalid JWT  |
+| `FORBIDDEN`          | 403         | Access denied           |
+| `NOT_FOUND`          | 404         | Resource not found      |
+| `CONFLICT`           | 409         | Resource already exists |
+| `RATE_LIMITED`       | 429         | Too many requests       |
+| `INTERNAL_ERROR`     | 500         | Server error            |
+| `LLM_ERROR`          | 502         | LLM provider error      |
+| `LLM_NOT_CONFIGURED` | 503         | LLM API key not set     |
 
 ---
 
 ## Rate Limits
 
-| Endpoint Type | Limit |
-|---------------|-------|
-| Auth endpoints | 10 req/min |
+| Endpoint Type  | Limit       |
+| -------------- | ----------- |
+| Auth endpoints | 10 req/min  |
 | CRUD endpoints | 100 req/min |
-| AI endpoints | 20 req/min |
+| AI endpoints   | 20 req/min  |
 
 Rate limit headers included in responses:
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95

@@ -40,7 +40,7 @@ export default function ForceDirectedGraph({
   const animationFrameRef = useRef<number | undefined>(undefined);
 
   const initializeSimulation = useCallback(() => {
-    const simNodes: SimulationNode[] = nodes.map(node => ({
+    const simNodes: SimulationNode[] = nodes.map((node) => ({
       ...node,
       x: node.x !== undefined ? node.x : Math.random() * width,
       y: node.y !== undefined ? node.y : Math.random() * height,
@@ -64,10 +64,10 @@ export default function ForceDirectedGraph({
     const centeringStrength = 0.01;
     const damping = 0.8;
 
-    setSimulationNodes(prevNodes => {
+    setSimulationNodes((prevNodes) => {
       const newNodes = [...prevNodes];
 
-      newNodes.forEach(node => {
+      newNodes.forEach((node) => {
         if (node.fx !== null && node.fy !== null) {
           node.x = node.fx;
           node.y = node.fy;
@@ -79,7 +79,7 @@ export default function ForceDirectedGraph({
         let fx = 0;
         let fy = 0;
 
-        newNodes.forEach(other => {
+        newNodes.forEach((other) => {
           if (node.id === other.id) return;
 
           const dx = other.x - node.x;
@@ -92,13 +92,13 @@ export default function ForceDirectedGraph({
           fy -= (dy / dist) * repulsion;
         });
 
-        edges.forEach(edge => {
+        edges.forEach((edge) => {
           const isSource = edge.source === node.id;
           const isTarget = edge.target === node.id;
           if (!isSource && !isTarget) return;
 
           const otherId = isSource ? edge.target : edge.source;
-          const other = newNodes.find(n => n.id === otherId);
+          const other = newNodes.find((n) => n.id === otherId);
           if (!other) return;
 
           const dx = other.x - node.x;
@@ -160,9 +160,9 @@ export default function ForceDirectedGraph({
 
     ctx.clearRect(0, 0, width, height);
 
-    edges.forEach(edge => {
-      const sourceNode = simulationNodes.find(n => n.id === edge.source);
-      const targetNode = simulationNodes.find(n => n.id === edge.target);
+    edges.forEach((edge) => {
+      const sourceNode = simulationNodes.find((n) => n.id === edge.source);
+      const targetNode = simulationNodes.find((n) => n.id === edge.target);
 
       if (!sourceNode || !targetNode) return;
 
@@ -183,7 +183,7 @@ export default function ForceDirectedGraph({
       ctx.stroke();
     });
 
-    simulationNodes.forEach(node => {
+    simulationNodes.forEach((node) => {
       const isSelected = node.id === selectedNodeId;
       const radius = isSelected ? 35 : 28;
       const color = getAreaColor(node.area);
@@ -247,22 +247,16 @@ export default function ForceDirectedGraph({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    setSimulationNodes(prevNodes =>
-      prevNodes.map(node =>
-        node.id === draggedNode.id
-          ? { ...node, fx: x, fy: y, x, y }
-          : node
-      )
+    setSimulationNodes((prevNodes) =>
+      prevNodes.map((node) => (node.id === draggedNode.id ? { ...node, fx: x, fy: y, x, y } : node))
     );
   };
 
   const handleMouseUp = () => {
     if (draggedNode) {
-      setSimulationNodes(prevNodes =>
-        prevNodes.map(node =>
-          node.id === draggedNode.id
-            ? { ...node, fx: null, fy: null }
-            : node
+      setSimulationNodes((prevNodes) =>
+        prevNodes.map((node) =>
+          node.id === draggedNode.id ? { ...node, fx: null, fy: null } : node
         )
       );
     }

@@ -99,14 +99,14 @@ provider:
   stage: ${opt:stage, 'dev'}
   memorySize: 512
   timeout: 30
-  
+
   environment:
     STAGE: ${self:provider.stage}
     TABLE_NAME: personal-os-${self:provider.stage}
     COGNITO_USER_POOL_ID: !Ref CognitoUserPool
     COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
     AWS_REGION_NAME: ${self:provider.region}
-  
+
   httpApi:
     cors:
       allowedOrigins:
@@ -129,7 +129,7 @@ provider:
           Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${CognitoUserPool}
         audience:
           - !Ref CognitoUserPoolClient
-  
+
   iam:
     role:
       statements:
@@ -147,14 +147,14 @@ provider:
           Resource:
             - !GetAtt DynamoDBTable.Arn
             - !Sub ${DynamoDBTable.Arn}/index/*
-        
+
         # Secrets Manager
         - Effect: Allow
           Action:
             - secretsmanager:GetSecretValue
           Resource:
             - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:personal-os/${self:provider.stage}/*
-        
+
         # Cognito (for auth endpoints)
         - Effect: Allow
           Action:
@@ -174,30 +174,30 @@ custom:
     slim: true
     slimPatternsAppendDefaults: false
     slimPatterns:
-      - "**/*.pyc"
-      - "**/__pycache__"
-      - "**/tests"
-      - "**/test"
-      - "**/*.md"
-      - "**/*.txt"
+      - '**/*.pyc'
+      - '**/__pycache__'
+      - '**/tests'
+      - '**/test'
+      - '**/*.md'
+      - '**/*.txt'
     noDeploy:
       - pytest
       - black
       - mypy
-  
+
   customDomain:
     domainName: ${self:custom.domainNames.${self:provider.stage}}
     basePath: ''
     stage: ${self:provider.stage}
-    createRoute53Record: false  # Managing DNS in Namecheap
+    createRoute53Record: false # Managing DNS in Namecheap
     certificateArn: ${self:custom.certificateArn}
     endpointType: regional
     apiType: http
-  
+
   domainNames:
     dev: dev-api.sunnysingh.tech
     prod: api.sunnysingh.tech
-  
+
   # You'll need to create this certificate manually first
   certificateArn: arn:aws:acm:us-east-1:YOUR_ACCOUNT_ID:certificate/YOUR_CERT_ID
 
@@ -220,7 +220,7 @@ functions:
           method: GET
           authorizer:
             name: cognitoAuthorizer
-  
+
   # Tasks
   tasks:
     handler: handlers/tasks_handler.handler
@@ -265,7 +265,7 @@ functions:
           method: POST
           authorizer:
             name: cognitoAuthorizer
-  
+
   # Goals
   goals:
     handler: handlers/goals_handler.handler
@@ -320,7 +320,7 @@ functions:
           method: GET
           authorizer:
             name: cognitoAuthorizer
-  
+
   # Metrics
   metrics:
     handler: handlers/metrics_handler.handler
@@ -370,7 +370,7 @@ functions:
           method: GET
           authorizer:
             name: cognitoAuthorizer
-  
+
   # Habits
   habits:
     handler: handlers/habits_handler.handler
@@ -415,7 +415,7 @@ functions:
           method: GET
           authorizer:
             name: cognitoAuthorizer
-  
+
   # Projects
   projects:
     handler: handlers/projects_handler.handler
@@ -450,7 +450,7 @@ functions:
           method: GET
           authorizer:
             name: cognitoAuthorizer
-  
+
   # Logbook
   logbook:
     handler: handlers/logbook_handler.handler
@@ -480,7 +480,7 @@ functions:
           method: DELETE
           authorizer:
             name: cognitoAuthorizer
-  
+
   # Rewards
   rewards:
     handler: handlers/rewards_handler.handler
@@ -515,7 +515,7 @@ functions:
           method: GET
           authorizer:
             name: cognitoAuthorizer
-  
+
   # Knowledge Vault
   knowledge:
     handler: handlers/knowledge_handler.handler
@@ -545,12 +545,12 @@ functions:
           method: GET
           authorizer:
             name: cognitoAuthorizer
-  
+
   # AI Features
   ai:
     handler: handlers/ai_handler.handler
-    timeout: 60  # LLM calls can take longer
-    memorySize: 1024  # More memory for LLM processing
+    timeout: 60 # LLM calls can take longer
+    memorySize: 1024 # More memory for LLM processing
     events:
       - httpApi:
           path: /ai/tasks/parse
@@ -679,7 +679,7 @@ resources:
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
-    
+
     # Cognito User Pool
     CognitoUserPool:
       Type: AWS::Cognito::UserPool
@@ -706,7 +706,7 @@ resources:
           RecoveryMechanisms:
             - Name: verified_email
               Priority: 1
-    
+
     # Cognito User Pool Client
     CognitoUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
@@ -732,17 +732,17 @@ resources:
       Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
       Export:
         Name: ${self:service}-${self:provider.stage}-ApiEndpoint
-    
+
     UserPoolId:
       Value: !Ref CognitoUserPool
       Export:
         Name: ${self:service}-${self:provider.stage}-UserPoolId
-    
+
     UserPoolClientId:
       Value: !Ref CognitoUserPoolClient
       Export:
         Name: ${self:service}-${self:provider.stage}-UserPoolClientId
-    
+
     TableName:
       Value: !Ref DynamoDBTable
       Export:
@@ -865,9 +865,9 @@ serverless create_domain --stage prod
 1. Go to Namecheap → Domain List → sunnysingh.tech → Manage → Advanced DNS
 2. Add CNAME records:
 
-| Type | Host | Value | TTL |
-|------|------|-------|-----|
-| CNAME | api | `{api-gateway-domain}.execute-api.us-east-1.amazonaws.com` | Automatic |
+| Type  | Host    | Value                                                      | TTL       |
+| ----- | ------- | ---------------------------------------------------------- | --------- |
+| CNAME | api     | `{api-gateway-domain}.execute-api.us-east-1.amazonaws.com` | Automatic |
 | CNAME | dev-api | `{api-gateway-domain}.execute-api.us-east-1.amazonaws.com` | Automatic |
 
 Get the API Gateway domain from serverless output or AWS Console.
@@ -978,14 +978,14 @@ Check IAM permissions include all required actions.
 
 ## Cost Estimation
 
-| Service | Estimated Monthly Cost |
-|---------|------------------------|
-| Lambda | $0-5 (free tier: 1M requests) |
-| API Gateway | $0-3 (free tier: 1M requests) |
-| DynamoDB | $0-5 (on-demand, low volume) |
-| Cognito | $0 (free tier: 50K MAU) |
-| Secrets Manager | $0.40/secret/month |
-| ACM | Free |
-| **Total** | **~$5-15/month** |
+| Service         | Estimated Monthly Cost        |
+| --------------- | ----------------------------- |
+| Lambda          | $0-5 (free tier: 1M requests) |
+| API Gateway     | $0-3 (free tier: 1M requests) |
+| DynamoDB        | $0-5 (on-demand, low volume)  |
+| Cognito         | $0 (free tier: 50K MAU)       |
+| Secrets Manager | $0.40/secret/month            |
+| ACM             | Free                          |
+| **Total**       | **~$5-15/month**              |
 
 LLM API costs are separate and depend on usage.

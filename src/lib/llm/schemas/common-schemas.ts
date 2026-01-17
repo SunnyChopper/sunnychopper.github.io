@@ -1,13 +1,6 @@
 import { z } from 'zod';
 
-export const AreaSchema = z.enum([
-  'Health',
-  'Wealth',
-  'Love',
-  'Happiness',
-  'Operations',
-  'DayJob',
-]);
+export const AreaSchema = z.enum(['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob']);
 
 export const SubCategorySchema = z.enum([
   'Physical',

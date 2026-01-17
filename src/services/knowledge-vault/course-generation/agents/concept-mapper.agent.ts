@@ -12,16 +12,17 @@ export class ConceptMapperAgent extends BaseAgent {
     super('goalRefinement');
   }
 
-  async execute(
-    state: CourseGenerationState
-  ): Promise<CourseGenerationStateUpdate> {
+  async execute(state: CourseGenerationState): Promise<CourseGenerationStateUpdate> {
     // Extract all concepts from lessons
-    const conceptMap = new Map<string, {
-      introducedIn: string;
-      prerequisites: string[];
-      usedIn: string[];
-      depth: number;
-    }>();
+    const conceptMap = new Map<
+      string,
+      {
+        introducedIn: string;
+        prerequisites: string[];
+        usedIn: string[];
+        depth: number;
+      }
+    >();
 
     const dependencies: Array<{
       from: string;

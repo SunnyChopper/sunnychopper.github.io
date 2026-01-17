@@ -1,7 +1,12 @@
 import { X } from 'lucide-react';
 import type { Area, Priority, TaskStatus } from '../../types/growth-system';
 import Button from '../atoms/Button';
-import { AREAS, PRIORITIES, TASK_STATUSES, TASK_STATUS_LABELS } from '../../constants/growth-system';
+import {
+  AREAS,
+  PRIORITIES,
+  TASK_STATUSES,
+  TASK_STATUS_LABELS,
+} from '../../constants/growth-system';
 
 interface TaskFiltersProps {
   selectedArea?: Area;
@@ -87,7 +92,9 @@ export function TaskFilters({
             {PRIORITIES.map((priority) => (
               <button
                 key={priority}
-                onClick={() => onPriorityChange(selectedPriority === priority ? undefined : priority)}
+                onClick={() =>
+                  onPriorityChange(selectedPriority === priority ? undefined : priority)
+                }
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   selectedPriority === priority
                     ? 'bg-blue-600 text-white'

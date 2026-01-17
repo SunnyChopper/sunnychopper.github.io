@@ -84,7 +84,9 @@ export const authService = {
   /**
    * Sign up a new user
    */
-  async signUp(credentials: SignUpCredentials): Promise<ApiResponse<{ userId: string; email: string; message: string }>> {
+  async signUp(
+    credentials: SignUpCredentials
+  ): Promise<ApiResponse<{ userId: string; email: string; message: string }>> {
     const response = await apiClient.post<{ userId: string; email: string; message: string }>(
       '/auth/signup',
       {
@@ -130,7 +132,7 @@ export const authService = {
    */
   async signOut(): Promise<ApiResponse<void>> {
     const tokens = getStoredTokens();
-    
+
     // Call backend logout endpoint if we have a token
     if (tokens?.accessToken) {
       try {
@@ -152,7 +154,7 @@ export const authService = {
    */
   async refreshToken(): Promise<ApiResponse<AuthTokens>> {
     const tokens = getStoredTokens();
-    
+
     if (!tokens?.refreshToken) {
       return {
         success: false,
@@ -180,7 +182,7 @@ export const authService = {
 
       storeTokens(newTokens);
       apiClient.setAuthToken(newTokens.accessToken);
-      
+
       return { success: true, data: newTokens };
     }
 

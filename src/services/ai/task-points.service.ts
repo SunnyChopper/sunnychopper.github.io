@@ -117,7 +117,7 @@ Return a JSON object with:
 - reasoning: Brief explanation of your pricing decision`;
 
     const existingRewardsContext = rewardData.existingRewards
-      ? `\n\nExisting rewards for reference:\n${rewardData.existingRewards.map(r => `- ${r.title} (${r.category}): ${r.pointCost} points`).join('\n')}`
+      ? `\n\nExisting rewards for reference:\n${rewardData.existingRewards.map((r) => `- ${r.title} (${r.category}): ${r.pointCost} points`).join('\n')}`
       : '';
 
     const taskPointsContext = rewardData.typicalTaskPoints
@@ -145,7 +145,9 @@ Provide a fair point cost that balances motivation and attainability.`;
     existingRewards: Array<{ title: string; category: string }>;
     userInterests?: string;
     count?: number;
-  }): Promise<Array<{ title: string; description: string; category: string; suggestedPointCost: number }>> {
+  }): Promise<
+    Array<{ title: string; description: string; category: string; suggestedPointCost: number }>
+  > {
     const config = getFeatureConfig('effortEstimation');
     const apiKey = getApiKey(config.provider);
 
@@ -158,12 +160,17 @@ Provide a fair point cost that balances motivation and attainability.`;
     const count = context.count || 10;
 
     const brainstormSchema = z.object({
-      rewards: z.array(z.object({
-        title: z.string(),
-        description: z.string(),
-        category: z.enum(['Quick Treat', 'Daily Delight', 'Big Unlock']),
-        suggestedPointCost: z.number().min(1),
-      })).min(count).max(count),
+      rewards: z
+        .array(
+          z.object({
+            title: z.string(),
+            description: z.string(),
+            category: z.enum(['Quick Treat', 'Daily Delight', 'Big Unlock']),
+            suggestedPointCost: z.number().min(1),
+          })
+        )
+        .min(count)
+        .max(count),
     });
 
     const systemPrompt = `You are a creative expert at designing motivating rewards for a personal productivity system.
@@ -182,7 +189,7 @@ Categories:
 Return creative, specific reward ideas with appropriate point costs.`;
 
     const existingContext = `Existing rewards (avoid duplicates):
-${context.existingRewards.map(r => `- ${r.title} (${r.category})`).join('\n')}`;
+${context.existingRewards.map((r) => `- ${r.title} (${r.category})`).join('\n')}`;
 
     const interestsContext = context.userInterests
       ? `\n\nUser interests/preferences: ${context.userInterests}`

@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     console.log('[AuthProvider] Component mounted, calling checkUser');
     checkUser();
-    
+
     return () => {
       console.log('[AuthProvider] Component unmounting');
     };
@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsChecking(true);
       setLoading(true);
       console.log('[AuthProvider] checkUser: Set loading=true, isChecking=true');
-      
+
       // Check if we have stored tokens
       const tokens = authService.getStoredTokens();
       console.log('[AuthProvider] checkUser: Tokens found?', !!tokens?.accessToken);
@@ -54,12 +54,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             error: response.error,
           });
           if (response.success && response.data) {
-            console.log('[AuthProvider] checkUser: Setting user from backend:', response.data.email);
+            console.log(
+              '[AuthProvider] checkUser: Setting user from backend:',
+              response.data.email
+            );
             setUser(response.data);
           } else {
             // If backend call fails, tokens are invalid - clear everything directly
             // Don't call signOut() as it makes an API call that could fail and cause loops
-            console.warn('[AuthProvider] checkUser: Failed to fetch current user, clearing auth state');
+            console.warn(
+              '[AuthProvider] checkUser: Failed to fetch current user, clearing auth state'
+            );
             authService.clearTokensOnly();
             apiClient.setAuthToken(null);
             console.log('[AuthProvider] checkUser: Cleared tokens, setting user=null');
@@ -68,7 +73,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } catch (err) {
           // If API call fails, tokens are invalid - clear everything directly
           // Don't call signOut() as it makes an API call that could fail and cause loops
-          console.warn('[AuthProvider] checkUser: Exception fetching current user, clearing auth state:', err);
+          console.warn(
+            '[AuthProvider] checkUser: Exception fetching current user, clearing auth state:',
+            err
+          );
           authService.clearTokensOnly();
           apiClient.setAuthToken(null);
           console.log('[AuthProvider] checkUser: Cleared tokens (exception), setting user=null');
@@ -140,7 +148,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setError(null);
       setLoading(true);
-      
+
       await authService.signOut();
       setUser(null);
     } catch (err) {

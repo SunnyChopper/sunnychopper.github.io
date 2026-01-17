@@ -90,9 +90,7 @@ export function SuccessCriteriaList({
                 : 'bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500 hover:border-green-500 dark:hover:border-green-600'
             } ${!editable ? 'cursor-default' : 'cursor-pointer'} flex items-center justify-center`}
           >
-            {criterion.isCompleted && (
-              <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
-            )}
+            {criterion.isCompleted && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
           </button>
 
           {/* Content */}

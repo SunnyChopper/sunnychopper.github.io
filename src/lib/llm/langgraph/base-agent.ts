@@ -29,7 +29,9 @@ export abstract class BaseAgent {
 
     const featureConfig = getFeatureConfig(this.feature);
     if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-      throw new Error(`LLM not configured for feature: ${this.feature}. Please configure in Settings.`);
+      throw new Error(
+        `LLM not configured for feature: ${this.feature}. Please configure in Settings.`
+      );
     }
 
     const apiKey = getApiKey(featureConfig.provider);
@@ -44,17 +46,13 @@ export abstract class BaseAgent {
   /**
    * Invoke LLM with error handling.
    */
-  protected async invokeLLM(
-    messages: Array<{ role: string; content: string }>
-  ): Promise<string> {
+  protected async invokeLLM(messages: Array<{ role: string; content: string }>): Promise<string> {
     try {
       const provider = await this.getProvider();
       return await provider.invoke(messages);
     } catch (error) {
       console.error(`[${this.constructor.name}] Error invoking LLM:`, error);
-      throw error instanceof Error
-        ? error
-        : new Error('Failed to invoke LLM');
+      throw error instanceof Error ? error : new Error('Failed to invoke LLM');
     }
   }
 
@@ -70,9 +68,7 @@ export abstract class BaseAgent {
       return await provider.invokeStructured(schema, messages);
     } catch (error) {
       console.error(`[${this.constructor.name}] Error invoking structured LLM:`, error);
-      throw error instanceof Error
-        ? error
-        : new Error('Failed to invoke structured LLM');
+      throw error instanceof Error ? error : new Error('Failed to invoke structured LLM');
     }
   }
 

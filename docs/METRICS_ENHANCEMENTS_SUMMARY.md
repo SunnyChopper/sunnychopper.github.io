@@ -36,4 +36,3 @@
 
 - New services and components are wired into existing admin pages (`MetricsPage`, Metric detail dialogs, etc.) and reuse existing atoms/contexts where relevant.
 - All components target Tailwind + React conventions already in the repo and include responsive, dark-mode-ready styles.
-

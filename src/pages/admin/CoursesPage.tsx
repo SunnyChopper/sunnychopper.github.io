@@ -11,9 +11,10 @@ export default function CoursesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const navigate = useNavigate();
 
-  const filteredCourses = courses.filter(course =>
-    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.topic.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredCourses = courses.filter(
+    (course) =>
+      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.topic.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleCourseClick = (courseId: string) => {
@@ -47,7 +48,10 @@ export default function CoursesPage() {
       </div>
 
       <div className="relative">
-        <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        <Search
+          size={20}
+          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+        />
         <input
           type="text"
           placeholder="Search courses..."
@@ -84,7 +88,7 @@ export default function CoursesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map(course => (
+          {filteredCourses.map((course) => (
             <div
               key={course.id}
               onClick={() => handleCourseClick(course.id)}
@@ -127,7 +131,9 @@ export default function CoursesPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${difficultyColors[course.difficulty]}`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${difficultyColors[course.difficulty]}`}
+                >
                   {course.difficulty}
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -160,7 +166,9 @@ export default function CoursesPage() {
               <Sparkles size={24} />
               <div className="text-left">
                 <div className="font-semibold">AI-Powered Course Generator</div>
-                <div className="text-sm opacity-90">Take a quick assessment and let AI create a personalized course</div>
+                <div className="text-sm opacity-90">
+                  Take a quick assessment and let AI create a personalized course
+                </div>
               </div>
             </button>
 
@@ -171,7 +179,9 @@ export default function CoursesPage() {
               <BookOpen size={24} />
               <div className="text-left">
                 <div className="font-semibold">Manual Course Creation</div>
-                <div className="text-sm opacity-70">Create a course structure manually (Coming Soon)</div>
+                <div className="text-sm opacity-70">
+                  Create a course structure manually (Coming Soon)
+                </div>
               </div>
             </button>
           </div>

@@ -1,6 +1,13 @@
 import { useState, useEffect, type ReactNode } from 'react';
 
-export type MetricDetailTab = 'overview' | 'trends' | 'patterns' | 'correlations' | 'predictions' | 'goals' | 'history';
+export type MetricDetailTab =
+  | 'overview'
+  | 'trends'
+  | 'patterns'
+  | 'correlations'
+  | 'predictions'
+  | 'goals'
+  | 'history';
 
 interface MetricDetailTabsProps {
   activeTab: MetricDetailTab;
@@ -15,7 +22,18 @@ export function MetricDetailTabs({ activeTab, onTabChange, children }: MetricDet
 
   useEffect(() => {
     const savedTab = localStorage.getItem(TAB_STORAGE_KEY) as MetricDetailTab | null;
-    if (savedTab && ['overview', 'trends', 'patterns', 'correlations', 'predictions', 'goals', 'history'].includes(savedTab)) {
+    if (
+      savedTab &&
+      [
+        'overview',
+        'trends',
+        'patterns',
+        'correlations',
+        'predictions',
+        'goals',
+        'history',
+      ].includes(savedTab)
+    ) {
       setCurrentTab(savedTab);
       onTabChange(savedTab);
     }
@@ -45,7 +63,10 @@ export function MetricDetailTabs({ activeTab, onTabChange, children }: MetricDet
     <div className="w-full">
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-        <nav className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide" aria-label="Metric detail tabs">
+        <nav
+          className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
+          aria-label="Metric detail tabs"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -63,9 +84,7 @@ export function MetricDetailTabs({ activeTab, onTabChange, children }: MetricDet
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px]">
-        {children}
-      </div>
+      <div className="min-h-[400px]">{children}</div>
     </div>
   );
 }

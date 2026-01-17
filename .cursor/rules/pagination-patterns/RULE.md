@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN implementing pagination controls and paginated data display."
-globs: ""
+description: 'USE WHEN implementing pagination controls and paginated data display.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -33,7 +33,9 @@ function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) 
 
       {pages.map((page, index) =>
         page === '...' ? (
-          <span key={`ellipsis-${index}`} className="px-2">...</span>
+          <span key={`ellipsis-${index}`} className="px-2">
+            ...
+          </span>
         ) : (
           <button
             key={page}
@@ -116,11 +118,7 @@ function PaginationBar({
 }: PaginationBarProps) {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-      <PaginationInfo
-        currentPage={currentPage}
-        pageSize={pageSize}
-        totalItems={totalItems}
-      />
+      <PaginationInfo currentPage={currentPage} pageSize={pageSize} totalItems={totalItems} />
 
       <div className="flex items-center gap-4">
         <select
@@ -134,11 +132,7 @@ function PaginationBar({
           <option value={100}>100 per page</option>
         </select>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>
   );
@@ -191,7 +185,7 @@ function LoadMoreList() {
 
   useEffect(() => {
     if (data?.items) {
-      setAllItems(prev => page === 1 ? data.items : [...prev, ...data.items]);
+      setAllItems((prev) => (page === 1 ? data.items : [...prev, ...data.items]));
     }
   }, [data, page]);
 
@@ -203,7 +197,7 @@ function LoadMoreList() {
 
       {hasMore && (
         <button
-          onClick={() => setPage(p => p + 1)}
+          onClick={() => setPage((p) => p + 1)}
           disabled={isFetching}
           className="w-full py-3 mt-4 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
         >
@@ -224,7 +218,7 @@ function PaginatedPage() {
   const pageSize = Number(searchParams.get('size')) || 10;
 
   const handlePageChange = (newPage: number) => {
-    setSearchParams(prev => {
+    setSearchParams((prev) => {
       prev.set('page', String(newPage));
       return prev;
     });

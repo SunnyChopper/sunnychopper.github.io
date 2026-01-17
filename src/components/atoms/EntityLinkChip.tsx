@@ -13,12 +13,36 @@ interface EntityLinkChipProps {
 }
 
 const typeColors: Record<string, { bg: string; text: string; hover: string }> = {
-  task: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50' },
-  project: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400', hover: 'hover:bg-purple-200 dark:hover:bg-purple-900/50' },
-  goal: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', hover: 'hover:bg-green-200 dark:hover:bg-green-900/50' },
-  metric: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', hover: 'hover:bg-orange-200 dark:hover:bg-orange-900/50' },
-  habit: { bg: 'bg-pink-100 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-400', hover: 'hover:bg-pink-200 dark:hover:bg-pink-900/50' },
-  logbook: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', hover: 'hover:bg-amber-200 dark:hover:bg-amber-900/50' },
+  task: {
+    bg: 'bg-blue-100 dark:bg-blue-900/30',
+    text: 'text-blue-700 dark:text-blue-400',
+    hover: 'hover:bg-blue-200 dark:hover:bg-blue-900/50',
+  },
+  project: {
+    bg: 'bg-purple-100 dark:bg-purple-900/30',
+    text: 'text-purple-700 dark:text-purple-400',
+    hover: 'hover:bg-purple-200 dark:hover:bg-purple-900/50',
+  },
+  goal: {
+    bg: 'bg-green-100 dark:bg-green-900/30',
+    text: 'text-green-700 dark:text-green-400',
+    hover: 'hover:bg-green-200 dark:hover:bg-green-900/50',
+  },
+  metric: {
+    bg: 'bg-orange-100 dark:bg-orange-900/30',
+    text: 'text-orange-700 dark:text-orange-400',
+    hover: 'hover:bg-orange-200 dark:hover:bg-orange-900/50',
+  },
+  habit: {
+    bg: 'bg-pink-100 dark:bg-pink-900/30',
+    text: 'text-pink-700 dark:text-pink-400',
+    hover: 'hover:bg-pink-200 dark:hover:bg-pink-900/50',
+  },
+  logbook: {
+    bg: 'bg-amber-100 dark:bg-amber-900/30',
+    text: 'text-amber-700 dark:text-amber-400',
+    hover: 'hover:bg-amber-200 dark:hover:bg-amber-900/50',
+  },
 };
 
 const sizeClasses = {
@@ -26,7 +50,15 @@ const sizeClasses = {
   md: 'px-2.5 py-1 text-sm gap-1.5',
 };
 
-export function EntityLinkChip({ id, label, type, onRemove, onClick, size = 'md', className = '' }: EntityLinkChipProps) {
+export function EntityLinkChip({
+  id,
+  label,
+  type,
+  onRemove,
+  onClick,
+  size = 'md',
+  className = '',
+}: EntityLinkChipProps) {
   const colors = typeColors[type];
 
   const handleClick = (e: React.MouseEvent) => {

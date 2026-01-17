@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN handling errors, failed requests, and exception states."
-globs: ""
+description: 'USE WHEN handling errors, failed requests, and exception states.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -14,44 +14,34 @@ Handle errors gracefully with clear feedback and recovery options.
 
 ```tsx
 <div className="space-y-1">
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-    Email
-  </label>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
   <input
     type="email"
     className={cn(
       'w-full px-3 py-2 rounded-lg border transition',
-      error
-        ? 'border-red-500 focus:ring-red-500'
-        : 'border-gray-300 focus:ring-blue-500'
+      error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
     )}
   />
-  {error && (
-    <p className="text-sm text-red-600 dark:text-red-400">
-      {error}
-    </p>
-  )}
+  {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 </div>
 ```
 
 ### 2. Form-Level Errors
 
 ```tsx
-{formError && (
-  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-    <div className="flex items-start gap-3">
-      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-      <div>
-        <h4 className="font-medium text-red-800 dark:text-red-300">
-          Unable to save
-        </h4>
-        <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-          {formError}
-        </p>
+{
+  formError && (
+    <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+      <div className="flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+        <div>
+          <h4 className="font-medium text-red-800 dark:text-red-300">Unable to save</h4>
+          <p className="text-sm text-red-700 dark:text-red-400 mt-1">{formError}</p>
+        </div>
       </div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 ### 3. Page-Level Errors
@@ -111,12 +101,8 @@ function ErrorAlert({
       <div className="flex items-start gap-3">
         <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
         <div className="flex-1">
-          <h4 className="font-medium text-red-800 dark:text-red-300">
-            {title}
-          </h4>
-          <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-            {message}
-          </p>
+          <h4 className="font-medium text-red-800 dark:text-red-300">{title}</h4>
+          <p className="text-sm text-red-700 dark:text-red-400 mt-1">{message}</p>
           {(onRetry || onDismiss) && (
             <div className="flex gap-2 mt-3">
               {onRetry && (

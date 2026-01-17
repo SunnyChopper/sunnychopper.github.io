@@ -1,6 +1,6 @@
 ---
-description: "TypeScript conventions and patterns for this codebase."
-globs: "**/*.ts,**/*.tsx"
+description: 'TypeScript conventions and patterns for this codebase.'
+globs: '**/*.ts,**/*.tsx'
 alwaysApply: false
 ---
 
@@ -58,7 +58,7 @@ function getById<TEntity extends { id: string }>(
   items: TEntity[],
   id: string
 ): TEntity | undefined {
-  return items.find(item => item.id === id);
+  return items.find((item) => item.id === id);
 }
 
 // Good: Constrained generics

@@ -61,7 +61,7 @@ export function TaskCalendarView({ tasks, onTaskClick }: TaskCalendarViewProps) 
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const tasksWithDates = tasks.filter(t => t.dueDate).length;
+  const tasksWithDates = tasks.filter((t) => t.dueDate).length;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -127,18 +127,20 @@ export function TaskCalendarView({ tasks, onTaskClick }: TaskCalendarViewProps) 
                   isToday
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
                     : hasTasks
-                    ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm'
-                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+                      ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm'
+                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
                 }`}
               >
                 <div className="flex flex-col h-full">
-                  <div className={`text-sm font-bold mb-1 ${
-                    isToday
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : hasTasks
-                      ? 'text-gray-900 dark:text-white'
-                      : 'text-gray-500 dark:text-gray-500'
-                  }`}>
+                  <div
+                    className={`text-sm font-bold mb-1 ${
+                      isToday
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : hasTasks
+                          ? 'text-gray-900 dark:text-white'
+                          : 'text-gray-500 dark:text-gray-500'
+                    }`}
+                  >
                     {day}
                   </div>
 

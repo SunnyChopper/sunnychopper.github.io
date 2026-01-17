@@ -19,20 +19,20 @@ interface GoalsDashboardWidgetProps {
   className?: string;
 }
 
-export function GoalsDashboardWidget({ 
-  goals, 
+export function GoalsDashboardWidget({
+  goals,
   goalsProgress,
-  className = '' 
+  className = '',
 }: GoalsDashboardWidgetProps) {
   // Get top 3 priority goals
   const activeGoals = goals
-    .filter(g => g.status === 'Active' || g.status === 'OnTrack' || g.status === 'AtRisk')
+    .filter((g) => g.status === 'Active' || g.status === 'OnTrack' || g.status === 'AtRisk')
     .sort((a, b) => {
       // Sort by priority first
       const priorityOrder = { P1: 0, P2: 1, P3: 2, P4: 3 };
       const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
       if (priorityDiff !== 0) return priorityDiff;
-      
+
       // Then by progress (lower progress first for focus)
       const progressA = goalsProgress.get(a.id) || 0;
       const progressB = goalsProgress.get(b.id) || 0;
@@ -40,18 +40,22 @@ export function GoalsDashboardWidget({
     })
     .slice(0, 3);
 
-  const goalsWithData: GoalWithProgress[] = activeGoals.map(goal => {
+  const goalsWithData: GoalWithProgress[] = activeGoals.map((goal) => {
     const progress = goalsProgress.get(goal.id) || 0;
-    const daysRemaining = goal.targetDate 
-      ? Math.ceil((new Date(goal.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    const daysRemaining = goal.targetDate
+      ? Math.ceil(
+          (new Date(goal.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        )
       : null;
-    
+
     return { goal, progress, daysRemaining };
   });
 
   if (goalsWithData.length === 0) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
+      <div
+        className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 ${className}`}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -82,7 +86,9 @@ export function GoalsDashboardWidget({
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -139,10 +145,13 @@ export function GoalsDashboardWidget({
                         animate={{ width: `${progress}%` }}
                         transition={{ delay: index * 0.1 + 0.2, duration: 0.5 }}
                         className={`h-full rounded-full ${
-                          progress >= 75 ? 'bg-green-500' :
-                          progress >= 50 ? 'bg-blue-500' :
-                          progress >= 25 ? 'bg-yellow-500' :
-                          'bg-orange-500'
+                          progress >= 75
+                            ? 'bg-green-500'
+                            : progress >= 50
+                              ? 'bg-blue-500'
+                              : progress >= 25
+                                ? 'bg-yellow-500'
+                                : 'bg-orange-500'
                         }`}
                       />
                     </div>
@@ -155,14 +164,18 @@ export function GoalsDashboardWidget({
                       <span>{progress}% complete</span>
                     </div>
                     {daysRemaining !== null && (
-                      <div className={`flex items-center gap-1 ${
-                        daysRemaining < 0 ? 'text-red-600 dark:text-red-400' :
-                        daysRemaining <= 7 ? 'text-orange-600 dark:text-orange-400' :
-                        'text-gray-600 dark:text-gray-400'
-                      }`}>
+                      <div
+                        className={`flex items-center gap-1 ${
+                          daysRemaining < 0
+                            ? 'text-red-600 dark:text-red-400'
+                            : daysRemaining <= 7
+                              ? 'text-orange-600 dark:text-orange-400'
+                              : 'text-gray-600 dark:text-gray-400'
+                        }`}
+                      >
                         <Calendar className="w-3.5 h-3.5" />
                         <span>
-                          {daysRemaining < 0 
+                          {daysRemaining < 0
                             ? `${Math.abs(daysRemaining)}d overdue`
                             : `${daysRemaining}d left`}
                         </span>

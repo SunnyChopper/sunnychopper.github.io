@@ -143,7 +143,11 @@ export default function ChatbotPage() {
     }
   };
 
-  const handleSendMessage = async (messageContent?: string, isEdit: boolean = false, editedMessageId?: string) => {
+  const handleSendMessage = async (
+    messageContent?: string,
+    isEdit: boolean = false,
+    editedMessageId?: string
+  ) => {
     const userMessage = messageContent || inputValue.trim();
     if (!userMessage || !activeThread || isLoading) return;
 
@@ -238,8 +242,10 @@ export default function ChatbotPage() {
       if (updatedBranches.length === 0) {
         updatedBranches.push({
           content: originalMessage.content,
-          response: messageIndex < messages.length - 1 ? messages[messageIndex + 1].content : undefined,
-          responseThinking: messageIndex < messages.length - 1 ? messages[messageIndex + 1].thinking : undefined,
+          response:
+            messageIndex < messages.length - 1 ? messages[messageIndex + 1].content : undefined,
+          responseThinking:
+            messageIndex < messages.length - 1 ? messages[messageIndex + 1].thinking : undefined,
         });
       }
 
@@ -569,10 +575,20 @@ export default function ChatbotPage() {
                                   content={message.content}
                                   className="prose-p:my-3 prose-ul:my-2 prose-li:my-1"
                                   components={{
-                                    p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                                    ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>,
-                                    ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-3">{children}</ol>,
-                                    li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                                    p: ({ children }) => (
+                                      <p className="mb-3 last:mb-0">{children}</p>
+                                    ),
+                                    ul: ({ children }) => (
+                                      <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>
+                                    ),
+                                    ol: ({ children }) => (
+                                      <ol className="list-decimal pl-5 space-y-1 my-3">
+                                        {children}
+                                      </ol>
+                                    ),
+                                    li: ({ children }) => (
+                                      <li className="leading-relaxed">{children}</li>
+                                    ),
                                     a: ({ node, ...props }) => {
                                       const href = props.href || '';
                                       if (href.startsWith('/')) {
@@ -681,8 +697,12 @@ export default function ChatbotPage() {
                           className="prose-p:my-3 prose-ul:my-2 prose-li:my-1"
                           components={{
                             p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                            ul: ({ children }) => <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal pl-5 space-y-1 my-3">{children}</ol>,
+                            ul: ({ children }) => (
+                              <ul className="list-disc pl-5 space-y-1 my-3">{children}</ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal pl-5 space-y-1 my-3">{children}</ol>
+                            ),
                             li: ({ children }) => <li className="leading-relaxed">{children}</li>,
                           }}
                         />

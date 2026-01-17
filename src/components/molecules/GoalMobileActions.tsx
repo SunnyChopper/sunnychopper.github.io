@@ -21,35 +21,35 @@ export function GoalMobileActions({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const actions = [
-    { 
-      id: 'add_task', 
-      label: 'Add Task', 
-      icon: CheckSquare, 
+    {
+      id: 'add_task',
+      label: 'Add Task',
+      icon: CheckSquare,
       color: 'bg-blue-500',
-      action: onAddTask 
+      action: onAddTask,
     },
-    { 
-      id: 'log_metric', 
-      label: 'Log Metric', 
-      icon: BarChart3, 
+    {
+      id: 'log_metric',
+      label: 'Log Metric',
+      icon: BarChart3,
       color: 'bg-green-500',
-      action: onLogMetric 
+      action: onLogMetric,
     },
-    { 
-      id: 'complete_habit', 
-      label: 'Complete Habit', 
-      icon: Repeat, 
+    {
+      id: 'complete_habit',
+      label: 'Complete Habit',
+      icon: Repeat,
       color: 'bg-amber-500',
-      action: onCompleteHabit 
+      action: onCompleteHabit,
     },
-    { 
-      id: 'complete_criterion', 
-      label: 'Complete Criterion', 
-      icon: Target, 
+    {
+      id: 'complete_criterion',
+      label: 'Complete Criterion',
+      icon: Target,
       color: 'bg-purple-500',
-      action: onCompleteCriterion 
+      action: onCompleteCriterion,
     },
-  ].filter(a => a.action);
+  ].filter((a) => a.action);
 
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     // Swipe up to expand

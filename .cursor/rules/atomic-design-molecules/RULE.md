@@ -1,6 +1,6 @@
 ---
-description: "Standards for molecule-level components in the atomic design system."
-globs: "src/components/molecules/**/*.tsx"
+description: 'Standards for molecule-level components in the atomic design system.'
+globs: 'src/components/molecules/**/*.tsx'
 alwaysApply: false
 ---
 
@@ -63,13 +63,9 @@ export default function TaskListItem({
       )}
     >
       <div className="flex-1 min-w-0">
-        <h4 className="font-medium text-gray-900 dark:text-white truncate">
-          {task.title}
-        </h4>
+        <h4 className="font-medium text-gray-900 dark:text-white truncate">{task.title}</h4>
         {task.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-            {task.description}
-          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{task.description}</p>
         )}
       </div>
 
@@ -133,9 +129,7 @@ actions?: React.ReactNode;
   <CardHeader>
     <StatusBadge status={status} />
   </CardHeader>
-  <CardBody>
-    {children}
-  </CardBody>
+  <CardBody>{children}</CardBody>
   <CardFooter>
     <Button onClick={onAction}>Action</Button>
   </CardFooter>

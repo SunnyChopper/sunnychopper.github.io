@@ -23,7 +23,12 @@ const STATUS_HEADER_COLORS: Record<TaskStatus, string> = {
   Cancelled: 'bg-gray-400 text-white',
 };
 
-export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate }: TaskKanbanBoardProps) {
+export function TaskKanbanBoard({
+  tasks,
+  onTaskUpdate,
+  onTaskEdit,
+  onTaskCreate,
+}: TaskKanbanBoardProps) {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
   const [openMenuStatus, setOpenMenuStatus] = useState<TaskStatus | null>(null);
@@ -142,7 +147,7 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
                       >
                         <MoreVertical className="w-4 h-4" />
                       </button>
-                      
+
                       {openMenuStatus === status && (
                         <div
                           ref={(el) => {
@@ -166,9 +171,9 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
                               <span>To {TASK_STATUS_LABELS[targetStatus]}</span>
                             </button>
                           ))}
-                          
+
                           <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                          
+
                           {/* Sort options */}
                           <button
                             onClick={() => handleSortByPriority(status)}
@@ -178,9 +183,9 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
                             <ArrowUpDown className="w-4 h-4" />
                             <span>Sort by Priority</span>
                           </button>
-                          
+
                           <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                          
+
                           {/* Column info */}
                           <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
                             {statusTasks.length} {statusTasks.length === 1 ? 'task' : 'tasks'}
@@ -192,7 +197,9 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-xs opacity-90">
-                  <span>{statusTasks.length} {statusTasks.length === 1 ? 'task' : 'tasks'}</span>
+                  <span>
+                    {statusTasks.length} {statusTasks.length === 1 ? 'task' : 'tasks'}
+                  </span>
                   {totalEffort > 0 && (
                     <>
                       <span>•</span>
@@ -202,9 +209,13 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
                 </div>
               </div>
 
-              <div className={`flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg p-3 space-y-2.5 overflow-y-auto shadow-sm transition-colors ${
-                isDragOver ? 'ring-2 ring-blue-400 dark:ring-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
-              }`}>
+              <div
+                className={`flex-1 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg p-3 space-y-2.5 overflow-y-auto shadow-sm transition-colors ${
+                  isDragOver
+                    ? 'ring-2 ring-blue-400 dark:ring-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : ''
+                }`}
+              >
                 {statusTasks.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
@@ -268,7 +279,10 @@ export function TaskKanbanBoard({ tasks, onTaskUpdate, onTaskEdit, onTaskCreate 
                         )}
                         {task.dueDate && (
                           <span className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded font-medium">
-                            {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {new Date(task.dueDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
                           </span>
                         )}
                       </div>

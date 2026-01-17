@@ -14,15 +14,15 @@ interface GoalTasksSectionProps {
   showEmpty?: boolean;
 }
 
-export function GoalTasksSection({ 
-  tasks, 
-  onAddTask, 
+export function GoalTasksSection({
+  tasks,
+  onAddTask,
   onTaskClick,
-  showEmpty = true 
+  showEmpty = true,
 }: GoalTasksSectionProps) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'done'>('all');
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = tasks.filter((task) => {
     if (statusFilter === 'active') {
       return task.status !== 'Done' && task.status !== 'Cancelled';
     } else if (statusFilter === 'done') {
@@ -44,7 +44,7 @@ export function GoalTasksSection({
           icon={CheckSquare}
           title="No tasks linked"
           description="Add tasks that contribute to achieving this goal"
-          actionLabel={onAddTask ? "Add Task" : undefined}
+          actionLabel={onAddTask ? 'Add Task' : undefined}
           onAction={onAddTask}
         />
       </div>

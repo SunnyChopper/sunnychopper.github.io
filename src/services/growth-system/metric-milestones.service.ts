@@ -46,11 +46,7 @@ export const metricMilestonesService = {
 
     // Check target reached
     if (metric.targetValue) {
-      const progress = calculateProgress(
-        latestLog.value,
-        metric.targetValue,
-        metric.direction
-      );
+      const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
 
       const hasTargetMilestone = existingForMetric.some(
         (m) => m.type === 'target_reached' && Math.abs(m.value - metric.targetValue) < 0.01
@@ -157,9 +153,7 @@ export const metricMilestonesService = {
 
       if (uniqueDates.size >= days && !hasConsistencyMilestone) {
         const points =
-          days === 7
-            ? MILESTONE_POINTS.consistency_7
-            : MILESTONE_POINTS.consistency_30;
+          days === 7 ? MILESTONE_POINTS.consistency_7 : MILESTONE_POINTS.consistency_30;
 
         const milestone: MetricMilestone = {
           id: generateId(),
@@ -223,10 +217,7 @@ export const metricMilestonesService = {
     const allMilestones = await storage.getAll<MetricMilestone>('metricMilestones');
     const milestones = allMilestones
       .filter((m) => m.metricId === metricId)
-      .sort(
-        (a, b) =>
-          new Date(b.achievedAt).getTime() - new Date(a.achievedAt).getTime()
-      );
+      .sort((a, b) => new Date(b.achievedAt).getTime() - new Date(a.achievedAt).getTime());
 
     return {
       data: milestones,
@@ -245,8 +236,7 @@ export const metricMilestonesService = {
 
     return {
       data: milestones.sort(
-        (a, b) =>
-          new Date(b.achievedAt).getTime() - new Date(a.achievedAt).getTime()
+        (a, b) => new Date(b.achievedAt).getTime() - new Date(a.achievedAt).getTime()
       ),
       total: milestones.length,
       success: true,

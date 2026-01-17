@@ -11,7 +11,7 @@ interface FloatingLogButtonProps {
 
 export function FloatingLogButton({ habit: _habit, logs, onLog }: FloatingLogButtonProps) {
   const [isVisible, setIsVisible] = useState(false);
-  
+
   // Calculate if today is completed based on logs
   const isTodayCompleted = (() => {
     const lastCompletedDate = getLastCompletedDateFromLogs(logs);
@@ -38,7 +38,11 @@ export function FloatingLogButton({ habit: _habit, logs, onLog }: FloatingLogBut
         if (!e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
           const target = e.target as HTMLElement;
           // Only trigger if not typing in an input
-          if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && !target.isContentEditable) {
+          if (
+            target.tagName !== 'INPUT' &&
+            target.tagName !== 'TEXTAREA' &&
+            !target.isContentEditable
+          ) {
             if (!isTodayCompleted) {
               onLog();
             }

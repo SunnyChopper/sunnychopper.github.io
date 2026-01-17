@@ -91,9 +91,7 @@ export function MetricLogHistory({
                     <span className="text-2xl font-bold text-gray-900 dark:text-white">
                       {log.value.toFixed(metric.unit === 'dollars' ? 0 : 1)}
                     </span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {unit}
-                    </span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{unit}</span>
                     {isAnomaly && (
                       <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                     )}
@@ -147,9 +145,7 @@ export function MetricLogHistory({
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                   <div className="flex items-start gap-2">
                     <MessageSquare className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                      {log.notes}
-                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 flex-1">{log.notes}</p>
                   </div>
                   {/* Placeholder for related events */}
                   <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">

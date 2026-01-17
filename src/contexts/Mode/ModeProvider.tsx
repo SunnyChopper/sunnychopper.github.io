@@ -8,7 +8,8 @@ interface ModeProviderProps {
 
 export const ModeProvider = ({ children }: ModeProviderProps) => {
   const [isLeisureMode, setIsLeisureMode] = useState(() => {
-    const storedMode = typeof window !== 'undefined' ? localStorage.getItem(MODE_STORAGE_KEY) : null;
+    const storedMode =
+      typeof window !== 'undefined' ? localStorage.getItem(MODE_STORAGE_KEY) : null;
     return storedMode === 'leisure';
   });
 

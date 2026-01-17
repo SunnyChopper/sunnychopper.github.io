@@ -1,4 +1,10 @@
-import type { ChatThread, ChatMessage, CreateThreadRequest, CreateMessageRequest, UpdateThreadRequest } from '../types/chatbot';
+import type {
+  ChatThread,
+  ChatMessage,
+  CreateThreadRequest,
+  CreateMessageRequest,
+  UpdateThreadRequest,
+} from '../types/chatbot';
 
 const STORAGE_KEYS = {
   THREADS: 'chatbot_threads',
@@ -29,14 +35,14 @@ function saveMessages(messages: ChatMessage[]): void {
 
 export const chatbotService = {
   async getThreads(): Promise<ChatThread[]> {
-    return getThreads().sort((a, b) =>
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    return getThreads().sort(
+      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     );
   },
 
   async getThread(id: string): Promise<ChatThread | null> {
     const threads = getThreads();
-    return threads.find(t => t.id === id) || null;
+    return threads.find((t) => t.id === id) || null;
   },
 
   async createThread(request: CreateThreadRequest): Promise<ChatThread> {
@@ -55,7 +61,7 @@ export const chatbotService = {
 
   async updateThread(request: UpdateThreadRequest): Promise<ChatThread> {
     const threads = getThreads();
-    const index = threads.findIndex(t => t.id === request.id);
+    const index = threads.findIndex((t) => t.id === request.id);
     if (index === -1) {
       throw new Error('Thread not found');
     }
@@ -69,17 +75,17 @@ export const chatbotService = {
   },
 
   async deleteThread(id: string): Promise<void> {
-    const threads = getThreads().filter(t => t.id !== id);
+    const threads = getThreads().filter((t) => t.id !== id);
     saveThreads(threads);
 
-    const messages = getMessages().filter(m => m.thread_id !== id);
+    const messages = getMessages().filter((m) => m.thread_id !== id);
     saveMessages(messages);
   },
 
   async getMessages(threadId: string): Promise<ChatMessage[]> {
     const messages = getMessages();
     return messages
-      .filter(m => m.thread_id === threadId)
+      .filter((m) => m.thread_id === threadId)
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   },
 
@@ -99,7 +105,7 @@ export const chatbotService = {
     saveMessages(messages);
 
     const threads = getThreads();
-    const threadIndex = threads.findIndex(t => t.id === request.thread_id);
+    const threadIndex = threads.findIndex((t) => t.id === request.thread_id);
     if (threadIndex !== -1) {
       threads[threadIndex].updated_at = new Date().toISOString();
       saveThreads(threads);
@@ -110,7 +116,7 @@ export const chatbotService = {
 
   async updateMessage(id: string, content: string): Promise<ChatMessage> {
     const messages = getMessages();
-    const index = messages.findIndex(m => m.id === id);
+    const index = messages.findIndex((m) => m.id === id);
     if (index === -1) {
       throw new Error('Message not found');
     }
@@ -121,12 +127,10 @@ export const chatbotService = {
 
   async deleteMessagesAfter(messageId: string, threadId: string): Promise<void> {
     const messages = getMessages();
-    const targetIndex = messages.findIndex(m => m.id === messageId && m.thread_id === threadId);
+    const targetIndex = messages.findIndex((m) => m.id === messageId && m.thread_id === threadId);
     if (targetIndex === -1) return;
 
-    const filtered = messages.filter((m, idx) =>
-      m.thread_id !== threadId || idx <= targetIndex
-    );
+    const filtered = messages.filter((m, idx) => m.thread_id !== threadId || idx <= targetIndex);
     saveMessages(filtered);
   },
 };

@@ -111,15 +111,15 @@ export function MetricLogForm({
         {/* Smart Suggestions */}
         {suggestions.length > 0 && (
           <div className="mt-3">
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-              Quick suggestions:
-            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Quick suggestions:</p>
             <div className="flex flex-wrap gap-2">
               {suggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   type="button"
-                  onClick={() => setValue(suggestion.value.toFixed(metric.unit === 'dollars' ? 0 : 1))}
+                  onClick={() =>
+                    setValue(suggestion.value.toFixed(metric.unit === 'dollars' ? 0 : 1))
+                  }
                   className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
                 >
                   <suggestion.icon className="w-3 h-3" />
@@ -137,7 +137,8 @@ export function MetricLogForm({
               AI Prediction
             </p>
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              Predicted next value: {prediction.futureValue.toFixed(metric.unit === 'dollars' ? 0 : 1)} {unit}
+              Predicted next value:{' '}
+              {prediction.futureValue.toFixed(metric.unit === 'dollars' ? 0 : 1)} {unit}
               <span className="text-xs ml-2">
                 (Confidence: {(prediction.confidence * 100).toFixed(0)}%)
               </span>
@@ -173,7 +174,10 @@ export function MetricLogForm({
             <select
               value={contextTags.energy || ''}
               onChange={(e) =>
-                setContextTags({ ...contextTags, energy: e.target.value ? parseInt(e.target.value) : undefined })
+                setContextTags({
+                  ...contextTags,
+                  energy: e.target.value ? parseInt(e.target.value) : undefined,
+                })
               }
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             >
@@ -192,7 +196,10 @@ export function MetricLogForm({
             <select
               value={contextTags.stress || ''}
               onChange={(e) =>
-                setContextTags({ ...contextTags, stress: e.target.value ? parseInt(e.target.value) : undefined })
+                setContextTags({
+                  ...contextTags,
+                  stress: e.target.value ? parseInt(e.target.value) : undefined,
+                })
               }
               className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
             >
@@ -205,9 +212,7 @@ export function MetricLogForm({
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">
-              Mood
-            </label>
+            <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">Mood</label>
             <select
               value={contextTags.mood || ''}
               onChange={(e) =>

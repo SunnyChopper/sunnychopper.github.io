@@ -8,10 +8,7 @@ interface MetricContextualInsightsProps {
   logs: MetricLog[];
 }
 
-export function MetricContextualInsights({
-  metric,
-  logs,
-}: MetricContextualInsightsProps) {
+export function MetricContextualInsights({ metric, logs }: MetricContextualInsightsProps) {
   const anomalies = useMemo(() => {
     if (logs.length < 3) return [];
     return detectAnomalies(logs, 2.0);
@@ -25,9 +22,7 @@ export function MetricContextualInsights({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-        Contextual Insights
-      </h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contextual Insights</h3>
       <div className="space-y-3">
         {logs.slice(0, 10).map((log, index) => {
           const isAnomaly = anomalyLogIds.has(log.id);
@@ -73,9 +68,7 @@ export function MetricContextualInsights({
                   {log.notes && (
                     <div className="flex items-start gap-2 mt-2">
                       <MessageSquare className="w-4 h-4 text-gray-400 mt-0.5" />
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        {log.notes}
-                      </p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{log.notes}</p>
                     </div>
                   )}
                 </div>

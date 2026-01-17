@@ -53,9 +53,7 @@ export function findStrongCorrelations(
   allLogs: Map<string, MetricLog[]>
 ): CorrelationMatrix[] {
   const allCorrelations = calculateCorrelationMatrix(metrics, allLogs);
-  return allCorrelations.filter(
-    (c) => c.strength === 'moderate' || c.strength === 'strong'
-  );
+  return allCorrelations.filter((c) => c.strength === 'moderate' || c.strength === 'strong');
 }
 
 /**
@@ -72,8 +70,7 @@ export function getMetricCorrelations(
   );
 
   return metricCorrelations.map((corr) => {
-    const otherMetricId =
-      corr.metricId1 === metricId ? corr.metricId2 : corr.metricId1;
+    const otherMetricId = corr.metricId1 === metricId ? corr.metricId2 : corr.metricId1;
     const otherMetric = metrics.find((m) => m.id === otherMetricId);
     return {
       ...corr,

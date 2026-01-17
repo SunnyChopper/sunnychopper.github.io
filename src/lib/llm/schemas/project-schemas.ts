@@ -49,10 +49,7 @@ export const GeneratedTaskSchema = z.object({
   priority: PrioritySchema.describe('Suggested priority'),
   size: z.number().min(1).max(5).optional().describe('Effort estimate'),
   reasoning: z.string().describe('Why this task is needed'),
-  dependencies: z
-    .array(z.string())
-    .optional()
-    .describe('Task titles this depends on'),
+  dependencies: z.array(z.string()).optional().describe('Task titles this depends on'),
   order: z.number().describe('Suggested execution order'),
 });
 

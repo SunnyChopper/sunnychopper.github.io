@@ -48,7 +48,10 @@ class ApiClient {
 
         // If error is 401 and we haven't already retried
         if (error.response?.status === 401 && !originalRequest._retry) {
-          console.log('[ApiClient] 401 error detected, attempting token refresh. URL:', originalRequest.url);
+          console.log(
+            '[ApiClient] 401 error detected, attempting token refresh. URL:',
+            originalRequest.url
+          );
           if (this.isRefreshing) {
             // If already refreshing, queue this request
             return new Promise((resolve, reject) => {
@@ -67,10 +70,10 @@ class ApiClient {
 
           try {
             const refreshResponse = await authService.refreshToken();
-            
+
             if (refreshResponse.success && refreshResponse.data) {
               this.authToken = refreshResponse.data.accessToken;
-              
+
               // Update the original request with new token
               if (originalRequest.headers) {
                 originalRequest.headers.Authorization = `Bearer ${this.authToken}`;
@@ -87,15 +90,18 @@ class ApiClient {
               this.processQueue(new Error('Token refresh failed'));
               authService.clearTokensOnly();
               this.authToken = null;
-              
+
               // Only redirect if not already on login page to prevent infinite loops
-              if (typeof window !== 'undefined' && window.location.pathname !== ROUTES.admin.login) {
+              if (
+                typeof window !== 'undefined' &&
+                window.location.pathname !== ROUTES.admin.login
+              ) {
                 console.log('[ApiClient] Redirecting to login page');
                 window.location.href = ROUTES.admin.login;
               } else {
                 console.log('[ApiClient] Already on login page, skipping redirect');
               }
-              
+
               return Promise.reject(error);
             }
           } catch (refreshError) {
@@ -103,7 +109,7 @@ class ApiClient {
             this.processQueue(refreshError);
             authService.clearTokensOnly();
             this.authToken = null;
-            
+
             // Only redirect if not already on login page to prevent infinite loops
             if (typeof window !== 'undefined' && window.location.pathname !== ROUTES.admin.login) {
               console.log('[ApiClient] Redirecting to login page');
@@ -111,7 +117,7 @@ class ApiClient {
             } else {
               console.log('[ApiClient] Already on login page, skipping redirect');
             }
-            
+
             return Promise.reject(refreshError);
           } finally {
             this.isRefreshing = false;
@@ -141,7 +147,11 @@ class ApiClient {
 
   private handleError(error: unknown): ApiError {
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<{ message?: string; code?: string; details?: Record<string, unknown> }>;
+      const axiosError = error as AxiosError<{
+        message?: string;
+        code?: string;
+        details?: Record<string, unknown>;
+      }>;
 
       if (axiosError.response) {
         return {
@@ -165,7 +175,8 @@ class ApiClient {
           axiosError.message?.includes('CONNECTION_REFUSED')
         ) {
           networkErrorCode = 'ERR_CONNECTION_REFUSED';
-          networkErrorMessage = 'Backend server is not responding. Please check if the server is running.';
+          networkErrorMessage =
+            'Backend server is not responding. Please check if the server is running.';
         }
         // Detect timeout errors
         else if (
@@ -231,14 +242,11 @@ class ApiClient {
     return { valid: true, data: data as T };
   }
 
-  async get<T>(
-    endpoint: string,
-    schema?: z.ZodSchema<T>
-  ): Promise<ApiResponse<T>> {
+  async get<T>(endpoint: string, schema?: z.ZodSchema<T>): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.get<ApiResponse<T>>(endpoint);
       const backendResponse = response.data;
-      
+
       // Check if backend wrapped the response
       if (backendResponse && typeof backendResponse === 'object' && 'success' in backendResponse) {
         // Validate data if schema provided and response is successful
@@ -260,7 +268,7 @@ class ApiClient {
         }
         return backendResponse;
       }
-      
+
       // Fallback for non-wrapped responses
       const data = backendResponse as T;
       if (schema) {
@@ -279,7 +287,7 @@ class ApiClient {
           data: validation.data,
         };
       }
-      
+
       return {
         success: true,
         data,
@@ -288,11 +296,16 @@ class ApiClient {
       // Handle error responses from backend
       if (axios.isAxiosError(error) && error.response) {
         const errorData = error.response.data as ApiResponse<T>;
-        if (errorData && typeof errorData === 'object' && 'success' in errorData && !errorData.success) {
+        if (
+          errorData &&
+          typeof errorData === 'object' &&
+          'success' in errorData &&
+          !errorData.success
+        ) {
           return errorData;
         }
       }
-      
+
       return {
         success: false,
         error: this.handleError(error),
@@ -308,7 +321,7 @@ class ApiClient {
     try {
       const response = await this.client.post<ApiResponse<T>>(endpoint, body);
       const backendResponse = response.data;
-      
+
       // Check if backend wrapped the response
       if (backendResponse && typeof backendResponse === 'object' && 'success' in backendResponse) {
         // Validate data if schema provided and response is successful
@@ -330,7 +343,7 @@ class ApiClient {
         }
         return backendResponse;
       }
-      
+
       // Fallback for non-wrapped responses
       const data = backendResponse as T;
       if (schema) {
@@ -349,7 +362,7 @@ class ApiClient {
           data: validation.data,
         };
       }
-      
+
       return {
         success: true,
         data,
@@ -358,11 +371,16 @@ class ApiClient {
       // Handle error responses from backend
       if (axios.isAxiosError(error) && error.response) {
         const errorData = error.response.data as ApiResponse<T>;
-        if (errorData && typeof errorData === 'object' && 'success' in errorData && !errorData.success) {
+        if (
+          errorData &&
+          typeof errorData === 'object' &&
+          'success' in errorData &&
+          !errorData.success
+        ) {
           return errorData;
         }
       }
-      
+
       return {
         success: false,
         error: this.handleError(error),
@@ -370,20 +388,16 @@ class ApiClient {
     }
   }
 
-  async put<T>(
-    endpoint: string,
-    body?: unknown,
-    schema?: z.ZodSchema<T>
-  ): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, body?: unknown, schema?: z.ZodSchema<T>): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.put<ApiResponse<T>>(endpoint, body);
       const backendResponse = response.data;
-      
+
       // Check if backend wrapped the response
       if (backendResponse && typeof backendResponse === 'object' && 'success' in backendResponse) {
         return backendResponse;
       }
-      
+
       // Fallback for non-wrapped responses
       return {
         success: true,
@@ -393,11 +407,16 @@ class ApiClient {
       // Handle error responses from backend
       if (axios.isAxiosError(error) && error.response) {
         const errorData = error.response.data as ApiResponse<T>;
-        if (errorData && typeof errorData === 'object' && 'success' in errorData && !errorData.success) {
+        if (
+          errorData &&
+          typeof errorData === 'object' &&
+          'success' in errorData &&
+          !errorData.success
+        ) {
           return errorData;
         }
       }
-      
+
       return {
         success: false,
         error: this.handleError(error),
@@ -413,12 +432,12 @@ class ApiClient {
     try {
       const response = await this.client.patch<ApiResponse<T>>(endpoint, body);
       const backendResponse = response.data;
-      
+
       // Check if backend wrapped the response
       if (backendResponse && typeof backendResponse === 'object' && 'success' in backendResponse) {
         return backendResponse;
       }
-      
+
       // Fallback for non-wrapped responses
       return {
         success: true,
@@ -428,11 +447,16 @@ class ApiClient {
       // Handle error responses from backend
       if (axios.isAxiosError(error) && error.response) {
         const errorData = error.response.data as ApiResponse<T>;
-        if (errorData && typeof errorData === 'object' && 'success' in errorData && !errorData.success) {
+        if (
+          errorData &&
+          typeof errorData === 'object' &&
+          'success' in errorData &&
+          !errorData.success
+        ) {
           return errorData;
         }
       }
-      
+
       return {
         success: false,
         error: this.handleError(error),
@@ -440,19 +464,16 @@ class ApiClient {
     }
   }
 
-  async delete<T>(
-    endpoint: string,
-    schema?: z.ZodSchema<T>
-  ): Promise<ApiResponse<T>> {
+  async delete<T>(endpoint: string, schema?: z.ZodSchema<T>): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.delete<ApiResponse<T>>(endpoint);
       const backendResponse = response.data;
-      
+
       // Check if backend wrapped the response
       if (backendResponse && typeof backendResponse === 'object' && 'success' in backendResponse) {
         return backendResponse;
       }
-      
+
       // Fallback for non-wrapped responses
       return {
         success: true,
@@ -462,11 +483,16 @@ class ApiClient {
       // Handle error responses from backend
       if (axios.isAxiosError(error) && error.response) {
         const errorData = error.response.data as ApiResponse<T>;
-        if (errorData && typeof errorData === 'object' && 'success' in errorData && !errorData.success) {
+        if (
+          errorData &&
+          typeof errorData === 'object' &&
+          'success' in errorData &&
+          !errorData.success
+        ) {
           return errorData;
         }
       }
-      
+
       return {
         success: false,
         error: this.handleError(error),

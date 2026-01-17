@@ -36,7 +36,8 @@ export function BackendStatusBanner() {
               Backend connection unavailable
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
-              {status.lastError?.message || 'Some features may not work properly. Please check if the backend server is running.'}
+              {status.lastError?.message ||
+                'Some features may not work properly. Please check if the backend server is running.'}
             </p>
           </div>
         </div>
@@ -48,7 +49,9 @@ export function BackendStatusBanner() {
             disabled={isRetrying || status.isChecking}
             className="bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isRetrying || status.isChecking ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${isRetrying || status.isChecking ? 'animate-spin' : ''}`}
+            />
             {isRetrying || status.isChecking ? 'Checking...' : 'Retry Connection'}
           </Button>
           <button
@@ -63,4 +66,3 @@ export function BackendStatusBanner() {
     </div>
   );
 }
-

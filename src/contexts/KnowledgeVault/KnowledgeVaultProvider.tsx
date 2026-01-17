@@ -93,7 +93,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
 
   const getItemsByType = useCallback(
     (type: VaultItemType): VaultItem[] => {
-      return vaultItems.filter(item => item.type === type);
+      return vaultItems.filter((item) => item.type === type);
     },
     [vaultItems]
   );
@@ -357,9 +357,5 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
     markItemAccessed,
   };
 
-  return (
-    <KnowledgeVaultContext.Provider value={value}>
-      {children}
-    </KnowledgeVaultContext.Provider>
-  );
+  return <KnowledgeVaultContext.Provider value={value}>{children}</KnowledgeVaultContext.Provider>;
 };

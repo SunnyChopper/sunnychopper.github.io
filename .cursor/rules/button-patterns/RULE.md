@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN creating buttons, CTAs, and clickable actions."
-globs: ""
+description: 'USE WHEN creating buttons, CTAs, and clickable actions.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -109,10 +109,7 @@ Standards for buttons and interactive actions.
 ## Loading State
 
 ```tsx
-<button
-  disabled={isLoading}
-  className="inline-flex items-center gap-2 px-4 py-2 ..."
->
+<button disabled={isLoading} className="inline-flex items-center gap-2 px-4 py-2 ...">
   {isLoading ? (
     <>
       <Loader2 className="w-4 h-4 animate-spin" />
@@ -146,7 +143,8 @@ Standards for buttons and interactive actions.
 ## FAB (Floating Action Button)
 
 ```tsx
-<button className="
+<button
+  className="
   fixed bottom-6 right-6
   w-14 h-14 rounded-full
   bg-blue-600 hover:bg-blue-700 text-white
@@ -154,7 +152,8 @@ Standards for buttons and interactive actions.
   flex items-center justify-center
   transition
   z-50
-">
+"
+>
   <Plus className="w-6 h-6" />
 </button>
 ```

@@ -13,9 +13,7 @@ export class ContentGeneratorAgent extends BaseAgent {
     super('goalRefinement');
   }
 
-  async execute(
-    state: CourseGenerationState
-  ): Promise<CourseGenerationStateUpdate> {
+  async execute(state: CourseGenerationState): Promise<CourseGenerationStateUpdate> {
     console.log('ContentGeneratorAgent.execute: Starting', {
       modulesCount: state.modules?.length || 0,
       totalLessons: state.modules?.reduce((sum, m) => sum + (m.lessons?.length || 0), 0) || 0,
@@ -37,7 +35,9 @@ export class ContentGeneratorAgent extends BaseAgent {
           }
 
           try {
-            console.log(`ContentGeneratorAgent: Generating content for lesson ${lesson.id} (${lesson.title})`);
+            console.log(
+              `ContentGeneratorAgent: Generating content for lesson ${lesson.id} (${lesson.title})`
+            );
             const context = getContentGeneratorContext(state, lesson.id);
 
             const systemMessage = `You are an expert educator creating comprehensive lesson content for an online course. Your content should be engaging, well-structured, and build logically on previous lessons.`;
@@ -83,16 +83,23 @@ Generate approximately ${state.course.difficulty === 'beginner' ? '500-800' : st
               lesson.content = result.content;
               processedLessons++;
             } else {
-              console.warn(`ContentGeneratorAgent: No content in result for lesson ${lesson.id}`, result);
+              console.warn(
+                `ContentGeneratorAgent: No content in result for lesson ${lesson.id}`,
+                result
+              );
               errorCount++;
             }
           } catch (lessonError) {
-            console.error(`ContentGeneratorAgent: Error generating content for lesson ${lesson.id}`, {
-              error: lessonError,
-              errorMessage: lessonError instanceof Error ? lessonError.message : String(lessonError),
-              lessonId: lesson.id,
-              lessonTitle: lesson.title,
-            });
+            console.error(
+              `ContentGeneratorAgent: Error generating content for lesson ${lesson.id}`,
+              {
+                error: lessonError,
+                errorMessage:
+                  lessonError instanceof Error ? lessonError.message : String(lessonError),
+                lessonId: lesson.id,
+                lessonTitle: lesson.title,
+              }
+            );
             errorCount++;
             // Continue with other lessons even if one fails
           }

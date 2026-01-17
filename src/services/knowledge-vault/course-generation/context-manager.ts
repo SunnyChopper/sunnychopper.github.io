@@ -32,13 +32,8 @@ Prerequisites: ${state.course.prerequisites.join(', ')}
 
   // 2. Concept graph summary (compact, essential)
   if (currentModuleIndex > 0) {
-    const previousConcepts = extractConceptsFromModules(
-      state.modules.slice(0, currentModuleIndex)
-    );
-    const conceptSummary = formatConceptSummary(
-      previousConcepts,
-      state.conceptGraph
-    );
+    const previousConcepts = extractConceptsFromModules(state.modules.slice(0, currentModuleIndex));
+    const conceptSummary = formatConceptSummary(previousConcepts, state.conceptGraph);
     contextParts.push(`## Concepts Introduced:\n${conceptSummary}`);
   }
 
@@ -65,9 +60,7 @@ Prerequisites: ${state.course.prerequisites.join(', ')}
 /**
  * Extract all concepts from modules
  */
-export function extractConceptsFromModules(
-  modules: CourseGenerationState['modules']
-): string[] {
+export function extractConceptsFromModules(modules: CourseGenerationState['modules']): string[] {
   const concepts: string[] = [];
   for (const module of modules) {
     for (const lesson of module.lessons) {
@@ -99,9 +92,7 @@ export function formatConceptSummary(
 /**
  * Format module with full details
  */
-export function formatModuleFull(
-  module: CourseGenerationState['modules'][0]
-): string {
+export function formatModuleFull(module: CourseGenerationState['modules'][0]): string {
   const parts: string[] = [];
   parts.push(`### Module ${module.moduleIndex + 1}: ${module.title}`);
   if (module.description) {
@@ -160,7 +151,7 @@ export function getContentGeneratorContext(
   let lessonIndex = -1;
 
   for (const module of state.modules) {
-    const idx = module.lessons.findIndex(l => l.id === targetLessonId);
+    const idx = module.lessons.findIndex((l) => l.id === targetLessonId);
     if (idx !== -1) {
       targetLesson = module.lessons[idx];
       targetModule = module;
@@ -210,9 +201,10 @@ Module Objectives: ${targetModule.learningObjectives.join(', ')}
     for (const concept of targetLesson.keyConcepts) {
       const conceptNode = state.conceptGraph.concepts.get(concept);
       if (conceptNode) {
-        const prereqs = conceptNode.prerequisites.length > 0
-          ? ` (requires: ${conceptNode.prerequisites.join(', ')})`
-          : '';
+        const prereqs =
+          conceptNode.prerequisites.length > 0
+            ? ` (requires: ${conceptNode.prerequisites.join(', ')})`
+            : '';
         contextParts.push(`- ${concept}${prereqs}`);
       } else {
         contextParts.push(`- ${concept}`);

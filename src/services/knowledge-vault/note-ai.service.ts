@@ -42,11 +42,7 @@ export const noteAIService = {
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const prompt = `Expand and elaborate on this note content. Add more detail, examples, and context while maintaining the original meaning and structure.
 
@@ -60,10 +56,9 @@ Provide an expanded version that:
 3. Maintains the original structure
 4. Preserves the author's voice and intent`;
 
-      const result = await provider.invokeStructured(
-        ExpandContentOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(ExpandContentOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -95,11 +90,7 @@ Provide an expanded version that:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const prompt = `Summarize this note content into a concise summary with key points:
 
@@ -110,10 +101,9 @@ Provide:
 2. Key points as a bulleted list
 3. Word count information`;
 
-      const result = await provider.invokeStructured(
-        SummarizeContentOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(SummarizeContentOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -145,11 +135,7 @@ Provide:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const prompt = `Improve the clarity, grammar, and readability of this note content while preserving the original meaning:
 
@@ -161,10 +147,9 @@ Focus on:
 3. Clarity of expression
 4. Better organization if needed`;
 
-      const result = await provider.invokeStructured(
-        ImproveClarityOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(ImproveClarityOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -200,11 +185,7 @@ Focus on:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const prompt = `Suggest relevant tags for this note. Provide tags that are:
 - Specific and descriptive
@@ -219,10 +200,9 @@ ${content}
 
 Suggest 5-10 relevant tags with relevance scores.`;
 
-      const result = await provider.invokeStructured(
-        TagSuggestionsOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(TagSuggestionsOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -242,10 +222,7 @@ Suggest 5-10 relevant tags with relevance scores.`;
   /**
    * Suggest appropriate area for the note
    */
-  async suggestArea(
-    content: string,
-    title: string
-  ): Promise<ApiResponse<AreaSuggestionOutput>> {
+  async suggestArea(content: string, title: string): Promise<ApiResponse<AreaSuggestionOutput>> {
     try {
       const featureConfig = getFeatureConfig('noteAreaSuggest');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
@@ -257,11 +234,7 @@ Suggest 5-10 relevant tags with relevance scores.`;
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const prompt = `Suggest the most appropriate area for this note. Available areas: Health, Wealth, Love, Happiness, Operations, DayJob.
 
@@ -271,10 +244,9 @@ ${content}
 
 Consider the main topic, theme, and purpose of the note.`;
 
-      const result = await provider.invokeStructured(
-        AreaSuggestionOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(AreaSuggestionOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -294,10 +266,7 @@ Consider the main topic, theme, and purpose of the note.`;
   /**
    * Generate content from title and area
    */
-  async generateFromTitle(
-    title: string,
-    area: Area
-  ): Promise<ApiResponse<GenerateContentOutput>> {
+  async generateFromTitle(title: string, area: Area): Promise<ApiResponse<GenerateContentOutput>> {
     try {
       const featureConfig = getFeatureConfig('noteGenerate');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
@@ -309,11 +278,7 @@ Consider the main topic, theme, and purpose of the note.`;
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const prompt = `Generate comprehensive note content based on this title and area. Create well-structured, informative content.
 
@@ -326,10 +291,9 @@ Generate content that:
 3. Provides useful information
 4. Uses markdown formatting appropriately`;
 
-      const result = await provider.invokeStructured(
-        GenerateContentOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(GenerateContentOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -364,11 +328,7 @@ Generate content that:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const prompt = `Analyze this note content:
 
@@ -382,10 +342,9 @@ Provide:
 3. Readability assessment
 4. Completeness evaluation with suggestions`;
 
-      const result = await provider.invokeStructured(
-        ContentAnalysisOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(ContentAnalysisOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,

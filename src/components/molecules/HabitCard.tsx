@@ -14,7 +14,17 @@ interface HabitCardProps {
   onQuickLog?: (habit: Habit) => void;
 }
 
-export function HabitCard({ habit, streak = 0, todayCompleted = false, todayProgress = 0, weeklyProgress = 0, totalCompletions = 0, lastCompletedDate = null, onClick, onQuickLog }: HabitCardProps) {
+export function HabitCard({
+  habit,
+  streak = 0,
+  todayCompleted = false,
+  todayProgress = 0,
+  weeklyProgress = 0,
+  totalCompletions = 0,
+  lastCompletedDate = null,
+  onClick,
+  onQuickLog,
+}: HabitCardProps) {
   const getHabitTypeColor = (type: string) => {
     switch (type) {
       case 'Build':
@@ -37,35 +47,35 @@ export function HabitCard({ habit, streak = 0, todayCompleted = false, todayProg
           border: 'border-green-200 dark:border-green-800',
           bg: 'bg-green-50/50 dark:bg-green-900/10',
           indicator: 'bg-green-100 dark:bg-green-800 border-green-300 dark:border-green-700',
-          progressBg: 'bg-green-100/50 dark:bg-green-900/20'
+          progressBg: 'bg-green-100/50 dark:bg-green-900/20',
         };
       case 'Maintain':
         return {
           border: 'border-blue-200 dark:border-blue-800',
           bg: 'bg-blue-50/50 dark:bg-blue-900/10',
           indicator: 'bg-blue-100 dark:bg-blue-800 border-blue-300 dark:border-blue-700',
-          progressBg: 'bg-blue-100/50 dark:bg-blue-900/20'
+          progressBg: 'bg-blue-100/50 dark:bg-blue-900/20',
         };
       case 'Reduce':
         return {
           border: 'border-yellow-200 dark:border-yellow-800',
           bg: 'bg-yellow-50/50 dark:bg-yellow-900/10',
           indicator: 'bg-yellow-100 dark:bg-yellow-800 border-yellow-300 dark:border-yellow-700',
-          progressBg: 'bg-yellow-100/50 dark:bg-yellow-900/20'
+          progressBg: 'bg-yellow-100/50 dark:bg-yellow-900/20',
         };
       case 'Quit':
         return {
           border: 'border-red-200 dark:border-red-800',
           bg: 'bg-red-50/50 dark:bg-red-900/10',
           indicator: 'bg-red-100 dark:bg-red-800 border-red-300 dark:border-red-700',
-          progressBg: 'bg-red-100/50 dark:bg-red-900/20'
+          progressBg: 'bg-red-100/50 dark:bg-red-900/20',
         };
       default:
         return {
           border: 'border-gray-200 dark:border-gray-700',
           bg: '',
           indicator: 'bg-gray-200 dark:bg-gray-700',
-          progressBg: 'bg-gray-100 dark:bg-gray-800'
+          progressBg: 'bg-gray-100 dark:bg-gray-800',
         };
     }
   };
@@ -74,31 +84,46 @@ export function HabitCard({ habit, streak = 0, todayCompleted = false, todayProg
     if (!target) {
       // Use habit type color for empty progress
       switch (habitType) {
-        case 'Build': return 'bg-green-200 dark:bg-green-800';
-        case 'Maintain': return 'bg-blue-200 dark:bg-blue-800';
-        case 'Reduce': return 'bg-yellow-200 dark:bg-yellow-800';
-        case 'Quit': return 'bg-red-200 dark:bg-red-800';
-        default: return 'bg-gray-200 dark:bg-gray-700';
+        case 'Build':
+          return 'bg-green-200 dark:bg-green-800';
+        case 'Maintain':
+          return 'bg-blue-200 dark:bg-blue-800';
+        case 'Reduce':
+          return 'bg-yellow-200 dark:bg-yellow-800';
+        case 'Quit':
+          return 'bg-red-200 dark:bg-red-800';
+        default:
+          return 'bg-gray-200 dark:bg-gray-700';
       }
     }
     if (current >= target) return 'bg-green-500 dark:bg-green-600';
     if (current > 0) {
       // Use habit type color for in-progress
       switch (habitType) {
-        case 'Build': return 'bg-green-500 dark:bg-green-600';
-        case 'Maintain': return 'bg-blue-500 dark:bg-blue-600';
-        case 'Reduce': return 'bg-yellow-500 dark:bg-yellow-600';
-        case 'Quit': return 'bg-red-500 dark:bg-red-600';
-        default: return 'bg-blue-500 dark:bg-blue-600';
+        case 'Build':
+          return 'bg-green-500 dark:bg-green-600';
+        case 'Maintain':
+          return 'bg-blue-500 dark:bg-blue-600';
+        case 'Reduce':
+          return 'bg-yellow-500 dark:bg-yellow-600';
+        case 'Quit':
+          return 'bg-red-500 dark:bg-red-600';
+        default:
+          return 'bg-blue-500 dark:bg-blue-600';
       }
     }
     // Use subtle habit type color for empty
     switch (habitType) {
-      case 'Build': return 'bg-green-200 dark:bg-green-800';
-      case 'Maintain': return 'bg-blue-200 dark:bg-blue-800';
-      case 'Reduce': return 'bg-yellow-200 dark:bg-yellow-800';
-      case 'Quit': return 'bg-red-200 dark:bg-red-800';
-      default: return 'bg-gray-200 dark:bg-gray-700';
+      case 'Build':
+        return 'bg-green-200 dark:bg-green-800';
+      case 'Maintain':
+        return 'bg-blue-200 dark:bg-blue-800';
+      case 'Reduce':
+        return 'bg-yellow-200 dark:bg-yellow-800';
+      case 'Quit':
+        return 'bg-red-200 dark:bg-red-800';
+      default:
+        return 'bg-gray-200 dark:bg-gray-700';
     }
   };
 
@@ -118,7 +143,7 @@ export function HabitCard({ habit, streak = 0, todayCompleted = false, todayProg
     today.setHours(0, 0, 0, 0);
     const logDate = new Date(date);
     logDate.setHours(0, 0, 0, 0);
-    
+
     const diffDays = Math.floor((today.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
@@ -129,8 +154,8 @@ export function HabitCard({ habit, streak = 0, todayCompleted = false, todayProg
   return (
     <div
       className={`group bg-white dark:bg-gray-800 rounded-lg border ${
-        todayCompleted 
-          ? 'border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-900/10' 
+        todayCompleted
+          ? 'border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-900/10'
           : `${accentColors.border} ${accentColors.bg}`
       } p-4 hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200`}
     >
@@ -214,14 +239,18 @@ export function HabitCard({ habit, streak = 0, todayCompleted = false, todayProg
             <div className="flex-1 min-w-0">
               <div className="text-xs text-gray-600 dark:text-gray-400 mb-0.5">Progress</div>
               {habit.dailyTarget ? (
-                <div className={`w-full h-1.5 ${accentColors.progressBg} rounded-full overflow-hidden`}>
+                <div
+                  className={`w-full h-1.5 ${accentColors.progressBg} rounded-full overflow-hidden`}
+                >
                   <div
                     className={`h-full transition-all duration-500 ${getProgressColor(todayProgress, habit.dailyTarget, habit.habitType)}`}
                     style={{ width: `${dailyProgressPercent}%` }}
                   />
                 </div>
               ) : habit.weeklyTarget ? (
-                <div className={`w-full h-1.5 ${accentColors.progressBg} rounded-full overflow-hidden`}>
+                <div
+                  className={`w-full h-1.5 ${accentColors.progressBg} rounded-full overflow-hidden`}
+                >
                   <div
                     className={`h-full transition-all duration-500 ${getProgressColor(weeklyProgress, habit.weeklyTarget, habit.habitType)}`}
                     style={{ width: `${weeklyProgressPercent}%` }}
@@ -239,7 +268,9 @@ export function HabitCard({ habit, streak = 0, todayCompleted = false, todayProg
         {/* Metadata */}
         <div className={`flex items-center gap-2 pt-2 border-t ${accentColors.border} opacity-60`}>
           <AreaBadge area={habit.area} />
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getHabitTypeColor(habit.habitType)}`}>
+          <span
+            className={`px-2 py-0.5 text-xs font-medium rounded-full ${getHabitTypeColor(habit.habitType)}`}
+          >
             {habit.habitType}
           </span>
         </div>

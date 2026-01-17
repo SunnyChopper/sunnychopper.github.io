@@ -33,20 +33,13 @@ export function groupByArea(metrics: Metric[]): GroupedMetrics {
 /**
  * Calculate status from progress and target
  */
-export function calculateMetricStatus(
-  metric: Metric,
-  logs: MetricLog[]
-): MetricStatus {
+export function calculateMetricStatus(metric: Metric, logs: MetricLog[]): MetricStatus {
   if (!metric.targetValue) return 'No Target';
 
   const latestLog = logs.length > 0 ? logs[0] : null;
   if (!latestLog) return 'No Target';
 
-  const progress = calculateProgress(
-    latestLog.value,
-    metric.targetValue,
-    metric.direction
-  );
+  const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
 
   if (progress.isOnTrack) return 'On Track';
   if (progress.percentage >= 50) return 'At Risk';
@@ -63,7 +56,7 @@ export function groupByStatus(
   const grouped: GroupedMetrics = {
     'On Track': [],
     'At Risk': [],
-    'Stalled': [],
+    Stalled: [],
     'No Target': [],
   };
 
@@ -79,10 +72,7 @@ export function groupByStatus(
 /**
  * Calculate momentum from trend data
  */
-export function calculateMomentum(
-  metric: Metric,
-  logs: MetricLog[]
-): MetricMomentum {
+export function calculateMomentum(metric: Metric, logs: MetricLog[]): MetricMomentum {
   if (logs.length < 2) return 'Stable';
 
   const trend = getTrendData(logs, metric);
@@ -92,10 +82,7 @@ export function calculateMomentum(
   const changeThreshold = 0.05; // 5% change
   const accelerationThreshold = 0.1;
 
-  if (
-    trend.changePercent > changeThreshold &&
-    trend.acceleration > accelerationThreshold
-  ) {
+  if (trend.changePercent > changeThreshold && trend.acceleration > accelerationThreshold) {
     return 'Improving';
   } else if (
     trend.changePercent < -changeThreshold &&
@@ -184,8 +171,7 @@ export function sortByPriority(
       const latestLog = logs.length > 0 ? logs[0] : null;
       const currentValue = latestLog?.value || 0;
       const progress = metric.targetValue
-        ? calculateProgress(currentValue, metric.targetValue, metric.direction)
-            .percentage
+        ? calculateProgress(currentValue, metric.targetValue, metric.direction).percentage
         : 0;
 
       return {
@@ -248,11 +234,7 @@ export function filterMetrics(
       const latestLog = logs.length > 0 ? logs[0] : null;
       if (!latestLog) return false;
 
-      const progress = calculateProgress(
-        latestLog.value,
-        m.targetValue,
-        m.direction
-      );
+      const progress = calculateProgress(latestLog.value, m.targetValue, m.direction);
 
       if (filters.targetProximity === 'reached') {
         return progress.percentage >= 100;

@@ -12,22 +12,22 @@ interface LinkedGoalsDisplayProps {
   className?: string;
 }
 
-export function LinkedGoalsDisplay({ 
-  goals, 
+export function LinkedGoalsDisplay({
+  goals,
   title = 'Contributing to Goals',
-  className = '' 
+  className = '',
 }: LinkedGoalsDisplayProps) {
   if (goals.length === 0) {
     return null;
   }
 
   return (
-    <div className={`bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 ${className}`}>
+    <div
+      className={`bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-4 ${className}`}
+    >
       <div className="flex items-center gap-2 mb-3">
         <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-          {title}
-        </h4>
+        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">{title}</h4>
       </div>
 
       <div className="space-y-2">

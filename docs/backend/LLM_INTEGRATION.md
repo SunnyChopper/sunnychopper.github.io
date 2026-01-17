@@ -8,6 +8,7 @@
 ## Overview
 
 The frontend currently makes direct LLM calls via `DirectLLMAdapter`. The backend will:
+
 1. Store API keys securely in AWS Secrets Manager
 2. Receive LLM requests from frontend via `/ai/*` endpoints
 3. Execute LLM calls using LangChain Python
@@ -117,21 +118,21 @@ from pydantic import BaseModel
 
 class BaseLLMProvider(ABC):
     """Abstract base class for LLM providers."""
-    
+
     def __init__(self, api_key: str, model: str):
         self.api_key = api_key
         self.model = model
-    
+
     @abstractmethod
     def get_provider_name(self) -> str:
         """Return provider identifier."""
         pass
-    
+
     @abstractmethod
     def create_model(self) -> BaseChatModel:
         """Create LangChain chat model instance."""
         pass
-    
+
     async def invoke(self, messages: list[dict]) -> str:
         """Invoke model with messages, return text response."""
         model = self.create_model()
@@ -139,10 +140,10 @@ class BaseLLMProvider(ABC):
             [(msg["role"], msg["content"]) for msg in messages]
         )
         return response.content
-    
+
     async def invoke_structured(
-        self, 
-        schema: type[BaseModel], 
+        self,
+        schema: type[BaseModel],
         messages: list[dict]
     ) -> BaseModel:
         """Invoke model with structured output."""
@@ -163,10 +164,10 @@ from .base import BaseLLMProvider
 
 class AnthropicProvider(BaseLLMProvider):
     """Anthropic Claude provider."""
-    
+
     def get_provider_name(self) -> str:
         return "anthropic"
-    
+
     def create_model(self) -> ChatAnthropic:
         return ChatAnthropic(
             api_key=self.api_key,
@@ -185,10 +186,10 @@ from .base import BaseLLMProvider
 
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI GPT provider."""
-    
+
     def get_provider_name(self) -> str:
         return "openai"
-    
+
     def create_model(self) -> ChatOpenAI:
         return ChatOpenAI(
             api_key=self.api_key,
@@ -207,10 +208,10 @@ from .base import BaseLLMProvider
 
 class GeminiProvider(BaseLLMProvider):
     """Google Gemini provider."""
-    
+
     def get_provider_name(self) -> str:
         return "gemini"
-    
+
     def create_model(self) -> ChatGoogleGenerativeAI:
         return ChatGoogleGenerativeAI(
             google_api_key=self.api_key,
@@ -229,10 +230,10 @@ from .base import BaseLLMProvider
 
 class GroqProvider(BaseLLMProvider):
     """Groq provider for fast inference."""
-    
+
     def get_provider_name(self) -> str:
         return "groq"
-    
+
     def create_model(self) -> ChatGroq:
         return ChatGroq(
             api_key=self.api_key,
@@ -253,8 +254,8 @@ from .gemini import GeminiProvider
 from .groq import GroqProvider
 
 def create_provider(
-    provider_type: str, 
-    api_key: str, 
+    provider_type: str,
+    api_key: str,
     model: str
 ) -> BaseLLMProvider:
     """Factory function to create provider instance."""
@@ -264,10 +265,10 @@ def create_provider(
         "gemini": GeminiProvider,
         "groq": GroqProvider,
     }
-    
+
     if provider_type not in providers:
         raise ValueError(f"Unsupported provider: {provider_type}")
-    
+
     return providers[provider_type](api_key, model)
 ```
 
@@ -542,8 +543,8 @@ Area: {area}
 Create 2-5 concrete subtasks that together complete the main task. Each subtask should be independently actionable and have a clear definition of done."""
 
 def get_priority_advisor_prompt(
-    title: str, 
-    description: str | None, 
+    title: str,
+    description: str | None,
     current_priority: str,
     other_tasks: list[dict]
 ) -> str:
@@ -551,7 +552,7 @@ def get_priority_advisor_prompt(
         f"- {t['title']} (Priority: {t['priority']}, Due: {t.get('dueDate', 'None')})"
         for t in other_tasks[:10]
     ])
-    
+
     return f"""Analyze this task and recommend an appropriate priority level:
 
 Task: {title}
@@ -580,7 +581,7 @@ Consider:
 from src.ai.config import get_api_key, has_api_key
 from src.ai.providers import create_provider
 from src.ai.schemas.task_schemas import (
-    ParseTaskOutput, 
+    ParseTaskOutput,
     TaskBreakdownOutput,
     PriorityAdvisorOutput,
     EffortEstimationOutput,
@@ -603,16 +604,16 @@ async def parse_task(text: str) -> dict:
     api_key = get_api_key(DEFAULT_PROVIDER)
     if not api_key:
         raise ValueError(f"API key not configured for {DEFAULT_PROVIDER}")
-    
+
     provider = create_provider(DEFAULT_PROVIDER, api_key, DEFAULT_MODEL)
-    
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": get_parse_task_prompt(text)}
     ]
-    
+
     result = await provider.invoke_structured(ParseTaskOutput, messages)
-    
+
     return {
         "task": {
             "title": result.title,
@@ -634,16 +635,16 @@ async def breakdown_task(title: str, description: str | None, area: str) -> dict
     api_key = get_api_key(DEFAULT_PROVIDER)
     if not api_key:
         raise ValueError(f"API key not configured for {DEFAULT_PROVIDER}")
-    
+
     provider = create_provider(DEFAULT_PROVIDER, api_key, DEFAULT_MODEL)
-    
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": get_task_breakdown_prompt(title, description, area)}
     ]
-    
+
     result = await provider.invoke_structured(TaskBreakdownOutput, messages)
-    
+
     return {
         "subtasks": [
             {
@@ -662,7 +663,7 @@ async def breakdown_task(title: str, description: str | None, area: str) -> dict
     }
 
 async def advise_priority(
-    title: str, 
+    title: str,
     description: str | None,
     current_priority: str,
     other_tasks: list[dict]
@@ -671,18 +672,18 @@ async def advise_priority(
     api_key = get_api_key(DEFAULT_PROVIDER)
     if not api_key:
         raise ValueError(f"API key not configured for {DEFAULT_PROVIDER}")
-    
+
     provider = create_provider(DEFAULT_PROVIDER, api_key, DEFAULT_MODEL)
-    
+
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": get_priority_advisor_prompt(
             title, description, current_priority, other_tasks
         )}
     ]
-    
+
     result = await provider.invoke_structured(PriorityAdvisorOutput, messages)
-    
+
     return {
         "recommendedPriority": result.recommendedPriority.value,
         "reasoning": result.reasoning,
@@ -734,7 +735,7 @@ async def parse_task(
             status_code=503,
             detail="LLM not configured. Please add API key in settings."
         )
-    
+
     try:
         result = await task_ai.parse_task(request.input)
         return {"success": True, "data": result}
@@ -749,8 +750,8 @@ async def breakdown_task(
     """Break task into subtasks."""
     try:
         result = await task_ai.breakdown_task(
-            request.title, 
-            request.description, 
+            request.title,
+            request.description,
             request.area
         )
         return {"success": True, "data": result}
@@ -814,12 +815,12 @@ from src.utils.ids import generate_id
 CACHE_DURATION_HOURS = 24
 
 async def get_cached_insight(
-    metric_id: str, 
+    metric_id: str,
     insight_type: str
 ) -> dict | None:
     """Get cached AI insight if not expired."""
     table = get_table()
-    
+
     # Query for latest insight of this type
     response = table.query(
         KeyConditionExpression="pk = :pk AND begins_with(sk, :sk_prefix)",
@@ -830,17 +831,17 @@ async def get_cached_insight(
         ScanIndexForward=False,  # Latest first
         Limit=1
     )
-    
+
     if not response['Items']:
         return None
-    
+
     item = response['Items'][0]
-    
+
     # Check if expired
     expires_at = datetime.fromisoformat(item['expiresAt'].replace('Z', '+00:00'))
     if datetime.now(expires_at.tzinfo) > expires_at:
         return None
-    
+
     return item['content']
 
 async def cache_insight(
@@ -854,7 +855,7 @@ async def cache_insight(
     now = datetime.utcnow()
     expires_at = now + timedelta(hours=CACHE_DURATION_HOURS)
     ttl = int(expires_at.timestamp())
-    
+
     item = {
         "pk": f"METRIC#{metric_id}",
         "sk": f"INSIGHT#{insight_type}#{now.isoformat()}Z",
@@ -866,7 +867,7 @@ async def cache_insight(
         "ttl": ttl,
         "userId": user_id
     }
-    
+
     table.put_item(Item=item)
 ```
 
@@ -885,16 +886,16 @@ export class APILLMAdapter implements ILLMAdapter {
     const response = await apiClient.post('/ai/tasks/parse', { input: input.text });
     return response;
   }
-  
+
   async breakdownTask(input: TaskBreakdownInput): Promise<LLMResponse<TaskBreakdownOutput>> {
     const response = await apiClient.post('/ai/tasks/breakdown', {
       title: input.task.title,
       description: input.task.description,
-      area: input.task.area
+      area: input.task.area,
     });
     return response;
   }
-  
+
   // ... implement all 33 AI features
 }
 ```
@@ -907,6 +908,6 @@ export const llmConfig = {
   getLLMAdapter(): ILLMAdapter {
     // Always use API adapter in production
     return new APILLMAdapter();
-  }
+  },
 };
 ```

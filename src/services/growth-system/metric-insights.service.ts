@@ -17,9 +17,7 @@ export const metricInsightsService = {
     const now = new Date().getTime();
 
     const validInsights = allInsights.filter(
-      (insight) =>
-        insight.metricId === metricId &&
-        new Date(insight.expiresAt).getTime() > now
+      (insight) => insight.metricId === metricId && new Date(insight.expiresAt).getTime() > now
     );
 
     return {
@@ -101,9 +99,7 @@ export const metricInsightsService = {
   /**
    * Get dashboard insights (aggregated for multiple metrics)
    */
-  async getDashboardInsights(
-    metricIds: string[]
-  ): Promise<ApiListResponse<MetricInsight>> {
+  async getDashboardInsights(metricIds: string[]): Promise<ApiListResponse<MetricInsight>> {
     await randomDelay();
     const storage = getStorageAdapter();
     const allInsights = await storage.getAll<MetricInsight>('metricInsights');
@@ -111,8 +107,7 @@ export const metricInsightsService = {
 
     const validInsights = allInsights.filter(
       (insight) =>
-        metricIds.includes(insight.metricId) &&
-        new Date(insight.expiresAt).getTime() > now
+        metricIds.includes(insight.metricId) && new Date(insight.expiresAt).getTime() > now
     );
 
     // Sort by confidence and recency
@@ -120,9 +115,7 @@ export const metricInsightsService = {
       if (b.confidence !== a.confidence) {
         return b.confidence - a.confidence;
       }
-      return (
-        new Date(b.cachedAt).getTime() - new Date(a.cachedAt).getTime()
-      );
+      return new Date(b.cachedAt).getTime() - new Date(a.cachedAt).getTime();
     });
 
     return {
@@ -142,17 +135,13 @@ export const metricInsightsService = {
     const now = new Date().getTime();
 
     const validInsights = allInsights.filter(
-      (insight) =>
-        insight.metricId === metricId &&
-        new Date(insight.expiresAt).getTime() > now
+      (insight) => insight.metricId === metricId && new Date(insight.expiresAt).getTime() > now
     );
 
     // Need refresh if no valid insights or insights are expiring soon (within 6 hours)
     if (validInsights.length === 0) return true;
 
     const sixHoursFromNow = now + 6 * 60 * 60 * 1000;
-    return validInsights.some(
-      (insight) => new Date(insight.expiresAt).getTime() < sixHoursFromNow
-    );
+    return validInsights.some((insight) => new Date(insight.expiresAt).getTime() < sixHoursFromNow);
   },
 };

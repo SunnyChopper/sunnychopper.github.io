@@ -15,7 +15,13 @@ interface FilterPanelProps {
   className?: string;
 }
 
-export function FilterPanel({ filters, onFiltersChange, availableFilters, goalSpecificFilters = false, className = '' }: FilterPanelProps) {
+export function FilterPanel({
+  filters,
+  onFiltersChange,
+  availableFilters,
+  goalSpecificFilters = false,
+  className = '',
+}: FilterPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   const hasActiveFilters = Boolean(
@@ -34,7 +40,9 @@ export function FilterPanel({ filters, onFiltersChange, availableFilters, goalSp
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}>
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}
+    >
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
@@ -174,7 +182,9 @@ export function FilterPanel({ filters, onFiltersChange, availableFilters, goalSp
                     <input
                       type="checkbox"
                       checked={!!filters.hasLinkedTasks}
-                      onChange={(e) => updateFilter('hasLinkedTasks', e.target.checked || undefined)}
+                      onChange={(e) =>
+                        updateFilter('hasLinkedTasks', e.target.checked || undefined)
+                      }
                       className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Tasks</span>
@@ -183,7 +193,9 @@ export function FilterPanel({ filters, onFiltersChange, availableFilters, goalSp
                     <input
                       type="checkbox"
                       checked={!!filters.hasLinkedMetrics}
-                      onChange={(e) => updateFilter('hasLinkedMetrics', e.target.checked || undefined)}
+                      onChange={(e) =>
+                        updateFilter('hasLinkedMetrics', e.target.checked || undefined)
+                      }
                       className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">Metrics</span>

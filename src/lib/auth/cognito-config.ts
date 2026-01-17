@@ -1,6 +1,6 @@
 /**
  * AWS Cognito Configuration
- * 
+ *
  * These values should be set in environment variables:
  * - VITE_AWS_REGION
  * - VITE_AWS_USER_POOL_ID
@@ -15,9 +15,5 @@ export const cognitoConfig = {
 };
 
 export const isCognitoConfigured = (): boolean => {
-  return !!(
-    cognitoConfig.userPoolId &&
-    cognitoConfig.userPoolWebClientId &&
-    cognitoConfig.region
-  );
+  return !!(cognitoConfig.userPoolId && cognitoConfig.userPoolWebClientId && cognitoConfig.region);
 };

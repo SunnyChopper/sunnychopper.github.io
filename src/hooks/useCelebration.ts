@@ -67,24 +67,33 @@ export function useCelebration() {
     }
   }, []);
 
-  const celebrate = useCallback((
-    type: 'goal_achieved' | 'criteria_completed' | 'milestone_25' | 'milestone_50' | 'milestone_75' | 'streak'
-  ) => {
-    const intensityMap: Record<typeof type, CelebrationIntensity> = {
-      goal_achieved: 'epic',
-      criteria_completed: 'large',
-      milestone_75: 'large',
-      milestone_50: 'medium',
-      milestone_25: 'small',
-      streak: 'medium',
-    };
+  const celebrate = useCallback(
+    (
+      type:
+        | 'goal_achieved'
+        | 'criteria_completed'
+        | 'milestone_25'
+        | 'milestone_50'
+        | 'milestone_75'
+        | 'streak'
+    ) => {
+      const intensityMap: Record<typeof type, CelebrationIntensity> = {
+        goal_achieved: 'epic',
+        criteria_completed: 'large',
+        milestone_75: 'large',
+        milestone_50: 'medium',
+        milestone_25: 'small',
+        streak: 'medium',
+      };
 
-    const intensity = intensityMap[type];
-    triggerConfetti(intensity);
+      const intensity = intensityMap[type];
+      triggerConfetti(intensity);
 
-    // Optional: Play sound effect
-    // You can add sound effects here if desired
-  }, [triggerConfetti]);
+      // Optional: Play sound effect
+      // You can add sound effects here if desired
+    },
+    [triggerConfetti]
+  );
 
   return {
     celebrate,

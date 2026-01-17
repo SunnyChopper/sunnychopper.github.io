@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN building page layouts, sections, and content arrangement."
-globs: ""
+description: 'USE WHEN building page layouts, sections, and content arrangement.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -22,9 +22,7 @@ Patterns for composing layouts and arranging content.
   </header>
 
   {/* Main content */}
-  <main>
-    {/* Content sections */}
-  </main>
+  <main>{/* Content sections */}</main>
 </div>
 ```
 

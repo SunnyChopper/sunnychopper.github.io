@@ -20,12 +20,12 @@ interface GoalHabitsSectionProps {
   showEmpty?: boolean;
 }
 
-export function GoalHabitsSection({ 
-  habits, 
-  onLinkHabit, 
+export function GoalHabitsSection({
+  habits,
+  onLinkHabit,
   onCompleteHabit,
   onHabitClick,
-  showEmpty = true 
+  showEmpty = true,
 }: GoalHabitsSectionProps) {
   if (habits.length === 0 && showEmpty) {
     return (
@@ -40,7 +40,7 @@ export function GoalHabitsSection({
           icon={Repeat}
           title="No habits linked"
           description="Link habits that support this goal for consistent progress"
-          actionLabel={onLinkHabit ? "Link Habit" : undefined}
+          actionLabel={onLinkHabit ? 'Link Habit' : undefined}
           onAction={onLinkHabit}
         />
       </div>
@@ -94,7 +94,7 @@ export function GoalHabitsSection({
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Streak Badge */}
                 {currentStreak > 0 && (
                   <div className="flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 rounded-full">
@@ -110,9 +110,7 @@ export function GoalHabitsSection({
               <div className="mb-3">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-gray-600 dark:text-gray-400">This week</span>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    {weeklyProgress}%
-                  </span>
+                  <span className="text-gray-600 dark:text-gray-400">{weeklyProgress}%</span>
                 </div>
                 <div className="h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                   <motion.div
@@ -123,8 +121,8 @@ export function GoalHabitsSection({
                       weeklyProgress >= 80
                         ? 'bg-green-500'
                         : weeklyProgress >= 50
-                        ? 'bg-yellow-500'
-                        : 'bg-orange-500'
+                          ? 'bg-yellow-500'
+                          : 'bg-orange-500'
                     }`}
                   />
                 </div>

@@ -3,7 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, Zap, Target } from 'lucide-react';
 import { useCelebration } from '../../hooks/useCelebration';
 
-type CelebrationType = 'goal_achieved' | 'criteria_completed' | 'milestone_25' | 'milestone_50' | 'milestone_75' | 'streak';
+type CelebrationType =
+  | 'goal_achieved'
+  | 'criteria_completed'
+  | 'milestone_25'
+  | 'milestone_50'
+  | 'milestone_75'
+  | 'streak';
 
 interface CelebrationEffectProps {
   show: boolean;
@@ -12,18 +18,13 @@ interface CelebrationEffectProps {
   onComplete?: () => void;
 }
 
-export function CelebrationEffect({ 
-  show, 
-  type, 
-  message,
-  onComplete 
-}: CelebrationEffectProps) {
+export function CelebrationEffect({ show, type, message, onComplete }: CelebrationEffectProps) {
   const { celebrate } = useCelebration();
 
   useEffect(() => {
     if (show) {
       celebrate(type);
-      
+
       // Auto-dismiss after animation
       const timeout = setTimeout(() => {
         onComplete?.();
@@ -78,26 +79,26 @@ export function CelebrationEffect({
         >
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
-            animate={{ 
+            animate={{
               scale: [0, 1.2, 1],
-              rotate: [- 180, 20, 0],
+              rotate: [-180, 20, 0],
             }}
-            transition={{ 
+            transition={{
               duration: 0.6,
               times: [0, 0.6, 1],
-              ease: 'easeOut'
+              ease: 'easeOut',
             }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-12 text-center border-4 border-yellow-400 dark:border-yellow-500"
           >
             <motion.div
-              animate={{ 
+              animate={{
                 scale: [1, 1.1, 1],
                 rotate: [0, 5, -5, 0],
               }}
-              transition={{ 
+              transition={{
                 duration: 2,
                 repeat: Infinity,
-                repeatType: 'reverse'
+                repeatType: 'reverse',
               }}
               className="mb-6"
             >
@@ -124,7 +125,7 @@ export function CelebrationEffect({
                   key={i}
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6 + (i * 0.1) }}
+                  transition={{ delay: 0.6 + i * 0.1 }}
                 >
                   <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
                 </motion.div>

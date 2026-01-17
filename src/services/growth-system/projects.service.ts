@@ -23,7 +23,11 @@ interface ProjectHealth {
 }
 
 export const projectsService = {
-  async getAll(filters?: { area?: string; status?: string; priority?: string }): Promise<ApiListResponse<Project>> {
+  async getAll(filters?: {
+    area?: string;
+    status?: string;
+    priority?: string;
+  }): Promise<ApiListResponse<Project>> {
     const queryParams = new URLSearchParams();
     if (filters?.area) queryParams.append('area', filters.area);
     if (filters?.status) queryParams.append('status', filters.status);
@@ -64,7 +68,9 @@ export const projectsService = {
   },
 
   async getLinkedTasks(projectId: string): Promise<ApiListResponse<Task>> {
-    const response = await apiClient.get<BackendPaginatedResponse<Task>>(`/projects/${projectId}/tasks`);
+    const response = await apiClient.get<BackendPaginatedResponse<Task>>(
+      `/projects/${projectId}/tasks`
+    );
     if (response.success && response.data) {
       return {
         data: response.data.data,

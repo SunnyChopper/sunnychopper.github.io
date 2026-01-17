@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN applying spacing, padding, margins, and gaps to UI elements."
-globs: ""
+description: 'USE WHEN applying spacing, padding, margins, and gaps to UI elements.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -12,17 +12,17 @@ Consistent spacing creates visual rhythm and hierarchy.
 
 All spacing should align to an 8px base grid:
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `1` | 4px | Tight inline spacing |
-| `2` | 8px | Compact elements |
-| `3` | 12px | Default element spacing |
-| `4` | 16px | Section padding |
-| `5` | 20px | Large element spacing |
-| `6` | 24px | Card padding |
-| `8` | 32px | Section spacing |
-| `10` | 40px | Large sections |
-| `12` | 48px | Page sections |
+| Token | Value | Usage                   |
+| ----- | ----- | ----------------------- |
+| `1`   | 4px   | Tight inline spacing    |
+| `2`   | 8px   | Compact elements        |
+| `3`   | 12px  | Default element spacing |
+| `4`   | 16px  | Section padding         |
+| `5`   | 20px  | Large element spacing   |
+| `6`   | 24px  | Card padding            |
+| `8`   | 32px  | Section spacing         |
+| `10`  | 40px  | Large sections          |
+| `12`  | 48px  | Page sections           |
 
 ## Component-Level Spacing
 

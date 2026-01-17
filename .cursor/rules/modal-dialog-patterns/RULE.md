@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN creating modals, dialogs, drawers, and overlay components."
-globs: ""
+description: 'USE WHEN creating modals, dialogs, drawers, and overlay components.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -24,11 +24,7 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
 
       {/* Dialog */}
       <div
@@ -59,9 +55,7 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
       </div>
     </div>
   );
@@ -72,19 +66,19 @@ function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
 ```tsx
 // Small
-className="max-w-sm w-full"
+className = 'max-w-sm w-full';
 
 // Medium (default)
-className="max-w-md w-full"
+className = 'max-w-md w-full';
 
 // Large
-className="max-w-lg w-full"
+className = 'max-w-lg w-full';
 
 // Extra Large
-className="max-w-2xl w-full"
+className = 'max-w-2xl w-full';
 
 // Full Width
-className="max-w-4xl w-full"
+className = 'max-w-4xl w-full';
 ```
 
 ## Modal with Footer
@@ -95,14 +89,14 @@ className="max-w-4xl w-full"
   <div className="p-6 border-b">...</div>
 
   {/* Scrollable body */}
-  <div className="flex-1 overflow-y-auto p-6">
-    {/* Content */}
-  </div>
+  <div className="flex-1 overflow-y-auto p-6">{/* Content */}</div>
 
   {/* Sticky footer */}
   <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
     <div className="flex justify-end gap-3">
-      <Button variant="ghost" onClick={onClose}>Cancel</Button>
+      <Button variant="ghost" onClick={onClose}>
+        Cancel
+      </Button>
       <Button onClick={onSave}>Save Changes</Button>
     </div>
   </div>
@@ -115,12 +109,14 @@ className="max-w-4xl w-full"
 function ConfirmDialog({ isOpen, onClose, onConfirm, title, message }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <p className="text-gray-600 dark:text-gray-400 mb-6">
-        {message}
-      </p>
+      <p className="text-gray-600 dark:text-gray-400 mb-6">{message}</p>
       <div className="flex justify-end gap-3">
-        <Button variant="ghost" onClick={onClose}>Cancel</Button>
-        <Button variant="danger" onClick={onConfirm}>Delete</Button>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="danger" onClick={onConfirm}>
+          Delete
+        </Button>
       </div>
     </Modal>
   );
@@ -132,10 +128,7 @@ function ConfirmDialog({ isOpen, onClose, onConfirm, title, message }) {
 ```tsx
 function Drawer({ isOpen, onClose, title, children }) {
   return (
-    <div className={cn(
-      'fixed inset-0 z-50',
-      isOpen ? 'visible' : 'invisible'
-    )}>
+    <div className={cn('fixed inset-0 z-50', isOpen ? 'visible' : 'invisible')}>
       {/* Backdrop */}
       <div
         className={cn(
@@ -146,22 +139,24 @@ function Drawer({ isOpen, onClose, title, children }) {
       />
 
       {/* Panel */}
-      <div className={cn(
-        'absolute right-0 top-0 h-full w-full max-w-md',
-        'bg-white dark:bg-gray-800 shadow-xl',
-        'transform transition-transform duration-300',
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      )}>
+      <div
+        className={cn(
+          'absolute right-0 top-0 h-full w-full max-w-md',
+          'bg-white dark:bg-gray-800 shadow-xl',
+          'transform transition-transform duration-300',
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        )}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <button onClick={onClose}><X /></button>
+          <button onClick={onClose}>
+            <X />
+          </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto h-[calc(100%-80px)]">
-          {children}
-        </div>
+        <div className="p-6 overflow-y-auto h-[calc(100%-80px)]">{children}</div>
       </div>
     </div>
   );

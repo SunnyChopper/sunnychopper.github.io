@@ -26,16 +26,16 @@ const ZOOM_RANGES: Record<ZoomLevel, number> = {
   '3M': 90 * 24 * 60 * 60 * 1000, // 3 months
   '6M': 180 * 24 * 60 * 60 * 1000, // 6 months
   '1Y': 365 * 24 * 60 * 60 * 1000, // 1 year
-  'All': Infinity,
+  All: Infinity,
 };
 
 export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) {
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('All');
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1000);
-  
+
   const goalsWithDates = useMemo(() => {
-    return goals.filter(g => g.targetDate);
+    return goals.filter((g) => g.targetDate);
   }, [goals]);
 
   // Update container width on resize
@@ -45,7 +45,7 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
         setContainerWidth(containerRef.current.offsetWidth);
       }
     };
-    
+
     updateWidth();
     window.addEventListener('resize', updateWidth);
     return () => window.removeEventListener('resize', updateWidth);
@@ -57,9 +57,9 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
     }
 
     // Find date range
-    const dates = goalsWithDates.map(g => new Date(g.targetDate!));
-    let minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-    let maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+    const dates = goalsWithDates.map((g) => new Date(g.targetDate!));
+    let minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+    let maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
 
     // Apply zoom level
     if (zoomLevel !== 'All') {
@@ -75,13 +75,13 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
     }
 
     const totalRange = maxDate.getTime() - minDate.getTime();
-    
+
     // Minimum width in pixels (enough for title + badges)
     const MIN_WIDTH_PX = 120;
     const MIN_WIDTH_PERCENT = (MIN_WIDTH_PX / containerWidth) * 100;
 
     // Calculate positions and assign lanes to avoid overlap
-    const goalsInRange = goalsWithDates.filter(goal => {
+    const goalsInRange = goalsWithDates.filter((goal) => {
       const targetDate = new Date(goal.targetDate!);
       return targetDate >= minDate && targetDate <= maxDate;
     });
@@ -122,7 +122,7 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
         }
 
         // Check if this position conflicts with any goal in this lane
-        const conflicts = laneOccupancy[lane].some(occupancy => {
+        const conflicts = laneOccupancy[lane].some((occupancy) => {
           return startPos < occupancy.endPosition + 1; // +1 for small gap
         });
 
@@ -199,9 +199,10 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
               </button>
             ))}
           </div>
-          
+
           <span className="text-sm text-gray-600 dark:text-gray-400 px-3">
-            {minDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - {maxDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+            {minDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} -{' '}
+            {maxDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
           </span>
         </div>
       </div>
@@ -209,7 +210,10 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
       {/* Timeline Container */}
       <div ref={containerRef} className="relative overflow-x-visible">
         {/* Month Labels */}
-        <div className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible" style={{ paddingLeft: '0.5rem', paddingRight: '80px' }}>
+        <div
+          className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible"
+          style={{ paddingLeft: '0.5rem', paddingRight: '80px' }}
+        >
           {(() => {
             return monthsBetween.map((month, index) => {
               const monthStart = month.getTime();
@@ -217,14 +221,18 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
               const rawPosition = ((monthStart - minDate.getTime()) / totalRange) * 100;
               const isFirst = index === 0;
               const isLast = index === monthsBetween.length - 1;
-              
+
               return (
-                <div key={month.toISOString()} className="absolute top-0 bottom-0" style={{ left: `${rawPosition}%` }}>
+                <div
+                  key={month.toISOString()}
+                  className="absolute top-0 bottom-0"
+                  style={{ left: `${rawPosition}%` }}
+                >
                   {/* Vertical border line - always at exact position (marks the month start) */}
                   <div className="absolute top-0 bottom-0 left-0 border-l border-gray-300 dark:border-gray-600" />
-                  
+
                   {/* Text label - positioned relative to border line */}
-                  <span 
+                  <span
                     className="absolute top-0 text-xs text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap"
                     style={{
                       // For first month: text starts at border (left edge of text at border)
@@ -267,14 +275,18 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
 
           {timelineGoals.map((goal) => {
             // Determine color based on status
-            let colorClasses = 'from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 border-blue-600 dark:border-blue-500';
-            
+            let colorClasses =
+              'from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 border-blue-600 dark:border-blue-500';
+
             if (goal.status === 'Achieved') {
-              colorClasses = 'from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 border-purple-600 dark:border-purple-500';
+              colorClasses =
+                'from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 border-purple-600 dark:border-purple-500';
             } else if (goal.status === 'AtRisk') {
-              colorClasses = 'from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700 border-orange-600 dark:border-orange-500';
+              colorClasses =
+                'from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700 border-orange-600 dark:border-orange-500';
             } else if (goal.status === 'OnTrack') {
-              colorClasses = 'from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border-green-600 dark:border-green-500';
+              colorClasses =
+                'from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border-green-600 dark:border-green-500';
             }
 
             return (
@@ -297,9 +309,7 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
                   <div className="flex items-center justify-between h-full">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <PriorityIndicator priority={goal.priority} size="sm" />
-                      <span className="text-xs font-medium text-white truncate">
-                        {goal.title}
-                      </span>
+                      <span className="text-xs font-medium text-white truncate">{goal.title}</span>
                     </div>
                     <StatusBadge status={goal.status} size="sm" />
                   </div>
@@ -325,7 +335,12 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Duration:</span>
                         <span className="text-gray-900 dark:text-white font-medium">
-                          {Math.ceil((new Date(goal.targetDate!).getTime() - new Date(goal.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days
+                          {Math.ceil(
+                            (new Date(goal.targetDate!).getTime() -
+                              new Date(goal.createdAt).getTime()) /
+                              (1000 * 60 * 60 * 24)
+                          )}{' '}
+                          days
                         </span>
                       </div>
                       {goal.description && (

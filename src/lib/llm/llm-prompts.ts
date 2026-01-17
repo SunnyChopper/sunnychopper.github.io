@@ -18,7 +18,9 @@ Available Areas: ${AREAS.join(', ')}
 Available Priorities: ${PRIORITIES.join(', ')} (P1 = highest urgency)
 
 Subcategories by Area:
-${Object.entries(SUBCATEGORIES).map(([area, subs]) => `- ${area}: ${subs.join(', ')}`).join('\n')}
+${Object.entries(SUBCATEGORIES)
+  .map(([area, subs]) => `- ${area}: ${subs.join(', ')}`)
+  .join('\n')}
 
 Always respond with valid JSON matching the requested format. Be concise and actionable.`;
 
@@ -44,7 +46,11 @@ Respond with JSON in this exact format:
 }`;
 }
 
-export function getTaskBreakdownPrompt(taskTitle: string, taskDescription: string | null, area: string): string {
+export function getTaskBreakdownPrompt(
+  taskTitle: string,
+  taskDescription: string | null,
+  area: string
+): string {
   return `Break down the following task into smaller, actionable subtasks:
 
 Task: ${taskTitle}
@@ -68,13 +74,16 @@ Respond with JSON in this exact format:
 }`;
 }
 
-export function getBlockerResolutionPrompt(taskTitle: string, blockers: Array<{ id: string; title: string; status: string }>): string {
+export function getBlockerResolutionPrompt(
+  taskTitle: string,
+  blockers: Array<{ id: string; title: string; status: string }>
+): string {
   return `Suggest how to resolve blockers for this task:
 
 Task: ${taskTitle}
 
 Blockers:
-${blockers.map(b => `- [${b.id}] ${b.title} (Status: ${b.status})`).join('\n')}
+${blockers.map((b) => `- [${b.id}] ${b.title} (Status: ${b.status})`).join('\n')}
 
 Respond with JSON in this exact format:
 {
@@ -102,7 +111,7 @@ ${taskDescription ? `Description: ${taskDescription}` : ''}
 Current Priority: ${currentPriority}
 
 Other active tasks:
-${otherTasks.map(t => `- ${t.title} (${t.priority}${t.dueDate ? `, due: ${t.dueDate}` : ''})`).join('\n')}
+${otherTasks.map((t) => `- ${t.title} (${t.priority}${t.dueDate ? `, due: ${t.dueDate}` : ''})`).join('\n')}
 
 Respond with JSON in this exact format:
 {
@@ -122,7 +131,7 @@ export function getEffortEstimationPrompt(
 Task: ${taskTitle}
 ${taskDescription ? `Description: ${taskDescription}` : ''}
 
-${similarTasks.length > 0 ? `Similar completed tasks for reference:\n${similarTasks.map(t => `- ${t.title}: ${t.size ?? 'unknown'} hours`).join('\n')}` : ''}
+${similarTasks.length > 0 ? `Similar completed tasks for reference:\n${similarTasks.map((t) => `- ${t.title}: ${t.size ?? 'unknown'} hours`).join('\n')}` : ''}
 
 Respond with JSON in this exact format:
 {
@@ -158,7 +167,7 @@ New Task: ${taskTitle}
 ${taskDescription ? `Description: ${taskDescription}` : ''}
 
 Existing Tasks:
-${existingTasks.map(t => `- [${t.id}] ${t.title} (${t.status})`).join('\n')}
+${existingTasks.map((t) => `- [${t.id}] ${t.title} (${t.status})`).join('\n')}
 
 Respond with JSON in this exact format:
 {
@@ -184,7 +193,7 @@ Project: ${projectName}
 ${projectDescription ? `Description: ${projectDescription}` : ''}
 
 Tasks (${tasks.length} total):
-${tasks.map(t => `- ${t.title} [${t.status}] (${t.priority}${t.dueDate ? `, due: ${t.dueDate}` : ''})`).join('\n')}
+${tasks.map((t) => `- ${t.title} [${t.status}] (${t.priority}${t.dueDate ? `, due: ${t.dueDate}` : ''})`).join('\n')}
 
 Respond with JSON in this exact format:
 {
@@ -215,7 +224,7 @@ ${projectDescription ? `Description: ${projectDescription}` : ''}
 Area: ${area}
 
 Existing Tasks:
-${existingTasks.map(t => `- ${t.title}`).join('\n')}
+${existingTasks.map((t) => `- ${t.title}`).join('\n')}
 
 Respond with JSON in this exact format:
 {
@@ -235,7 +244,13 @@ Respond with JSON in this exact format:
 export function getProjectRiskPrompt(
   projectName: string,
   projectDescription: string | null,
-  tasks: Array<{ id: string; title: string; status: string; priority: string; dueDate: string | null }>
+  tasks: Array<{
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    dueDate: string | null;
+  }>
 ): string {
   return `Identify risks for this project:
 
@@ -243,7 +258,7 @@ Project: ${projectName}
 ${projectDescription ? `Description: ${projectDescription}` : ''}
 
 Tasks:
-${tasks.map(t => `- [${t.id}] ${t.title} [${t.status}] (${t.priority}${t.dueDate ? `, due: ${t.dueDate}` : ''})`).join('\n')}
+${tasks.map((t) => `- [${t.id}] ${t.title} [${t.status}] (${t.priority}${t.dueDate ? `, due: ${t.dueDate}` : ''})`).join('\n')}
 
 Respond with JSON in this exact format:
 {

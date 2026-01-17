@@ -1,6 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Grid3x3, List, FileText, FileCheck, BookOpen, CreditCard, ChevronDown } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Grid3x3,
+  List,
+  FileText,
+  FileCheck,
+  BookOpen,
+  CreditCard,
+  ChevronDown,
+} from 'lucide-react';
 import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
 import VaultItemCard from '../../components/organisms/VaultItemCard';
 import CourseStackCard from '../../components/organisms/CourseStackCard';
@@ -39,9 +49,9 @@ export default function KnowledgeVaultPage() {
     );
 
     const stacksMap = new Map<string, CourseStack>();
-    
-    lessons.forEach(lesson => {
-      const course = courses.find(c => c.id === lesson.courseId);
+
+    lessons.forEach((lesson) => {
+      const course = courses.find((c) => c.id === lesson.courseId);
       if (!course) return; // Skip lessons without a course
 
       if (!stacksMap.has(lesson.courseId)) {
@@ -50,12 +60,12 @@ export default function KnowledgeVaultPage() {
           lessons: [],
         });
       }
-      
+
       stacksMap.get(lesson.courseId)!.lessons.push(lesson);
     });
 
     // Sort lessons within each stack by lessonIndex
-    stacksMap.forEach(stack => {
+    stacksMap.forEach((stack) => {
       stack.lessons.sort((a, b) => a.lessonIndex - b.lessonIndex);
     });
 
@@ -64,14 +74,14 @@ export default function KnowledgeVaultPage() {
 
   // Get course IDs that have lessons (to filter out individual lesson cards)
   const courseIdsWithLessons = useMemo(() => {
-    return new Set(courseStacks.map(stack => stack.course.id));
+    return new Set(courseStacks.map((stack) => stack.course.id));
   }, [courseStacks]);
 
   const filteredItems = useMemo(() => {
     let filtered = vaultItems;
 
     // Filter out course lessons that belong to a course stack
-    filtered = filtered.filter(item => {
+    filtered = filtered.filter((item) => {
       if (item.type === 'course_lesson') {
         return !courseIdsWithLessons.has((item as CourseLesson).courseId);
       }
@@ -83,21 +93,19 @@ export default function KnowledgeVaultPage() {
       if (filterType === 'course_lesson') {
         return []; // We'll handle course stacks separately
       }
-      filtered = filtered.filter(item => item.type === filterType);
+      filtered = filtered.filter((item) => item.type === filterType);
     }
 
     if (selectedArea !== 'all') {
-      filtered = filtered.filter(item => item.area === selectedArea);
+      filtered = filtered.filter((item) => item.area === selectedArea);
     }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(item =>
-        item.searchableText.includes(query)
-      );
+      filtered = filtered.filter((item) => item.searchableText.includes(query));
     }
 
-    return filtered.filter(item => item.status === 'active');
+    return filtered.filter((item) => item.status === 'active');
   }, [vaultItems, filterType, selectedArea, searchQuery, courseIdsWithLessons]);
 
   // Filter course stacks based on search and area
@@ -105,18 +113,19 @@ export default function KnowledgeVaultPage() {
     let filtered = courseStacks;
 
     if (selectedArea !== 'all') {
-      filtered = filtered.filter(stack => 
-        stack.lessons.some(lesson => lesson.area === selectedArea)
+      filtered = filtered.filter((stack) =>
+        stack.lessons.some((lesson) => lesson.area === selectedArea)
       );
     }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(stack => {
-        const courseMatches = stack.course.title.toLowerCase().includes(query) ||
+      filtered = filtered.filter((stack) => {
+        const courseMatches =
+          stack.course.title.toLowerCase().includes(query) ||
           stack.course.description?.toLowerCase().includes(query) ||
           stack.course.topic.toLowerCase().includes(query);
-        const lessonMatches = stack.lessons.some(lesson =>
+        const lessonMatches = stack.lessons.some((lesson) =>
           lesson.searchableText.toLowerCase().includes(query)
         );
         return courseMatches || lessonMatches;
@@ -134,7 +143,7 @@ export default function KnowledgeVaultPage() {
       flashcard: 0,
     };
 
-    vaultItems.forEach(item => {
+    vaultItems.forEach((item) => {
       if (item.status === 'active') {
         // Only count course lessons that aren't part of a course stack
         if (item.type === 'course_lesson') {
@@ -188,10 +197,7 @@ export default function KnowledgeVaultPage() {
 
           {showCreateMenu && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowCreateMenu(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setShowCreateMenu(false)} />
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20">
                 <button
                   onClick={() => handleCreateClick('note')}
@@ -222,7 +228,10 @@ export default function KnowledgeVaultPage() {
 
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex-1 min-w-[300px] relative">
-          <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search
+            size={20}
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+          />
           <input
             type="text"
             placeholder="Search knowledge..."
@@ -238,8 +247,10 @@ export default function KnowledgeVaultPage() {
           className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600"
         >
           <option value="all">All Areas</option>
-          {AREAS.map(area => (
-            <option key={area} value={area}>{area}</option>
+          {AREAS.map((area) => (
+            <option key={area} value={area}>
+              {area}
+            </option>
           ))}
         </select>
 
@@ -268,7 +279,7 @@ export default function KnowledgeVaultPage() {
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
-        {tabs.map(tab => {
+        {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
@@ -326,19 +337,20 @@ export default function KnowledgeVaultPage() {
           }
         >
           {/* Show course stacks when filter is 'all' or 'course_lesson' */}
-          {(filterType === 'all' || filterType === 'course_lesson') && filteredCourseStacks.map(stack => (
-            <CourseStackCard
-              key={stack.course.id}
-              course={stack.course}
-              lessons={stack.lessons}
-              onClick={() => {
-                navigate(`/admin/knowledge-vault/courses/${stack.course.id}`);
-              }}
-            />
-          ))}
-          
+          {(filterType === 'all' || filterType === 'course_lesson') &&
+            filteredCourseStacks.map((stack) => (
+              <CourseStackCard
+                key={stack.course.id}
+                course={stack.course}
+                lessons={stack.lessons}
+                onClick={() => {
+                  navigate(`/admin/knowledge-vault/courses/${stack.course.id}`);
+                }}
+              />
+            ))}
+
           {/* Show regular vault items */}
-          {filteredItems.map(item => (
+          {filteredItems.map((item) => (
             <VaultItemCard
               key={item.id}
               item={item}

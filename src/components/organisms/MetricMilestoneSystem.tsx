@@ -145,8 +145,7 @@ export function MetricMilestoneSystem({
                         {getMilestoneLabel(milestone)}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Achieved on{' '}
-                        {new Date(milestone.achievedAt).toLocaleDateString()}
+                        Achieved on {new Date(milestone.achievedAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
@@ -175,9 +174,7 @@ export function MetricMilestoneSystem({
                 className="bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900 dark:text-white">
-                    {next.label}
-                  </h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white">{next.label}</h4>
                   <span className="text-sm text-gray-600 dark:text-gray-400">
                     {next.progress.toFixed(0)}%
                   </span>
@@ -219,9 +216,7 @@ export function MetricMilestoneSystem({
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p className="mb-2">No milestones yet</p>
-          <p className="text-sm">
-            Keep logging values to unlock achievements and earn points!
-          </p>
+          <p className="text-sm">Keep logging values to unlock achievements and earn points!</p>
         </div>
       )}
     </div>

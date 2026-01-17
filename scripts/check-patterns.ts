@@ -40,9 +40,7 @@ function checkComponentPatterns(): void {
 
     // Check for loading states in async components
     if (
-      (content.includes('useQuery') ||
-        content.includes('fetch(') ||
-        content.includes('axios.')) &&
+      (content.includes('useQuery') || content.includes('fetch(') || content.includes('axios.')) &&
       !content.includes('isLoading') &&
       !content.includes('loading') &&
       !content.includes('isPending')
@@ -225,11 +223,14 @@ checkForbiddenPatterns();
 checkTailwindUsage();
 
 // Group violations by rule
-const violationsByRule = violations.reduce((acc, v) => {
-  if (!acc[v.rule]) acc[v.rule] = [];
-  acc[v.rule].push(v);
-  return acc;
-}, {} as Record<string, PatternViolation[]>);
+const violationsByRule = violations.reduce(
+  (acc, v) => {
+    if (!acc[v.rule]) acc[v.rule] = [];
+    acc[v.rule].push(v);
+    return acc;
+  },
+  {} as Record<string, PatternViolation[]>
+);
 
 // Report results
 let hasErrors = false;
@@ -237,9 +238,7 @@ for (const [rule, ruleViolations] of Object.entries(violationsByRule)) {
   console.log(`\n📋 ${rule}: ${ruleViolations.length} violation(s)`);
   for (const violation of ruleViolations.slice(0, 10)) {
     // Show first 10 per rule
-    const location = violation.line
-      ? `${violation.file}:${violation.line}`
-      : violation.file;
+    const location = violation.line ? `${violation.file}:${violation.line}` : violation.file;
     console.log(`   ❌ ${location}`);
     console.log(`      ${violation.message}`);
     hasErrors = true;
@@ -255,9 +254,7 @@ if (!hasErrors) {
   console.log('✅ All pattern checks passed!\n');
   process.exit(0);
 } else {
-  console.error(
-    `❌ Found ${violations.length} pattern violation(s). Please review and fix.\n`
-  );
+  console.error(`❌ Found ${violations.length} pattern violation(s). Please review and fix.\n`);
   console.log('💡 Tips:');
   console.log('   - Ensure components handle loading/error states');
   console.log('   - Use Tailwind classes instead of inline styles');

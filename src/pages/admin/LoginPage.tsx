@@ -32,7 +32,7 @@ export default function LoginPage() {
       pathname: location.pathname,
       loginRoute: ROUTES.admin.login,
     });
-    
+
     if (!loading && user && location.pathname === ROUTES.admin.login) {
       console.log('[LoginPage] Redirecting authenticated user to dashboard');
       navigate(ROUTES.admin.dashboard, { replace: true });
@@ -75,13 +75,18 @@ export default function LoginPage() {
             {isSignUp ? 'Create Account' : 'Welcome Back'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            {isSignUp ? 'Sign up to start your Growth System journey' : 'Sign in to access your Growth System'}
+            {isSignUp
+              ? 'Sign up to start your Growth System journey'
+              : 'Sign in to access your Growth System'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Email Address
             </label>
             <input
@@ -97,7 +102,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Password
             </label>
             <input
@@ -119,12 +127,14 @@ export default function LoginPage() {
             </div>
           )}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? (isSignUp ? 'Creating Account...' : 'Signing In...') : (isSignUp ? 'Sign Up' : 'Sign In')}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading
+              ? isSignUp
+                ? 'Creating Account...'
+                : 'Signing In...'
+              : isSignUp
+                ? 'Sign Up'
+                : 'Sign In'}
           </Button>
         </form>
 

@@ -29,15 +29,10 @@ export const WalletWidget = () => {
 
       {showHistory && (
         <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setShowHistory(false)}
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setShowHistory(false)} />
           <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden max-h-[80vh] flex flex-col">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-                Wallet Balance
-              </h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Wallet Balance</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
                   <TrendingUp size={16} className="text-green-600 dark:text-green-500" />

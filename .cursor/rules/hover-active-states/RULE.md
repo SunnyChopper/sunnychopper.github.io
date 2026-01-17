@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN adding hover, active, focus, and disabled states to interactive elements."
-globs: ""
+description: 'USE WHEN adding hover, active, focus, and disabled states to interactive elements.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -144,6 +144,7 @@ className={cn(
 ## State Combinations
 
 Always define states in this order:
+
 1. Base styles
 2. Hover state
 3. Active/pressed state

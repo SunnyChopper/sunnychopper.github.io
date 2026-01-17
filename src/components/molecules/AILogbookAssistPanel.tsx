@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Sparkles, BookOpen, X, AlertCircle, TrendingUp, Smile, Calendar, Link } from 'lucide-react';
+import {
+  Sparkles,
+  BookOpen,
+  X,
+  AlertCircle,
+  TrendingUp,
+  Smile,
+  Calendar,
+  Link,
+} from 'lucide-react';
 import { llmConfig } from '../../lib/llm';
 import type { LogbookEntry } from '../../types/growth-system';
 import Button from '../atoms/Button';
@@ -33,7 +42,7 @@ export function AILogbookAssistPanel({
     setIsLoading(true);
     setError(null);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     if (mode === 'prompts') {
       setResult({
@@ -45,7 +54,7 @@ export function AILogbookAssistPanel({
             context: 'Starting with gratitude sets a positive tone',
           },
           {
-            question: 'What did I learn from today\'s challenges?',
+            question: "What did I learn from today's challenges?",
             category: 'learning',
             depth: 'moderate',
             context: 'Recent obstacles present growth opportunities',
@@ -66,11 +75,13 @@ export function AILogbookAssistPanel({
         summary: hasEntries
           ? 'Today was a productive day focused on completing key tasks and maintaining healthy habits. Energy levels were steady throughout the day.'
           : 'No entries logged today yet. Start by reflecting on your morning.',
-        highlights: hasEntries ? [
-          { type: 'accomplishment', description: 'Completed 5 out of 6 planned tasks' },
-          { type: 'learning', description: 'Discovered new approach to problem-solving' },
-          { type: 'challenge', description: 'Struggled with time management in afternoon' },
-        ] : [],
+        highlights: hasEntries
+          ? [
+              { type: 'accomplishment', description: 'Completed 5 out of 6 planned tasks' },
+              { type: 'learning', description: 'Discovered new approach to problem-solving' },
+              { type: 'challenge', description: 'Struggled with time management in afternoon' },
+            ]
+          : [],
         metrics: {
           tasksCompleted: 5,
           habitsLogged: 3,
@@ -128,26 +139,41 @@ export function AILogbookAssistPanel({
       setResult({
         overallSentiment: hasMultiple ? 'positive' : 'neutral',
         sentimentScore: hasMultiple ? 0.65 : 0.1,
-        emotionalThemes: hasMultiple ? [
-          { theme: 'Optimism', frequency: 'frequent', context: 'When writing about progress' },
-          { theme: 'Frustration', frequency: 'occasional', context: 'Related to time constraints' },
-        ] : [
-          { theme: 'Neutral reflection', frequency: 'frequent', context: 'Limited data available' },
-        ],
+        emotionalThemes: hasMultiple
+          ? [
+              { theme: 'Optimism', frequency: 'frequent', context: 'When writing about progress' },
+              {
+                theme: 'Frustration',
+                frequency: 'occasional',
+                context: 'Related to time constraints',
+              },
+            ]
+          : [
+              {
+                theme: 'Neutral reflection',
+                frequency: 'frequent',
+                context: 'Limited data available',
+              },
+            ],
         sentimentTrend: hasMultiple ? 'improving' : 'stable',
-        concerningPatterns: hasMultiple ? [] : [
-          {
-            pattern: 'Insufficient data for analysis',
-            severity: 'low',
-            suggestion: 'Log entries more frequently for better insights',
-          },
-        ],
-        positiveMoments: hasMultiple ? ['Jan 4 - Breakthrough moment', 'Jan 5 - Strong progress'] : [],
+        concerningPatterns: hasMultiple
+          ? []
+          : [
+              {
+                pattern: 'Insufficient data for analysis',
+                severity: 'low',
+                suggestion: 'Log entries more frequently for better insights',
+              },
+            ],
+        positiveMoments: hasMultiple
+          ? ['Jan 4 - Breakthrough moment', 'Jan 5 - Strong progress']
+          : [],
         confidence: hasMultiple ? 0.79 : 0.65,
       });
     } else if (mode === 'review') {
       setResult({
-        weekSummary: 'A week of steady progress with strong momentum building in the second half. Key breakthrough in project work.',
+        weekSummary:
+          'A week of steady progress with strong momentum building in the second half. Key breakthrough in project work.',
         achievements: [
           {
             description: 'Completed major project milestone',
@@ -233,23 +259,35 @@ export function AILogbookAssistPanel({
 
   const getModeIcon = () => {
     switch (mode) {
-      case 'prompts': return <BookOpen className="w-5 h-5" />;
-      case 'digest': return <Calendar className="w-5 h-5" />;
-      case 'patterns': return <TrendingUp className="w-5 h-5" />;
-      case 'sentiment': return <Smile className="w-5 h-5" />;
-      case 'review': return <Calendar className="w-5 h-5" />;
-      case 'connections': return <Link className="w-5 h-5" />;
+      case 'prompts':
+        return <BookOpen className="w-5 h-5" />;
+      case 'digest':
+        return <Calendar className="w-5 h-5" />;
+      case 'patterns':
+        return <TrendingUp className="w-5 h-5" />;
+      case 'sentiment':
+        return <Smile className="w-5 h-5" />;
+      case 'review':
+        return <Calendar className="w-5 h-5" />;
+      case 'connections':
+        return <Link className="w-5 h-5" />;
     }
   };
 
   const getModeTitle = () => {
     switch (mode) {
-      case 'prompts': return 'Reflection Prompts';
-      case 'digest': return 'Daily Digest';
-      case 'patterns': return 'Pattern Insights';
-      case 'sentiment': return 'Sentiment Analysis';
-      case 'review': return 'Weekly Review';
-      case 'connections': return 'Connection Suggestions';
+      case 'prompts':
+        return 'Reflection Prompts';
+      case 'digest':
+        return 'Daily Digest';
+      case 'patterns':
+        return 'Pattern Insights';
+      case 'sentiment':
+        return 'Sentiment Analysis';
+      case 'review':
+        return 'Weekly Review';
+      case 'connections':
+        return 'Connection Suggestions';
     }
   };
 
@@ -261,7 +299,10 @@ export function AILogbookAssistPanel({
             <Sparkles className="w-5 h-5 text-amber-500" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">AI Assistant</h3>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -269,7 +310,9 @@ export function AILogbookAssistPanel({
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">AI Not Configured</p>
+              <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">
+                AI Not Configured
+              </p>
               <p className="text-sm text-amber-800 dark:text-amber-200">
                 Configure an AI provider in Settings to use AI features.
               </p>
@@ -285,9 +328,14 @@ export function AILogbookAssistPanel({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           {getModeIcon()}
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{getModeTitle()}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {getModeTitle()}
+          </h3>
         </div>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        >
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -381,13 +429,24 @@ export function AILogbookAssistPanel({
               <div className="space-y-2">
                 {result.highlights.map((h: any, i: number) => (
                   <div key={i} className="flex items-start gap-2 text-sm">
-                    <span className={`mt-0.5 ${
-                      h.type === 'accomplishment' ? 'text-green-600 dark:text-green-400' :
-                      h.type === 'learning' ? 'text-blue-600 dark:text-blue-400' :
-                      h.type === 'challenge' ? 'text-amber-600 dark:text-amber-400' :
-                      'text-gray-600 dark:text-gray-400'
-                    }`}>
-                      {h.type === 'accomplishment' ? '✓' : h.type === 'learning' ? '💡' : h.type === 'challenge' ? '⚡' : '•'}
+                    <span
+                      className={`mt-0.5 ${
+                        h.type === 'accomplishment'
+                          ? 'text-green-600 dark:text-green-400'
+                          : h.type === 'learning'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : h.type === 'challenge'
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                    >
+                      {h.type === 'accomplishment'
+                        ? '✓'
+                        : h.type === 'learning'
+                          ? '💡'
+                          : h.type === 'challenge'
+                            ? '⚡'
+                            : '•'}
                     </span>
                     <span className="text-gray-700 dark:text-gray-300">{h.description}</span>
                   </div>
@@ -399,15 +458,21 @@ export function AILogbookAssistPanel({
             <div className="text-sm space-y-1">
               <div className="flex justify-between">
                 <span className="text-blue-900 dark:text-blue-100">Momentum:</span>
-                <span className="font-medium text-blue-700 dark:text-blue-300 capitalize">{result.momentum}</span>
+                <span className="font-medium text-blue-700 dark:text-blue-300 capitalize">
+                  {result.momentum}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-blue-900 dark:text-blue-100">Tasks Completed:</span>
-                <span className="font-medium text-blue-700 dark:text-blue-300">{result.metrics.tasksCompleted}</span>
+                <span className="font-medium text-blue-700 dark:text-blue-300">
+                  {result.metrics.tasksCompleted}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-blue-900 dark:text-blue-100">Habits Logged:</span>
-                <span className="font-medium text-blue-700 dark:text-blue-300">{result.metrics.habitsLogged}</span>
+                <span className="font-medium text-blue-700 dark:text-blue-300">
+                  {result.metrics.habitsLogged}
+                </span>
               </div>
             </div>
           </div>
@@ -433,7 +498,9 @@ export function AILogbookAssistPanel({
               {result.achievements.map((a: any, i: number) => (
                 <div key={i} className="p-2 bg-green-50 dark:bg-green-900/20 rounded text-sm">
                   <p className="text-gray-900 dark:text-gray-100">{a.description}</p>
-                  <span className="text-xs text-green-700 dark:text-green-300">{a.category} - {a.impact} impact</span>
+                  <span className="text-xs text-green-700 dark:text-green-300">
+                    {a.category} - {a.impact} impact
+                  </span>
                 </div>
               ))}
             </div>
@@ -445,7 +512,9 @@ export function AILogbookAssistPanel({
             <div className="space-y-2">
               {result.nextWeekFocus.map((f: any, i: number) => (
                 <div key={i} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{f.area}: {f.objective}</p>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    {f.area}: {f.objective}
+                  </p>
                   <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
                     {f.actions.map((action: string, j: number) => (
                       <li key={j}>• {action}</li>

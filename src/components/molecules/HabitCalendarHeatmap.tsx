@@ -9,7 +9,12 @@ interface HabitCalendarHeatmapProps {
   onDateClick?: (date: Date) => void;
 }
 
-export function HabitCalendarHeatmap({ habit, logs, months = 6, onDateClick }: HabitCalendarHeatmapProps) {
+export function HabitCalendarHeatmap({
+  habit,
+  logs,
+  months = 6,
+  onDateClick,
+}: HabitCalendarHeatmapProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
 
@@ -17,44 +22,64 @@ export function HabitCalendarHeatmap({ habit, logs, months = 6, onDateClick }: H
 
   const getIntensityColor = (intensity: number, habitType: string) => {
     if (intensity === 0) return 'bg-gray-100 dark:bg-gray-800';
-    
+
     const colors = {
-      Build: ['bg-green-200 dark:bg-green-900', 'bg-green-400 dark:bg-green-700', 'bg-green-500 dark:bg-green-600', 'bg-green-600 dark:bg-green-500'],
-      Maintain: ['bg-blue-200 dark:bg-blue-900', 'bg-blue-400 dark:bg-blue-700', 'bg-blue-500 dark:bg-blue-600', 'bg-blue-600 dark:bg-blue-500'],
-      Reduce: ['bg-yellow-200 dark:bg-yellow-900', 'bg-yellow-400 dark:bg-yellow-700', 'bg-yellow-500 dark:bg-yellow-600', 'bg-yellow-600 dark:bg-yellow-500'],
-      Quit: ['bg-red-200 dark:bg-red-900', 'bg-red-400 dark:bg-red-700', 'bg-red-500 dark:bg-red-600', 'bg-red-600 dark:bg-red-500'],
+      Build: [
+        'bg-green-200 dark:bg-green-900',
+        'bg-green-400 dark:bg-green-700',
+        'bg-green-500 dark:bg-green-600',
+        'bg-green-600 dark:bg-green-500',
+      ],
+      Maintain: [
+        'bg-blue-200 dark:bg-blue-900',
+        'bg-blue-400 dark:bg-blue-700',
+        'bg-blue-500 dark:bg-blue-600',
+        'bg-blue-600 dark:bg-blue-500',
+      ],
+      Reduce: [
+        'bg-yellow-200 dark:bg-yellow-900',
+        'bg-yellow-400 dark:bg-yellow-700',
+        'bg-yellow-500 dark:bg-yellow-600',
+        'bg-yellow-600 dark:bg-yellow-500',
+      ],
+      Quit: [
+        'bg-red-200 dark:bg-red-900',
+        'bg-red-400 dark:bg-red-700',
+        'bg-red-500 dark:bg-red-600',
+        'bg-red-600 dark:bg-red-500',
+      ],
     };
-    
+
     const typeColors = colors[habitType as keyof typeof colors] || colors.Maintain;
     return typeColors[Math.min(intensity - 1, typeColors.length - 1)];
   };
 
   // Group by weeks (Sunday to Saturday)
-  const weeks: Array<Array<typeof heatmapData[0] | null>> = [];
-  
+  const weeks: Array<Array<(typeof heatmapData)[0] | null>> = [];
+
   if (heatmapData.length > 0) {
     const firstDate = new Date(heatmapData[0].date);
     const firstDayOfWeek = firstDate.getDay();
-    
-    let currentWeek: Array<typeof heatmapData[0] | null> = [];
-    
+
+    let currentWeek: Array<(typeof heatmapData)[0] | null> = [];
+
     // Fill in empty days at start of first week
     for (let i = 0; i < firstDayOfWeek; i++) {
       currentWeek.push(null);
     }
-    
+
     heatmapData.forEach((day, index) => {
       const date = new Date(day.date);
       const dayOfWeek = date.getDay();
-      
+
       // If we hit Sunday and have a week in progress, start a new week
       if (dayOfWeek === 0 && currentWeek.length > 0) {
         weeks.push(currentWeek);
         currentWeek = [];
       }
-      
+
       currentWeek.push(day);
-      
+
       // If this is the last day, finalize the week
       if (index === heatmapData.length - 1) {
         // Fill remaining days of week
@@ -66,7 +91,7 @@ export function HabitCalendarHeatmap({ habit, logs, months = 6, onDateClick }: H
     });
   }
 
-  const handleDayHover = (day: typeof heatmapData[0], event: React.MouseEvent) => {
+  const handleDayHover = (day: (typeof heatmapData)[0], event: React.MouseEvent) => {
     setHoveredDay(day.date);
     setTooltipPosition({ x: event.clientX, y: event.clientY });
   };
@@ -76,8 +101,8 @@ export function HabitCalendarHeatmap({ habit, logs, months = 6, onDateClick }: H
     setTooltipPosition(null);
   };
 
-  const hoveredDayData = hoveredDay ? heatmapData.find(d => d.date === hoveredDay) : null;
-  
+  const hoveredDayData = hoveredDay ? heatmapData.find((d) => d.date === hoveredDay) : null;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayKey = today.toISOString().split('T')[0];
@@ -85,7 +110,9 @@ export function HabitCalendarHeatmap({ habit, logs, months = 6, onDateClick }: H
   if (heatmapData.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Activity Heatmap</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Activity Heatmap
+        </h3>
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           No activity data yet
         </div>
@@ -97,7 +124,7 @@ export function HabitCalendarHeatmap({ habit, logs, months = 6, onDateClick }: H
   const monthLabels: string[] = [];
   const firstDate = new Date(heatmapData[0].date);
   const lastDate = new Date(heatmapData[heatmapData.length - 1].date);
-  
+
   // Generate month labels
   const currentMonth = new Date(firstDate);
   while (currentMonth <= lastDate) {
@@ -115,7 +142,7 @@ export function HabitCalendarHeatmap({ habit, logs, months = 6, onDateClick }: H
         <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
           <span>Less</span>
           <div className="flex gap-1">
-            {[0, 1, 2, 3, 4].map(intensity => (
+            {[0, 1, 2, 3, 4].map((intensity) => (
               <div
                 key={intensity}
                 className={`w-3 h-3 rounded ${getIntensityColor(intensity, habit.habitType)}`}
@@ -158,9 +185,10 @@ export function HabitCalendarHeatmap({ habit, logs, months = 6, onDateClick }: H
                   return (
                     <div
                       key={day.date}
-                      className={`w-3 h-3 rounded-sm cursor-pointer transition-all ${
-                        getIntensityColor(day.intensity, habit.habitType)
-                      } ${hoveredDay === day.date ? 'ring-2 ring-blue-500 dark:ring-blue-400 scale-110' : ''} ${
+                      className={`w-3 h-3 rounded-sm cursor-pointer transition-all ${getIntensityColor(
+                        day.intensity,
+                        habit.habitType
+                      )} ${hoveredDay === day.date ? 'ring-2 ring-blue-500 dark:ring-blue-400 scale-110' : ''} ${
                         isToday ? 'ring-1 ring-blue-600 dark:ring-blue-400' : ''
                       }`}
                       onMouseEnter={(e) => handleDayHover(day, e)}

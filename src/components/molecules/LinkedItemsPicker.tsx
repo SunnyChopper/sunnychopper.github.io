@@ -1,5 +1,13 @@
 import { useState, useMemo } from 'react';
-import { Search, X, FileText, FileCheck, BookOpen, CreditCard, Link as LinkIcon } from 'lucide-react';
+import {
+  Search,
+  X,
+  FileText,
+  FileCheck,
+  BookOpen,
+  CreditCard,
+  Link as LinkIcon,
+} from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { VaultItemType } from '../../types/knowledge-vault';
 import { useKnowledgeVault } from '../../contexts/KnowledgeVault';
@@ -38,7 +46,7 @@ export default function LinkedItemsPicker({
 
   // Filter available items
   const availableItems = useMemo(() => {
-    return vaultItems.filter(item => {
+    return vaultItems.filter((item) => {
       if (excludeItemId && item.id === excludeItemId) return false;
       if (selectedType !== 'all' && item.type !== selectedType) return false;
       if (searchQuery.trim()) {
@@ -54,19 +62,19 @@ export default function LinkedItemsPicker({
 
   // Get linked items
   const linkedItems = useMemo(() => {
-    return vaultItems.filter(item => value.includes(item.id));
+    return vaultItems.filter((item) => value.includes(item.id));
   }, [vaultItems, value]);
 
   const handleToggleItem = (itemId: string) => {
     if (value.includes(itemId)) {
-      onChange(value.filter(id => id !== itemId));
+      onChange(value.filter((id) => id !== itemId));
     } else {
       onChange([...value, itemId]);
     }
   };
 
   const handleRemoveLinked = (itemId: string) => {
-    onChange(value.filter(id => id !== itemId));
+    onChange(value.filter((id) => id !== itemId));
   };
 
   return (
@@ -87,7 +95,7 @@ export default function LinkedItemsPicker({
       {/* Linked Items Display */}
       {linkedItems.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {linkedItems.map(item => {
+          {linkedItems.map((item) => {
             const Icon = typeIcons[item.type];
             const colorClass = typeColors[item.type];
             return (
@@ -117,7 +125,10 @@ export default function LinkedItemsPicker({
           {/* Search and Filter */}
           <div className="space-y-3 mb-4">
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              />
               <input
                 type="text"
                 value={searchQuery}
@@ -140,7 +151,7 @@ export default function LinkedItemsPicker({
               >
                 All
               </button>
-              {(['note', 'document', 'flashcard'] as VaultItemType[]).map(type => {
+              {(['note', 'document', 'flashcard'] as VaultItemType[]).map((type) => {
                 const Icon = typeIcons[type];
                 return (
                   <button
@@ -169,7 +180,7 @@ export default function LinkedItemsPicker({
                 No items found
               </p>
             ) : (
-              availableItems.map(item => {
+              availableItems.map((item) => {
                 const Icon = typeIcons[item.type];
                 const colorClass = typeColors[item.type];
                 const isLinked = value.includes(item.id);

@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN writing React hooks, custom hooks, and hook-related patterns."
-globs: "src/hooks/**/*.ts"
+description: 'USE WHEN writing React hooks, custom hooks, and hook-related patterns.'
+globs: 'src/hooks/**/*.ts'
 alwaysApply: false
 ---
 
@@ -12,11 +12,11 @@ Standards for hook usage and custom hook creation.
 
 ```tsx
 // Custom hooks always start with "use"
-useAuth()
-useTheme()
-useLocalStorage()
-useDebounce()
-useMediaQuery()
+useAuth();
+useTheme();
+useLocalStorage();
+useDebounce();
+useMediaQuery();
 ```
 
 ## useState Patterns
@@ -29,7 +29,7 @@ const [isOpen, setIsOpen] = useState(false);
 const [formData, setFormData] = useState({ name: '', email: '' });
 
 // Updating object state
-setFormData(prev => ({ ...prev, name: newName }));
+setFormData((prev) => ({ ...prev, name: newName }));
 
 // Lazy initialization for expensive computations
 const [data, setData] = useState(() => computeExpensiveValue());
@@ -40,15 +40,17 @@ const [data, setData] = useState(() => computeExpensiveValue());
 ```tsx
 // Cleanup pattern
 useEffect(() => {
-  const handler = (e: KeyboardEvent) => { /* ... */ };
+  const handler = (e: KeyboardEvent) => {
+    /* ... */
+  };
   window.addEventListener('keydown', handler);
   return () => window.removeEventListener('keydown', handler);
 }, []);
 
 // Dependency array rules
-useEffect(() => {}, []);           // Run once on mount
-useEffect(() => {}, [dep]);        // Run when dep changes
-useEffect(() => {});               // AVOID: runs every render
+useEffect(() => {}, []); // Run once on mount
+useEffect(() => {}, [dep]); // Run when dep changes
+useEffect(() => {}); // AVOID: runs every render
 
 // Async in useEffect
 useEffect(() => {
@@ -69,10 +71,7 @@ const handleClick = useCallback(() => {
 }, [id]);
 
 // useMemo for expensive computations
-const sortedItems = useMemo(
-  () => items.sort((a, b) => a.name.localeCompare(b.name)),
-  [items]
-);
+const sortedItems = useMemo(() => items.sort((a, b) => a.name.localeCompare(b.name)), [items]);
 
 // Don't overuse - only when needed for:
 // 1. Preventing unnecessary child re-renders
@@ -155,9 +154,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 // useMediaQuery
 function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(
-    () => window.matchMedia(query).matches
-  );
+  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
 
   useEffect(() => {
     const mql = window.matchMedia(query);

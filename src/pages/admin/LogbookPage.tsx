@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, BookOpen, Calendar as CalendarIcon, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
-import type { LogbookEntry, CreateLogbookEntryInput, UpdateLogbookEntryInput } from '../../types/growth-system';
+import {
+  Plus,
+  Search,
+  ArrowLeft,
+  Edit2,
+  Trash2,
+  BookOpen,
+  Calendar as CalendarIcon,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+import type {
+  LogbookEntry,
+  CreateLogbookEntryInput,
+  UpdateLogbookEntryInput,
+} from '../../types/growth-system';
 import { logbookService } from '../../services/growth-system/logbook.service';
 import Button from '../../components/atoms/Button';
 import { LogbookEntryCard } from '../../components/molecules/LogbookEntryCard';
@@ -25,7 +40,9 @@ export default function LogbookPage() {
   const [entryToDelete, setEntryToDelete] = useState<LogbookEntry | null>(null);
 
   const [showAIAssist, setShowAIAssist] = useState(false);
-  const [aiMode, setAIMode] = useState<'prompts' | 'digest' | 'patterns' | 'sentiment' | 'review' | 'connections'>('prompts');
+  const [aiMode, setAIMode] = useState<
+    'prompts' | 'digest' | 'patterns' | 'sentiment' | 'review' | 'connections'
+  >('prompts');
   const isAIConfigured = llmConfig.isConfigured();
 
   const loadEntries = async () => {
@@ -33,7 +50,9 @@ export default function LogbookPage() {
     try {
       const response = await logbookService.getAll();
       if (response.success && response.data) {
-        setEntries(response.data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setEntries(
+          response.data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        );
       }
     } catch (error) {
       console.error('Failed to load logbook entries:', error);
@@ -51,7 +70,11 @@ export default function LogbookPage() {
     try {
       const response = await logbookService.create(input);
       if (response.success && response.data) {
-        setEntries([response.data, ...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        setEntries(
+          [response.data, ...entries].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          )
+        );
         setIsCreateDialogOpen(false);
       }
     } catch (error) {
@@ -137,7 +160,12 @@ export default function LogbookPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <CalendarIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {new Date(selectedEntry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    {new Date(selectedEntry.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
                   </h1>
                 </div>
                 {selectedEntry.title && (
@@ -148,11 +176,7 @@ export default function LogbookPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsEditDialogOpen(true)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                   <Edit2 className="w-4 h-4 mr-1" />
                   Edit
                 </Button>
@@ -172,11 +196,15 @@ export default function LogbookPage() {
               {selectedEntry.mood && (
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Mood</div>
-                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    selectedEntry.mood === 'High' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                    selectedEntry.mood === 'Steady' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
-                    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                  }`}>
+                  <div
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedEntry.mood === 'High'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                        : selectedEntry.mood === 'Steady'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                    }`}
+                  >
                     {selectedEntry.mood}
                   </div>
                 </div>
@@ -227,22 +255,40 @@ export default function LogbookPage() {
                 {showAIAssist && (
                   <div className="mt-4 space-y-3">
                     <div className="flex flex-wrap gap-2">
-                      <button onClick={() => setAIMode('prompts')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'prompts' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                      <button
+                        onClick={() => setAIMode('prompts')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'prompts' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                      >
                         Reflection Prompts
                       </button>
-                      <button onClick={() => setAIMode('digest')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'digest' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                      <button
+                        onClick={() => setAIMode('digest')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'digest' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                      >
                         Daily Digest
                       </button>
-                      <button onClick={() => setAIMode('patterns')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                      <button
+                        onClick={() => setAIMode('patterns')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                      >
                         Pattern Insights
                       </button>
-                      <button onClick={() => setAIMode('sentiment')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'sentiment' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                      <button
+                        onClick={() => setAIMode('sentiment')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'sentiment' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                      >
                         Sentiment Analysis
                       </button>
-                      <button onClick={() => setAIMode('review')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'review' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                      <button
+                        onClick={() => setAIMode('review')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'review' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                      >
                         Weekly Review
                       </button>
-                      <button onClick={() => setAIMode('connections')} className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'connections' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                      <button
+                        onClick={() => setAIMode('connections')}
+                        className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'connections' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                      >
                         Connection Suggestions
                       </button>
                     </div>
@@ -286,9 +332,7 @@ export default function LogbookPage() {
               <BookOpen className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               Daily Logbook
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Reflect on your journey
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Reflect on your journey</p>
           </div>
           <Button variant="primary" onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="w-5 h-5 mr-2" />
@@ -352,11 +396,7 @@ export default function LogbookPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredEntries.map((entry) => (
-              <LogbookEntryCard
-                key={entry.id}
-                entry={entry}
-                onClick={handleEntryClick}
-              />
+              <LogbookEntryCard key={entry.id} entry={entry} onClick={handleEntryClick} />
             ))}
           </div>
         )}
@@ -375,11 +415,7 @@ export default function LogbookPage() {
         />
       </Dialog>
 
-      <Dialog
-        isOpen={!!entryToDelete}
-        onClose={() => setEntryToDelete(null)}
-        title="Delete Entry"
-      >
+      <Dialog isOpen={!!entryToDelete} onClose={() => setEntryToDelete(null)} title="Delete Entry">
         <div className="space-y-4">
           <p className="text-gray-700 dark:text-gray-300">
             Are you sure you want to delete this entry? This action cannot be undone.

@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import type { Habit, UpdateHabitInput, Area, SubCategory, HabitType, HabitFrequency } from '../../types/growth-system';
+import type {
+  Habit,
+  UpdateHabitInput,
+  Area,
+  SubCategory,
+  HabitType,
+  HabitFrequency,
+} from '../../types/growth-system';
 import Button from '../atoms/Button';
 import { AREAS, HABIT_FREQUENCIES, HABIT_TYPES } from '../../constants/growth-system';
 
@@ -87,7 +94,9 @@ export function HabitEditForm({ habit, onSubmit, onCancel, isLoading }: HabitEdi
           <input
             type="text"
             value={formData.subCategory || ''}
-            onChange={(e) => setFormData({ ...formData, subCategory: e.target.value as SubCategory })}
+            onChange={(e) =>
+              setFormData({ ...formData, subCategory: e.target.value as SubCategory })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -118,7 +127,9 @@ export function HabitEditForm({ habit, onSubmit, onCancel, isLoading }: HabitEdi
           </label>
           <select
             value={formData.frequency}
-            onChange={(e) => setFormData({ ...formData, frequency: e.target.value as HabitFrequency })}
+            onChange={(e) =>
+              setFormData({ ...formData, frequency: e.target.value as HabitFrequency })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
@@ -141,7 +152,9 @@ export function HabitEditForm({ habit, onSubmit, onCancel, isLoading }: HabitEdi
             step="1"
             min="0"
             value={formData.dailyTarget || ''}
-            onChange={(e) => setFormData({ ...formData, dailyTarget: parseInt(e.target.value) || undefined })}
+            onChange={(e) =>
+              setFormData({ ...formData, dailyTarget: parseInt(e.target.value) || undefined })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -155,7 +168,9 @@ export function HabitEditForm({ habit, onSubmit, onCancel, isLoading }: HabitEdi
             step="1"
             min="0"
             value={formData.weeklyTarget || ''}
-            onChange={(e) => setFormData({ ...formData, weeklyTarget: parseInt(e.target.value) || undefined })}
+            onChange={(e) =>
+              setFormData({ ...formData, weeklyTarget: parseInt(e.target.value) || undefined })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -234,19 +249,10 @@ export function HabitEditForm({ habit, onSubmit, onCancel, isLoading }: HabitEdi
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={isLoading}
-        >
+        <Button type="submit" variant="primary" disabled={isLoading}>
           {isLoading ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>

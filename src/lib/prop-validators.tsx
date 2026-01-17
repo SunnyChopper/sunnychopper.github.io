@@ -3,17 +3,14 @@
  * Uses Zod schemas to validate component props in development mode
  */
 
+import React from 'react';
 import { z } from 'zod';
 
 /**
  * Validates component props against a Zod schema
  * Only runs in development mode to avoid performance impact in production
  */
-export function validateProps<T>(
-  props: unknown,
-  schema: z.ZodSchema<T>,
-  componentName: string
-): T {
+export function validateProps<T>(props: unknown, schema: z.ZodSchema<T>, componentName: string): T {
   if (import.meta.env.DEV) {
     const result = schema.safeParse(props);
     if (!result.success) {

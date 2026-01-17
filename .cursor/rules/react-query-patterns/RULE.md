@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN fetching, caching, and mutating server data with React Query."
-globs: ""
+description: 'USE WHEN fetching, caching, and mutating server data with React Query.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -30,15 +30,15 @@ function TaskList() {
 
 ```tsx
 // Simple key
-queryKey: ['tasks']
+queryKey: ['tasks'];
 
 // With parameters
-queryKey: ['tasks', { status: 'active' }]
-queryKey: ['task', taskId]
-queryKey: ['tasks', projectId, { status, priority }]
+queryKey: ['tasks', { status: 'active' }];
+queryKey: ['task', taskId];
+queryKey: ['tasks', projectId, { status, priority }];
 
 // Hierarchical keys for cache invalidation
-queryKey: ['projects', projectId, 'tasks']
+queryKey: ['projects', projectId, 'tasks'];
 // Invalidate all project tasks: ['projects', projectId, 'tasks']
 // Invalidate all projects: ['projects']
 ```
@@ -59,10 +59,7 @@ function CreateTaskButton() {
   });
 
   return (
-    <button
-      onClick={() => mutation.mutate({ title: 'New Task' })}
-      disabled={mutation.isPending}
-    >
+    <button onClick={() => mutation.mutate({ title: 'New Task' })} disabled={mutation.isPending}>
       {mutation.isPending ? 'Creating...' : 'Create Task'}
     </button>
   );
@@ -80,9 +77,7 @@ const mutation = useMutation({
     const previousTasks = queryClient.getQueryData(['tasks']);
 
     queryClient.setQueryData(['tasks'], (old: Task[]) =>
-      old.map(task =>
-        task.id === updatedTask.id ? { ...task, ...updatedTask } : task
-      )
+      old.map((task) => (task.id === updatedTask.id ? { ...task, ...updatedTask } : task))
     );
 
     return { previousTasks };
@@ -141,18 +136,13 @@ function PaginatedList() {
 ## Infinite Scroll
 
 ```tsx
-const {
-  data,
-  fetchNextPage,
-  hasNextPage,
-  isFetchingNextPage,
-} = useInfiniteQuery({
+const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
   queryKey: ['tasks'],
   queryFn: ({ pageParam = 0 }) => fetchTasks({ cursor: pageParam }),
   getNextPageParam: (lastPage) => lastPage.nextCursor,
 });
 
-const allTasks = data?.pages.flatMap(page => page.items) ?? [];
+const allTasks = data?.pages.flatMap((page) => page.items) ?? [];
 ```
 
 ## Query Configuration
@@ -162,8 +152,8 @@ const allTasks = data?.pages.flatMap(page => page.items) ?? [];
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,    // 5 minutes
-      gcTime: 10 * 60 * 1000,      // 10 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -212,5 +202,5 @@ const queryClient = useQueryClient();
   }}
 >
   View Task
-</Link>
+</Link>;
 ```

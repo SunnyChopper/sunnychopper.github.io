@@ -40,7 +40,12 @@ export default function SettingsPage() {
     }
   };
 
-  const themeOptions: { value: Theme; label: string; icon: React.ReactNode; description: string }[] = [
+  const themeOptions: {
+    value: Theme;
+    label: string;
+    icon: React.ReactNode;
+    description: string;
+  }[] = [
     {
       value: 'light',
       label: 'Light',
@@ -61,7 +66,12 @@ export default function SettingsPage() {
     },
   ];
 
-  const storageOptions: { value: StorageType; label: string; icon: React.ReactNode; description: string }[] = [
+  const storageOptions: {
+    value: StorageType;
+    label: string;
+    icon: React.ReactNode;
+    description: string;
+  }[] = [
     {
       value: 'local',
       label: 'Local Storage',
@@ -85,10 +95,14 @@ export default function SettingsPage() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Appearance</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Customize how Personal OS looks on your device</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+          Customize how Personal OS looks on your device
+        </p>
 
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Color Theme</label>
+          <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+            Color Theme
+          </label>
           {themeOptions.map((option) => (
             <button
               key={option.value}
@@ -101,7 +115,9 @@ export default function SettingsPage() {
             >
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-lg ${
-                  theme === option.value ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                  theme === option.value
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                    : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                 }`}
               >
                 {option.icon}
@@ -122,10 +138,14 @@ export default function SettingsPage() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Data Storage</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Choose where your data is stored</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+          Choose where your data is stored
+        </p>
 
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Storage Type</label>
+          <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+            Storage Type
+          </label>
           {storageOptions.map((option) => (
             <button
               key={option.value}
@@ -138,7 +158,9 @@ export default function SettingsPage() {
             >
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-lg ${
-                  storageType === option.value ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                  storageType === option.value
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                    : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
                 }`}
               >
                 {option.icon}

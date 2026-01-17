@@ -111,7 +111,11 @@ export function generateSeedData() {
     status: 'Active',
     targetDate: formatDate(addDays(now, 30)),
     completedDate: null,
-    successCriteria: ['Close 15 new deals', 'Achieve $150K in revenue', 'Maintain 95% customer retention'],
+    successCriteria: [
+      'Close 15 new deals',
+      'Achieve $150K in revenue',
+      'Maintain 95% customer retention',
+    ],
     notes: null,
     userId: USER_ID,
     createdAt: formatDate(addDays(now, -60)),
@@ -868,7 +872,8 @@ export function generateSeedData() {
     id: generateId(),
     date: formatDate(addDays(now, -1)),
     title: 'Productive Day on MVP',
-    notes: 'Made great progress on authentication system. Feeling good about the architecture decisions. Energy was high in the morning after my run.',
+    notes:
+      'Made great progress on authentication system. Feeling good about the architecture decisions. Energy was high in the morning after my run.',
     mood: 'High',
     energy: 8,
     userId: USER_ID,
@@ -877,9 +882,21 @@ export function generateSeedData() {
   };
   logbookEntries.push(logbook1);
   logbookTasks.push({ logbookEntryId: logbook1.id, taskId: task2.id, createdAt: formatDate(now) });
-  logbookProjects.push({ logbookEntryId: logbook1.id, projectId: project1.id, createdAt: formatDate(now) });
-  logbookHabits.push({ logbookEntryId: logbook1.id, habitId: habit1.id, createdAt: formatDate(now) });
-  logbookHabits.push({ logbookEntryId: logbook1.id, habitId: habit2.id, createdAt: formatDate(now) });
+  logbookProjects.push({
+    logbookEntryId: logbook1.id,
+    projectId: project1.id,
+    createdAt: formatDate(now),
+  });
+  logbookHabits.push({
+    logbookEntryId: logbook1.id,
+    habitId: habit1.id,
+    createdAt: formatDate(now),
+  });
+  logbookHabits.push({
+    logbookEntryId: logbook1.id,
+    habitId: habit2.id,
+    createdAt: formatDate(now),
+  });
 
   const logbook2: LogbookEntry = {
     id: generateId(),
@@ -893,13 +910,18 @@ export function generateSeedData() {
     updatedAt: formatDate(now),
   };
   logbookEntries.push(logbook2);
-  logbookHabits.push({ logbookEntryId: logbook2.id, habitId: habit2.id, createdAt: formatDate(now) });
+  logbookHabits.push({
+    logbookEntryId: logbook2.id,
+    habitId: habit2.id,
+    createdAt: formatDate(now),
+  });
 
   const logbook3: LogbookEntry = {
     id: generateId(),
     date: formatDate(addDays(now, -3)),
     title: 'Challenges with API Design',
-    notes: 'Struggled with the authentication flow today. Spent too much time debugging. Need to ask for help sooner. Did complete my morning run which helped clear my head.',
+    notes:
+      'Struggled with the authentication flow today. Spent too much time debugging. Need to ask for help sooner. Did complete my morning run which helped clear my head.',
     mood: 'Low',
     energy: 5,
     userId: USER_ID,
@@ -908,13 +930,18 @@ export function generateSeedData() {
   };
   logbookEntries.push(logbook3);
   logbookTasks.push({ logbookEntryId: logbook3.id, taskId: task2.id, createdAt: formatDate(now) });
-  logbookHabits.push({ logbookEntryId: logbook3.id, habitId: habit1.id, createdAt: formatDate(now) });
+  logbookHabits.push({
+    logbookEntryId: logbook3.id,
+    habitId: habit1.id,
+    createdAt: formatDate(now),
+  });
 
   const logbook4: LogbookEntry = {
     id: generateId(),
     date: formatDate(addDays(now, -5)),
     title: 'Great Family Weekend',
-    notes: 'Spent quality time with family. Went hiking and had a picnic. Feeling grateful for these moments. Work can wait - balance is important.',
+    notes:
+      'Spent quality time with family. Went hiking and had a picnic. Feeling grateful for these moments. Work can wait - balance is important.',
     mood: 'High',
     energy: 9,
     userId: USER_ID,
@@ -927,7 +954,8 @@ export function generateSeedData() {
     id: generateId(),
     date: formatDate(addDays(now, -7)),
     title: 'Week in Review',
-    notes: 'Solid week of progress. Completed database schema design, made good progress on auth system. Running streak at 12 days! Feeling strong and energized. Ready to tackle the API endpoints next week.',
+    notes:
+      'Solid week of progress. Completed database schema design, made good progress on auth system. Running streak at 12 days! Feeling strong and energized. Ready to tackle the API endpoints next week.',
     mood: 'High',
     energy: 8,
     userId: USER_ID,
@@ -936,9 +964,21 @@ export function generateSeedData() {
   };
   logbookEntries.push(logbook5);
   logbookTasks.push({ logbookEntryId: logbook5.id, taskId: task1.id, createdAt: formatDate(now) });
-  logbookProjects.push({ logbookEntryId: logbook5.id, projectId: project1.id, createdAt: formatDate(now) });
-  logbookHabits.push({ logbookEntryId: logbook5.id, habitId: habit1.id, createdAt: formatDate(now) });
-  logbookHabits.push({ logbookEntryId: logbook5.id, habitId: habit2.id, createdAt: formatDate(now) });
+  logbookProjects.push({
+    logbookEntryId: logbook5.id,
+    projectId: project1.id,
+    createdAt: formatDate(now),
+  });
+  logbookHabits.push({
+    logbookEntryId: logbook5.id,
+    habitId: habit1.id,
+    createdAt: formatDate(now),
+  });
+  logbookHabits.push({
+    logbookEntryId: logbook5.id,
+    habitId: habit2.id,
+    createdAt: formatDate(now),
+  });
 
   return {
     tasks,

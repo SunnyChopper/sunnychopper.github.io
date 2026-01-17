@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN adding keyboard support, shortcuts, and navigation."
-globs: ""
+description: 'USE WHEN adding keyboard support, shortcuts, and navigation.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -50,11 +50,11 @@ function NavigableList({ items, onSelect }) {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setFocusedIndex(i => Math.min(i + 1, items.length - 1));
+        setFocusedIndex((i) => Math.min(i + 1, items.length - 1));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setFocusedIndex(i => Math.max(i - 1, 0));
+        setFocusedIndex((i) => Math.max(i - 1, 0));
         break;
       case 'Enter':
       case ' ':
@@ -167,12 +167,14 @@ For main content skip:
   "
 >
   Skip to main content
-</a>
+</a>;
 
-{/* Later in the page */}
+{
+  /* Later in the page */
+}
 <main id="main-content" tabIndex={-1}>
   {/* Main content */}
-</main>
+</main>;
 ```
 
 ## Tab Order
@@ -206,12 +208,12 @@ className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 
 ## Common Patterns
 
-| Element | Enter | Space | Escape | Arrows |
-|---------|-------|-------|--------|--------|
-| Button | Activate | Activate | - | - |
-| Link | Navigate | - | - | - |
-| Menu | Open | - | Close | Navigate items |
-| Modal | - | - | Close | - |
-| Dropdown | Open/Select | Open/Select | Close | Navigate items |
-| Tabs | Switch tab | Switch tab | - | Navigate tabs |
-| Checkbox | Toggle | Toggle | - | - |
+| Element  | Enter       | Space       | Escape | Arrows         |
+| -------- | ----------- | ----------- | ------ | -------------- |
+| Button   | Activate    | Activate    | -      | -              |
+| Link     | Navigate    | -           | -      | -              |
+| Menu     | Open        | -           | Close  | Navigate items |
+| Modal    | -           | -           | Close  | -              |
+| Dropdown | Open/Select | Open/Select | Close  | Navigate items |
+| Tabs     | Switch tab  | Switch tab  | -      | Navigate tabs  |
+| Checkbox | Toggle      | Toggle      | -      | -              |

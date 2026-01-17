@@ -44,7 +44,10 @@ export function HabitDetailTabs({ activeTab, onTabChange, children }: HabitDetai
     <div className="w-full">
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-        <nav className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide" aria-label="Habit detail tabs">
+        <nav
+          className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide"
+          aria-label="Habit detail tabs"
+        >
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -62,9 +65,7 @@ export function HabitDetailTabs({ activeTab, onTabChange, children }: HabitDetai
       </div>
 
       {/* Tab Content */}
-      <div className="min-h-[400px]">
-        {children}
-      </div>
+      <div className="min-h-[400px]">{children}</div>
     </div>
   );
 }

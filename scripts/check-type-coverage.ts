@@ -18,7 +18,9 @@ try {
   try {
     execSync('npx type-coverage --version', { stdio: 'ignore' });
   } catch {
-    console.error('❌ type-coverage not found. Install it with: npm install --save-dev type-coverage');
+    console.error(
+      '❌ type-coverage not found. Install it with: npm install --save-dev type-coverage'
+    );
     process.exit(1);
   }
 

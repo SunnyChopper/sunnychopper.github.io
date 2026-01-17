@@ -31,7 +31,7 @@ The `MarkdownRenderer` component is used throughout the application:
 ```tsx
 import MarkdownRenderer from './components/molecules/MarkdownRenderer';
 
-<MarkdownRenderer content={markdownContent} />
+<MarkdownRenderer content={markdownContent} />;
 ```
 
 ### With Custom Components
@@ -40,9 +40,7 @@ import MarkdownRenderer from './components/molecules/MarkdownRenderer';
 <MarkdownRenderer
   content={markdownContent}
   components={{
-    a: ({ href, children }) => (
-      <Link to={href}>{children}</Link>
-    ),
+    a: ({ href, children }) => <Link to={href}>{children}</Link>,
   }}
 />
 ```
@@ -50,11 +48,13 @@ import MarkdownRenderer from './components/molecules/MarkdownRenderer';
 ## Math Syntax
 
 ### Inline Math
+
 ```
 The quadratic formula is $x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}$
 ```
 
 ### Block Math
+
 ```
 $$
 \int_0^1 x^2 \,dx = \frac{1}{3}
@@ -64,6 +64,7 @@ $$
 ## Code Blocks
 
 ### With Syntax Highlighting
+
 ````markdown
 ```javascript
 function greet(name) {

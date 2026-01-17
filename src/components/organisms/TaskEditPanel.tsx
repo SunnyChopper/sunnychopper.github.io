@@ -1,13 +1,29 @@
 import { useState, useEffect } from 'react';
 import { X, Link2, GitBranch, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
-import type { Task, UpdateTaskInput, Area, SubCategory, Priority, TaskStatus, EntitySummary, CreateTaskInput } from '../../types/growth-system';
+import type {
+  Task,
+  UpdateTaskInput,
+  Area,
+  SubCategory,
+  Priority,
+  TaskStatus,
+  EntitySummary,
+  CreateTaskInput,
+} from '../../types/growth-system';
 import Button from '../atoms/Button';
 import { EntityLinkChip } from '../atoms/EntityLinkChip';
 import { DependencyBadge } from '../atoms/DependencyBadge';
 import { RelationshipPicker } from './RelationshipPicker';
 import { AITaskAssistPanel } from '../molecules/AITaskAssistPanel';
 import { llmConfig } from '../../lib/llm';
-import { AREAS, PRIORITIES, SUBCATEGORIES_BY_AREA, TASK_STATUSES, AREA_LABELS, TASK_STATUS_LABELS } from '../../constants/growth-system';
+import {
+  AREAS,
+  PRIORITIES,
+  SUBCATEGORIES_BY_AREA,
+  TASK_STATUSES,
+  AREA_LABELS,
+  TASK_STATUS_LABELS,
+} from '../../constants/growth-system';
 
 interface TaskEditPanelProps {
   task: Task;
@@ -75,7 +91,9 @@ export function TaskEditPanel({
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
 
   const [showAIAssist, setShowAIAssist] = useState(false);
-  const [aiMode, setAIMode] = useState<'breakdown' | 'priority' | 'estimate' | 'dependencies'>('breakdown');
+  const [aiMode, setAIMode] = useState<'breakdown' | 'priority' | 'estimate' | 'dependencies'>(
+    'breakdown'
+  );
   const isAIConfigured = llmConfig.isConfigured();
 
   useEffect(() => {
@@ -93,9 +111,9 @@ export function TaskEditPanel({
       notes: task.notes || '',
       pointValue: task.pointValue || undefined,
     });
-    setSelectedDependencies(dependencies.map(d => d.id));
-    setSelectedProjects(linkedProjects.map(p => p.id));
-    setSelectedGoals(linkedGoals.map(g => g.id));
+    setSelectedDependencies(dependencies.map((d) => d.id));
+    setSelectedProjects(linkedProjects.map((p) => p.id));
+    setSelectedGoals(linkedGoals.map((g) => g.id));
   }, [task, dependencies, linkedProjects, linkedGoals]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -113,16 +131,16 @@ export function TaskEditPanel({
   };
 
   const handleDependencySave = () => {
-    const currentIds = new Set(dependencies.map(d => d.id));
+    const currentIds = new Set(dependencies.map((d) => d.id));
     const newIds = new Set(selectedDependencies);
 
-    currentIds.forEach(id => {
+    currentIds.forEach((id) => {
       if (!newIds.has(id)) {
         onDependencyRemove(task.id, id);
       }
     });
 
-    newIds.forEach(id => {
+    newIds.forEach((id) => {
       if (!currentIds.has(id)) {
         onDependencyAdd(task.id, id);
       }
@@ -130,16 +148,16 @@ export function TaskEditPanel({
   };
 
   const handleProjectSave = () => {
-    const currentIds = new Set(linkedProjects.map(p => p.id));
+    const currentIds = new Set(linkedProjects.map((p) => p.id));
     const newIds = new Set(selectedProjects);
 
-    currentIds.forEach(id => {
+    currentIds.forEach((id) => {
       if (!newIds.has(id)) {
         onProjectUnlink(task.id, id);
       }
     });
 
-    newIds.forEach(id => {
+    newIds.forEach((id) => {
       if (!currentIds.has(id)) {
         onProjectLink(task.id, id);
       }
@@ -147,16 +165,16 @@ export function TaskEditPanel({
   };
 
   const handleGoalSave = () => {
-    const currentIds = new Set(linkedGoals.map(g => g.id));
+    const currentIds = new Set(linkedGoals.map((g) => g.id));
     const newIds = new Set(selectedGoals);
 
-    currentIds.forEach(id => {
+    currentIds.forEach((id) => {
       if (!newIds.has(id)) {
         onGoalUnlink(task.id, id);
       }
     });
 
-    newIds.forEach(id => {
+    newIds.forEach((id) => {
       if (!currentIds.has(id)) {
         onGoalLink(task.id, id);
       }
@@ -176,7 +194,7 @@ export function TaskEditPanel({
   };
 
   const handleApplyDependencies = (taskIds: string[]) => {
-    taskIds.forEach(id => {
+    taskIds.forEach((id) => {
       if (!selectedDependencies.includes(id)) {
         onDependencyAdd(task.id, id);
       }
@@ -187,8 +205,8 @@ export function TaskEditPanel({
   const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area || task.area];
 
   const taskEntities: EntitySummary[] = availableTasks
-    .filter(t => t.id !== task.id)
-    .map(t => ({
+    .filter((t) => t.id !== task.id)
+    .map((t) => ({
       id: t.id,
       title: t.title,
       type: 'task',
@@ -200,10 +218,7 @@ export function TaskEditPanel({
 
   return (
     <>
-      <div
-        className="fixed inset-0 bg-black/50 z-40 transition-opacity"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/50 z-40 transition-opacity" onClick={onClose} />
       <div className="fixed right-0 top-0 bottom-0 w-full max-w-3xl bg-white dark:bg-gray-800 shadow-2xl z-50 transform transition-transform overflow-y-auto">
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Task</h2>
@@ -249,7 +264,9 @@ export function TaskEditPanel({
               <select
                 required
                 value={formData.area}
-                onChange={(e) => setFormData({ ...formData, area: e.target.value as Area, subCategory: undefined })}
+                onChange={(e) =>
+                  setFormData({ ...formData, area: e.target.value as Area, subCategory: undefined })
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {AREAS.map((area) => (
@@ -266,7 +283,12 @@ export function TaskEditPanel({
               </label>
               <select
                 value={formData.subCategory || ''}
-                onChange={(e) => setFormData({ ...formData, subCategory: e.target.value as SubCategory || undefined })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    subCategory: (e.target.value as SubCategory) || undefined,
+                  })
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">None</option>
@@ -337,7 +359,12 @@ export function TaskEditPanel({
                 min="0"
                 step="0.5"
                 value={formData.size || ''}
-                onChange={(e) => setFormData({ ...formData, size: e.target.value ? parseFloat(e.target.value) : undefined })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    size: e.target.value ? parseFloat(e.target.value) : undefined,
+                  })
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -353,7 +380,12 @@ export function TaskEditPanel({
                   type="number"
                   min="0"
                   value={formData.pointValue || ''}
-                  onChange={(e) => setFormData({ ...formData, pointValue: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      pointValue: e.target.value ? parseFloat(e.target.value) : undefined,
+                    })
+                  }
                   placeholder="AI-calculated"
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />

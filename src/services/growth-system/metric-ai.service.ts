@@ -107,12 +107,11 @@ export const metricAIService = {
   ): Promise<ApiResponse<z.infer<typeof PatternsResponseSchema>>> {
     try {
       // Try backend endpoint first
-      const backendResponse = await apiClient.post<{ data: AIResponse<z.infer<typeof PatternsResponseSchema>> }>(
-        '/ai/metrics/patterns',
-        {
-          metricId: metric.id,
-        }
-      );
+      const backendResponse = await apiClient.post<{
+        data: AIResponse<z.infer<typeof PatternsResponseSchema>>;
+      }>('/ai/metrics/patterns', {
+        metricId: metric.id,
+      });
 
       if (backendResponse.success && backendResponse.data) {
         return {
@@ -133,11 +132,7 @@ export const metricAIService = {
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const logSummary = logs
         .slice(-20)
@@ -167,10 +162,9 @@ Identify:
 
 Provide insights and actionable recommendations.`;
 
-      const result = await provider.invokeStructured(
-        PatternsResponseSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(PatternsResponseSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -196,12 +190,11 @@ Provide insights and actionable recommendations.`;
   ): Promise<ApiResponse<z.infer<typeof AnomalyResponseSchema>>> {
     try {
       // Try backend endpoint first
-      const backendResponse = await apiClient.post<{ data: AIResponse<z.infer<typeof AnomalyResponseSchema>> }>(
-        '/ai/metrics/anomalies',
-        {
-          metricId: metric.id,
-        }
-      );
+      const backendResponse = await apiClient.post<{
+        data: AIResponse<z.infer<typeof AnomalyResponseSchema>>;
+      }>('/ai/metrics/anomalies', {
+        metricId: metric.id,
+      });
 
       if (backendResponse.success && backendResponse.data) {
         return {
@@ -222,11 +215,7 @@ Provide insights and actionable recommendations.`;
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const logSummary = logs
         .slice(-30)
@@ -252,10 +241,9 @@ Identify:
 4. Whether attention is required
 5. Recommendations for handling anomalies`;
 
-      const result = await provider.invokeStructured(
-        AnomalyResponseSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(AnomalyResponseSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -282,12 +270,11 @@ Identify:
   ): Promise<ApiResponse<z.infer<typeof CorrelationResponseSchema>>> {
     try {
       // Try backend endpoint first
-      const backendResponse = await apiClient.post<{ data: AIResponse<z.infer<typeof CorrelationResponseSchema>> }>(
-        '/ai/metrics/correlations',
-        {
-          metricId: metric.id,
-        }
-      );
+      const backendResponse = await apiClient.post<{
+        data: AIResponse<z.infer<typeof CorrelationResponseSchema>>;
+      }>('/ai/metrics/correlations', {
+        metricId: metric.id,
+      });
 
       if (backendResponse.success && backendResponse.data) {
         return {
@@ -308,11 +295,7 @@ Identify:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const metricLogs = allLogs.get(metric.id) || [];
       const otherMetricsData = allMetrics
@@ -326,7 +309,11 @@ Identify:
       const prompt = `Find correlations between this metric and others:
 
 Primary Metric: ${metric.name}
-Data: ${JSON.stringify(metricLogs.slice(-20).map(l => ({ date: l.loggedAt, value: l.value })), null, 2)}
+Data: ${JSON.stringify(
+        metricLogs.slice(-20).map((l) => ({ date: l.loggedAt, value: l.value })),
+        null,
+        2
+      )}
 
 Other Metrics:
 ${JSON.stringify(otherMetricsData, null, 2)}
@@ -337,10 +324,9 @@ Identify:
 3. Actionable insights
 4. Whether correlations are meaningful`;
 
-      const result = await provider.invokeStructured(
-        CorrelationResponseSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(CorrelationResponseSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -376,11 +362,7 @@ Identify:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const recentLogs = logs.slice(-10).map((l) => ({
         date: l.loggedAt,
@@ -405,10 +387,9 @@ Create a conversational summary that:
 3. Provides actionable recommendations
 4. Uses natural, encouraging language`;
 
-      const result = await provider.invokeStructured(
-        NarrativeResponseSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(NarrativeResponseSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -434,12 +415,11 @@ Create a conversational summary that:
   ): Promise<ApiResponse<z.infer<typeof PredictionResponseSchema>>> {
     try {
       // Try backend endpoint first
-      const backendResponse = await apiClient.post<{ data: AIResponse<z.infer<typeof PredictionResponseSchema>> }>(
-        '/ai/metrics/predict',
-        {
-          metricId: metric.id,
-        }
-      );
+      const backendResponse = await apiClient.post<{
+        data: AIResponse<z.infer<typeof PredictionResponseSchema>>;
+      }>('/ai/metrics/predict', {
+        metricId: metric.id,
+      });
 
       if (backendResponse.success && backendResponse.data) {
         return {
@@ -460,11 +440,7 @@ Create a conversational summary that:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const logSummary = logs.map((l) => ({
         date: l.loggedAt,
@@ -486,10 +462,9 @@ Predict:
 3. Risk factors
 4. Key milestones along the way`;
 
-      const result = await provider.invokeStructured(
-        PredictionResponseSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(PredictionResponseSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -525,11 +500,7 @@ Predict:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const recentLogs = logs.slice(-20).map((l) => ({
         date: l.loggedAt,
@@ -545,7 +516,7 @@ Direction: ${metric.direction}
 Recent data:
 ${JSON.stringify(recentLogs, null, 2)}
 
-Related goals: ${goals.map(g => g.title).join(', ') || 'None'}
+Related goals: ${goals.map((g) => g.title).join(', ') || 'None'}
 
 Provide recommendations for:
 1. Optimal logging frequency
@@ -553,10 +524,9 @@ Provide recommendations for:
 3. Intervention strategies if off-track
 4. Best practices for tracking`;
 
-      const result = await provider.invokeStructured(
-        RecommendationResponseSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(RecommendationResponseSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -592,11 +562,7 @@ Provide recommendations for:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const recentLogs = logs.slice(-10).map((l) => ({
         date: l.loggedAt,
@@ -620,10 +586,9 @@ Create a personalized coaching message that:
 3. Offers context-aware tips
 4. Uses an appropriate tone (celebration, encouragement, warning, or guidance)`;
 
-      const result = await provider.invokeStructured(
-        CoachingResponseSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(CoachingResponseSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,

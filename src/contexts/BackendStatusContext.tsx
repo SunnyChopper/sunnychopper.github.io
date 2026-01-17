@@ -64,7 +64,7 @@ export function BackendStatusProvider({ children }: BackendStatusProviderProps) 
       // Try a lightweight health check endpoint
       // If health endpoint doesn't exist, try a simple GET to a common endpoint
       const response = await apiClient.get('/health');
-      
+
       if (response.success) {
         recordSuccess();
         return true;
@@ -130,4 +130,3 @@ export function BackendStatusProvider({ children }: BackendStatusProviderProps) 
 
   return <BackendStatusContext.Provider value={value}>{children}</BackendStatusContext.Provider>;
 }
-

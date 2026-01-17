@@ -26,9 +26,7 @@ function applyFilters(tasks: Task[], filters?: FilterOptions): Task[] {
   if (filters?.search) {
     const search = filters.search.toLowerCase();
     filtered = filtered.filter(
-      (t) =>
-        t.title.toLowerCase().includes(search) ||
-        t.description?.toLowerCase().includes(search)
+      (t) => t.title.toLowerCase().includes(search) || t.description?.toLowerCase().includes(search)
     );
   }
 
@@ -142,16 +140,20 @@ export const tasksService = {
     return response;
   },
 
-  async addDependency(taskId: string, dependsOnTaskId: string): Promise<ApiResponse<TaskDependency>> {
-    const response = await apiClient.post<TaskDependency>(
-      `/tasks/${taskId}/dependencies`,
-      { dependsOnTaskId }
-    );
+  async addDependency(
+    taskId: string,
+    dependsOnTaskId: string
+  ): Promise<ApiResponse<TaskDependency>> {
+    const response = await apiClient.post<TaskDependency>(`/tasks/${taskId}/dependencies`, {
+      dependsOnTaskId,
+    });
     return response;
   },
 
   async removeDependency(taskId: string, dependsOnTaskId: string): Promise<ApiResponse<void>> {
-    const response = await apiClient.delete<void>(`/tasks/${taskId}/dependencies/${dependsOnTaskId}`);
+    const response = await apiClient.delete<void>(
+      `/tasks/${taskId}/dependencies/${dependsOnTaskId}`
+    );
     return response;
   },
 
@@ -171,7 +173,9 @@ export const tasksService = {
   },
 
   async getByProject(projectId: string): Promise<ApiListResponse<Task>> {
-    const response = await apiClient.get<BackendPaginatedResponse<Task>>(`/projects/${projectId}/tasks`);
+    const response = await apiClient.get<BackendPaginatedResponse<Task>>(
+      `/projects/${projectId}/tasks`
+    );
     if (response.success && response.data) {
       return {
         data: response.data.data,

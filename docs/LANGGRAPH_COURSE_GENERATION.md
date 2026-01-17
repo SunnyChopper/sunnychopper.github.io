@@ -58,21 +58,25 @@ Langgraph enables a **multi-agent orchestration** approach where specialized age
 ## Agent Specialization
 
 ### 1. **Course Strategist Agent**
+
 **Role**: High-level course design and structure
 
 **Responsibilities**:
+
 - Define course-level learning objectives
 - Determine module breakdown and sequencing
 - Establish difficulty progression
 - Set overall pedagogical approach
 
 **Inputs**:
+
 - Topic
 - Target difficulty
 - Pre-assessment results
 - User preferences
 
 **Outputs** (to global state):
+
 - Course title and description
 - Module structure (titles, descriptions, order)
 - Course-level learning objectives
@@ -83,20 +87,24 @@ Langgraph enables a **multi-agent orchestration** approach where specialized age
 ---
 
 ### 2. **Module Architect Agent**
+
 **Role**: Design individual modules with lesson outlines
 
 **Responsibilities**:
+
 - Break down modules into lessons
 - Define module-level learning objectives
 - Ensure lessons within module flow logically
 - Estimate time per lesson
 
 **Inputs** (from global state):
+
 - Module assignment
 - Course objectives
 - Previous modules (for context)
 
 **Outputs** (to global state):
+
 - Lesson titles and descriptions
 - Lesson-level learning objectives
 - Estimated time per lesson
@@ -111,21 +119,19 @@ Langgraph enables a **multi-agent orchestration** approach where specialized age
 As the number of modules grows (25, 100+), passing all previous modules as context will exceed LLM context limits. Solutions:
 
 #### Solution 1: Sliding Window with Summaries (Recommended)
+
 - **Recent modules (N=3-5)**: Include full context from the last N modules
 - **Earlier modules**: Include only summaries (titles, key concepts, learning objectives)
 - **Progressive summarization**: As modules accumulate, older ones get more compressed summaries
 
 ```typescript
-function getModuleContext(
-  state: CourseGenerationState,
-  currentModuleIndex: number
-): string {
+function getModuleContext(state: CourseGenerationState, currentModuleIndex: number): string {
   /** Get context for Module Architect with sliding window */
   const WINDOW_SIZE = 3; // Full context for last 3 modules
   const SUMMARY_THRESHOLD = 5; // Summarize modules older than this
-  
+
   const contextParts: string[] = [];
-  
+
   // Full context for recent modules
   const recentStart = Math.max(0, currentModuleIndex - WINDOW_SIZE);
   for (let i = recentStart; i < currentModuleIndex; i++) {
@@ -135,28 +141,26 @@ function getModuleContext(
       contextParts.push(`- Lesson: ${lesson.title}\n  Concepts: ${lesson.keyConcepts.join(', ')}`);
     }
   }
-  
+
   // Summaries for older modules
   if (currentModuleIndex > SUMMARY_THRESHOLD) {
     const olderModules = state.modules.slice(0, recentStart);
     const summary = await summarizeModules(olderModules); // LLM-generated summary
     contextParts.unshift(`## Earlier Modules Summary:\n${summary}`);
   }
-  
-  return contextParts.join("\n\n");
+
+  return contextParts.join('\n\n');
 }
 ```
 
 #### Solution 2: Concept Graph-Based Context
+
 - Instead of full module context, provide only the **concept graph** from previous modules
 - Module Architect queries: "What concepts were introduced? What prerequisites exist?"
 - Much more compact: ~100 concepts vs. ~1000s of tokens from full modules
 
 ```typescript
-function getConceptBasedContext(
-  state: CourseGenerationState,
-  currentModuleIndex: number
-): string {
+function getConceptBasedContext(state: CourseGenerationState, currentModuleIndex: number): string {
   /** Use concept graph instead of full module context */
   const previousConcepts: string[] = [];
   for (let i = 0; i < currentModuleIndex; i++) {
@@ -164,10 +168,10 @@ function getConceptBasedContext(
       previousConcepts.push(...lesson.keyConcepts);
     }
   }
-  
+
   // Build concept dependency summary
   const conceptSummary = buildConceptSummary(previousConcepts, state.conceptGraph);
-  
+
   return `
 ## Concepts Introduced So Far:
 ${conceptSummary}
@@ -179,38 +183,39 @@ ${listPrerequisites(state.conceptGraph)}
 ```
 
 #### Solution 3: Hierarchical Summarization
+
 - **Module-level summaries**: One summary per module (title, objectives, key concepts)
 - **Section-level summaries**: Group modules into sections (e.g., "Fundamentals", "Advanced")
 - **Course-level summary**: High-level overview of entire course progression
 
 ```typescript
-function getHierarchicalContext(
-  state: CourseGenerationState,
-  currentModuleIndex: number
-): string {
+function getHierarchicalContext(state: CourseGenerationState, currentModuleIndex: number): string {
   /** Hierarchical context: course → sections → recent modules */
   const context: string[] = [];
-  
+
   // Course-level summary (always included)
-  context.push(`Course: ${state.course.title}\nObjectives: ${state.course.learningObjectives.join(', ')}`);
-  
+  context.push(
+    `Course: ${state.course.title}\nObjectives: ${state.course.learningObjectives.join(', ')}`
+  );
+
   // Section summaries (if applicable)
   const sections = groupModulesIntoSections(state.modules.slice(0, currentModuleIndex));
   for (const section of sections) {
     context.push(`Section '${section.name}': ${section.summary}`);
   }
-  
+
   // Full context for current section only
   const currentSectionModules = getCurrentSectionModules(state.modules, currentModuleIndex);
   for (const module of currentSectionModules) {
     context.push(formatModuleFull(module));
   }
-  
-  return context.join("\n\n");
+
+  return context.join('\n\n');
 }
 ```
 
 #### Solution 4: Parallel Processing with Limited Context Sharing
+
 - Process modules in **batches** (e.g., 5 modules at a time)
 - Within a batch: modules can reference each other
 - Between batches: only pass summaries forward
@@ -224,10 +229,10 @@ async function moduleArchitectBatch(
 ): Promise<void> {
   /** Process modules in batches */
   const batchModules = state.modules.slice(batchStart, batchStart + batchSize);
-  
+
   // Get summary of previous batches
   const previousSummary = await summarizeModules(state.modules.slice(0, batchStart));
-  
+
   // Process batch modules (can be parallel within batch)
   for (const module of batchModules) {
     const context = previousSummary + getBatchContext(batchModules, module);
@@ -237,6 +242,7 @@ async function moduleArchitectBatch(
 ```
 
 #### Recommended Approach: Hybrid
+
 Combine **Solution 1 (Sliding Window)** + **Solution 2 (Concept Graph)**:
 
 1. **Recent modules (last 3-5)**: Full context for immediate continuity
@@ -245,6 +251,7 @@ Combine **Solution 1 (Sliding Window)** + **Solution 2 (Concept Graph)**:
 4. **Course objectives**: Always included for alignment
 
 This provides:
+
 - ✅ Immediate context for smooth transitions
 - ✅ Complete concept awareness (no missing prerequisites)
 - ✅ Scalable to 100+ modules
@@ -253,19 +260,23 @@ This provides:
 ---
 
 ### 3. **Concept Mapper Agent**
+
 **Role**: Build and maintain concept dependency graph
 
 **Responsibilities**:
+
 - Track concepts introduced in each lesson
 - Identify prerequisite relationships
 - Map concept dependencies
 - Flag missing prerequisites
 
 **Inputs** (from global state):
+
 - All lesson outlines
 - Concepts introduced per lesson
 
 **Outputs** (to global state):
+
 - Concept dependency graph
 - Prerequisite mappings
 - Cross-lesson concept references
@@ -277,9 +288,11 @@ This provides:
 ---
 
 ### 4. **Flow Validator Agent**
+
 **Role**: Ensure logical progression and alignment
 
 **Responsibilities**:
+
 - Check lesson-to-lesson flow
 - Identify gaps in progression
 - Flag redundancies
@@ -287,11 +300,13 @@ This provides:
 - Assess difficulty progression
 
 **Inputs** (from global state):
+
 - Complete course structure
 - Concept graph
 - All lesson outlines
 
 **Outputs** (to global state):
+
 - Alignment scores per transition
 - Gap analysis
 - Redundancy reports
@@ -304,9 +319,11 @@ This provides:
 ---
 
 ### 5. **Refinement Agent**
+
 **Role**: Fix identified issues and improve alignment
 
 **Responsibilities**:
+
 - Address gaps identified by validator
 - Remove redundancies
 - Add missing prerequisites
@@ -314,10 +331,12 @@ This provides:
 - Adjust difficulty progression
 
 **Inputs** (from global state):
+
 - Flow validator results
 - Current course structure
 
 **Outputs** (to global state):
+
 - Updated lesson outlines
 - Improved module descriptions
 - Added cross-references
@@ -329,9 +348,11 @@ This provides:
 ---
 
 ### 6. **Content Generator Agent**
+
 **Role**: Generate detailed lesson content with context awareness
 
 **Responsibilities**:
+
 - Generate lesson content using full course context
 - Reference previous lessons appropriately
 - Build upon concepts from earlier lessons
@@ -339,12 +360,14 @@ This provides:
 - Maintain consistent tone and depth
 
 **Inputs** (from global state):
+
 - Target lesson outline
 - Previous lesson content
 - Concept graph
 - Course objectives
 
 **Outputs**:
+
 - Full markdown lesson content
 
 **Node**: `content_generator`
@@ -366,7 +389,7 @@ interface CourseGenerationState {
     learningObjectives: string[];
     prerequisites: string[];
   };
-  
+
   // Module structure
   modules: Array<{
     id: string;
@@ -386,22 +409,25 @@ interface CourseGenerationState {
       content?: string; // Generated later
     }>;
   }>;
-  
+
   // Concept tracking
   conceptGraph: {
-    concepts: Map<string, {
-      introducedIn: string; // lessonId
-      prerequisites: string[]; // concept IDs
-      usedIn: string[]; // lessonIds
-      depth: number; // How deep in the dependency tree
-    }>;
+    concepts: Map<
+      string,
+      {
+        introducedIn: string; // lessonId
+        prerequisites: string[]; // concept IDs
+        usedIn: string[]; // lessonIds
+        depth: number; // How deep in the dependency tree
+      }
+    >;
     dependencies: Array<{
       from: string; // conceptId
       to: string; // conceptId
       type: 'prerequisite' | 'builds_on' | 'extends';
     }>;
   };
-  
+
   // Alignment tracking
   alignment: {
     lessonTransitions: Array<{
@@ -420,10 +446,16 @@ interface CourseGenerationState {
       affectedLessons: string[];
     }>;
   };
-  
+
   // Generation metadata
   metadata: {
-    currentPhase: 'strategizing' | 'architecting' | 'mapping' | 'validating' | 'refining' | 'generating';
+    currentPhase:
+      | 'strategizing'
+      | 'architecting'
+      | 'mapping'
+      | 'validating'
+      | 'refining'
+      | 'generating';
     iterations: number;
     lastModified: string;
   };
@@ -471,16 +503,14 @@ END
 ### Conditional Edges
 
 ```typescript
-function shouldRefine(
-  state: CourseGenerationState
-): "refine" | "generate_content" {
+function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_content' {
   /** Determine if refinement is needed */
   if (state.alignment.overallScore >= 0.8) {
-    return "generate_content";
+    return 'generate_content';
   } else if (state.metadata.iterations < 3) {
-    return "refine";
+    return 'refine';
   } else {
-    return "generate_content"; // Proceed even if not perfect
+    return 'generate_content'; // Proceed even if not perfect
   }
 }
 ```
@@ -504,50 +534,42 @@ function getModuleContextOptimized(
    * Combines sliding window + concept graph for scalability.
    */
   const contextParts: string[] = [];
-  
+
   // 1. Course-level context (always included, small)
   contextParts.push(`
 Course: ${state.course.title}
 Objectives: ${state.course.learningObjectives.join(', ')}
 Difficulty: ${state.course.difficulty}
 `);
-  
+
   // 2. Concept graph summary (compact, essential)
   if (currentModuleIndex > 0) {
-    const previousConcepts = extractConceptsFromModules(
-      state.modules.slice(0, currentModuleIndex)
-    );
-    const conceptSummary = formatConceptSummary(
-      previousConcepts,
-      state.conceptGraph
-    );
+    const previousConcepts = extractConceptsFromModules(state.modules.slice(0, currentModuleIndex));
+    const conceptSummary = formatConceptSummary(previousConcepts, state.conceptGraph);
     contextParts.push(`## Concepts Introduced:\n${conceptSummary}`);
   }
-  
+
   // 3. Full context for recent modules (sliding window)
   const recentStart = Math.max(0, currentModuleIndex - windowSize);
   if (recentStart < currentModuleIndex) {
-    contextParts.push("## Recent Modules (Full Context):");
+    contextParts.push('## Recent Modules (Full Context):');
     for (let i = recentStart; i < currentModuleIndex; i++) {
       const module = state.modules[i];
       contextParts.push(formatModuleFull(module));
     }
   }
-  
+
   // 4. Summaries for older modules (if beyond threshold)
   if (currentModuleIndex > summaryThreshold) {
     const olderModules = state.modules.slice(0, recentStart);
     const summary = await generateModuleSummary(olderModules); // LLM call
     contextParts.push(`## Earlier Modules Summary:\n${summary}`);
   }
-  
-  return contextParts.join("\n\n");
+
+  return contextParts.join('\n\n');
 }
 
-function formatConceptSummary(
-  concepts: string[],
-  conceptGraph: ConceptGraph
-): string {
+function formatConceptSummary(concepts: string[], conceptGraph: ConceptGraph): string {
   /** Format concept graph into compact summary */
   const lines: string[] = [];
   for (const concept of concepts) {
@@ -558,7 +580,7 @@ function formatConceptSummary(
       lines.push(`- ${concept}`);
     }
   }
-  return lines.join("\n");
+  return lines.join('\n');
 }
 ```
 
@@ -587,14 +609,14 @@ async function moduleArchitectNode(
 ): Promise<Partial<CourseGenerationState>> {
   // Updates: modules[].lessons
   // Reads: course, previous modules (with context window management)
-  
+
   // Process each module sequentially
   const updatedModules = [...state.modules];
-  
+
   for (let i = 0; i < updatedModules.length; i++) {
     // Get context using sliding window + concept graph approach
     const context = await getModuleContextOptimized(state, i);
-    
+
     // Generate lessons for this module
     const lessons = await generateModuleLessons({
       module: updatedModules[i],
@@ -602,14 +624,14 @@ async function moduleArchitectNode(
       previousContext: context,
       conceptGraph: state.conceptGraph,
     });
-    
+
     // Update module with lessons
     updatedModules[i] = {
       ...updatedModules[i],
       lessons,
     };
   }
-  
+
   return {
     modules: updatedModules,
     metadata: {
@@ -625,7 +647,7 @@ async function conceptMapperNode(
   // Updates: conceptGraph
   // Reads: all modules and lessons
   const conceptGraph = await buildConceptGraph(state.modules);
-  
+
   return {
     conceptGraph,
     metadata: {
@@ -641,7 +663,7 @@ async function flowValidatorNode(
   // Updates: alignment
   // Reads: everything
   const alignment = await validateFlow(state);
-  
+
   return {
     alignment,
     metadata: {
@@ -657,7 +679,7 @@ async function refinementAgentNode(
   // Updates: modules, lessons (outlines), conceptGraph
   // Reads: alignment
   const refined = await refineCourseStructure(state);
-  
+
   return {
     modules: refined.modules,
     conceptGraph: refined.conceptGraph,
@@ -675,7 +697,7 @@ async function contentGeneratorNode(
   // Updates: modules[].lessons[].content
   // Reads: full state for context
   const modulesWithContent = await generateAllLessonContent(state);
-  
+
   return {
     modules: modulesWithContent,
     metadata: {
@@ -689,26 +711,31 @@ async function contentGeneratorNode(
 ## Benefits of This Approach
 
 ### 1. **Contextual Awareness**
+
 - Each agent has access to the full course structure
 - Lessons are generated with awareness of what came before and what comes after
 - Concepts are tracked and properly referenced
 
 ### 2. **Iterative Refinement**
+
 - Issues are identified and fixed automatically
 - Multiple passes ensure quality alignment
 - Can refine specific sections without regenerating everything
 
 ### 3. **Specialized Expertise**
+
 - Each agent focuses on one aspect (strategy, architecture, validation, etc.)
 - Better quality than a single monolithic prompt
 - Easier to debug and improve individual agents
 
 ### 4. **Maintainability**
+
 - Clear separation of concerns
 - Easy to add new agents (e.g., "Difficulty Calibrator", "Example Generator")
 - Can swap out individual agents without affecting others
 
 ### 5. **Transparency**
+
 - Full state is visible at each step
 - Can inspect alignment scores and issues
 - Easier to understand why content was generated a certain way
@@ -716,6 +743,7 @@ async function contentGeneratorNode(
 ## Example: How It Solves Disjointedness
 
 ### Current Approach (Single Prompt)
+
 ```
 Prompt: "Create a course on Data Structures with 5 modules..."
 → Generates all modules/lessons at once
@@ -725,10 +753,11 @@ Prompt: "Create a course on Data Structures with 5 modules..."
 ```
 
 ### Langgraph Approach
+
 ```
 1. Course Strategist: "Course on Data Structures, 5 modules"
 2. Module Architect (Module 1): Creates 3 lessons
-3. Module Architect (Module 2): 
+3. Module Architect (Module 2):
    - Reads Module 1 lessons
    - Ensures Lesson 4 builds on Lesson 3
    - References concepts from Module 1
@@ -745,6 +774,7 @@ Prompt: "Create a course on Data Structures with 5 modules..."
 ## Integration with Existing System
 
 ### Service Layer
+
 ```typescript
 // src/services/knowledge-vault/langgraph-course-generator.service.ts
 
@@ -754,33 +784,40 @@ export const langgraphCourseGeneratorService = {
   ): Promise<ApiResponse<CourseSkeletonResult>> {
     // Initialize Langgraph state
     const initialState: CourseGenerationState = {
-      course: { /* ... */ },
+      course: {
+        /* ... */
+      },
       modules: [],
       conceptGraph: { concepts: new Map(), dependencies: [] },
       alignment: { lessonTransitions: [], overallScore: 0, issues: [] },
-      metadata: { currentPhase: 'strategizing', iterations: 0, lastModified: new Date().toISOString() }
+      metadata: {
+        currentPhase: 'strategizing',
+        iterations: 0,
+        lastModified: new Date().toISOString(),
+      },
     };
-    
+
     // Build graph
     const graph = buildCourseGenerationGraph();
-    
+
     // Execute
     const finalState = await graph.invoke(initialState, {
-      config: { configurable: { input } }
+      config: { configurable: { input } },
     });
-    
+
     // Convert to existing CourseSkeletonResult format
     return convertStateToSkeletonResult(finalState);
-  }
+  },
 };
 ```
 
 ### Graph Definition
+
 ```typescript
 // Using LangGraph.js TypeScript SDK
 
-import { StateGraph, START, END } from "@langchain/langgraph";
-import type { Annotation } from "@langchain/langgraph";
+import { StateGraph, START, END } from '@langchain/langgraph';
+import type { Annotation } from '@langchain/langgraph';
 
 // Define state annotation
 const CourseGenerationAnnotation: Annotation<CourseGenerationState> = {
@@ -805,44 +842,40 @@ const CourseGenerationAnnotation: Annotation<CourseGenerationState> = {
 
 function buildCourseGenerationGraph() {
   const workflow = new StateGraph(CourseGenerationAnnotation);
-  
+
   // Add nodes
-  workflow.addNode("course_strategist", courseStrategistNode);
-  workflow.addNode("module_architect", moduleArchitectNode);
-  workflow.addNode("concept_mapper", conceptMapperNode);
-  workflow.addNode("flow_validator", flowValidatorNode);
-  workflow.addNode("refinement_agent", refinementAgentNode);
-  workflow.addNode("content_generator", contentGeneratorNode);
-  
+  workflow.addNode('course_strategist', courseStrategistNode);
+  workflow.addNode('module_architect', moduleArchitectNode);
+  workflow.addNode('concept_mapper', conceptMapperNode);
+  workflow.addNode('flow_validator', flowValidatorNode);
+  workflow.addNode('refinement_agent', refinementAgentNode);
+  workflow.addNode('content_generator', contentGeneratorNode);
+
   // Add edges
-  workflow.addEdge(START, "course_strategist");
-  workflow.addEdge("course_strategist", "module_architect");
-  workflow.addEdge("module_architect", "concept_mapper");
-  workflow.addEdge("concept_mapper", "flow_validator");
-  
+  workflow.addEdge(START, 'course_strategist');
+  workflow.addEdge('course_strategist', 'module_architect');
+  workflow.addEdge('module_architect', 'concept_mapper');
+  workflow.addEdge('concept_mapper', 'flow_validator');
+
   // Conditional edge for refinement loop
-  workflow.addConditionalEdges(
-    "flow_validator",
-    shouldRefine,
-    {
-      refine: "refinement_agent",
-      generate_content: "content_generator"
-    }
-  );
-  
-  workflow.addEdge("refinement_agent", "flow_validator");
-  workflow.addEdge("content_generator", END);
-  
+  workflow.addConditionalEdges('flow_validator', shouldRefine, {
+    refine: 'refinement_agent',
+    generate_content: 'content_generator',
+  });
+
+  workflow.addEdge('refinement_agent', 'flow_validator');
+  workflow.addEdge('content_generator', END);
+
   return workflow.compile();
 }
 
-function shouldRefine(state: CourseGenerationState): "refine" | "generate_content" {
+function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_content' {
   if (state.alignment.overallScore >= 0.8) {
-    return "generate_content";
+    return 'generate_content';
   } else if (state.metadata.iterations < 3) {
-    return "refine";
+    return 'refine';
   } else {
-    return "generate_content"; // Proceed even if not perfect
+    return 'generate_content'; // Proceed even if not perfect
   }
 }
 ```
@@ -871,6 +904,7 @@ This provides immediate improvement with less implementation complexity.
 ## Conclusion
 
 Langgraph with shared global state enables **collaborative multi-agent course generation** that ensures:
+
 - ✅ Lessons build logically on each other
 - ✅ Concepts are properly introduced and referenced
 - ✅ Smooth difficulty progression

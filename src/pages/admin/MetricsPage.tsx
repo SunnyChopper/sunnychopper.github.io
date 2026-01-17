@@ -1,6 +1,33 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, ArrowLeft, Edit2, Trash2, TrendingUp, Sparkles, ChevronDown, ChevronUp, LayoutGrid, List, Layers, Activity, Target, Grid3x3, Filter, X } from 'lucide-react';
-import type { Metric, MetricLog, CreateMetricInput, UpdateMetricInput, CreateMetricLogInput, FilterOptions, Goal, Area } from '../../types/growth-system';
+import {
+  Plus,
+  Search,
+  ArrowLeft,
+  Edit2,
+  Trash2,
+  TrendingUp,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  LayoutGrid,
+  List,
+  Layers,
+  Activity,
+  Target,
+  Grid3x3,
+  Filter,
+  X,
+} from 'lucide-react';
+import type {
+  Metric,
+  MetricLog,
+  CreateMetricInput,
+  UpdateMetricInput,
+  CreateMetricLogInput,
+  FilterOptions,
+  Goal,
+  Area,
+} from '../../types/growth-system';
 import { metricsService } from '../../services/growth-system/metrics.service';
 import { goalsService } from '../../services/growth-system/goals.service';
 import Button from '../../components/atoms/Button';
@@ -18,7 +45,7 @@ import { MetricCoaching } from '../../components/molecules/MetricCoaching';
 import { MetricEmptyStates } from '../../components/molecules/MetricEmptyStates';
 import { MetricProgressRing } from '../../components/molecules/MetricProgressRing';
 import { calculateProgress, getTrendData, getPeriodComparison } from '../../utils/metric-analytics';
- import { MetricCreateForm } from '../../components/organisms/MetricCreateForm';
+import { MetricCreateForm } from '../../components/organisms/MetricCreateForm';
 import { MetricEditForm } from '../../components/organisms/MetricEditForm';
 import Dialog from '../../components/organisms/Dialog';
 import { EmptyState } from '../../components/molecules/EmptyState';
@@ -58,7 +85,9 @@ export default function MetricsPage() {
   const [metricToDelete, setMetricToDelete] = useState<Metric | null>(null);
 
   const [showInsightsPanel, setShowInsightsPanel] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'patterns' | 'correlations' | 'predictions' | 'goals' | 'history'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'trends' | 'patterns' | 'correlations' | 'predictions' | 'goals' | 'history'
+  >('overview');
   const isAIConfigured = llmConfig.isConfigured();
 
   const loadMetrics = async () => {
@@ -67,7 +96,7 @@ export default function MetricsPage() {
       const response = await metricsService.getAll();
       if (response.success && response.data) {
         setMetrics(response.data);
-        response.data.forEach(metric => {
+        response.data.forEach((metric) => {
           loadMetricLogs(metric.id);
         });
       }
@@ -82,7 +111,7 @@ export default function MetricsPage() {
     try {
       const response = await metricsService.getHistory(metricId);
       if (response.success && response.data) {
-        setMetricLogs(prev => new Map(prev).set(metricId, response.data!));
+        setMetricLogs((prev) => new Map(prev).set(metricId, response.data!));
       }
     } catch (error) {
       console.error('Failed to load metric logs:', error);
@@ -92,7 +121,7 @@ export default function MetricsPage() {
   useEffect(() => {
     loadMetrics();
     loadGoals();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadGoals = async () => {
@@ -111,9 +140,9 @@ export default function MetricsPage() {
                 metricResponse.data.map((gm) => gm.metricId)
               );
             }
-        } catch {
-          // Ignore errors for individual goals
-        }
+          } catch {
+            // Ignore errors for individual goals
+          }
         }
         setGoalMetrics(goalMetricMap);
       }
@@ -239,10 +268,10 @@ export default function MetricsPage() {
         return groupByMomentum(filteredMetrics, metricLogs);
       case 'priority':
         return {
-          'Priority': sortByPriority(filteredMetrics, metricLogs, goals, goalMetrics),
+          Priority: sortByPriority(filteredMetrics, metricLogs, goals, goalMetrics),
         };
       default:
-        return { 'All': filteredMetrics };
+        return { All: filteredMetrics };
     }
   }, [filteredMetrics, viewMode, metricLogs, goals, goalMetrics]);
 
@@ -250,7 +279,11 @@ export default function MetricsPage() {
     const logs = metricLogs.get(selectedMetric.id) || [];
     const latestLog = logs.length > 0 ? logs[0] : null;
     const currentValue = latestLog?.value || 0;
-    const progress = calculateProgress(currentValue, selectedMetric.targetValue, selectedMetric.direction);
+    const progress = calculateProgress(
+      currentValue,
+      selectedMetric.targetValue,
+      selectedMetric.direction
+    );
     const trend = getTrendData(logs, selectedMetric);
     const comparison = getPeriodComparison(logs, 'week');
 
@@ -289,11 +322,7 @@ export default function MetricsPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsEditDialogOpen(true)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                   <Edit2 className="w-4 h-4 mr-1" />
                   Edit
                 </Button>
@@ -317,7 +346,9 @@ export default function MetricsPage() {
                   {currentValue.toFixed(selectedMetric.unit === 'dollars' ? 0 : 1)}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {selectedMetric.unit === 'custom' ? selectedMetric.customUnit : selectedMetric.unit}
+                  {selectedMetric.unit === 'custom'
+                    ? selectedMetric.customUnit
+                    : selectedMetric.unit}
                 </div>
               </div>
               {selectedMetric.targetValue && (
@@ -337,14 +368,19 @@ export default function MetricsPage() {
                   {logs.length}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {latestLog ? `Last: ${new Date(latestLog.loggedAt).toLocaleDateString()}` : 'No logs'}
+                  {latestLog
+                    ? `Last: ${new Date(latestLog.loggedAt).toLocaleDateString()}`
+                    : 'No logs'}
                 </div>
               </div>
               {trend && (
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Trend</div>
-                  <div className={`text-2xl font-bold ${trend.isImproving ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {trend.changePercent >= 0 ? '+' : ''}{trend.changePercent.toFixed(1)}%
+                  <div
+                    className={`text-2xl font-bold ${trend.isImproving ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                  >
+                    {trend.changePercent >= 0 ? '+' : ''}
+                    {trend.changePercent.toFixed(1)}%
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     {trend.velocity > 0 ? 'Improving' : trend.velocity < 0 ? 'Declining' : 'Stable'}
@@ -399,8 +435,11 @@ export default function MetricsPage() {
                         <div className="text-xl font-bold text-gray-900 dark:text-white">
                           {comparison.current.average.toFixed(1)}
                         </div>
-                        <div className={`text-xs mt-1 ${comparison.isImproving ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {comparison.changePercent >= 0 ? '+' : ''}{comparison.changePercent.toFixed(1)}% vs {comparison.previous.period}
+                        <div
+                          className={`text-xs mt-1 ${comparison.isImproving ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+                        >
+                          {comparison.changePercent >= 0 ? '+' : ''}
+                          {comparison.changePercent.toFixed(1)}% vs {comparison.previous.period}
                         </div>
                       </div>
                     )}
@@ -411,10 +450,7 @@ export default function MetricsPage() {
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                       Recent Achievements
                     </h3>
-                    <MetricMilestoneSystem
-                      metric={selectedMetric}
-                      logs={logs}
-                    />
+                    <MetricMilestoneSystem metric={selectedMetric} logs={logs} />
                   </div>
                 </div>
               )}
@@ -488,10 +524,7 @@ export default function MetricsPage() {
                       metric={selectedMetric}
                     />
                   ) : (
-                    <MetricLogHistory
-                      metric={selectedMetric}
-                      logs={logs}
-                    />
+                    <MetricLogHistory metric={selectedMetric} logs={logs} />
                   )}
                 </div>
               )}
@@ -534,9 +567,7 @@ export default function MetricsPage() {
               <TrendingUp className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               Metrics Dashboard
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Track and measure your progress
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Track and measure your progress</p>
           </div>
           <Button variant="primary" onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="w-5 h-5 mr-2" />
@@ -674,12 +705,16 @@ export default function MetricsPage() {
                 </label>
                 <select
                   value={filters.area || ''}
-                  onChange={(e) => setFilters({ ...filters, area: e.target.value as Area || undefined })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, area: (e.target.value as Area) || undefined })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Areas</option>
-                  {AREAS.map(area => (
-                    <option key={area} value={area}>{AREA_LABELS[area]}</option>
+                  {AREAS.map((area) => (
+                    <option key={area} value={area}>
+                      {AREA_LABELS[area]}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -693,8 +728,10 @@ export default function MetricsPage() {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Statuses</option>
-                  {STATUSES.map(status => (
-                    <option key={status} value={status}>{status}</option>
+                  {STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -703,93 +740,97 @@ export default function MetricsPage() {
         )}
 
         <div>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-400">Loading metrics...</p>
-                </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Loading metrics...</p>
               </div>
-            ) : filteredMetrics.length === 0 ? (
-              metrics.length === 0 ? (
-                <MetricEmptyStates
-                  type="no_metrics"
-                  onCreateMetric={() => setIsCreateDialogOpen(true)}
-                />
-              ) : (
-                <EmptyState
-                  title="No metrics found"
-                  description={
-                    searchQuery || filters.area || filters.status
-                      ? 'Try adjusting your filters or search query'
-                      : 'Get started by creating your first metric'
-                  }
-                  actionLabel="Create Metric"
-                  onAction={() => setIsCreateDialogOpen(true)}
-                />
-              )
+            </div>
+          ) : filteredMetrics.length === 0 ? (
+            metrics.length === 0 ? (
+              <MetricEmptyStates
+                type="no_metrics"
+                onCreateMetric={() => setIsCreateDialogOpen(true)}
+              />
             ) : (
-              <div>
-                {viewMode === 'list' ? (
-                  <div className="space-y-3">
-                    {filteredMetrics.map((metric) => {
-                      const logs = metricLogs.get(metric.id) || [];
-                      return (
-                        <div
-                          key={metric.id}
-                          onClick={() => handleMetricClick(metric)}
-                          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md cursor-pointer transition-all"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                                {metric.name}
-                              </h3>
-                              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                                  {logs[0]?.value.toFixed(metric.unit === 'dollars' ? 0 : 1) || '0'}
+              <EmptyState
+                title="No metrics found"
+                description={
+                  searchQuery || filters.area || filters.status
+                    ? 'Try adjusting your filters or search query'
+                    : 'Get started by creating your first metric'
+                }
+                actionLabel="Create Metric"
+                onAction={() => setIsCreateDialogOpen(true)}
+              />
+            )
+          ) : (
+            <div>
+              {viewMode === 'list' ? (
+                <div className="space-y-3">
+                  {filteredMetrics.map((metric) => {
+                    const logs = metricLogs.get(metric.id) || [];
+                    return (
+                      <div
+                        key={metric.id}
+                        onClick={() => handleMetricClick(metric)}
+                        className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md cursor-pointer transition-all"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                              {metric.name}
+                            </h3>
+                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                              <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                                {logs[0]?.value.toFixed(metric.unit === 'dollars' ? 0 : 1) || '0'}
+                              </span>
+                              <span>
+                                {metric.unit === 'custom' ? metric.customUnit : metric.unit}
+                              </span>
+                              {logs[0] && (
+                                <span className="text-xs">
+                                  {new Date(logs[0].loggedAt).toLocaleDateString()}
                                 </span>
-                                <span>{metric.unit === 'custom' ? metric.customUnit : metric.unit}</span>
-                                {logs[0] && (
-                                  <span className="text-xs">
-                                    {new Date(logs[0].loggedAt).toLocaleDateString()}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <AreaBadge area={metric.area} />
-                              <StatusBadge status={metric.status} size="sm" />
+                              )}
                             </div>
                           </div>
+                          <div className="flex items-center gap-4">
+                            <AreaBadge area={metric.area} />
+                            <StatusBadge status={metric.status} size="sm" />
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  Object.entries(groupedMetrics).map(([groupName, groupMetrics]) => (
-                    <div key={groupName} className="mb-8">
-                      {viewMode !== 'grid' && (
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                          {groupName} ({groupMetrics.length})
-                        </h2>
-                      )}
-                      <div className={`grid grid-cols-1 ${viewMode === 'grid' ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
-                        {groupMetrics.map((metric) => (
-                          <MetricCard
-                            key={metric.id}
-                            metric={metric}
-                            logs={metricLogs.get(metric.id) || []}
-                            onClick={handleMetricClick}
-                            onQuickLog={handleQuickLog}
-                          />
-                        ))}
                       </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                Object.entries(groupedMetrics).map(([groupName, groupMetrics]) => (
+                  <div key={groupName} className="mb-8">
+                    {viewMode !== 'grid' && (
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                        {groupName} ({groupMetrics.length})
+                      </h2>
+                    )}
+                    <div
+                      className={`grid grid-cols-1 ${viewMode === 'grid' ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}
+                    >
+                      {groupMetrics.map((metric) => (
+                        <MetricCard
+                          key={metric.id}
+                          metric={metric}
+                          logs={metricLogs.get(metric.id) || []}
+                          onClick={handleMetricClick}
+                          onQuickLog={handleQuickLog}
+                        />
+                      ))}
                     </div>
-                  ))
-                )}
-              </div>
-            )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -840,9 +881,7 @@ export default function MetricsPage() {
           </p>
           {metricToDelete && (
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-              <p className="font-semibold text-gray-900 dark:text-white">
-                {metricToDelete.name}
-              </p>
+              <p className="font-semibold text-gray-900 dark:text-white">{metricToDelete.name}</p>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

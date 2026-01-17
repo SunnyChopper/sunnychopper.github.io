@@ -7,7 +7,7 @@ import type { Goal, SuccessCriterion } from '../types/growth-system';
 export function migrateSuccessCriteria(oldCriteria: string[]): SuccessCriterion[] {
   return oldCriteria.map((text, index) => ({
     id: generateId(),
-    text: text.replace(/^✓\s*/, ''),  // Remove checkmark prefix
+    text: text.replace(/^✓\s*/, ''), // Remove checkmark prefix
     isCompleted: text.includes('✓'),
     completedAt: text.includes('✓') ? new Date().toISOString() : null,
     linkedMetricId: null,
@@ -71,7 +71,7 @@ export function getMigrationStats(goals: Goal[]): {
 } {
   const total = goals.length;
   const needsMigrationCount = goals.filter(needsMigration).length;
-  
+
   return {
     total,
     needsMigration: needsMigrationCount,

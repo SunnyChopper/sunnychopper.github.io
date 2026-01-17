@@ -29,31 +29,35 @@ Before committing AI-generated code:
 
 ## ⚡ Speed Guide
 
-| Command | Time | Use When |
-|---------|------|----------|
-| `validate:quick` | ~10s | During development |
-| `validate` | ~30s | Before commit |
-| `validate:full` | ~2min | Before PR |
+| Command          | Time  | Use When           |
+| ---------------- | ----- | ------------------ |
+| `validate:quick` | ~10s  | During development |
+| `validate`       | ~30s  | Before commit      |
+| `validate:full`  | ~2min | Before PR          |
 
 ## 🔧 Common Fixes
 
 ### Type Errors
+
 ```bash
 npm run type-check  # See errors
 # Add return types, fix types
 ```
 
 ### Lint Errors
+
 ```bash
 npm run lint:fix  # Auto-fix
 ```
 
 ### Format Issues
+
 ```bash
 npm run format  # Auto-format
 ```
 
 ### Pattern Violations
+
 ```bash
 npm run check-patterns  # See issues
 # Add loading states, error handling, etc.

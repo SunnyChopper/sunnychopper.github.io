@@ -68,7 +68,11 @@ export class APIStorageAdapter implements IStorageAdapter {
     console.warn('Seed operation is not supported on API storage adapter');
   }
 
-  async createRelation(collection: string, _id: string, relation: Record<string, unknown>): Promise<void> {
+  async createRelation(
+    collection: string,
+    _id: string,
+    relation: Record<string, unknown>
+  ): Promise<void> {
     const response = await apiClient.post(`/${collection}`, relation);
     if (!response.success) {
       throw new Error(response.error?.message || 'Failed to create relation');
@@ -85,7 +89,9 @@ export class APIStorageAdapter implements IStorageAdapter {
       queryParams.append(key, String(value));
     });
 
-    const response = await apiClient.get<PaginatedResponse<T>>(`/${collection}?${queryParams.toString()}`);
+    const response = await apiClient.get<PaginatedResponse<T>>(
+      `/${collection}?${queryParams.toString()}`
+    );
     if (response.success && response.data) {
       // Backend returns paginated response with data array
       return response.data.data;

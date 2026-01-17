@@ -1,5 +1,11 @@
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph/web';
-import type { CourseGenerationState, CourseGenerationStateUpdate, CourseGenerationInput, CourseGenerationProgress, ConceptNode } from './types';
+import type {
+  CourseGenerationState,
+  CourseGenerationStateUpdate,
+  CourseGenerationInput,
+  CourseGenerationProgress,
+  ConceptNode,
+} from './types';
 import { CourseStrategistAgent } from './agents/course-strategist.agent';
 import { ModuleArchitectAgent } from './agents/module-architect.agent';
 import { ConceptMapperAgent } from './agents/concept-mapper.agent';
@@ -49,39 +55,48 @@ function emitProgress(progress: CourseGenerationProgress) {
  */
 function validateState(state: CourseGenerationState): CourseGenerationState {
   const defaultState = getDefaultState();
-  
+
   return {
-    course: state.course && typeof state.course === 'object' 
-      ? { ...defaultState.course, ...state.course }
-      : defaultState.course,
+    course:
+      state.course && typeof state.course === 'object'
+        ? { ...defaultState.course, ...state.course }
+        : defaultState.course,
     modules: Array.isArray(state.modules) ? state.modules : defaultState.modules,
     conceptGraph: state.conceptGraph
       ? {
-          concepts: state.conceptGraph.concepts instanceof Map
-            ? state.conceptGraph.concepts
-            : (state.conceptGraph.concepts && typeof state.conceptGraph.concepts === 'object' && !Array.isArray(state.conceptGraph.concepts)
-                ? new Map(Object.entries(state.conceptGraph.concepts as Record<string, ConceptNode>))
-                : defaultState.conceptGraph.concepts),
+          concepts:
+            state.conceptGraph.concepts instanceof Map
+              ? state.conceptGraph.concepts
+              : state.conceptGraph.concepts &&
+                  typeof state.conceptGraph.concepts === 'object' &&
+                  !Array.isArray(state.conceptGraph.concepts)
+                ? new Map(
+                    Object.entries(state.conceptGraph.concepts as Record<string, ConceptNode>)
+                  )
+                : defaultState.conceptGraph.concepts,
           dependencies: Array.isArray(state.conceptGraph.dependencies)
             ? state.conceptGraph.dependencies
             : defaultState.conceptGraph.dependencies,
         }
       : defaultState.conceptGraph,
-    alignment: state.alignment && typeof state.alignment === 'object'
-      ? { ...defaultState.alignment, ...state.alignment }
-      : defaultState.alignment,
-    metadata: state.metadata && typeof state.metadata === 'object'
-      ? {
-          ...defaultState.metadata,
-          ...state.metadata,
-          // Preserve input if it exists
-          input: state.metadata.input ?? defaultState.metadata.input,
-          // CRITICAL: Preserve iterations to prevent loop reset
-          iterations: typeof state.metadata.iterations === 'number' 
-            ? state.metadata.iterations 
-            : defaultState.metadata.iterations,
-        }
-      : defaultState.metadata,
+    alignment:
+      state.alignment && typeof state.alignment === 'object'
+        ? { ...defaultState.alignment, ...state.alignment }
+        : defaultState.alignment,
+    metadata:
+      state.metadata && typeof state.metadata === 'object'
+        ? {
+            ...defaultState.metadata,
+            ...state.metadata,
+            // Preserve input if it exists
+            input: state.metadata.input ?? defaultState.metadata.input,
+            // CRITICAL: Preserve iterations to prevent loop reset
+            iterations:
+              typeof state.metadata.iterations === 'number'
+                ? state.metadata.iterations
+                : defaultState.metadata.iterations,
+          }
+        : defaultState.metadata,
   };
 }
 
@@ -117,7 +132,10 @@ const getDefaultState = (): CourseGenerationState => ({
 });
 
 const CourseGenerationAnnotation = Annotation.Root({
-  reducer: (x: CourseGenerationState | undefined, y: CourseGenerationStateUpdate | undefined): CourseGenerationState => {
+  reducer: (
+    x: CourseGenerationState | undefined,
+    y: CourseGenerationStateUpdate | undefined
+  ): CourseGenerationState => {
     // Log what we're receiving for debugging
     console.log('Reducer called with:', {
       hasX: !!x,
@@ -142,49 +160,78 @@ const CourseGenerationAnnotation = Annotation.Root({
     if (!x && y) {
       // Check if y looks like a full state object (has state properties)
       const yKeys = Object.keys(y);
-      const hasStateProperties = yKeys.length > 0 && (
-        'metadata' in y || 'course' in y || 'modules' in y || 
-        'conceptGraph' in y || 'alignment' in y
-      );
-      
+      const hasStateProperties =
+        yKeys.length > 0 &&
+        ('metadata' in y ||
+          'course' in y ||
+          'modules' in y ||
+          'conceptGraph' in y ||
+          'alignment' in y);
+
       if (hasStateProperties) {
-        console.log('Reducer: Initial state passed as y, using y as base. Keys:', yKeys, 'yHasMetadata:', !!y.metadata, 'yHasInput:', !!y.metadata?.input);
+        console.log(
+          'Reducer: Initial state passed as y, using y as base. Keys:',
+          yKeys,
+          'yHasMetadata:',
+          !!y.metadata,
+          'yHasInput:',
+          !!y.metadata?.input
+        );
         // Ensure y has all required properties, merging with defaults
         const defaultState = getDefaultState();
         const initialState: CourseGenerationState = {
-          course: (y.course && typeof y.course === 'object') ? { ...defaultState.course, ...y.course } : defaultState.course,
+          course:
+            y.course && typeof y.course === 'object'
+              ? { ...defaultState.course, ...y.course }
+              : defaultState.course,
           modules: Array.isArray(y.modules) ? y.modules : defaultState.modules,
-          conceptGraph: y.conceptGraph 
+          conceptGraph: y.conceptGraph
             ? {
-                concepts: y.conceptGraph.concepts instanceof Map 
-                  ? y.conceptGraph.concepts 
-                  : (y.conceptGraph.concepts && typeof y.conceptGraph.concepts === 'object' && !Array.isArray(y.conceptGraph.concepts)
-                      ? new Map(Object.entries(y.conceptGraph.concepts as Record<string, ConceptNode>))
-                      : defaultState.conceptGraph.concepts),
-                dependencies: Array.isArray(y.conceptGraph.dependencies) 
-                  ? y.conceptGraph.dependencies 
+                concepts:
+                  y.conceptGraph.concepts instanceof Map
+                    ? y.conceptGraph.concepts
+                    : y.conceptGraph.concepts &&
+                        typeof y.conceptGraph.concepts === 'object' &&
+                        !Array.isArray(y.conceptGraph.concepts)
+                      ? new Map(
+                          Object.entries(y.conceptGraph.concepts as Record<string, ConceptNode>)
+                        )
+                      : defaultState.conceptGraph.concepts,
+                dependencies: Array.isArray(y.conceptGraph.dependencies)
+                  ? y.conceptGraph.dependencies
                   : defaultState.conceptGraph.dependencies,
               }
             : defaultState.conceptGraph,
-          alignment: y.alignment && typeof y.alignment === 'object'
-            ? { ...defaultState.alignment, ...y.alignment }
-            : defaultState.alignment,
-          metadata: y.metadata && typeof y.metadata === 'object'
-            ? { ...defaultState.metadata, ...y.metadata }
-            : defaultState.metadata,
+          alignment:
+            y.alignment && typeof y.alignment === 'object'
+              ? { ...defaultState.alignment, ...y.alignment }
+              : defaultState.alignment,
+          metadata:
+            y.metadata && typeof y.metadata === 'object'
+              ? { ...defaultState.metadata, ...y.metadata }
+              : defaultState.metadata,
         };
-        
+
         // CRITICAL: Ensure metadata.input is preserved if it exists in y
         if (y.metadata?.input) {
           initialState.metadata.input = y.metadata.input;
         }
-        
+
         // CRITICAL: Preserve iterations if it exists in y.metadata
         if (typeof y.metadata?.iterations === 'number') {
           initialState.metadata.iterations = y.metadata.iterations;
         }
-        
-        console.log('Reducer: Returning initial state. Has metadata:', !!initialState.metadata, 'Has input:', !!initialState.metadata.input, 'Has iterations:', typeof initialState.metadata.iterations === 'number' ? initialState.metadata.iterations : 'none');
+
+        console.log(
+          'Reducer: Returning initial state. Has metadata:',
+          !!initialState.metadata,
+          'Has input:',
+          !!initialState.metadata.input,
+          'Has iterations:',
+          typeof initialState.metadata.iterations === 'number'
+            ? initialState.metadata.iterations
+            : 'none'
+        );
         return initialState;
       }
     }
@@ -193,17 +240,21 @@ const CourseGenerationAnnotation = Annotation.Root({
     // This can happen when LangGraph validates the schema during graph construction
     // OR when the initial state is passed as y with x being undefined
     let prevState = x ?? getDefaultState();
-    
+
     // CRITICAL: Check if prevState is empty/corrupted (LangGraph serialization issue)
     // If prevState exists but has no keys, it means serialization lost all properties
     if (prevState && Object.keys(prevState).length === 0) {
-      console.error('Reducer: prevState (x) is empty object! Attempting recovery from global cache...');
+      console.error(
+        'Reducer: prevState (x) is empty object! Attempting recovery from global cache...'
+      );
       // Try to recover from global state cache
       const cachedState = getGlobalStateCache();
       if (cachedState && Object.keys(cachedState).length > 0) {
         console.log('Reducer: Recovered state from global cache', {
           hasModules: !!cachedState.modules,
-          modulesCount: Array.isArray(cachedState.modules) ? cachedState.modules.length : 'not array',
+          modulesCount: Array.isArray(cachedState.modules)
+            ? cachedState.modules.length
+            : 'not array',
         });
         prevState = cachedState;
       } else {
@@ -211,10 +262,10 @@ const CourseGenerationAnnotation = Annotation.Root({
         prevState = getDefaultState();
       }
     }
-    
+
     // CRITICAL: Validate and normalize prevState to ensure modules are preserved
     // LangGraph may serialize/deserialize state, causing modules to be lost
-    if (prevState && (!Array.isArray(prevState.modules))) {
+    if (prevState && !Array.isArray(prevState.modules)) {
       console.warn('Reducer: prevState.modules is not an array!', {
         hasModules: !!prevState.modules,
         modulesType: typeof prevState.modules,
@@ -229,7 +280,7 @@ const CourseGenerationAnnotation = Annotation.Root({
         modules: Array.isArray(prevState.modules) ? prevState.modules : defaultState.modules,
       };
     }
-    
+
     // Defensive: ensure prevState always has metadata
     if (!prevState.metadata) {
       console.warn('Reducer: prevState missing metadata, adding default');
@@ -238,7 +289,7 @@ const CourseGenerationAnnotation = Annotation.Root({
         metadata: getDefaultState().metadata,
       };
     }
-    
+
     // Handle case where y (update) is undefined
     if (!y) {
       // If y is undefined but x is also undefined, we're in graph construction/validation
@@ -247,15 +298,20 @@ const CourseGenerationAnnotation = Annotation.Root({
       // because invoke() will pass the initial state which will be handled above
       if (!x) {
         const defaultState = getDefaultState();
-        console.log('Reducer: Returning default state (both x and y undefined - graph construction/validation)');
+        console.log(
+          'Reducer: Returning default state (both x and y undefined - graph construction/validation)'
+        );
         return defaultState;
       }
       // CRITICAL: If we have a previous state, preserve it completely (including iterations)
       // This prevents state loss during LangGraph's internal serialization
-      console.log('Reducer: y undefined, preserving prevState with iterations=', prevState.metadata?.iterations);
+      console.log(
+        'Reducer: y undefined, preserving prevState with iterations=',
+        prevState.metadata?.iterations
+      );
       return prevState;
     }
-    
+
     // If y is an empty object (not undefined), this might be a serialization issue
     // Check if it's truly empty
     const yKeys = Object.keys(y);
@@ -265,7 +321,7 @@ const CourseGenerationAnnotation = Annotation.Root({
       console.log('Reducer: y is empty object, returning default state (graph construction)');
       return defaultState;
     }
-    
+
     // If we reach here, we have both x and y, so this is a normal state update
     // Log if y has input (this might be a state update with input preserved)
     if (y.metadata?.input) {
@@ -281,17 +337,18 @@ const CourseGenerationAnnotation = Annotation.Root({
         metadata: getDefaultState().metadata,
       };
     }
-    
+
     const prevMetadata = prevState.metadata;
-    const prevIterations = typeof prevMetadata.iterations === 'number' ? prevMetadata.iterations : 0;
-    const newIterations = typeof y.metadata?.iterations === 'number' ? y.metadata.iterations : undefined;
-    
+    const prevIterations =
+      typeof prevMetadata.iterations === 'number' ? prevMetadata.iterations : 0;
+    const newIterations =
+      typeof y.metadata?.iterations === 'number' ? y.metadata.iterations : undefined;
+
     // CRITICAL: Always preserve the maximum iterations value to prevent reset
     // This ensures iterations can only increase, never decrease
-    const finalIterations = newIterations !== undefined 
-      ? Math.max(newIterations, prevIterations)
-      : prevIterations;
-    
+    const finalIterations =
+      newIterations !== undefined ? Math.max(newIterations, prevIterations) : prevIterations;
+
     const mergedMetadata: CourseGenerationState['metadata'] = {
       ...prevMetadata,
       ...(y.metadata || {}),
@@ -303,12 +360,13 @@ const CourseGenerationAnnotation = Annotation.Root({
       iterations: finalIterations,
       lastModified: y.metadata?.lastModified ?? prevMetadata.lastModified,
     };
-    
+
     // Debug logging for iterations preservation
     if (prevIterations > 0 || newIterations !== undefined || finalIterations > 0) {
-      console.log(`Reducer: Iterations - prev=${prevIterations}, new=${newIterations}, final=${finalIterations}, yHasMetadata=${!!y.metadata}, yMetadataKeys=${y.metadata ? Object.keys(y.metadata).join(',') : 'none'}`);
+      console.log(
+        `Reducer: Iterations - prev=${prevIterations}, new=${newIterations}, final=${finalIterations}, yHasMetadata=${!!y.metadata}, yMetadataKeys=${y.metadata ? Object.keys(y.metadata).join(',') : 'none'}`
+      );
     }
-
 
     // Build merged state with explicit property merging
     // IMPORTANT: Explicitly construct each property to avoid undefined overwrites
@@ -332,7 +390,9 @@ const CourseGenerationAnnotation = Annotation.Root({
         // Otherwise, preserve previous state modules (even if empty)
         // This is critical - nodes that don't modify modules should not cause loss
         if (Array.isArray(prevState.modules)) {
-          console.log('Reducer: Preserving modules from prevState', { count: prevState.modules.length });
+          console.log('Reducer: Preserving modules from prevState', {
+            count: prevState.modules.length,
+          });
           return prevState.modules;
         }
         // Last resort: empty array (should rarely happen)
@@ -350,23 +410,26 @@ const CourseGenerationAnnotation = Annotation.Root({
         if (!y.conceptGraph) {
           return prevState.conceptGraph;
         }
-        
+
         // Ensure concepts is a Map
         let concepts: Map<string, ConceptNode>;
         if (y.conceptGraph.concepts instanceof Map) {
           concepts = y.conceptGraph.concepts;
         } else if (y.conceptGraph.concepts && typeof y.conceptGraph.concepts === 'object') {
           // If it was serialized as a plain object, convert back to Map
-          concepts = new Map(Object.entries(y.conceptGraph.concepts as Record<string, ConceptNode>));
+          concepts = new Map(
+            Object.entries(y.conceptGraph.concepts as Record<string, ConceptNode>)
+          );
         } else {
           concepts = prevState.conceptGraph.concepts;
         }
-        
+
         return {
           concepts: concepts.size > 0 ? concepts : prevState.conceptGraph.concepts,
-          dependencies: y.conceptGraph.dependencies?.length > 0
-            ? y.conceptGraph.dependencies
-            : prevState.conceptGraph.dependencies,
+          dependencies:
+            y.conceptGraph.dependencies?.length > 0
+              ? y.conceptGraph.dependencies
+              : prevState.conceptGraph.dependencies,
         };
       })(),
       // Merge alignment
@@ -374,7 +437,8 @@ const CourseGenerationAnnotation = Annotation.Root({
         ? {
             ...prevState.alignment,
             ...y.alignment,
-            lessonTransitions: y.alignment.lessonTransitions ?? prevState.alignment.lessonTransitions,
+            lessonTransitions:
+              y.alignment.lessonTransitions ?? prevState.alignment.lessonTransitions,
             issues: y.alignment.issues ?? prevState.alignment.issues,
           }
         : prevState.alignment,
@@ -393,12 +457,19 @@ const CourseGenerationAnnotation = Annotation.Root({
     // If for some reason the state is empty, return default state
     const stateKeys = Object.keys(mergedState);
     if (stateKeys.length === 0) {
-      console.error('Reducer returning empty state! This should not happen. Returning default state.');
+      console.error(
+        'Reducer returning empty state! This should not happen. Returning default state.'
+      );
       return getDefaultState();
     }
 
     // Ensure all required properties exist
-    if (!mergedState.course || !mergedState.conceptGraph || !mergedState.alignment || !mergedState.metadata) {
+    if (
+      !mergedState.course ||
+      !mergedState.conceptGraph ||
+      !mergedState.alignment ||
+      !mergedState.metadata
+    ) {
       console.error('Reducer state missing required properties. Merging with defaults.');
       const defaultState = getDefaultState();
       return {
@@ -409,7 +480,7 @@ const CourseGenerationAnnotation = Annotation.Root({
         metadata: mergedState.metadata || defaultState.metadata,
       };
     }
-    
+
     // CRITICAL: Explicitly ensure modules is always an array
     // This is a final safety check - if modules were lost during serialization, we try to recover
     if (!Array.isArray(mergedState.modules)) {
@@ -423,22 +494,26 @@ const CourseGenerationAnnotation = Annotation.Root({
       });
       // Try to recover from prevState first
       if (Array.isArray(prevState.modules)) {
-        console.log('Reducer: Recovering modules from prevState', { count: prevState.modules.length });
+        console.log('Reducer: Recovering modules from prevState', {
+          count: prevState.modules.length,
+        });
         mergedState.modules = prevState.modules;
       } else {
         // Last resort: empty array
         mergedState.modules = [];
       }
     }
-    
+
     // Final validation: ensure mergedState has all required properties
     // Use validateState to normalize the final result
     const finalValidatedState = validateState(mergedState);
-    
+
     // Log final state for debugging
     console.log('Reducer: Returning merged state', {
       hasModules: !!finalValidatedState.modules,
-      modulesCount: Array.isArray(finalValidatedState.modules) ? finalValidatedState.modules.length : 'not array',
+      modulesCount: Array.isArray(finalValidatedState.modules)
+        ? finalValidatedState.modules.length
+        : 'not array',
       hasCourse: !!finalValidatedState.course,
       hasMetadata: !!finalValidatedState.metadata,
       hasInput: !!finalValidatedState.metadata?.input,
@@ -452,16 +527,18 @@ const CourseGenerationAnnotation = Annotation.Root({
       // Ensure alignment has all required properties
       const defaultAlignment = getDefaultState().alignment;
       mergedState.alignment = {
-        lessonTransitions: mergedState.alignment.lessonTransitions ?? defaultAlignment.lessonTransitions,
-        overallScore: typeof mergedState.alignment.overallScore === 'number' 
-          ? mergedState.alignment.overallScore 
-          : defaultAlignment.overallScore,
-        issues: Array.isArray(mergedState.alignment.issues) 
-          ? mergedState.alignment.issues 
+        lessonTransitions:
+          mergedState.alignment.lessonTransitions ?? defaultAlignment.lessonTransitions,
+        overallScore:
+          typeof mergedState.alignment.overallScore === 'number'
+            ? mergedState.alignment.overallScore
+            : defaultAlignment.overallScore,
+        issues: Array.isArray(mergedState.alignment.issues)
+          ? mergedState.alignment.issues
           : defaultAlignment.issues,
       };
     }
-    
+
     // CRITICAL: Update global state cache to help recover from serialization issues
     // This is a workaround for LangGraph web serialization problems
     if (finalValidatedState && Object.keys(finalValidatedState).length > 0) {
@@ -489,57 +566,75 @@ function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_conten
   try {
     // Defensive: validate state structure before accessing properties
     const validatedState = validateState(state);
-    
+
     // Log raw state for debugging
     const rawIterations = state.metadata?.iterations;
     const validatedIterations = validatedState.metadata.iterations || 0;
-    
+
     // CRITICAL: Use global counter as fallback if state iterations are lost
     // This prevents infinite loops when LangGraph serialization loses state
-    const effectiveIterations = validatedIterations > 0 ? validatedIterations : globalIterationCounter;
-    
-    console.log(`shouldRefine: raw=${rawIterations}, validated=${validatedIterations}, global=${globalIterationCounter}, effective=${effectiveIterations}`, {
-      hasAlignment: !!validatedState.alignment,
-      overallScore: validatedState.alignment?.overallScore,
-      scoreType: typeof validatedState.alignment?.overallScore,
-    });
-    
-    // If alignment doesn't exist or overallScore is undefined, proceed to content generation
-    // This handles cases where state was lost during serialization
-    if (!validatedState.alignment || typeof validatedState.alignment.overallScore !== 'number') {
-      console.warn('shouldRefine: alignment or overallScore missing, proceeding to content generation', {
+    const effectiveIterations =
+      validatedIterations > 0 ? validatedIterations : globalIterationCounter;
+
+    console.log(
+      `shouldRefine: raw=${rawIterations}, validated=${validatedIterations}, global=${globalIterationCounter}, effective=${effectiveIterations}`,
+      {
         hasAlignment: !!validatedState.alignment,
         overallScore: validatedState.alignment?.overallScore,
         scoreType: typeof validatedState.alignment?.overallScore,
+      }
+    );
+
+    // If alignment doesn't exist or overallScore is undefined, proceed to content generation
+    // This handles cases where state was lost during serialization
+    if (!validatedState.alignment || typeof validatedState.alignment.overallScore !== 'number') {
+      console.warn(
+        'shouldRefine: alignment or overallScore missing, proceeding to content generation',
+        {
+          hasAlignment: !!validatedState.alignment,
+          overallScore: validatedState.alignment?.overallScore,
+          scoreType: typeof validatedState.alignment?.overallScore,
+        }
+      );
+      return 'generate_content';
+    }
+
+    const score = validatedState.alignment.overallScore;
+    const iterations = effectiveIterations;
+
+    // If score is good enough, proceed to content generation
+    if (score >= 0.8) {
+      console.log('shouldRefine: Score is good enough, proceeding to content generation', {
+        score,
+        iterations,
       });
       return 'generate_content';
     }
-    
-    const score = validatedState.alignment.overallScore;
-    const iterations = effectiveIterations;
-    
-    // If score is good enough, proceed to content generation
-    if (score >= 0.8) {
-      console.log('shouldRefine: Score is good enough, proceeding to content generation', { score, iterations });
-      return 'generate_content';
-    }
-    
+
     // Limit iterations to prevent infinite loops
     // After 2 iterations, proceed even if score isn't perfect
     if (iterations >= 2) {
-      console.log(`shouldRefine: Max iterations (${iterations}) reached, proceeding to content generation`, { score });
+      console.log(
+        `shouldRefine: Max iterations (${iterations}) reached, proceeding to content generation`,
+        { score }
+      );
       globalIterationCounter = 0; // Reset for next course generation
       return 'generate_content';
     }
-    
+
     // If score is very low (< 0.3), don't refine more than once
     if (score < 0.3 && iterations >= 1) {
-      console.log(`shouldRefine: Low score (${score}) after ${iterations} iterations, proceeding to content generation`);
+      console.log(
+        `shouldRefine: Low score (${score}) after ${iterations} iterations, proceeding to content generation`
+      );
       globalIterationCounter = 0; // Reset for next course generation
       return 'generate_content';
     }
-    
-    console.log(`shouldRefine: Proceeding with refinement (iteration ${iterations + 1})`, { score, iterations });
+
+    console.log(`shouldRefine: Proceeding with refinement (iteration ${iterations + 1})`, {
+      score,
+      iterations,
+    });
     return 'refine';
   } catch (error) {
     console.error('shouldRefine: Error during evaluation', {
@@ -564,10 +659,12 @@ async function courseStrategistNode(
     hasMetadata: !!state?.metadata,
     hasInput: !!state?.metadata?.input,
   });
-  
+
   // CRITICAL: Detect if state is empty/corrupted (LangGraph serialization issue)
   if (state && Object.keys(state).length === 0) {
-    console.error('courseStrategistNode: Received empty state object! This indicates LangGraph serialization issue.');
+    console.error(
+      'courseStrategistNode: Received empty state object! This indicates LangGraph serialization issue.'
+    );
     // Try to recover from stored input
     const storedInput = getStoredInput();
     if (storedInput) {
@@ -592,7 +689,7 @@ async function courseStrategistNode(
       hasMetadata: !!validatedState.metadata,
       hasInput: !!validatedState.metadata?.input,
     });
-    
+
     // Defensive check: ensure metadata exists
     // Log state structure for debugging
     if (!validatedState.metadata) {
@@ -601,7 +698,7 @@ async function courseStrategistNode(
         stateKeys: Object.keys(validatedState),
         state: JSON.stringify(validatedState, null, 2),
       });
-      
+
       // Try to recover from stored input if state was lost
       const storedInput = getStoredInput();
       if (storedInput) {
@@ -622,13 +719,15 @@ async function courseStrategistNode(
           },
         };
       }
-      
-      throw new Error('Course generation state is missing metadata. This should not happen. Check console for state details.');
+
+      throw new Error(
+        'Course generation state is missing metadata. This should not happen. Check console for state details.'
+      );
     }
 
     const agent = new CourseStrategistAgent();
     let input = validatedState.metadata.input;
-    
+
     // Fallback: if input is missing but we have stored input, use it
     if (!input) {
       const storedInput = getStoredInput();
@@ -643,7 +742,7 @@ async function courseStrategistNode(
         throw new Error('Course generation input is required in state metadata');
       }
     }
-    
+
     console.log('courseStrategistNode: Calling agent.execute() with input:', {
       hasInput: !!input,
       topic: input?.topic,
@@ -657,7 +756,7 @@ async function courseStrategistNode(
       hasModules: !!result?.modules,
       modulesCount: Array.isArray(result?.modules) ? result.modules.length : 'not array',
     });
-    
+
     // Ensure result includes all required properties
     const defaultState = getDefaultState();
     const normalizedResult: CourseGenerationStateUpdate = {
@@ -671,25 +770,29 @@ async function courseStrategistNode(
         input: input, // Preserve input in metadata
       },
     };
-    
+
     console.log('courseStrategistNode: Returning normalized result', {
       hasCourse: !!normalizedResult.course,
       courseTitle: normalizedResult.course?.title,
-      modulesCount: Array.isArray(normalizedResult.modules) ? normalizedResult.modules.length : 'not array',
+      modulesCount: Array.isArray(normalizedResult.modules)
+        ? normalizedResult.modules.length
+        : 'not array',
       hasInput: !!normalizedResult.metadata?.input,
     });
-    
+
     // CRITICAL: Update global state cache with the result
     // This helps recover from LangGraph serialization issues
     const fullState: CourseGenerationState = {
       course: normalizedResult.course || getDefaultState().course,
-      modules: Array.isArray(normalizedResult.modules) ? normalizedResult.modules : getDefaultState().modules,
+      modules: Array.isArray(normalizedResult.modules)
+        ? normalizedResult.modules
+        : getDefaultState().modules,
       conceptGraph: normalizedResult.conceptGraph || getDefaultState().conceptGraph,
       alignment: normalizedResult.alignment || getDefaultState().alignment,
       metadata: normalizedResult.metadata || getDefaultState().metadata,
     };
     setGlobalStateCache(fullState);
-    
+
     emitProgress({
       phase: 'strategizing',
       phaseName: 'Designing Course Structure',
@@ -716,7 +819,7 @@ async function moduleArchitectNode(
 ): Promise<CourseGenerationStateUpdate> {
   // Validate and normalize state before processing
   const validatedState = validateState(state);
-  
+
   // Defensive check: ensure modules exists and is an array
   if (!validatedState.modules || !Array.isArray(validatedState.modules)) {
     console.error('moduleArchitectNode: state.modules is missing or not an array!', {
@@ -726,13 +829,13 @@ async function moduleArchitectNode(
       stateKeys: Object.keys(validatedState),
       state: JSON.stringify(validatedState, null, 2),
     });
-    
+
     // Use empty array as fallback to prevent crash
     validatedState.modules = [];
   }
-  
+
   const totalModules = validatedState.modules.length;
-  
+
   emitProgress({
     phase: 'architecting',
     phaseName: 'Creating Lesson Outlines',
@@ -770,7 +873,7 @@ async function conceptMapperNode(
 ): Promise<CourseGenerationStateUpdate> {
   // Validate and normalize state before processing
   const validatedState = validateState(state);
-  
+
   // Defensive check: ensure modules exists and is an array
   if (!validatedState.modules || !Array.isArray(validatedState.modules)) {
     console.error('conceptMapperNode: state.modules is missing or not an array!', {
@@ -780,9 +883,9 @@ async function conceptMapperNode(
     });
     validatedState.modules = [];
   }
-  
+
   const totalLessons = validatedState.modules.reduce((sum, m) => sum + (m.lessons?.length || 0), 0);
-  
+
   emitProgress({
     phase: 'mapping',
     phaseName: 'Building Concept Graph',
@@ -825,10 +928,12 @@ async function flowValidatorNode(
     modulesCount: Array.isArray(state?.modules) ? state.modules.length : 'not array',
     stateKeys: state ? Object.keys(state) : [],
   });
-  
+
   // CRITICAL: Detect if state is empty/corrupted (LangGraph serialization issue)
   if (state && Object.keys(state).length === 0) {
-    console.error('flowValidatorNode: Received empty state object! Attempting recovery from global cache...');
+    console.error(
+      'flowValidatorNode: Received empty state object! Attempting recovery from global cache...'
+    );
     // Try to recover from global state cache
     const cachedState = getGlobalStateCache();
     if (cachedState && Object.keys(cachedState).length > 0) {
@@ -838,14 +943,16 @@ async function flowValidatorNode(
       });
       state = cachedState;
     } else {
-      throw new Error('Course generation failed: State was lost during graph execution and cache is empty. This is a critical error.');
+      throw new Error(
+        'Course generation failed: State was lost during graph execution and cache is empty. This is a critical error.'
+      );
     }
   }
 
   try {
     // Validate and normalize state before processing
     const validatedState = validateState(state);
-    
+
     // Defensive check: ensure modules exists and is an array
     if (!Array.isArray(validatedState.modules)) {
       console.error('flowValidatorNode: state.modules is missing or not an array!', {
@@ -855,7 +962,7 @@ async function flowValidatorNode(
       });
       validatedState.modules = [];
     }
-    
+
     emitProgress({
       phase: 'validating',
       phaseName: 'Validating Course Flow',
@@ -918,10 +1025,12 @@ async function refinementAgentNode(
     iterations: state?.metadata?.iterations,
     stateKeys: state ? Object.keys(state) : [],
   });
-  
+
   // CRITICAL: Detect if state is empty/corrupted (LangGraph serialization issue)
   if (state && Object.keys(state).length === 0) {
-    console.error('refinementAgentNode: Received empty state object! Attempting recovery from global cache...');
+    console.error(
+      'refinementAgentNode: Received empty state object! Attempting recovery from global cache...'
+    );
     // Try to recover from global state cache
     const cachedState = getGlobalStateCache();
     if (cachedState && Object.keys(cachedState).length > 0) {
@@ -931,14 +1040,16 @@ async function refinementAgentNode(
       });
       state = cachedState;
     } else {
-      throw new Error('Course generation failed: State was lost during graph execution and cache is empty.');
+      throw new Error(
+        'Course generation failed: State was lost during graph execution and cache is empty.'
+      );
     }
   }
 
   try {
     // Validate and normalize state before processing
     const validatedState = validateState(state);
-    
+
     // Defensive check: ensure modules exists and is an array
     if (!Array.isArray(validatedState.modules)) {
       console.error('refinementAgentNode: state.modules is missing or not an array!', {
@@ -948,7 +1059,7 @@ async function refinementAgentNode(
       });
       validatedState.modules = [];
     }
-    
+
     emitProgress({
       phase: 'refining',
       phaseName: 'Refining Course Structure',
@@ -968,13 +1079,14 @@ async function refinementAgentNode(
 
     // CRITICAL: Ensure iterations are explicitly set in the result
     // This prevents loss during state merging
-    const currentIterations = result.metadata?.iterations !== undefined 
-      ? result.metadata.iterations 
-      : (validatedState.metadata.iterations || 0) + 1;
-    
+    const currentIterations =
+      result.metadata?.iterations !== undefined
+        ? result.metadata.iterations
+        : (validatedState.metadata.iterations || 0) + 1;
+
     // Update global counter as backup
     globalIterationCounter = Math.max(globalIterationCounter, currentIterations);
-    
+
     const resultWithIterations: CourseGenerationStateUpdate = {
       ...result, // modules and metadata from agent
       course: validatedState.course, // Preserve course
@@ -987,11 +1099,16 @@ async function refinementAgentNode(
         lastModified: result.metadata?.lastModified || new Date().toISOString(),
       },
     };
-    
-    console.log(`refinementAgentNode: Returning with iterations=${currentIterations}, global=${globalIterationCounter}`, {
-      hasModules: !!resultWithIterations.modules,
-      modulesCount: Array.isArray(resultWithIterations.modules) ? resultWithIterations.modules.length : 'not array',
-    });
+
+    console.log(
+      `refinementAgentNode: Returning with iterations=${currentIterations}, global=${globalIterationCounter}`,
+      {
+        hasModules: !!resultWithIterations.modules,
+        modulesCount: Array.isArray(resultWithIterations.modules)
+          ? resultWithIterations.modules.length
+          : 'not array',
+      }
+    );
 
     emitProgress({
       phase: 'refining',
@@ -1023,10 +1140,12 @@ async function contentGeneratorNode(
     hasModules: !!state?.modules,
     modulesCount: Array.isArray(state?.modules) ? state.modules.length : 'not array',
   });
-  
+
   // CRITICAL: Detect if state is empty/corrupted (LangGraph serialization issue)
   if (state && Object.keys(state).length === 0) {
-    console.error('contentGeneratorNode: Received empty state object! Attempting recovery from global cache...');
+    console.error(
+      'contentGeneratorNode: Received empty state object! Attempting recovery from global cache...'
+    );
     // Try to recover from global state cache
     const cachedState = getGlobalStateCache();
     if (cachedState && Object.keys(cachedState).length > 0) {
@@ -1036,7 +1155,9 @@ async function contentGeneratorNode(
       });
       state = cachedState;
     } else {
-      throw new Error('Course generation failed: State was lost during graph execution and cache is empty.');
+      throw new Error(
+        'Course generation failed: State was lost during graph execution and cache is empty.'
+      );
     }
   }
 
@@ -1044,11 +1165,13 @@ async function contentGeneratorNode(
     // Validate and normalize state before processing
     const validatedState = validateState(state);
     console.log('contentGeneratorNode: State validated', {
-      modulesCount: Array.isArray(validatedState.modules) ? validatedState.modules.length : 'not array',
+      modulesCount: Array.isArray(validatedState.modules)
+        ? validatedState.modules.length
+        : 'not array',
       hasCourse: !!validatedState.course,
       courseTitle: validatedState.course?.title,
     });
-    
+
     // Defensive check: ensure modules exists and is an array
     if (!validatedState.modules || !Array.isArray(validatedState.modules)) {
       console.error('contentGeneratorNode: state.modules is missing or not an array!', {
@@ -1058,10 +1181,13 @@ async function contentGeneratorNode(
       });
       validatedState.modules = [];
     }
-    
-    const totalLessons = validatedState.modules.reduce((sum, m) => sum + (m.lessons?.length || 0), 0);
+
+    const totalLessons = validatedState.modules.reduce(
+      (sum, m) => sum + (m.lessons?.length || 0),
+      0
+    );
     console.log('contentGeneratorNode: Total lessons to process:', totalLessons);
-    
+
     emitProgress({
       phase: 'generating',
       phaseName: 'Generating Lesson Content',
@@ -1160,14 +1286,10 @@ export function buildCourseGenerationGraph() {
   workflow.addEdge('concept_mapper', 'flow_validator');
 
   // Conditional edge for refinement loop
-  workflow.addConditionalEdges(
-    'flow_validator',
-    shouldRefine,
-    {
-      refine: 'refinement_agent',
-      generate_content: 'content_generator',
-    }
-  );
+  workflow.addConditionalEdges('flow_validator', shouldRefine, {
+    refine: 'refinement_agent',
+    generate_content: 'content_generator',
+  });
 
   workflow.addEdge('refinement_agent', 'flow_validator');
   workflow.addEdge('content_generator', END);

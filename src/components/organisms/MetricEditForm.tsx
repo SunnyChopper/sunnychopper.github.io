@@ -1,7 +1,22 @@
 import { useState } from 'react';
-import type { Metric, UpdateMetricInput, Area, SubCategory, MetricUnit, MetricDirection, MetricSource, MetricStatus } from '../../types/growth-system';
+import type {
+  Metric,
+  UpdateMetricInput,
+  Area,
+  SubCategory,
+  MetricUnit,
+  MetricDirection,
+  MetricSource,
+  MetricStatus,
+} from '../../types/growth-system';
 import Button from '../atoms/Button';
-import { AREAS, METRIC_DIRECTIONS, METRIC_SOURCES, METRIC_STATUSES, METRIC_UNITS } from '../../constants/growth-system';
+import {
+  AREAS,
+  METRIC_DIRECTIONS,
+  METRIC_SOURCES,
+  METRIC_STATUSES,
+  METRIC_UNITS,
+} from '../../constants/growth-system';
 
 interface MetricEditFormProps {
   metric: Metric;
@@ -86,7 +101,9 @@ export function MetricEditForm({ metric, onSubmit, onCancel, isLoading }: Metric
           <input
             type="text"
             value={formData.subCategory || ''}
-            onChange={(e) => setFormData({ ...formData, subCategory: e.target.value as SubCategory })}
+            onChange={(e) =>
+              setFormData({ ...formData, subCategory: e.target.value as SubCategory })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Optional"
           />
@@ -135,7 +152,9 @@ export function MetricEditForm({ metric, onSubmit, onCancel, isLoading }: Metric
             </label>
             <select
               value={formData.direction}
-              onChange={(e) => setFormData({ ...formData, direction: e.target.value as MetricDirection })}
+              onChange={(e) =>
+                setFormData({ ...formData, direction: e.target.value as MetricDirection })
+              }
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
@@ -158,7 +177,9 @@ export function MetricEditForm({ metric, onSubmit, onCancel, isLoading }: Metric
             type="number"
             step="0.01"
             value={formData.targetValue || ''}
-            onChange={(e) => setFormData({ ...formData, targetValue: parseFloat(e.target.value) || undefined })}
+            onChange={(e) =>
+              setFormData({ ...formData, targetValue: parseFloat(e.target.value) || undefined })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Optional target"
           />
@@ -192,7 +213,9 @@ export function MetricEditForm({ metric, onSubmit, onCancel, isLoading }: Metric
             type="number"
             step="0.01"
             value={formData.thresholdLow || ''}
-            onChange={(e) => setFormData({ ...formData, thresholdLow: parseFloat(e.target.value) || undefined })}
+            onChange={(e) =>
+              setFormData({ ...formData, thresholdLow: parseFloat(e.target.value) || undefined })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Optional"
           />
@@ -206,7 +229,9 @@ export function MetricEditForm({ metric, onSubmit, onCancel, isLoading }: Metric
             type="number"
             step="0.01"
             value={formData.thresholdHigh || ''}
-            onChange={(e) => setFormData({ ...formData, thresholdHigh: parseFloat(e.target.value) || undefined })}
+            onChange={(e) =>
+              setFormData({ ...formData, thresholdHigh: parseFloat(e.target.value) || undefined })
+            }
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Optional"
           />
@@ -232,19 +257,10 @@ export function MetricEditForm({ metric, onSubmit, onCancel, isLoading }: Metric
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={isLoading}
-        >
+        <Button type="submit" variant="primary" disabled={isLoading}>
           {isLoading ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>

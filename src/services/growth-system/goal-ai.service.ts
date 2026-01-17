@@ -43,13 +43,9 @@ export const goalAIService = {
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
-      const tasksSummary = linkedTasks.map(t => ({
+      const tasksSummary = linkedTasks.map((t) => ({
         title: t.title,
         status: t.status,
         priority: t.priority,
@@ -81,10 +77,9 @@ Provide:
 
 Be encouraging but honest about areas needing attention.`;
 
-      const result = await provider.invokeStructured(
-        ProgressCoachingOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(ProgressCoachingOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -119,25 +114,27 @@ Be encouraging but honest about areas needing attention.`;
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const now = new Date();
       const createdDate = new Date(goal.createdAt);
       const targetDate = goal.targetDate ? new Date(goal.targetDate) : null;
       const lastActivity = goal.lastActivityAt ? new Date(goal.lastActivityAt) : createdDate;
 
-      const daysElapsed = Math.ceil((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-      const daysRemaining = targetDate ? Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
-      const daysSinceActivity = Math.ceil((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+      const daysElapsed = Math.ceil(
+        (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const daysRemaining = targetDate
+        ? Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+      const daysSinceActivity = Math.ceil(
+        (now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       const relatedGoalsContext = allGoals
-        .filter(g => g.id !== goal.id && g.area === goal.area && g.status === 'Active')
+        .filter((g) => g.id !== goal.id && g.area === goal.area && g.status === 'Active')
         .slice(0, 5)
-        .map(g => ({ title: g.title, status: g.status, priority: g.priority }));
+        .map((g) => ({ title: g.title, status: g.status, priority: g.priority }));
 
       const prompt = `Analyze the health of this goal and provide a comprehensive health score:
 
@@ -174,10 +171,9 @@ Provide:
 - Strengths and concerns
 - Recommendations to improve health`;
 
-      const result = await provider.invokeStructured(
-        GoalHealthScoreOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(GoalHealthScoreOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -196,9 +192,7 @@ Provide:
   /**
    * Decompose a goal into sub-goals, tasks, metrics, and habits
    */
-  async decomposeGoal(
-    goal: Goal
-  ): Promise<ApiResponse<GoalDecompositionOutput>> {
+  async decomposeGoal(goal: Goal): Promise<ApiResponse<GoalDecompositionOutput>> {
     try {
       // Try backend endpoint first
       const backendResponse = await apiClient.post<{ data: AIResponse<GoalDecompositionOutput> }>(
@@ -228,11 +222,7 @@ Provide:
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
-      );
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const prompt = `Break down this goal into actionable components:
 
@@ -243,9 +233,13 @@ Area: ${goal.area}
 Target Date: ${goal.targetDate || 'Not set'}
 
 Success Criteria:
-${Array.isArray(goal.successCriteria) ? goal.successCriteria.map((c: any) => 
-  typeof c === 'string' ? `- ${c}` : `- ${c.text}`
-).join('\n') : 'None defined'}
+${
+  Array.isArray(goal.successCriteria)
+    ? goal.successCriteria
+        .map((c: any) => (typeof c === 'string' ? `- ${c}` : `- ${c.text}`))
+        .join('\n')
+    : 'None defined'
+}
 
 Provide a complete decomposition:
 
@@ -257,10 +251,9 @@ Provide a complete decomposition:
 
 Make it actionable and specific to the goal's area (${goal.area}).`;
 
-      const result = await provider.invokeStructured(
-        GoalDecompositionOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(GoalDecompositionOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,
@@ -279,9 +272,7 @@ Make it actionable and specific to the goal's area (${goal.area}).`;
   /**
    * Detect conflicts and overcommitment across all goals
    */
-  async detectConflicts(
-    goals: Goal[]
-  ): Promise<ApiResponse<ConflictDetectionOutput>> {
+  async detectConflicts(goals: Goal[]): Promise<ApiResponse<ConflictDetectionOutput>> {
     try {
       const featureConfig = getFeatureConfig('goalHealth');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
@@ -293,17 +284,13 @@ Make it actionable and specific to the goal's area (${goal.area}).`;
         throw new Error('API key not found');
       }
 
-      const provider = createProvider(
-        featureConfig.provider,
-        apiKey,
-        featureConfig.model
+      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
+
+      const activeGoals = goals.filter(
+        (g) => g.status === 'Active' || g.status === 'OnTrack' || g.status === 'AtRisk'
       );
 
-      const activeGoals = goals.filter(g => 
-        g.status === 'Active' || g.status === 'OnTrack' || g.status === 'AtRisk'
-      );
-
-      const goalsSummary = activeGoals.map(g => ({
+      const goalsSummary = activeGoals.map((g) => ({
         id: g.id,
         title: g.title,
         description: g.description,
@@ -335,10 +322,9 @@ Analyze:
 
 Provide specific conflict details and actionable resolution strategies.`;
 
-      const result = await provider.invokeStructured(
-        ConflictDetectionOutputSchema,
-        [{ role: 'user', content: prompt }]
-      );
+      const result = await provider.invokeStructured(ConflictDetectionOutputSchema, [
+        { role: 'user', content: prompt },
+      ]);
 
       return {
         data: result,

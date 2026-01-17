@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN making components and layouts responsive across screen sizes."
-globs: ""
+description: 'USE WHEN making components and layouts responsive across screen sizes.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -11,13 +11,13 @@ Mobile-first responsive design patterns.
 ## Breakpoint Reference
 
 | Prefix | Min-width | Target Devices |
-|--------|-----------|----------------|
-| (none) | 0px | Mobile phones |
-| `sm:` | 640px | Large phones |
-| `md:` | 768px | Tablets |
-| `lg:` | 1024px | Laptops |
-| `xl:` | 1280px | Desktops |
-| `2xl:` | 1536px | Large screens |
+| ------ | --------- | -------------- |
+| (none) | 0px       | Mobile phones  |
+| `sm:`  | 640px     | Large phones   |
+| `md:`  | 768px     | Tablets        |
+| `lg:`  | 1024px    | Laptops        |
+| `xl:`  | 1280px    | Desktops       |
+| `2xl:` | 1536px    | Large screens  |
 
 ## Mobile-First Approach
 
@@ -44,9 +44,7 @@ Always start with mobile styles, then add breakpoints:
 <nav className="flex items-center justify-between">
   <Logo />
   <button className="md:hidden">Menu</button>
-  <div className="hidden md:flex gap-6">
-    {navItems}
-  </div>
+  <div className="hidden md:flex gap-6">{navItems}</div>
 </nav>
 ```
 

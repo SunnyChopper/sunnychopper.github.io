@@ -80,7 +80,9 @@ export class APILLMAdapter implements ILLMAdapter {
     });
   }
 
-  async resolveBlockers(input: BlockerResolutionInput): Promise<LLMResponse<BlockerResolutionOutput>> {
+  async resolveBlockers(
+    input: BlockerResolutionInput
+  ): Promise<LLMResponse<BlockerResolutionOutput>> {
     // Backend may not have this exact endpoint - using breakdown as fallback
     return this.callAIEndpoint<{ taskId: string }, BlockerResolutionOutput>('/ai/tasks/breakdown', {
       taskId: input.task.id,
@@ -94,31 +96,38 @@ export class APILLMAdapter implements ILLMAdapter {
   }
 
   async estimateEffort(input: EffortEstimationInput): Promise<LLMResponse<EffortEstimationOutput>> {
-    return this.callAIEndpoint<{ taskId?: string; title: string; description?: string }, EffortEstimationOutput>(
-      '/ai/tasks/estimate',
-      {
-        taskId: input.task.id,
-        title: input.task.title || '',
-        description: input.task.description || undefined,
-      }
-    );
-  }
-
-  async categorizeTask(input: TaskCategorizationInput): Promise<LLMResponse<TaskCategorizationOutput>> {
-    return this.callAIEndpoint<{ input: string }, TaskCategorizationOutput>('/ai/tasks/categorize', {
-      input: `${input.title} ${input.description || ''}`.trim(),
+    return this.callAIEndpoint<
+      { taskId?: string; title: string; description?: string },
+      EffortEstimationOutput
+    >('/ai/tasks/estimate', {
+      taskId: input.task.id,
+      title: input.task.title || '',
+      description: input.task.description || undefined,
     });
   }
 
-  async detectDependencies(input: DependencyDetectionInput): Promise<LLMResponse<DependencyDetectionOutput>> {
-    return this.callAIEndpoint<{ taskId?: string; title: string; description?: string }, DependencyDetectionOutput>(
-      '/ai/tasks/dependencies',
+  async categorizeTask(
+    input: TaskCategorizationInput
+  ): Promise<LLMResponse<TaskCategorizationOutput>> {
+    return this.callAIEndpoint<{ input: string }, TaskCategorizationOutput>(
+      '/ai/tasks/categorize',
       {
-        taskId: input.task.id,
-        title: input.task.title || '',
-        description: input.task.description || undefined,
+        input: `${input.title} ${input.description || ''}`.trim(),
       }
     );
+  }
+
+  async detectDependencies(
+    input: DependencyDetectionInput
+  ): Promise<LLMResponse<DependencyDetectionOutput>> {
+    return this.callAIEndpoint<
+      { taskId?: string; title: string; description?: string },
+      DependencyDetectionOutput
+    >('/ai/tasks/dependencies', {
+      taskId: input.task.id,
+      title: input.task.title || '',
+      description: input.task.description || undefined,
+    });
   }
 
   async analyzeProjectHealth(input: ProjectHealthInput): Promise<LLMResponse<ProjectHealthOutput>> {
@@ -128,7 +137,9 @@ export class APILLMAdapter implements ILLMAdapter {
     });
   }
 
-  async generateProjectTasks(input: ProjectTaskGenInput): Promise<LLMResponse<ProjectTaskGenOutput>> {
+  async generateProjectTasks(
+    input: ProjectTaskGenInput
+  ): Promise<LLMResponse<ProjectTaskGenOutput>> {
     // Backend may not have this exact endpoint
     return this.callAIEndpoint<{ projectId: string }, ProjectTaskGenOutput>('/ai/tasks/breakdown', {
       projectId: input.project.id,

@@ -11,7 +11,12 @@ interface HabitCalendarViewProps {
   onQuickLog?: (date: Date) => void;
 }
 
-export function HabitCalendarView({ habit, logs, onDateClick, onQuickLog }: HabitCalendarViewProps) {
+export function HabitCalendarView({
+  habit,
+  logs,
+  onDateClick,
+  onQuickLog,
+}: HabitCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -36,13 +41,13 @@ export function HabitCalendarView({ habit, logs, onDateClick, onQuickLog }: Habi
   const calendarDays = generateCalendarDays(year, month, logs);
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const colors = getHabitTypeColors(habit.habitType);
-  
+
   // Get current week start (Monday)
   const dayOfWeek = today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
   monday.setHours(0, 0, 0, 0);
-  
+
   // Get current week end (Sunday)
   const currentWeekEnd = new Date(monday);
   currentWeekEnd.setDate(monday.getDate() + 6);
@@ -89,7 +94,8 @@ export function HabitCalendarView({ habit, logs, onDateClick, onQuickLog }: Habi
           const isToday = calendarDay.isToday;
           const dayDate = new Date(calendarDay.date);
           dayDate.setHours(0, 0, 0, 0);
-          const isCurrentWeek = dayDate >= monday && dayDate <= currentWeekEnd && calendarDay.isCurrentMonth;
+          const isCurrentWeek =
+            dayDate >= monday && dayDate <= currentWeekEnd && calendarDay.isCurrentMonth;
 
           return (
             <div
@@ -98,8 +104,8 @@ export function HabitCalendarView({ habit, logs, onDateClick, onQuickLog }: Habi
                 isToday
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md ring-2 ring-blue-200 dark:ring-blue-800'
                   : hasCompletions
-                  ? `${colors.border} bg-white dark:bg-gray-800 hover:shadow-md hover:scale-105`
-                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                    ? `${colors.border} bg-white dark:bg-gray-800 hover:shadow-md hover:scale-105`
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50'
               } ${!calendarDay.isCurrentMonth ? 'opacity-40' : ''} ${
                 isCurrentWeek && !isToday ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''
               }`}
@@ -111,8 +117,8 @@ export function HabitCalendarView({ habit, logs, onDateClick, onQuickLog }: Habi
                     isToday
                       ? 'text-blue-600 dark:text-blue-400'
                       : calendarDay.isCurrentMonth
-                      ? 'text-gray-700 dark:text-gray-300'
-                      : 'text-gray-400 dark:text-gray-600'
+                        ? 'text-gray-700 dark:text-gray-300'
+                        : 'text-gray-400 dark:text-gray-600'
                   }`}
                 >
                   {calendarDay.day}
@@ -131,7 +137,7 @@ export function HabitCalendarView({ habit, logs, onDateClick, onQuickLog }: Habi
                     </div>
                   </div>
                 )}
-                
+
                 {isToday && !hasCompletions && onQuickLog && (
                   <button
                     onClick={(e) => {

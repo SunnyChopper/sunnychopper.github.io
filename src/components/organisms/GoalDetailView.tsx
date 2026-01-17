@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
-import type { Goal, Task, Metric, MetricLog, Habit, EntitySummary, GoalProgressBreakdown } from '../../types/growth-system';
+import type {
+  Goal,
+  Task,
+  Metric,
+  MetricLog,
+  Habit,
+  EntitySummary,
+  GoalProgressBreakdown,
+} from '../../types/growth-system';
 import { AreaBadge } from '../atoms/AreaBadge';
 import { StatusBadge } from '../atoms/StatusBadge';
 import { PriorityIndicator } from '../atoms/PriorityIndicator';
@@ -73,7 +81,9 @@ export function GoalDetailView({
       } catch (error) {
         console.error('Failed to compute progress:', error);
         // Fallback to basic criteria-based progress
-        const criteriaProgress = goalProgressService.calculateCriteriaProgress(goal.successCriteria);
+        const criteriaProgress = goalProgressService.calculateCriteriaProgress(
+          goal.successCriteria
+        );
         setProgress({
           overall: criteriaProgress.percentage,
           criteria: criteriaProgress,
@@ -107,9 +117,7 @@ export function GoalDetailView({
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-4">
                 <PriorityIndicator priority={goal.priority} size="lg" />
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {goal.title}
-                </h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{goal.title}</h1>
               </div>
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <AreaBadge area={goal.area} />
@@ -124,18 +132,12 @@ export function GoalDetailView({
                 <StatusBadge status={goal.status} size="sm" />
               </div>
               {goal.description && (
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  {goal.description}
-                </p>
+                <p className="text-gray-700 dark:text-gray-300 mb-4">{goal.description}</p>
               )}
             </div>
 
             <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onEdit}
-              >
+              <Button variant="secondary" size="sm" onClick={onEdit}>
                 <Edit2 className="w-4 h-4 mr-1" />
                 Edit
               </Button>
@@ -195,11 +197,7 @@ export function GoalDetailView({
         {/* Entity Sections Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Tasks Section */}
-          <GoalTasksSection
-            tasks={tasks}
-            onAddTask={onAddTask}
-            showEmpty={true}
-          />
+          <GoalTasksSection tasks={tasks} onAddTask={onAddTask} showEmpty={true} />
 
           {/* Metrics Section */}
           <GoalMetricsSection

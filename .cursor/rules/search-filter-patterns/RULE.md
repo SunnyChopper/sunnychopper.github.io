@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN implementing search, filter, and sort functionality."
-globs: ""
+description: 'USE WHEN implementing search, filter, and sort functionality.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -11,11 +11,7 @@ Standards for implementing search, filtering, and sorting.
 ## Search Input
 
 ```tsx
-function SearchInput({
-  value,
-  onChange,
-  placeholder = 'Search...',
-}: SearchInputProps) {
+function SearchInput({ value, onChange, placeholder = 'Search...' }: SearchInputProps) {
   return (
     <div className="relative">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -120,8 +116,9 @@ function FilterPanel({ filters, onChange }: FilterPanelProps) {
 
 ```tsx
 function ActiveFilters({ filters, onRemove }: ActiveFiltersProps) {
-  const activeFilters = Object.entries(filters)
-    .filter(([_, value]) => value !== 'all' && value !== null);
+  const activeFilters = Object.entries(filters).filter(
+    ([_, value]) => value !== 'all' && value !== null
+  );
 
   if (activeFilters.length === 0) return null;
 
@@ -173,8 +170,10 @@ function SortDropdown({ value, onChange }: SortDropdownProps) {
       }}
       className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
     >
-      {options.map(opt => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
       ))}
     </select>
   );
@@ -184,12 +183,7 @@ function SortDropdown({ value, onChange }: SortDropdownProps) {
 ## Sortable Table Header
 
 ```tsx
-function SortableHeader({
-  label,
-  field,
-  currentSort,
-  onSort,
-}: SortableHeaderProps) {
+function SortableHeader({ label, field, currentSort, onSort }: SortableHeaderProps) {
   const isActive = currentSort.field === field;
   const nextDirection = isActive && currentSort.direction === 'asc' ? 'desc' : 'asc';
 
@@ -200,11 +194,12 @@ function SortableHeader({
     >
       {label}
       <span className="w-4">
-        {isActive && (
-          currentSort.direction === 'asc'
-            ? <ChevronUp className="w-4 h-4" />
-            : <ChevronDown className="w-4 h-4" />
-        )}
+        {isActive &&
+          (currentSort.direction === 'asc' ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          ))}
       </span>
     </button>
   );

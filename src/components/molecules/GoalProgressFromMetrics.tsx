@@ -24,11 +24,7 @@ export function GoalProgressFromMetrics({
         };
       }
 
-      const progress = calculateProgress(
-        latestLog.value,
-        metric.targetValue,
-        metric.direction
-      );
+      const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
 
       // Calculate contribution (equal weight for now, could be weighted)
       const contribution = progress.percentage / linkedMetrics.length;
@@ -42,10 +38,7 @@ export function GoalProgressFromMetrics({
   }, [linkedMetrics]);
 
   const totalProgress = useMemo(() => {
-    return metricContributions.reduce(
-      (sum, mc) => sum + mc.contribution,
-      0
-    );
+    return metricContributions.reduce((sum, mc) => sum + mc.contribution, 0);
   }, [metricContributions]);
 
   if (linkedMetrics.length === 0) {
@@ -62,12 +55,7 @@ export function GoalProgressFromMetrics({
       {/* Overall Progress */}
       <div className="flex items-center justify-center">
         <div className="text-center">
-          <ProgressRing
-            progress={totalProgress}
-            size="lg"
-            color="blue"
-            showLabel={true}
-          />
+          <ProgressRing progress={totalProgress} size="lg" color="blue" showLabel={true} />
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             Overall Progress from Metrics
           </p>
@@ -87,9 +75,7 @@ export function GoalProgressFromMetrics({
               className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
             >
               <div className="flex items-center justify-between mb-2">
-                <h5 className="font-medium text-gray-900 dark:text-white">
-                  {metric.name}
-                </h5>
+                <h5 className="font-medium text-gray-900 dark:text-white">{metric.name}</h5>
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   {progress.toFixed(0)}%
                 </span>

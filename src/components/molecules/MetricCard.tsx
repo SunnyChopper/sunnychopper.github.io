@@ -16,12 +16,7 @@ interface MetricCardProps {
   onQuickLog?: (metric: Metric) => void;
 }
 
-export function MetricCard({
-  metric,
-  logs = [],
-  onClick,
-  onQuickLog,
-}: MetricCardProps) {
+export function MetricCard({ metric, logs = [], onClick, onQuickLog }: MetricCardProps) {
   const latestLog = logs.length > 0 ? logs[0] : null;
   const currentValue = latestLog?.value || 0;
 
@@ -45,7 +40,7 @@ export function MetricCard({
   const statusColors = {
     'On Track': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
     'At Risk': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
-    'Stalled': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+    Stalled: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
     'No Target': 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
   };
 
@@ -59,8 +54,7 @@ export function MetricCard({
     return null;
   };
 
-  const unit =
-    metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
+  const unit = metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
 
   return (
     <div
@@ -79,7 +73,9 @@ export function MetricCard({
             </p>
           )}
         </div>
-        <div className={`px-2 py-1 text-xs font-medium rounded-full ml-2 flex-shrink-0 ${statusColors[status as keyof typeof statusColors]}`}>
+        <div
+          className={`px-2 py-1 text-xs font-medium rounded-full ml-2 flex-shrink-0 ${statusColors[status as keyof typeof statusColors]}`}
+        >
           {status}
         </div>
       </div>
@@ -101,9 +97,7 @@ export function MetricCard({
             <span className="text-3xl font-bold text-gray-900 dark:text-white">
               {currentValue.toFixed(metric.unit === 'dollars' ? 0 : 1)}
             </span>
-            <span className="text-lg text-gray-600 dark:text-gray-400">
-              {unit}
-            </span>
+            <span className="text-lg text-gray-600 dark:text-gray-400">{unit}</span>
             {trend && (
               <div className="flex items-center gap-1">
                 {trend.isImproving ? (
@@ -128,9 +122,7 @@ export function MetricCard({
           {latestLog && (
             <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
               <Calendar className="w-3 h-3" />
-              <span>
-                {new Date(latestLog.loggedAt).toLocaleDateString()}
-              </span>
+              <span>{new Date(latestLog.loggedAt).toLocaleDateString()}</span>
             </div>
           )}
         </div>
@@ -164,9 +156,7 @@ export function MetricCard({
       {/* Heatmap Preview */}
       {logs.length > 0 && (
         <div className="mb-4">
-          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-            Logging Activity
-          </div>
+          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">Logging Activity</div>
           <MetricHeatmapPreview logs={logs} months={6} size="sm" />
         </div>
       )}
@@ -176,7 +166,8 @@ export function MetricCard({
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
           <Target className="w-4 h-4" />
           <span>
-            Target: {metric.targetValue.toFixed(metric.unit === 'dollars' ? 0 : 1)} {unit} ({metric.direction})
+            Target: {metric.targetValue.toFixed(metric.unit === 'dollars' ? 0 : 1)} {unit} (
+            {metric.direction})
           </span>
         </div>
       )}

@@ -29,14 +29,9 @@ function canRedeemReward(
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const todayRedemptions = redemptions.filter(
-    (r) => new Date(r.redeemedAt) >= todayStart
-  );
+  const todayRedemptions = redemptions.filter((r) => new Date(r.redeemedAt) >= todayStart);
 
-  if (
-    reward.maxRedemptionsPerDay &&
-    todayRedemptions.length >= reward.maxRedemptionsPerDay
-  ) {
+  if (reward.maxRedemptionsPerDay && todayRedemptions.length >= reward.maxRedemptionsPerDay) {
     return {
       canRedeem: false,
       cooldownMessage: 'Daily redemption limit reached',
@@ -45,18 +40,14 @@ function canRedeemReward(
 
   if (reward.cooldownHours && redemptions.length > 0) {
     const lastRedemption = redemptions.sort(
-      (a, b) =>
-        new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime()
+      (a, b) => new Date(b.redeemedAt).getTime() - new Date(a.redeemedAt).getTime()
     )[0];
     const cooldownEnd = new Date(
-      new Date(lastRedemption.redeemedAt).getTime() +
-        reward.cooldownHours * 60 * 60 * 1000
+      new Date(lastRedemption.redeemedAt).getTime() + reward.cooldownHours * 60 * 60 * 1000
     );
 
     if (now < cooldownEnd) {
-      const hoursLeft = Math.ceil(
-        (cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60)
-      );
+      const hoursLeft = Math.ceil((cooldownEnd.getTime() - now.getTime()) / (1000 * 60 * 60));
       return {
         canRedeem: false,
         cooldownMessage: `Available in ${hoursLeft} hour${hoursLeft > 1 ? 's' : ''}`,
@@ -177,10 +168,9 @@ export const rewardsService = {
   },
 
   async redeem(input: RedeemRewardInput): Promise<ApiResponse<RewardRedemption>> {
-    const response = await apiClient.post<RewardRedemption>(
-      `/rewards/${input.rewardId}/redeem`,
-      { notes: input.notes }
-    );
+    const response = await apiClient.post<RewardRedemption>(`/rewards/${input.rewardId}/redeem`, {
+      notes: input.notes,
+    });
     if (response.success && response.data) {
       return { data: response.data, error: null, success: true };
     }
@@ -193,7 +183,9 @@ export const rewardsService = {
 
   async getRedemptionHistory(): Promise<ApiResponse<RewardRedemption[]>> {
     // Backend may provide this via wallet transactions
-    const walletResponse = await apiClient.get<{ recentTransactions: RewardRedemption[] }>('/wallet');
+    const walletResponse = await apiClient.get<{ recentTransactions: RewardRedemption[] }>(
+      '/wallet'
+    );
     if (walletResponse.success && walletResponse.data) {
       return {
         data: walletResponse.data.recentTransactions.filter((t) => t.type === 'spend'),

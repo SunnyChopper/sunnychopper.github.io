@@ -52,8 +52,9 @@ function validateAtomicDesign(): ValidationResult {
     const dirPath = join(componentsPath, dir);
     if (!existsSync(dirPath)) return;
 
-    const files = readdirSync(dirPath, { withFileTypes: true })
-      .filter((f) => f.isFile() && f.name.endsWith('.tsx'));
+    const files = readdirSync(dirPath, { withFileTypes: true }).filter(
+      (f) => f.isFile() && f.name.endsWith('.tsx')
+    );
 
     for (const file of files) {
       const filePath = join(dirPath, file.name);
@@ -64,9 +65,7 @@ function validateAtomicDesign(): ValidationResult {
         if (type === dir) continue;
         const pattern = new RegExp(`from ['"].*components/${type}/`, 'g');
         if (pattern.test(content)) {
-          violations.push(
-            `${file.name} in ${dir}/ imports from ${type}/ (violates atomic design)`
-          );
+          violations.push(`${file.name} in ${dir}/ imports from ${type}/ (violates atomic design)`);
         }
       }
     }
@@ -196,8 +195,9 @@ function validateFileNaming(): ValidationResult {
     const dirPath = join(srcPath, dir);
     if (!existsSync(dirPath)) return;
 
-    const files = readdirSync(dirPath, { recursive: true })
-      .filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'));
+    const files = readdirSync(dirPath, { recursive: true }).filter(
+      (f) => f.endsWith('.tsx') || f.endsWith('.ts')
+    );
 
     for (const file of files) {
       const fileName = file.split('/').pop() || '';

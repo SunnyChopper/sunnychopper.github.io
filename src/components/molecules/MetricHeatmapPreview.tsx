@@ -15,10 +15,7 @@ export function MetricHeatmapPreview({
   size = 'sm',
   className = '',
 }: MetricHeatmapPreviewProps) {
-  const heatmapData = useMemo(
-    () => generateHeatmapData(logs, months),
-    [logs, months]
-  );
+  const heatmapData = useMemo(() => generateHeatmapData(logs, months), [logs, months]);
 
   if (heatmapData.length === 0) {
     return (
@@ -33,13 +30,13 @@ export function MetricHeatmapPreview({
   const cellSize = size === 'sm' ? 8 : 10;
 
   // Group by weeks
-  const weeks: Array<Array<typeof heatmapData[0] | null>> = [];
+  const weeks: Array<Array<(typeof heatmapData)[0] | null>> = [];
 
   if (heatmapData.length > 0) {
     const firstDate = new Date(heatmapData[0].date);
     const firstDayOfWeek = firstDate.getDay();
 
-    let currentWeek: Array<typeof heatmapData[0] | null> = [];
+    let currentWeek: Array<(typeof heatmapData)[0] | null> = [];
 
     // Fill in empty days at start of first week
     for (let i = 0; i < firstDayOfWeek; i++) {
@@ -102,9 +99,7 @@ export function MetricHeatmapPreview({
                 key={day.date}
                 style={{ width: cellSize, height: cellSize }}
                 className={`${colorClass} rounded-sm ${
-                  isToday
-                    ? 'ring-2 ring-blue-500 dark:ring-blue-400'
-                    : ''
+                  isToday ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''
                 } transition-colors`}
                 title={`${day.date}: ${day.value?.toFixed(1) || 'No log'}`}
               />

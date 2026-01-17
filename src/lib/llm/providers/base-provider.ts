@@ -17,9 +17,7 @@ export abstract class BaseLLMProvider {
 
   async invoke(messages: Array<{ role: string; content: string }>): Promise<string> {
     const model = this.createModel();
-    const response = await model.invoke(
-      messages.map((msg) => [msg.role, msg.content])
-    );
+    const response = await model.invoke(messages.map((msg) => [msg.role, msg.content]));
     return response.content.toString();
   }
 
@@ -30,9 +28,7 @@ export abstract class BaseLLMProvider {
     const model = this.createModel();
     let fullContent = '';
 
-    const stream = await model.stream(
-      messages.map((msg) => [msg.role, msg.content])
-    );
+    const stream = await model.stream(messages.map((msg) => [msg.role, msg.content]));
 
     for await (const chunk of stream) {
       const content = chunk.content.toString();
@@ -53,9 +49,7 @@ export abstract class BaseLLMProvider {
     messages: Array<{ role: string; content: string }>
   ): Promise<z.infer<T>> {
     const structuredModel = this.withStructuredOutput(schema);
-    const response = await structuredModel.invoke(
-      messages.map((msg) => [msg.role, msg.content])
-    );
+    const response = await structuredModel.invoke(messages.map((msg) => [msg.role, msg.content]));
     return response as z.infer<T>;
   }
 }

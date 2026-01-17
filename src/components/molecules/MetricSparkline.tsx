@@ -21,10 +21,7 @@ export function MetricSparkline({
   showPoints = false,
   className = '',
 }: MetricSparklineProps) {
-  const data = useMemo(
-    () => getTimeSeriesData(logs, 'day', days),
-    [logs, days]
-  );
+  const data = useMemo(() => getTimeSeriesData(logs, 'day', days), [logs, days]);
 
   if (data.length === 0) {
     return (
@@ -79,10 +76,7 @@ export function MetricSparkline({
     <div className={className}>
       <svg width={width} height={height} className="overflow-visible">
         {/* Area fill */}
-        <path
-          d={areaPath}
-          className={fillColorClasses[color as keyof typeof fillColorClasses]}
-        />
+        <path d={areaPath} className={fillColorClasses[color as keyof typeof fillColorClasses]} />
         {/* Line */}
         <path
           d={pathData}

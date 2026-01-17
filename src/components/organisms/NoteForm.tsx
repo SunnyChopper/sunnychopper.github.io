@@ -43,12 +43,12 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
     if (!note) {
       const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (draft) {
-      try {
-        const parsed = JSON.parse(draft);
-        setFormData(prev => ({ ...prev, ...parsed }));
-      } catch {
-        // Invalid draft, ignore
-      }
+        try {
+          const parsed = JSON.parse(draft);
+          setFormData((prev) => ({ ...prev, ...parsed }));
+        } catch {
+          // Invalid draft, ignore
+        }
       }
     }
   }, [note]);
@@ -57,14 +57,17 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
   useEffect(() => {
     if (!note && (formData.title || formData.content)) {
       const timer = setTimeout(() => {
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
-          title: formData.title,
-          content: formData.content,
-          area: formData.area,
-          sourceUrl: formData.sourceUrl,
-          tags: formData.tags,
-          linkedItems: formData.linkedItems,
-        }));
+        localStorage.setItem(
+          DRAFT_STORAGE_KEY,
+          JSON.stringify({
+            title: formData.title,
+            content: formData.content,
+            area: formData.area,
+            sourceUrl: formData.sourceUrl,
+            tags: formData.tags,
+            linkedItems: formData.linkedItems,
+          })
+        );
       }, 30000);
 
       return () => clearTimeout(timer);
@@ -195,7 +198,7 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
           type="text"
           value={formData.title}
           onChange={(e) => {
-            setFormData(prev => ({ ...prev, title: e.target.value }));
+            setFormData((prev) => ({ ...prev, title: e.target.value }));
             validateTitle(e.target.value);
           }}
           onBlur={(e) => validateTitle(e.target.value)}
@@ -208,9 +211,7 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
           placeholder="Enter note title"
           required
         />
-        {titleError && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{titleError}</p>
-        )}
+        {titleError && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{titleError}</p>}
       </div>
 
       {/* Content Section */}
@@ -237,7 +238,7 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
         </div>
         <MarkdownEditor
           value={formData.content}
-          onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
+          onChange={(value) => setFormData((prev) => ({ ...prev, content: value }))}
           placeholder="Write your note content here (supports Markdown)"
           minHeight="500px"
           className="min-h-[500px]"
@@ -247,18 +248,15 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
       {/* AI Assistant Panel - Fixed Right Side */}
       {showAIPanel && llmConfig.isConfigured() && (
         <>
-          <div
-            className="fixed inset-0 bg-black/20 z-[75]"
-            onClick={() => setShowAIPanel(false)}
-          />
+          <div className="fixed inset-0 bg-black/20 z-[75]" onClick={() => setShowAIPanel(false)} />
           <NoteAIAssistPanel
             content={formData.content}
             title={formData.title}
             area={formData.area}
             tags={formData.tags}
-            onContentChange={(content) => setFormData(prev => ({ ...prev, content }))}
-            onTagsChange={(tags) => setFormData(prev => ({ ...prev, tags }))}
-            onAreaChange={(area) => setFormData(prev => ({ ...prev, area }))}
+            onContentChange={(content) => setFormData((prev) => ({ ...prev, content }))}
+            onTagsChange={(tags) => setFormData((prev) => ({ ...prev, tags }))}
+            onAreaChange={(area) => setFormData((prev) => ({ ...prev, area }))}
             onClose={() => setShowAIPanel(false)}
           />
         </>
@@ -271,9 +269,7 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
           onClick={() => setMetadataExpanded(!metadataExpanded)}
           className="flex items-center justify-between w-full mb-4"
         >
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-            Metadata
-          </h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Metadata</h3>
           {metadataExpanded ? (
             <ChevronUp size={20} className="text-gray-500" />
           ) : (
@@ -290,12 +286,14 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
               </label>
               <select
                 value={formData.area}
-                onChange={(e) => setFormData(prev => ({ ...prev, area: e.target.value as Area }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, area: e.target.value as Area }))}
                 className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
                 required
               >
-                {AREAS.map(area => (
-                  <option key={area} value={area}>{area}</option>
+                {AREAS.map((area) => (
+                  <option key={area} value={area}>
+                    {area}
+                  </option>
                 ))}
               </select>
             </div>
@@ -304,7 +302,7 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
             <div>
               <TagInput
                 value={formData.tags}
-                onChange={(tags) => setFormData(prev => ({ ...prev, tags }))}
+                onChange={(tags) => setFormData((prev) => ({ ...prev, tags }))}
                 placeholder="Add a tag"
               />
             </div>
@@ -319,7 +317,7 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
                   type="url"
                   value={formData.sourceUrl}
                   onChange={(e) => {
-                    setFormData(prev => ({ ...prev, sourceUrl: e.target.value }));
+                    setFormData((prev) => ({ ...prev, sourceUrl: e.target.value }));
                     validateUrl(e.target.value);
                   }}
                   onBlur={(e) => validateUrl(e.target.value)}
@@ -351,7 +349,7 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
             <div>
               <LinkedItemsPicker
                 value={formData.linkedItems}
-                onChange={(linkedItems) => setFormData(prev => ({ ...prev, linkedItems }))}
+                onChange={(linkedItems) => setFormData((prev) => ({ ...prev, linkedItems }))}
                 excludeItemId={note?.id}
               />
             </div>

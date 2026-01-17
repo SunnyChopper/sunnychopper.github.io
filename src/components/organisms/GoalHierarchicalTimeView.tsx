@@ -7,8 +7,18 @@ import { GoalCard } from '../molecules/GoalCard';
 interface GoalHierarchicalTimeViewProps {
   goals: Goal[];
   goalsProgress: Map<string, GoalProgressBreakdown>;
-  goalsLinkedCounts: Map<string, { tasks: number; metrics: number; habits: number; projects: number }>;
-  goalsHealth: Map<string, { status: 'healthy' | 'at_risk' | 'behind' | 'dormant'; daysRemaining: number | null; momentum: 'active' | 'dormant' }>;
+  goalsLinkedCounts: Map<
+    string,
+    { tasks: number; metrics: number; habits: number; projects: number }
+  >;
+  goalsHealth: Map<
+    string,
+    {
+      status: 'healthy' | 'at_risk' | 'behind' | 'dormant';
+      daysRemaining: number | null;
+      momentum: 'active' | 'dormant';
+    }
+  >;
   onGoalClick: (goal: Goal) => void;
   onCreateSubgoal?: (parentGoal: Goal) => void;
 }
@@ -16,9 +26,7 @@ interface GoalHierarchicalTimeViewProps {
 const TIME_HORIZONS: TimeHorizon[] = ['Yearly', 'Quarterly', 'Monthly', 'Weekly', 'Daily'];
 
 // Navigation can be by specific goal (drill into its children) OR by time horizon (show all goals at that horizon)
-type NavigationItem = 
-  | { type: 'goal'; goal: Goal }
-  | { type: 'horizon'; horizon: TimeHorizon };
+type NavigationItem = { type: 'goal'; goal: Goal } | { type: 'horizon'; horizon: TimeHorizon };
 
 export function GoalHierarchicalTimeView({
   goals,
@@ -33,18 +41,18 @@ export function GoalHierarchicalTimeView({
 
   // Get child count for a goal (explicit children via parentGoalId)
   const getChildCount = (goalId: string): number => {
-    return goals.filter(g => g.parentGoalId === goalId).length;
+    return goals.filter((g) => g.parentGoalId === goalId).length;
   };
 
   // Get subgoal counts by horizon (explicit children only)
   const getSubgoalCounts = (goalId: string) => {
-    const children = goals.filter(g => g.parentGoalId === goalId);
+    const children = goals.filter((g) => g.parentGoalId === goalId);
     const counts: Partial<Record<TimeHorizon, number>> = {};
-    
-    children.forEach(child => {
+
+    children.forEach((child) => {
       counts[child.timeHorizon] = (counts[child.timeHorizon] || 0) + 1;
     });
-    
+
     return counts;
   };
 
@@ -58,24 +66,30 @@ export function GoalHierarchicalTimeView({
   const getNextHorizonCount = (currentHorizon: TimeHorizon): number => {
     const nextHorizon = getNextHorizon(currentHorizon);
     if (!nextHorizon) return 0;
-    return goals.filter(g => g.timeHorizon === nextHorizon).length;
+    return goals.filter((g) => g.timeHorizon === nextHorizon).length;
   };
 
   // Zoom into a goal (drill down by explicit children OR by time horizon)
   const handleZoomInto = (goal: Goal) => {
     const explicitChildCount = getChildCount(goal.id);
-    
+
     if (explicitChildCount > 0) {
       // Has explicit children - drill into those
-      setNavigationStack(prev => [...prev, { type: 'goal', goal }]);
+      setNavigationStack((prev) => [...prev, { type: 'goal', goal }]);
     } else {
       // No explicit children - check if we can drill into next time horizon
       const nextHorizon = getNextHorizon(goal.timeHorizon);
-      const nextHorizonGoalCount = nextHorizon ? goals.filter(g => g.timeHorizon === nextHorizon).length : 0;
-      
+      const nextHorizonGoalCount = nextHorizon
+        ? goals.filter((g) => g.timeHorizon === nextHorizon).length
+        : 0;
+
       if (nextHorizonGoalCount > 0) {
         // Drill into next time horizon
-        setNavigationStack(prev => [...prev, { type: 'goal', goal }, { type: 'horizon', horizon: nextHorizon! }]);
+        setNavigationStack((prev) => [
+          ...prev,
+          { type: 'goal', goal },
+          { type: 'horizon', horizon: nextHorizon! },
+        ]);
       } else {
         // No children and no next horizon - open detail view
         onGoalClick(goal);
@@ -85,7 +99,7 @@ export function GoalHierarchicalTimeView({
 
   // Navigate back one level
   const handleNavigateBack = () => {
-    setNavigationStack(prev => prev.slice(0, -1));
+    setNavigationStack((prev) => prev.slice(0, -1));
   };
 
   // Navigate to a specific level in breadcrumb
@@ -94,7 +108,7 @@ export function GoalHierarchicalTimeView({
       // Go to root
       setNavigationStack([]);
     } else {
-      setNavigationStack(prev => prev.slice(0, index + 1));
+      setNavigationStack((prev) => prev.slice(0, index + 1));
     }
   };
 
@@ -104,7 +118,7 @@ export function GoalHierarchicalTimeView({
       // Root level - show only goals at the top-most time horizon
       // Find the first time horizon that has goals without parents
       for (const horizon of TIME_HORIZONS) {
-        const horizonGoals = goals.filter(g => g.timeHorizon === horizon && !g.parentGoalId);
+        const horizonGoals = goals.filter((g) => g.timeHorizon === horizon && !g.parentGoalId);
         if (horizonGoals.length > 0) {
           return horizonGoals;
         }
@@ -113,32 +127,37 @@ export function GoalHierarchicalTimeView({
     }
 
     const lastNav = navigationStack[navigationStack.length - 1];
-    
+
     if (lastNav.type === 'goal') {
       // Showing children of a specific goal
-      return goals.filter(g => g.parentGoalId === lastNav.goal.id);
+      return goals.filter((g) => g.parentGoalId === lastNav.goal.id);
     } else {
       // Showing all goals at a specific time horizon
-      return goals.filter(g => g.timeHorizon === lastNav.horizon && !g.parentGoalId);
+      return goals.filter((g) => g.timeHorizon === lastNav.horizon && !g.parentGoalId);
     }
   }, [goals, navigationStack]);
 
   // Group by time horizon
   const groupedGoals = useMemo(() => {
-    return TIME_HORIZONS.reduce((acc, horizon) => {
-      acc[horizon] = currentLevelGoals.filter(g => g.timeHorizon === horizon);
-      return acc;
-    }, {} as Record<TimeHorizon, Goal[]>);
+    return TIME_HORIZONS.reduce(
+      (acc, horizon) => {
+        acc[horizon] = currentLevelGoals.filter((g) => g.timeHorizon === horizon);
+        return acc;
+      },
+      {} as Record<TimeHorizon, Goal[]>
+    );
   }, [currentLevelGoals]);
 
   return (
     <div className="space-y-6">
       {/* Breadcrumb Navigation */}
-      <div className={`rounded-lg p-4 border-2 transition-colors ${
-        navigationStack.length > 0 
-          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-300 dark:border-blue-700' 
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-      }`}>
+      <div
+        className={`rounded-lg p-4 border-2 transition-colors ${
+          navigationStack.length > 0
+            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-300 dark:border-blue-700'
+            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+        }`}
+      >
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => handleBreadcrumbClick(-1)}
@@ -156,7 +175,7 @@ export function GoalHierarchicalTimeView({
           {navigationStack.map((navItem, index) => {
             const isLast = index === navigationStack.length - 1;
             const label = navItem.type === 'goal' ? navItem.goal.title : `${navItem.horizon} Goals`;
-            
+
             return (
               <div key={index} className="flex items-center gap-2">
                 <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
@@ -258,7 +277,7 @@ export function GoalHierarchicalTimeView({
         </div>
       ) : (
         <div className="space-y-8">
-          {TIME_HORIZONS.map(horizon => {
+          {TIME_HORIZONS.map((horizon) => {
             const horizonGoals = groupedGoals[horizon];
             if (horizonGoals.length === 0) return null;
 
@@ -282,7 +301,7 @@ export function GoalHierarchicalTimeView({
                     const subgoalCounts = getSubgoalCounts(goal.id);
                     const nextHorizon = getNextHorizon(goal.timeHorizon);
                     const nextHorizonCount = getNextHorizonCount(goal.timeHorizon);
-                    
+
                     // Can drill down if has explicit children OR there are goals in the next horizon
                     const canDrillDown = explicitChildCount > 0 || nextHorizonCount > 0;
 
@@ -299,9 +318,9 @@ export function GoalHierarchicalTimeView({
                             <div>
                               {/* Overlay indicator for drill-down */}
                               <div className="absolute -inset-0.5 bg-blue-500/10 dark:bg-blue-400/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border-2 border-blue-500/50 dark:border-blue-400/50" />
-                              
+
                               {/* Click to drill down */}
-                              <div 
+                              <div
                                 onClick={() => handleZoomInto(goal)}
                                 className="cursor-pointer relative"
                               >
@@ -314,7 +333,7 @@ export function GoalHierarchicalTimeView({
                                   daysRemaining={health?.daysRemaining}
                                   momentum={health?.momentum}
                                 />
-                                
+
                                 {/* Zoom indicator badge on card */}
                                 <div className="absolute top-3 right-3 bg-blue-600 dark:bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                                   <span>Zoom In</span>
@@ -331,16 +350,22 @@ export function GoalHierarchicalTimeView({
                                   <span className="font-semibold">
                                     {explicitChildCount > 0 ? (
                                       <>
-                                        {explicitChildCount} {explicitChildCount === 1 ? 'subgoal' : 'subgoals'}
+                                        {explicitChildCount}{' '}
+                                        {explicitChildCount === 1 ? 'subgoal' : 'subgoals'}
                                         {Object.keys(subgoalCounts).length > 0 && (
                                           <span className="text-xs ml-2 font-normal">
-                                            ({Object.entries(subgoalCounts).map(([h, c]) => `${c} ${h.toLowerCase()}`).join(', ')})
+                                            (
+                                            {Object.entries(subgoalCounts)
+                                              .map(([h, c]) => `${c} ${h.toLowerCase()}`)
+                                              .join(', ')}
+                                            )
                                           </span>
                                         )}
                                       </>
                                     ) : nextHorizon && nextHorizonCount > 0 ? (
                                       <>
-                                        View {nextHorizonCount} {nextHorizon.toLowerCase()} {nextHorizonCount === 1 ? 'goal' : 'goals'}
+                                        View {nextHorizonCount} {nextHorizon.toLowerCase()}{' '}
+                                        {nextHorizonCount === 1 ? 'goal' : 'goals'}
                                       </>
                                     ) : null}
                                   </span>

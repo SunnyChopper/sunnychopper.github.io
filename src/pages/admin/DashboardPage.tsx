@@ -1,6 +1,24 @@
 import { useState } from 'react';
-import { useTasks, useHabits, useMetrics, useGoals, useProjects, useLogbook } from '../../hooks/useGrowthSystem';
-import { CheckSquare, Calendar, TrendingUp, Target, FolderKanban, BookOpen, Heart, Film, Star, AlertCircle } from 'lucide-react';
+import {
+  useTasks,
+  useHabits,
+  useMetrics,
+  useGoals,
+  useProjects,
+  useLogbook,
+} from '../../hooks/useGrowthSystem';
+import {
+  CheckSquare,
+  Calendar,
+  TrendingUp,
+  Target,
+  FolderKanban,
+  BookOpen,
+  Heart,
+  Film,
+  Star,
+  AlertCircle,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AIInsightsWidget } from '../../components/organisms/AIInsightsWidget';
 import { DailyPlanningAssistant } from '../../components/organisms/DailyPlanningAssistant';
@@ -52,7 +70,14 @@ export default function DashboardPage() {
   const { entries, isLoading: entriesLoading, isError: entriesError } = useLogbook();
 
   // Check if any data source has a network error
-  const hasNetworkError = tasksError || habitsError || metricsError || goalsError || projectsError || entriesError || !backendStatus.isOnline;
+  const hasNetworkError =
+    tasksError ||
+    habitsError ||
+    metricsError ||
+    goalsError ||
+    projectsError ||
+    entriesError ||
+    !backendStatus.isOnline;
 
   const activeTasks = tasks.filter((t) => t.status !== 'Done' && t.status !== 'Cancelled');
   const activeHabits = habits.filter((h) => h.frequency === 'Daily');
@@ -62,10 +87,12 @@ export default function DashboardPage() {
   // Calculate simple progress for goals (for dashboard widget)
   const goalsProgress = useMemo(() => {
     const progressMap = new Map<string, number>();
-    goals.forEach(goal => {
+    goals.forEach((goal) => {
       if (Array.isArray(goal.successCriteria)) {
         if (typeof goal.successCriteria[0] === 'string') {
-          const completed = (goal.successCriteria as string[]).filter(c => c.includes('✓')).length;
+          const completed = (goal.successCriteria as string[]).filter((c) =>
+            c.includes('✓')
+          ).length;
           const total = goal.successCriteria.length;
           progressMap.set(goal.id, total > 0 ? Math.round((completed / total) * 100) : 0);
         } else {
@@ -100,7 +127,8 @@ export default function DashboardPage() {
                 Backend connection unavailable
               </h3>
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                Unable to load data from the backend server. Statistics may be incomplete. Please check the connection status banner at the top of the page.
+                Unable to load data from the backend server. Statistics may be incomplete. Please
+                check the connection status banner at the top of the page.
               </p>
             </div>
           </div>
@@ -197,7 +225,9 @@ export default function DashboardPage() {
               <div className="text-center py-6">
                 <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400 mx-auto mb-2" />
                 <p className="text-sm text-amber-600 dark:text-amber-400">Unable to load tasks</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Backend connection unavailable</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Backend connection unavailable
+                </p>
               </div>
             ) : tasksLoading ? (
               <div className="space-y-2 animate-pulse">
@@ -208,32 +238,52 @@ export default function DashboardPage() {
             ) : activeTasks.length > 0 ? (
               <div className="space-y-2">
                 {activeTasks.slice(0, 5).map((task) => (
-                  <div key={task.id} className="flex items-start gap-3 p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${
-                      task.priority === 'P1' ? 'bg-red-500' :
-                      task.priority === 'P2' ? 'bg-orange-500' :
-                      task.priority === 'P3' ? 'bg-yellow-500' :
-                      'bg-green-500'
-                    }`} />
+                  <div
+                    key={task.id}
+                    className="flex items-start gap-3 p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full mt-2 ${
+                        task.priority === 'P1'
+                          ? 'bg-red-500'
+                          : task.priority === 'P2'
+                            ? 'bg-orange-500'
+                            : task.priority === 'P3'
+                              ? 'bg-yellow-500'
+                              : 'bg-green-500'
+                      }`}
+                    />
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{task.title}</p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 capitalize">{task.status}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+                        {task.title}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+                        {task.status}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-6 text-sm">No active tasks</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-6 text-sm">
+                No active tasks
+              </p>
             )}
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Active Projects</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+              Active Projects
+            </h2>
             {projectsError ? (
               <div className="text-center py-6">
                 <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400 mx-auto mb-2" />
-                <p className="text-sm text-amber-600 dark:text-amber-400">Unable to load projects</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Backend connection unavailable</p>
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  Unable to load projects
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Backend connection unavailable
+                </p>
               </div>
             ) : projectsLoading ? (
               <div className="space-y-2 animate-pulse">
@@ -246,28 +296,38 @@ export default function DashboardPage() {
                 {activeProjects.slice(0, 5).map((project) => (
                   <div key={project.id} className="p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div className="flex items-start justify-between">
-                      <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{project.name}</p>
-                      <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">{project.status}</span>
+                      <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+                        {project.name}
+                      </p>
+                      <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">
+                        {project.status}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-6 text-sm">No active projects</p>
+              <p className="text-gray-500 dark:text-gray-400 text-center py-6 text-sm">
+                No active projects
+              </p>
             )}
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Recovery Activities</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+              Recovery Activities
+            </h2>
             <p className="text-gray-500 dark:text-gray-400 text-center py-6 text-sm">
               Time to relax and recharge
             </p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Leisure Suggestions</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
+              Leisure Suggestions
+            </h2>
             <p className="text-gray-500 dark:text-gray-400 text-center py-6 text-sm">
               Explore your hobbies and interests
             </p>

@@ -93,10 +93,7 @@ export interface PeriodComparison {
 /**
  * Calculate trend data with velocity and acceleration
  */
-export function getTrendData(
-  logs: MetricLog[],
-  metric: Metric
-): TrendData | null {
+export function getTrendData(logs: MetricLog[], metric: Metric): TrendData | null {
   if (logs.length < 2) return null;
 
   // Sort by date (oldest first)
@@ -133,11 +130,7 @@ export function getTrendData(
   }
 
   const isImproving =
-    metric.direction === 'Higher'
-      ? change >= 0
-      : metric.direction === 'Lower'
-      ? change <= 0
-      : true;
+    metric.direction === 'Higher' ? change >= 0 : metric.direction === 'Lower' ? change <= 0 : true;
 
   return {
     current,
@@ -239,18 +232,10 @@ export function getTimeSeriesData(
     // month
     const months = Math.ceil(days / 30);
     for (let i = months - 1; i >= 0; i--) {
-      const monthEnd = new Date(
-        today.getFullYear(),
-        today.getMonth() - i + 1,
-        0
-      );
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
       monthEnd.setHours(23, 59, 59, 999);
 
-      const monthStart = new Date(
-        today.getFullYear(),
-        today.getMonth() - i,
-        1
-      );
+      const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1);
       monthStart.setHours(0, 0, 0, 0);
 
       const monthLogs = sortedLogs.filter((log) => {
@@ -260,8 +245,7 @@ export function getTimeSeriesData(
 
       const value =
         monthLogs.length > 0
-          ? monthLogs.reduce((sum, log) => sum + log.value, 0) /
-            monthLogs.length
+          ? monthLogs.reduce((sum, log) => sum + log.value, 0) / monthLogs.length
           : null;
 
       if (value !== null) {
@@ -344,9 +328,7 @@ export function detectAnomalies(
 
   const values = logs.map((log) => log.value);
   const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-  const variance =
-    values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
-    values.length;
+  const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
   const stdDev = Math.sqrt(variance);
 
   const anomalies: Anomaly[] = [];
@@ -456,10 +438,7 @@ export function calculateCorrelations(
 /**
  * Predict future trajectory using linear regression
  */
-export function predictTrajectory(
-  logs: MetricLog[],
-  days: number = 30
-): PredictionResult | null {
+export function predictTrajectory(logs: MetricLog[], days: number = 30): PredictionResult | null {
   if (logs.length < 3) return null;
 
   // Sort by date
@@ -471,8 +450,7 @@ export function predictTrajectory(
   const firstDate = new Date(sortedLogs[0].loggedAt);
   const dataPoints = sortedLogs.map((log, index) => {
     const date = new Date(log.loggedAt);
-    const daysSinceStart =
-      (date.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceStart = (date.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
     return { x: daysSinceStart, y: log.value };
   });
 
@@ -488,8 +466,7 @@ export function predictTrajectory(
 
   // Predict future value
   const lastDate = new Date(sortedLogs[sortedLogs.length - 1].loggedAt);
-  const lastDaysSinceStart =
-    (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
+  const lastDaysSinceStart = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24);
   const futureX = lastDaysSinceStart + days;
   const futureValue = slope * futureX + intercept;
 
@@ -499,10 +476,7 @@ export function predictTrajectory(
     (sum, p) => sum + Math.pow(p.y - (slope * p.x + intercept), 2),
     0
   );
-  const ssTot = dataPoints.reduce(
-    (sum, p) => sum + Math.pow(p.y - meanY, 2),
-    0
-  );
+  const ssTot = dataPoints.reduce((sum, p) => sum + Math.pow(p.y - meanY, 2), 0);
   const rSquared = ssTot > 0 ? 1 - ssRes / ssTot : 0;
   const confidence = Math.max(0, Math.min(1, rSquared));
 
@@ -525,10 +499,7 @@ export function predictTrajectory(
 /**
  * Generate heatmap data for calendar visualization
  */
-export function generateHeatmapData(
-  logs: MetricLog[],
-  months: number = 6
-): HeatmapDay[] {
+export function generateHeatmapData(logs: MetricLog[], months: number = 6): HeatmapDay[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const startDate = new Date(today);
@@ -669,10 +640,7 @@ export function calculateStreaks(logs: MetricLog[]): StreakData {
     });
   }
 
-  const longestFromAll = allStreaks.reduce(
-    (max, streak) => Math.max(max, streak.length),
-    0
-  );
+  const longestFromAll = allStreaks.reduce((max, streak) => Math.max(max, streak.length), 0);
   longestStreak = Math.max(longestStreak, longestFromAll);
 
   const activeStreak = allStreaks.find((s) => s.isActive);
@@ -682,8 +650,7 @@ export function calculateStreaks(logs: MetricLog[]): StreakData {
     current: currentStreak,
     longest: longestStreak,
     allStreaks: allStreaks.sort(
-      (a, b) =>
-        new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
     ),
   };
 }
@@ -740,11 +707,7 @@ export function getPeriodComparison(
     previousEnd.setDate(previousEnd.getDate() - 1);
     previousEnd.setHours(23, 59, 59, 999);
 
-    previousStart = new Date(
-      previousEnd.getFullYear(),
-      previousEnd.getMonth(),
-      1
-    );
+    previousStart = new Date(previousEnd.getFullYear(), previousEnd.getMonth(), 1);
     previousStart.setHours(0, 0, 0, 0);
   }
 
@@ -759,21 +722,15 @@ export function getPeriodComparison(
   });
 
   const currentTotal =
-    currentLogs.length > 0
-      ? currentLogs.reduce((sum, log) => sum + log.value, 0)
-      : 0;
+    currentLogs.length > 0 ? currentLogs.reduce((sum, log) => sum + log.value, 0) : 0;
   const currentAvg = currentLogs.length > 0 ? currentTotal / currentLogs.length : 0;
 
   const previousTotal =
-    previousLogs.length > 0
-      ? previousLogs.reduce((sum, log) => sum + log.value, 0)
-      : 0;
-  const previousAvg =
-    previousLogs.length > 0 ? previousTotal / previousLogs.length : 0;
+    previousLogs.length > 0 ? previousLogs.reduce((sum, log) => sum + log.value, 0) : 0;
+  const previousAvg = previousLogs.length > 0 ? previousTotal / previousLogs.length : 0;
 
   const change = currentAvg - previousAvg;
-  const changePercent =
-    previousAvg !== 0 ? (change / previousAvg) * 100 : 0;
+  const changePercent = previousAvg !== 0 ? (change / previousAvg) * 100 : 0;
 
   return {
     current: {

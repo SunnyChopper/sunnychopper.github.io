@@ -22,10 +22,4 @@ export interface RewardsContextType {
 export const RewardsContext = createContext<RewardsContextType | undefined>(undefined);
 
 // Re-export types for convenience
-export type {
-  Reward,
-  RewardWithRedemptions,
-  CreateRewardInput,
-  UpdateRewardInput,
-  RewardCategory,
-};
+export type { Reward, RewardWithRedemptions, CreateRewardInput, UpdateRewardInput, RewardCategory };

@@ -26,12 +26,14 @@ export type SummarizeContentOutput = z.infer<typeof SummarizeContentOutputSchema
 // Improve Clarity Output
 export const ImproveClarityOutputSchema = z.object({
   improvedContent: z.string().describe('Content rewritten for better clarity'),
-  changes: z.array(
-    z.object({
-      type: z.enum(['grammar', 'structure', 'clarity', 'flow']).describe('Type of improvement'),
-      description: z.string().describe('What was changed and why'),
-    })
-  ).describe('List of improvements made'),
+  changes: z
+    .array(
+      z.object({
+        type: z.enum(['grammar', 'structure', 'clarity', 'flow']).describe('Type of improvement'),
+        description: z.string().describe('What was changed and why'),
+      })
+    )
+    .describe('List of improvements made'),
   confidence: ConfidenceSchema,
 });
 
@@ -39,13 +41,15 @@ export type ImproveClarityOutput = z.infer<typeof ImproveClarityOutputSchema>;
 
 // Tag Suggestions Output
 export const TagSuggestionsOutputSchema = z.object({
-  suggestedTags: z.array(
-    z.object({
-      tag: z.string().describe('Suggested tag'),
-      relevance: z.number().min(0).max(1).describe('Relevance score (0-1)'),
-      reasoning: z.string().describe('Why this tag is relevant'),
-    })
-  ).describe('List of suggested tags with relevance scores'),
+  suggestedTags: z
+    .array(
+      z.object({
+        tag: z.string().describe('Suggested tag'),
+        relevance: z.number().min(0).max(1).describe('Relevance score (0-1)'),
+        reasoning: z.string().describe('Why this tag is relevant'),
+      })
+    )
+    .describe('List of suggested tags with relevance scores'),
   confidence: ConfidenceSchema,
 });
 
@@ -55,12 +59,14 @@ export type TagSuggestionsOutput = z.infer<typeof TagSuggestionsOutputSchema>;
 export const AreaSuggestionOutputSchema = z.object({
   suggestedArea: AreaSchema.describe('Suggested area for the note'),
   reasoning: z.string().describe('Why this area was suggested'),
-  alternativeAreas: z.array(
-    z.object({
-      area: AreaSchema,
-      confidence: z.number().min(0).max(1),
-    })
-  ).describe('Alternative area options'),
+  alternativeAreas: z
+    .array(
+      z.object({
+        area: AreaSchema,
+        confidence: z.number().min(0).max(1),
+      })
+    )
+    .describe('Alternative area options'),
   confidence: ConfidenceSchema,
 });
 
@@ -68,15 +74,19 @@ export type AreaSuggestionOutput = z.infer<typeof AreaSuggestionOutputSchema>;
 
 // Link Suggestions Output
 export const LinkSuggestionsOutputSchema = z.object({
-  suggestedLinks: z.array(
-    z.object({
-      itemId: z.string().describe('ID of suggested linked item'),
-      itemTitle: z.string().describe('Title of suggested item'),
-      itemType: z.enum(['note', 'document', 'flashcard', 'course_lesson']).describe('Type of item'),
-      relevance: z.number().min(0).max(1).describe('Relevance score (0-1)'),
-      reasoning: z.string().describe('Why this item should be linked'),
-    })
-  ).describe('List of suggested linked items'),
+  suggestedLinks: z
+    .array(
+      z.object({
+        itemId: z.string().describe('ID of suggested linked item'),
+        itemTitle: z.string().describe('Title of suggested item'),
+        itemType: z
+          .enum(['note', 'document', 'flashcard', 'course_lesson'])
+          .describe('Type of item'),
+        relevance: z.number().min(0).max(1).describe('Relevance score (0-1)'),
+        reasoning: z.string().describe('Why this item should be linked'),
+      })
+    )
+    .describe('List of suggested linked items'),
   confidence: ConfidenceSchema,
 });
 
@@ -109,11 +119,13 @@ export const ContentAnalysisOutputSchema = z.object({
   keyPoints: z.array(z.string()).describe('Main points extracted'),
   sentiment: z.enum(['positive', 'neutral', 'negative']).describe('Overall sentiment'),
   readabilityScore: z.number().min(0).max(100).describe('Readability score (0-100)'),
-  completeness: z.object({
-    score: z.number().min(0).max(100).describe('Completeness score'),
-    missingElements: z.array(z.string()).describe('What might be missing'),
-    suggestions: z.array(z.string()).describe('Suggestions to improve completeness'),
-  }).describe('Content completeness analysis'),
+  completeness: z
+    .object({
+      score: z.number().min(0).max(100).describe('Completeness score'),
+      missingElements: z.array(z.string()).describe('What might be missing'),
+      suggestions: z.array(z.string()).describe('Suggestions to improve completeness'),
+    })
+    .describe('Content completeness analysis'),
   confidence: ConfidenceSchema,
 });
 

@@ -5,23 +5,27 @@
 ### 1. **Created Missing Validation Scripts**
 
 #### `scripts/check-type-coverage.ts`
+
 - Validates TypeScript type coverage (90% minimum)
 - Uses `type-coverage` package
 - Provides detailed feedback on type issues
 
 #### `scripts/validate-architecture.ts`
+
 - Validates atomic design structure
 - Checks service layer patterns
 - Verifies import/export conventions
 - Validates file naming conventions
 
 #### `scripts/check-patterns.ts`
+
 - Checks component patterns (loading/error states)
 - Validates accessibility patterns
 - Checks Tailwind usage
 - Detects forbidden patterns (any, console.log, etc.)
 
 #### `scripts/validate-all.ts`
+
 - Master validation script
 - Runs all checks in sequence
 - Supports `--quick` flag for fast feedback
@@ -30,6 +34,7 @@
 ### 2. **Enhanced Package.json Scripts**
 
 Added new npm scripts:
+
 - `npm run validate` - Full validation
 - `npm run validate:quick` - Fast validation (type-check + lint + format)
 - `npm run validate:full` - Full validation + tests
@@ -37,11 +42,13 @@ Added new npm scripts:
 ### 3. **Enhanced CI/CD Workflows**
 
 #### Updated `.github/workflows/deploy.yml`
+
 - Added validation job before build
 - Validates code quality before deployment
 - Prevents broken code from being deployed
 
 #### Created `.github/workflows/ci.yml`
+
 - Comprehensive CI validation
 - Runs on all PRs and pushes
 - Separate jobs for validation and testing
@@ -50,6 +57,7 @@ Added new npm scripts:
 ### 4. **Integrated Custom ESLint Rules**
 
 Updated `eslint.config.js`:
+
 - Properly imports custom rules from `eslint-rules/custom-rules.js`
 - Enables custom rules:
   - `custom/service-returns-api-response`
@@ -59,6 +67,7 @@ Updated `eslint.config.js`:
 ### 5. **Documentation**
 
 Created comprehensive guides:
+
 - `docs/GUARDRAILS_ANALYSIS.md` - Complete analysis of current guardrails
 - `docs/VALIDATION_GUIDE.md` - Developer guide for validation
 - `docs/GUARDRAILS_IMPROVEMENTS_SUMMARY.md` - This file
@@ -151,6 +160,7 @@ Created comprehensive guides:
 ## 📝 Usage Examples
 
 ### Quick Check After AI Generation:
+
 ```bash
 npm run validate:quick
 # Fix any issues
@@ -159,6 +169,7 @@ npm run format    # Auto-fix formatting
 ```
 
 ### Before Committing:
+
 ```bash
 npm run validate
 # If all pass, commit
@@ -166,6 +177,7 @@ git commit -m "feat: add new feature"
 ```
 
 ### Before Creating PR:
+
 ```bash
 npm run validate:full
 # Includes tests
@@ -174,18 +186,22 @@ npm run validate:full
 ## 🐛 Troubleshooting
 
 ### Scripts Not Found
+
 - Ensure `scripts/` directory exists
 - Run `npm install` to ensure dependencies
 
 ### Type Coverage Fails
+
 - Install: `npm install --save-dev type-coverage`
 - Check minimum coverage threshold (90%)
 
 ### Custom Rules Not Working
+
 - Verify `eslint-rules/custom-rules.js` exists
 - Check `eslint.config.js` imports custom rules correctly
 
 ### CI Fails
+
 - Run validation locally first: `npm run validate`
 - Check GitHub Actions logs for specific errors
 

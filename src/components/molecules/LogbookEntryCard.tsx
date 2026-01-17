@@ -42,14 +42,15 @@ export function LogbookEntryCard({ entry, onClick }: LogbookEntryCardProps) {
         <div className="flex items-center gap-3">
           <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           <span className="text-lg font-semibold text-gray-900 dark:text-white">
-            {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date(entry.date).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
           </span>
         </div>
-        {entry.mood && (
-          <div className="flex items-center gap-2">
-            {getMoodIcon(entry.mood)}
-          </div>
-        )}
+        {entry.mood && <div className="flex items-center gap-2">{getMoodIcon(entry.mood)}</div>}
       </div>
 
       {entry.title && (
@@ -59,9 +60,7 @@ export function LogbookEntryCard({ entry, onClick }: LogbookEntryCardProps) {
       )}
 
       {entry.notes && (
-        <p className="text-gray-700 dark:text-gray-300 line-clamp-3 mb-4">
-          {entry.notes}
-        </p>
+        <p className="text-gray-700 dark:text-gray-300 line-clamp-3 mb-4">{entry.notes}</p>
       )}
 
       {entry.energy !== null && (
@@ -72,9 +71,7 @@ export function LogbookEntryCard({ entry, onClick }: LogbookEntryCardProps) {
               <div
                 key={i}
                 className={`w-2 h-6 rounded-sm ${
-                  i < (entry.energy || 0)
-                    ? 'bg-blue-500'
-                    : 'bg-gray-300 dark:bg-gray-600'
+                  i < (entry.energy || 0) ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
               />
             ))}

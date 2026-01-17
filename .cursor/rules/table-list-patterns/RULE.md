@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN displaying lists, tables, and data collections."
-globs: ""
+description: 'USE WHEN displaying lists, tables, and data collections.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -12,7 +12,7 @@ Standards for displaying collections of data.
 
 ```tsx
 <div className="space-y-2">
-  {items.map(item => (
+  {items.map((item) => (
     <div
       key={item.id}
       className="
@@ -54,7 +54,7 @@ Standards for displaying collections of data.
 
 ```tsx
 <div className="space-y-2">
-  {items.map(item => (
+  {items.map((item) => (
     <div
       key={item.id}
       onClick={() => onSelect(item.id)}
@@ -90,14 +90,9 @@ Standards for displaying collections of data.
       </tr>
     </thead>
     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-      {items.map(item => (
-        <tr
-          key={item.id}
-          className="hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-        >
-          <td className="py-3 px-4 text-gray-900 dark:text-white">
-            {item.name}
-          </td>
+      {items.map((item) => (
+        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+          <td className="py-3 px-4 text-gray-900 dark:text-white">{item.name}</td>
           <td className="py-3 px-4">
             <StatusBadge status={item.status} />
           </td>
@@ -126,11 +121,12 @@ Standards for displaying collections of data.
 >
   <div className="flex items-center gap-1">
     <span>Name</span>
-    {sortBy === 'name' && (
-      sortOrder === 'asc'
-        ? <ChevronUp className="w-4 h-4" />
-        : <ChevronDown className="w-4 h-4" />
-    )}
+    {sortBy === 'name' &&
+      (sortOrder === 'asc' ? (
+        <ChevronUp className="w-4 h-4" />
+      ) : (
+        <ChevronDown className="w-4 h-4" />
+      ))}
   </div>
 </th>
 ```
@@ -143,50 +139,47 @@ For lists with 100+ items:
 // Use a virtualization library like react-window
 import { FixedSizeList } from 'react-window';
 
-<FixedSizeList
-  height={600}
-  width="100%"
-  itemCount={items.length}
-  itemSize={80}
->
+<FixedSizeList height={600} width="100%" itemCount={items.length} itemSize={80}>
   {({ index, style }) => (
     <div style={style}>
       <ListItem item={items[index]} />
     </div>
   )}
-</FixedSizeList>
+</FixedSizeList>;
 ```
 
 ## Empty List
 
 ```tsx
-{items.length === 0 ? (
-  <EmptyState
-    icon={<Inbox />}
-    title="No items"
-    description="Create your first item to get started"
-    action={<Button onClick={onCreate}>Create</Button>}
-  />
-) : (
-  <div className="space-y-2">
-    {items.map(item => <ListItem key={item.id} {...item} />)}
-  </div>
-)}
+{
+  items.length === 0 ? (
+    <EmptyState
+      icon={<Inbox />}
+      title="No items"
+      description="Create your first item to get started"
+      action={<Button onClick={onCreate}>Create</Button>}
+    />
+  ) : (
+    <div className="space-y-2">
+      {items.map((item) => (
+        <ListItem key={item.id} {...item} />
+      ))}
+    </div>
+  );
+}
 ```
 
 ## List with Loading More
 
 ```tsx
 <div className="space-y-2">
-  {items.map(item => <ListItem key={item.id} {...item} />)}
+  {items.map((item) => (
+    <ListItem key={item.id} {...item} />
+  ))}
 
   {hasMore && (
     <div className="text-center py-4">
-      <Button
-        variant="ghost"
-        onClick={loadMore}
-        isLoading={isLoadingMore}
-      >
+      <Button variant="ghost" onClick={loadMore} isLoading={isLoadingMore}>
         Load More
       </Button>
     </div>

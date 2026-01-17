@@ -27,14 +27,7 @@ export function DraggableGoalCard({
   onQuickAction,
   isDraggingEnabled = true,
 }: DraggableGoalCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: goal.id,
     disabled: !isDraggingEnabled,
   });

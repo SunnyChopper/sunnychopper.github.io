@@ -29,8 +29,8 @@ export const coursesService = {
     const response = await apiClient.get<BackendPaginatedResponse<Course>>('/knowledge/courses');
     if (response.success && response.data) {
       return {
-        data: response.data.data.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        data: response.data.data.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         ),
         error: null,
         success: true,
@@ -101,7 +101,11 @@ export const coursesService = {
     };
   },
 
-  async createModule(courseId: string, title: string, description?: string): Promise<ApiResponse<CourseModule>> {
+  async createModule(
+    courseId: string,
+    title: string,
+    description?: string
+  ): Promise<ApiResponse<CourseModule>> {
     // Note: Backend may handle modules differently - this may need adjustment
     const response = await apiClient.post<CourseModule>(`/knowledge/courses/${courseId}/modules`, {
       title,

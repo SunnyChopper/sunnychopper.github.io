@@ -14,9 +14,7 @@ export class ModuleArchitectAgent extends BaseAgent {
     super('goalRefinement');
   }
 
-  async execute(
-    state: CourseGenerationState
-  ): Promise<CourseGenerationStateUpdate> {
+  async execute(state: CourseGenerationState): Promise<CourseGenerationStateUpdate> {
     const updatedModules = [...state.modules];
 
     // Process each module sequentially

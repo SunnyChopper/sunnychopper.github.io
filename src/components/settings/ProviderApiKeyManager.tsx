@@ -106,9 +106,7 @@ export function ProviderApiKeyManager() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-          API Keys
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">API Keys</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Configure API keys for different LLM providers. You only need to configure providers you
           want to use.

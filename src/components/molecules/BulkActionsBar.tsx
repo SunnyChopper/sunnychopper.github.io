@@ -52,7 +52,16 @@ export function BulkActionsBar({
                   Status
                 </button>
                 <div className="absolute bottom-full mb-2 left-0 hidden group-hover:block bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 min-w-[150px] z-10">
-                  {(['Planning', 'Active', 'OnTrack', 'AtRisk', 'Achieved', 'Abandoned'] as GoalStatus[]).map((status) => (
+                  {(
+                    [
+                      'Planning',
+                      'Active',
+                      'OnTrack',
+                      'AtRisk',
+                      'Achieved',
+                      'Abandoned',
+                    ] as GoalStatus[]
+                  ).map((status) => (
                     <button
                       key={status}
                       onClick={() => onStatusChange(status)}
@@ -88,11 +97,7 @@ export function BulkActionsBar({
 
             {/* Archive Button */}
             {onArchive && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onArchive}
-              >
+              <Button variant="secondary" size="sm" onClick={onArchive}>
                 <Archive className="w-4 h-4 mr-1" />
                 Archive
               </Button>

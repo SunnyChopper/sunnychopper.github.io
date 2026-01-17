@@ -8,35 +8,38 @@ interface GoalProgressDashboardProps {
   showBreakdown?: boolean;
 }
 
-export function GoalProgressDashboard({ progress, showBreakdown = true }: GoalProgressDashboardProps) {
+export function GoalProgressDashboard({
+  progress,
+  showBreakdown = true,
+}: GoalProgressDashboardProps) {
   const segments = [
-    { 
-      label: 'Criteria', 
-      value: progress.criteria.percentage, 
-      color: 'bg-blue-500', 
+    {
+      label: 'Criteria',
+      value: progress.criteria.percentage,
+      color: 'bg-blue-500',
       icon: CheckSquare,
-      detail: `${progress.criteria.completed}/${progress.criteria.total} completed`
+      detail: `${progress.criteria.completed}/${progress.criteria.total} completed`,
     },
-    { 
-      label: 'Tasks', 
-      value: progress.tasks.percentage, 
-      color: 'bg-purple-500', 
+    {
+      label: 'Tasks',
+      value: progress.tasks.percentage,
+      color: 'bg-purple-500',
       icon: TrendingUp,
-      detail: `${progress.tasks.completed}/${progress.tasks.total} done`
+      detail: `${progress.tasks.completed}/${progress.tasks.total} done`,
     },
-    { 
-      label: 'Metrics', 
-      value: progress.metrics.percentage, 
-      color: 'bg-green-500', 
+    {
+      label: 'Metrics',
+      value: progress.metrics.percentage,
+      color: 'bg-green-500',
       icon: BarChart3,
-      detail: `${progress.metrics.atTarget}/${progress.metrics.total} at target`
+      detail: `${progress.metrics.atTarget}/${progress.metrics.total} at target`,
     },
-    { 
-      label: 'Habits', 
-      value: progress.habits.consistency, 
-      color: 'bg-amber-500', 
+    {
+      label: 'Habits',
+      value: progress.habits.consistency,
+      color: 'bg-amber-500',
       icon: Repeat,
-      detail: `${progress.habits.consistency}% consistency`
+      detail: `${progress.habits.consistency}% consistency`,
     },
   ];
 
@@ -58,9 +61,7 @@ export function GoalProgressDashboard({ progress, showBreakdown = true }: GoalPr
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Progress Sources
           </span>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            {progress.overall}%
-          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{progress.overall}%</span>
         </div>
         <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex">
           {segments.map((segment, index) => {
@@ -103,9 +104,7 @@ export function GoalProgressDashboard({ progress, showBreakdown = true }: GoalPr
                     {segment.value}%
                   </span>
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  {segment.detail}
-                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{segment.detail}</p>
                 {/* Mini progress bar */}
                 <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                   <motion.div

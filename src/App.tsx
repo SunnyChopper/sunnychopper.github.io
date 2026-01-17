@@ -61,63 +61,69 @@ function AppContent() {
   return (
     <ErrorBoundary>
       <Routes>
-      <Route element={<MainLayout />}>
-        <Route path={ROUTES.home} element={<HomePage />} />
-        <Route path={ROUTES.products} element={<ProductsPage />} />
-      </Route>
+        <Route element={<MainLayout />}>
+          <Route path={ROUTES.home} element={<HomePage />} />
+          <Route path={ROUTES.products} element={<ProductsPage />} />
+        </Route>
 
-      <Route path={ROUTES.admin.login} element={<LoginPage />} />
+        <Route path={ROUTES.admin.login} element={<LoginPage />} />
 
-      <Route
-        path={ROUTES.admin.focus}
-        element={
-          <ProtectedRoute>
-            <FocusModePage />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path={ROUTES.admin.focus}
+          element={
+            <ProtectedRoute>
+              <FocusModePage />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path={ROUTES.admin.base}
-        element={
-          <ProtectedRoute>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<DashboardRedirect />} />
-        <Route path={ADMIN_CHILD_ROUTES.dashboard} element={<DashboardPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.zenDashboard} element={<ZenDashboardPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.growthSystem} element={<GrowthSystemPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.tasks} element={<TasksPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.habits} element={<HabitsPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.metrics} element={<MetricsPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.goals} element={<GoalsPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.projects} element={<ProjectsPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.logbook} element={<LogbookPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.weeklyReview} element={<WeeklyReviewPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.assistant} element={<ChatbotPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.componentsDemo} element={<ComponentsDemoPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.settings} element={<SettingsPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.mediaBacklog} element={<MediaBacklogPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.hobbyQuests} element={<HobbyQuestsPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.rewardsStore} element={<RewardsStorePage />} />
-        <Route path={ADMIN_CHILD_ROUTES.rewardStudio} element={<RewardStudioPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.knowledgeVault} element={<KnowledgeVaultPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultLibrary} element={<KnowledgeVaultPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultCourses} element={<CoursesPage />} />
-        <Route path="knowledge-vault/courses/new" element={<CourseGeneratorPage />} />
-        <Route path="knowledge-vault/courses/:courseId" element={<CourseDetailPage />} />
-        <Route path="knowledge-vault/courses/:courseId/:lessonId" element={<CourseDetailPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultSkillTree} element={<SkillTreePage />} />
-        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultFlashcards} element={<FlashcardsPage />} />
-        <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultCollider} element={<ConceptColliderPage />} />
-        <Route path="knowledge-vault/study" element={<StudySessionPage />} />
-        <Route path="knowledge-vault/statistics" element={<StudyStatisticsPage />} />
-      </Route>
+        <Route
+          path={ROUTES.admin.base}
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardRedirect />} />
+          <Route path={ADMIN_CHILD_ROUTES.dashboard} element={<DashboardPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.zenDashboard} element={<ZenDashboardPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.growthSystem} element={<GrowthSystemPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.tasks} element={<TasksPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.habits} element={<HabitsPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.metrics} element={<MetricsPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.goals} element={<GoalsPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.projects} element={<ProjectsPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.logbook} element={<LogbookPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.weeklyReview} element={<WeeklyReviewPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.assistant} element={<ChatbotPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.componentsDemo} element={<ComponentsDemoPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.settings} element={<SettingsPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.mediaBacklog} element={<MediaBacklogPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.hobbyQuests} element={<HobbyQuestsPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.rewardsStore} element={<RewardsStorePage />} />
+          <Route path={ADMIN_CHILD_ROUTES.rewardStudio} element={<RewardStudioPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVault} element={<KnowledgeVaultPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultLibrary} element={<KnowledgeVaultPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultCourses} element={<CoursesPage />} />
+          <Route path="knowledge-vault/courses/new" element={<CourseGeneratorPage />} />
+          <Route path="knowledge-vault/courses/:courseId" element={<CourseDetailPage />} />
+          <Route
+            path="knowledge-vault/courses/:courseId/:lessonId"
+            element={<CourseDetailPage />}
+          />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultSkillTree} element={<SkillTreePage />} />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultFlashcards} element={<FlashcardsPage />} />
+          <Route
+            path={ADMIN_CHILD_ROUTES.knowledgeVaultCollider}
+            element={<ConceptColliderPage />}
+          />
+          <Route path="knowledge-vault/study" element={<StudySessionPage />} />
+          <Route path="knowledge-vault/statistics" element={<StudyStatisticsPage />} />
+        </Route>
 
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </ErrorBoundary>
   );
 }

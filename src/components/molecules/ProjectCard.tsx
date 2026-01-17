@@ -32,7 +32,11 @@ export function ProjectCard({
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   const startDate = formatDate(project.startDate);
@@ -50,7 +54,9 @@ export function ProjectCard({
             <h3 className="font-semibold text-lg text-gray-900 dark:text-white truncate mb-1">
               {project.name}
             </h3>
-            <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[project.status]}`}>
+            <span
+              className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[project.status]}`}
+            >
               {project.status}
             </span>
           </div>
@@ -95,7 +101,9 @@ export function ProjectCard({
           {taskCount > 0 && (
             <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
               <TrendingUp className="w-4 h-4" />
-              <span>{completedTaskCount}/{taskCount}</span>
+              <span>
+                {completedTaskCount}/{taskCount}
+              </span>
             </div>
           )}
         </div>
