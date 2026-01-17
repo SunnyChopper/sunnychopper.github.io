@@ -596,6 +596,11 @@ export interface FilterOptions {
   sortOrder?: 'asc' | 'desc';
   page?: number;
   pageSize?: number;
+
+  // Task-specific filters
+  projectId?: string;
+  goalId?: string;
+  dueDate?: string;
 }
 
 export interface PaginatedResponse<T> {

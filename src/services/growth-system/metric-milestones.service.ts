@@ -89,13 +89,15 @@ export const metricMilestonesService = {
     latestLog: MetricLog,
     existingForMetric: MetricMilestone[]
   ): MetricMilestone | null {
-    if (!metric.targetValue) {
+    // Defensive: explicitly treat null/undefined targetValue
+    const targetValue = metric.targetValue;
+    if (typeof targetValue !== 'number') {
       return null;
     }
 
-    const progress = calculateProgress(latestLog.value, metric.targetValue, metric.direction);
+    const progress = calculateProgress(latestLog.value, targetValue, metric.direction);
     const hasTargetMilestone = existingForMetric.some(
-      (m) => m.type === 'target_reached' && Math.abs(m.value - metric.targetValue) < 0.01
+      (m) => m.type === 'target_reached' && Math.abs(m.value - targetValue) < 0.01
     );
 
     if (progress.percentage < 100 || hasTargetMilestone) {
@@ -104,14 +106,14 @@ export const metricMilestonesService = {
 
     const points = Math.round(
       MILESTONE_POINTS.target_reached.base *
-        (metric.targetValue > 100 ? 1.5 : metric.targetValue > 50 ? 1.2 : 1.0)
+        (targetValue > 100 ? 1.5 : targetValue > 50 ? 1.2 : 1.0)
     );
 
     return {
       id: generateId(),
       metricId: metric.id,
       type: 'target_reached',
-      value: metric.targetValue,
+      value: targetValue,
       achievedAt: latestLog.loggedAt,
       pointsAwarded: points,
       rewardId: null,
@@ -262,7 +264,10 @@ export const metricMilestonesService = {
       console.error('Failed to award points:', error);
       return {
         data: undefined,
-        error: error instanceof Error ? error.message : 'Failed to award points',
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to award points',
+          code: 'POINTS_AWARD_ERROR',
+        },
         success: false,
       };
     }

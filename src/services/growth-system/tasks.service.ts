@@ -20,49 +20,6 @@ interface BackendPaginatedResponse<T> {
   hasMore: boolean;
 }
 
-function _applyFilters(tasks: Task[], filters?: FilterOptions): Task[] {
-  let filtered = [...tasks];
-
-  if (filters?.search) {
-    const search = filters.search.toLowerCase();
-    filtered = filtered.filter(
-      (t) => t.title.toLowerCase().includes(search) || t.description?.toLowerCase().includes(search)
-    );
-  }
-
-  if (filters?.area) {
-    filtered = filtered.filter((t) => t.area === filters.area);
-  }
-
-  if (filters?.subCategory) {
-    filtered = filtered.filter((t) => t.subCategory === filters.subCategory);
-  }
-
-  if (filters?.priority) {
-    filtered = filtered.filter((t) => t.priority === filters.priority);
-  }
-
-  if (filters?.status) {
-    filtered = filtered.filter((t) => t.status === filters.status);
-  }
-
-  if (filters?.sortBy) {
-    const sortBy = filters.sortBy as keyof Task;
-    const order = filters.sortOrder === 'desc' ? -1 : 1;
-    filtered.sort((a, b) => {
-      const aVal = a[sortBy];
-      const bVal = b[sortBy];
-      if (aVal === null) return 1;
-      if (bVal === null) return -1;
-      if (aVal < bVal) return -order;
-      if (aVal > bVal) return order;
-      return 0;
-    });
-  }
-
-  return filtered;
-}
-
 export const tasksService = {
   async getAll(filters?: FilterOptions): Promise<PaginatedResponse<Task>> {
     // Build query parameters
@@ -123,7 +80,7 @@ export const tasksService = {
     // Prepare request body matching backend schema
     const requestBody: CreateTaskInput = {
       ...input,
-      pointValue,
+      pointValue: pointValue ?? undefined,
     };
 
     const response = await apiClient.post<Task>('/tasks', requestBody);

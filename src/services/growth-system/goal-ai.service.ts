@@ -33,12 +33,12 @@ export const goalAIService = {
     linkedTasks: Task[]
   ): Promise<ApiResponse<ProgressCoachingOutput>> {
     try {
-      const featureConfig = getFeatureConfig('goalHealth');
+      const featureConfig = await getFeatureConfig('goalProgress');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error('LLM not configured. Please configure in Settings.');
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error('API key not found');
       }
@@ -88,8 +88,11 @@ Be encouraging but honest about areas needing attention.`;
     } catch (error) {
       console.error('Error getting progress coaching:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to get coaching',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to get coaching',
+          code: 'COACHING_ERROR',
+        },
         success: false,
       };
     }
@@ -104,12 +107,12 @@ Be encouraging but honest about areas needing attention.`;
     progress: GoalProgressBreakdown
   ): Promise<ApiResponse<GoalHealthScoreOutput>> {
     try {
-      const featureConfig = getFeatureConfig('goalHealth');
+      const featureConfig = await getFeatureConfig('goalProgress');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error('LLM not configured. Please configure in Settings.');
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error('API key not found');
       }
@@ -182,8 +185,11 @@ Provide:
     } catch (error) {
       console.error('Error calculating health score:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to calculate health score',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to calculate health score',
+          code: 'HEALTH_SCORE_ERROR',
+        },
         success: false,
       };
     }
@@ -212,12 +218,12 @@ Provide:
       }
 
       // Fallback to direct LLM if backend fails
-      const featureConfig = getFeatureConfig('goalRefinement');
+      const featureConfig = await getFeatureConfig('goalRefinement');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error('LLM not configured. Please configure in Settings.');
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error('API key not found');
       }
@@ -262,8 +268,11 @@ Make it actionable and specific to the goal's area (${goal.area}).`;
     } catch (error) {
       console.error('Error decomposing goal:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to decompose goal',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to decompose goal',
+          code: 'DECOMPOSITION_ERROR',
+        },
         success: false,
       };
     }
@@ -274,12 +283,12 @@ Make it actionable and specific to the goal's area (${goal.area}).`;
    */
   async detectConflicts(goals: Goal[]): Promise<ApiResponse<ConflictDetectionOutput>> {
     try {
-      const featureConfig = getFeatureConfig('goalHealth');
+      const featureConfig = await getFeatureConfig('goalProgress');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error('LLM not configured. Please configure in Settings.');
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error('API key not found');
       }
@@ -333,8 +342,11 @@ Provide specific conflict details and actionable resolution strategies.`;
     } catch (error) {
       console.error('Error detecting conflicts:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to detect conflicts',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to detect conflicts',
+          code: 'CONFLICT_DETECTION_ERROR',
+        },
         success: false,
       };
     }

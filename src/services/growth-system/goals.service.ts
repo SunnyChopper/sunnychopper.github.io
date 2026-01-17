@@ -181,4 +181,24 @@ export const goalsService = {
 
     throw new Error(response.error?.message || 'Failed to fetch goal activities');
   },
+
+  async updateCriterion(
+    goalId: string,
+    criterionId: string,
+    updates: { isCompleted: boolean; completedAt: string | null }
+  ): Promise<ApiResponse<Goal>> {
+    const response = await apiClient.patch<Goal>(
+      `/goals/${goalId}/criteria/${criterionId}`,
+      updates
+    );
+    return response;
+  },
+
+  async logActivity(
+    goalId: string,
+    activity: Omit<GoalActivity, 'id' | 'goalId' | 'createdAt'>
+  ): Promise<ApiResponse<GoalActivity>> {
+    const response = await apiClient.post<GoalActivity>(`/goals/${goalId}/activity`, activity);
+    return response;
+  },
 };

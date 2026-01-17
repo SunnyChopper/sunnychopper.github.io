@@ -118,18 +118,17 @@ export const metricAIService = {
       if (backendResponse.success && backendResponse.data) {
         return {
           data: backendResponse.data.data.result,
-          error: null,
           success: true,
         };
       }
 
       // Fallback to direct LLM
-      const featureConfig = getFeatureConfig('metricPatterns');
+      const featureConfig = await getFeatureConfig('metricPatterns');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -170,14 +169,16 @@ Provide insights and actionable recommendations.`;
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error analyzing patterns:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to analyze patterns',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to analyze patterns',
+          code: 'PATTERN_ANALYSIS_ERROR',
+        },
         success: false,
       };
     }
@@ -201,18 +202,17 @@ Provide insights and actionable recommendations.`;
       if (backendResponse.success && backendResponse.data) {
         return {
           data: backendResponse.data.data.result,
-          error: null,
           success: true,
         };
       }
 
       // Fallback to direct LLM
-      const featureConfig = getFeatureConfig('metricAnomalies');
+      const featureConfig = await getFeatureConfig('metricAnomalies');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -249,14 +249,16 @@ Identify:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error detecting anomalies:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to detect anomalies',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to detect anomalies',
+          code: 'ANOMALY_DETECTION_ERROR',
+        },
         success: false,
       };
     }
@@ -281,18 +283,17 @@ Identify:
       if (backendResponse.success && backendResponse.data) {
         return {
           data: backendResponse.data.data.result,
-          error: null,
           success: true,
         };
       }
 
       // Fallback to direct LLM
-      const featureConfig = getFeatureConfig('metricCorrelations');
+      const featureConfig = await getFeatureConfig('metricCorrelations');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -332,14 +333,16 @@ Identify:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error finding correlations:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to find correlations',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to find correlations',
+          code: 'CORRELATION_ERROR',
+        },
         success: false,
       };
     }
@@ -354,12 +357,12 @@ Identify:
     insights?: Record<string, unknown>
   ): Promise<ApiResponse<z.infer<typeof NarrativeResponseSchema>>> {
     try {
-      const featureConfig = getFeatureConfig('metricPatterns');
+      const featureConfig = await getFeatureConfig('metricPatterns');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -395,14 +398,16 @@ Create a conversational summary that:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error generating narrative:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to generate narrative',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to generate narrative',
+          code: 'NARRATIVE_ERROR',
+        },
         success: false,
       };
     }
@@ -426,18 +431,17 @@ Create a conversational summary that:
       if (backendResponse.success && backendResponse.data) {
         return {
           data: backendResponse.data.data.result,
-          error: null,
           success: true,
         };
       }
 
       // Fallback to direct LLM
-      const featureConfig = getFeatureConfig('metricTargets');
+      const featureConfig = await getFeatureConfig('metricTargets');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -470,14 +474,16 @@ Predict:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error predicting trajectory:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to predict trajectory',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to predict trajectory',
+          code: 'TRAJECTORY_PREDICTION_ERROR',
+        },
         success: false,
       };
     }
@@ -492,12 +498,12 @@ Predict:
     goals: Goal[]
   ): Promise<ApiResponse<z.infer<typeof RecommendationResponseSchema>>> {
     try {
-      const featureConfig = getFeatureConfig('metricTargets');
+      const featureConfig = await getFeatureConfig('metricTargets');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -532,14 +538,16 @@ Provide recommendations for:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error generating recommendations:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to generate recommendations',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to generate recommendations',
+          code: 'RECOMMENDATIONS_ERROR',
+        },
         success: false,
       };
     }
@@ -554,12 +562,12 @@ Provide recommendations for:
     context?: Record<string, unknown>
   ): Promise<ApiResponse<z.infer<typeof CoachingResponseSchema>>> {
     try {
-      const featureConfig = getFeatureConfig('metricHealth');
+      const featureConfig = await getFeatureConfig('metricHealth');
       if (!featureConfig || !hasApiKey(featureConfig.provider)) {
         throw new Error(ERROR_LLM_NOT_CONFIGURED);
       }
 
-      const apiKey = getApiKey(featureConfig.provider);
+      const apiKey = await getApiKey(featureConfig.provider);
       if (!apiKey) {
         throw new Error(ERROR_API_KEY_NOT_FOUND);
       }
@@ -594,14 +602,16 @@ Create a personalized coaching message that:
 
       return {
         data: result,
-        error: null,
         success: true,
       };
     } catch (error) {
       console.error('Error generating coaching:', error);
       return {
-        data: null,
-        error: error instanceof Error ? error.message : 'Failed to generate coaching',
+        data: undefined,
+        error: {
+          message: error instanceof Error ? error.message : 'Failed to generate coaching',
+          code: 'COACHING_ERROR',
+        },
         success: false,
       };
     }

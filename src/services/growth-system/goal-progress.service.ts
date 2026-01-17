@@ -49,7 +49,7 @@ export const goalProgressService = {
     // Calculate metrics progress
     const metricsResponse = await goalsService.getLinkedMetrics(goalId);
     const metricLinks = metricsResponse.success ? metricsResponse.data || [] : [];
-    const metricsProgress = await this.calculateMetricsProgress(metricLinks.map((m) => m.metricId));
+    const metricsProgress = await this.calculateMetricsProgress(metricLinks.map((m) => m.id));
 
     // Calculate habits progress
     const habitsResponse = await goalsService.getLinkedHabits(goalId);
@@ -186,8 +186,8 @@ export const goalProgressService = {
     let maxStreak = 0;
 
     // TODO: Implement actual habit progress calculation
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for (const habit of habits) {
+
+    for (const _habit of habits) {
       // This is a simplified calculation - would need actual habit logs service
       // For now, return placeholder values
       totalConsistency += 70; // Assume 70% consistency

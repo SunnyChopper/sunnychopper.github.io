@@ -25,8 +25,8 @@ export const taskPointsAIService = {
     priority: Priority;
     size?: number;
   }): Promise<PointCalculation> {
-    const config = getFeatureConfig('effortEstimation');
-    const apiKey = getApiKey(config.provider);
+    const config = await getFeatureConfig('effortEstimation');
+    const apiKey = await getApiKey(config.provider);
 
     if (!apiKey) {
       throw new Error(`API key not configured for provider: ${config.provider}`);
@@ -84,8 +84,8 @@ Provide a fair and motivating point value that encourages completion.`;
     existingRewards?: Array<{ title: string; pointCost: number; category: string }>;
     typicalTaskPoints?: { min: number; max: number; average: number };
   }): Promise<{ pointCost: number; reasoning: string }> {
-    const config = getFeatureConfig('effortEstimation');
-    const apiKey = getApiKey(config.provider);
+    const config = await getFeatureConfig('effortEstimation');
+    const apiKey = await getApiKey(config.provider);
 
     if (!apiKey) {
       throw new Error(`API key not configured for provider: ${config.provider}`);
@@ -148,8 +148,8 @@ Provide a fair point cost that balances motivation and attainability.`;
   }): Promise<
     Array<{ title: string; description: string; category: string; suggestedPointCost: number }>
   > {
-    const config = getFeatureConfig('effortEstimation');
-    const apiKey = getApiKey(config.provider);
+    const config = await getFeatureConfig('effortEstimation');
+    const apiKey = await getApiKey(config.provider);
 
     if (!apiKey) {
       throw new Error(`API key not configured for provider: ${config.provider}`);
