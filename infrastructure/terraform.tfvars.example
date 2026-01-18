@@ -1,0 +1,13 @@
+# Copy this to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored and should not be committed
+
+github_token = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+aws_region = "us-east-1"
+
+# Get these from AWS Cognito Console or Serverless Framework outputs
+cognito_user_pool_id         = "us-east-1_XXXXXXXXX"
+cognito_client_id            = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
+cognito_identity_pool_id     = "us-east-1:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+api_base_url = "https://api.sunnysingh.tech"
