@@ -9,15 +9,51 @@ import type {
   FilterOptions,
   PaginatedResponse,
   DependencyGraph,
+  TaskStatus,
 } from '@/types/growth-system';
 import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 
 interface BackendPaginatedResponse<T> {
-  data: T[];
+  tasks: T[];
   total: number;
   page: number;
   pageSize: number;
   hasMore: boolean;
+}
+
+/**
+ * Normalizes task status from API format (with spaces) to frontend format (without spaces).
+ * The backend returns statuses like "Not Started" but the frontend expects "NotStarted".
+ */
+function normalizeTaskStatus(status: string): TaskStatus {
+  const statusMap: Record<string, TaskStatus> = {
+    'Not Started': 'NotStarted',
+    'In Progress': 'InProgress',
+    'On Hold': 'OnHold',
+    Blocked: 'Blocked',
+    Done: 'Done',
+    Cancelled: 'Cancelled',
+  };
+
+  // If already in correct format, return as-is
+  if (
+    statusMap[status] === undefined &&
+    ['NotStarted', 'InProgress', 'OnHold', 'Blocked', 'Done', 'Cancelled'].includes(status)
+  ) {
+    return status as TaskStatus;
+  }
+
+  return statusMap[status] || (status as TaskStatus);
+}
+
+/**
+ * Normalizes a task object by converting status from API format to frontend format.
+ */
+function normalizeTask(task: Task): Task {
+  return {
+    ...task,
+    status: normalizeTaskStatus(task.status as string),
+  };
 }
 
 export const tasksService = {
@@ -41,8 +77,11 @@ export const tasksService = {
     const response = await apiClient.get<BackendPaginatedResponse<Task>>(endpoint);
 
     if (response.success && response.data) {
+      // Normalize task statuses from API format (with spaces) to frontend format (without spaces)
+      const tasks = response.data.tasks || [];
+      const normalizedTasks = tasks.map(normalizeTask);
       return {
-        data: response.data.data,
+        data: normalizedTasks,
         total: response.data.total,
         page: response.data.page,
         pageSize: response.data.pageSize,
@@ -55,6 +94,12 @@ export const tasksService = {
 
   async getById(id: string): Promise<ApiResponse<Task>> {
     const response = await apiClient.get<Task>(`/tasks/${id}`);
+    if (response.success && response.data) {
+      return {
+        ...response,
+        data: normalizeTask(response.data),
+      };
+    }
     return response;
   },
 
@@ -84,11 +129,23 @@ export const tasksService = {
     };
 
     const response = await apiClient.post<Task>('/tasks', requestBody);
+    if (response.success && response.data) {
+      return {
+        ...response,
+        data: normalizeTask(response.data),
+      };
+    }
     return response;
   },
 
   async update(id: string, input: UpdateTaskInput): Promise<ApiResponse<Task>> {
     const response = await apiClient.patch<Task>(`/tasks/${id}`, input);
+    if (response.success && response.data) {
+      return {
+        ...response,
+        data: normalizeTask(response.data),
+      };
+    }
     return response;
   },
 
@@ -134,8 +191,11 @@ export const tasksService = {
       `/projects/${projectId}/tasks`
     );
     if (response.success && response.data) {
+      // Normalize task statuses from API format to frontend format
+      const tasks = response.data.tasks || [];
+      const normalizedTasks = tasks.map(normalizeTask);
       return {
-        data: response.data.data,
+        data: normalizedTasks,
         total: response.data.total,
         success: true,
       };
@@ -156,8 +216,11 @@ export const tasksService = {
   async getByGoal(goalId: string): Promise<ApiListResponse<Task>> {
     const response = await apiClient.get<BackendPaginatedResponse<Task>>(`/goals/${goalId}/tasks`);
     if (response.success && response.data) {
+      // Normalize task statuses from API format to frontend format
+      const tasks = response.data.tasks || [];
+      const normalizedTasks = tasks.map(normalizeTask);
       return {
-        data: response.data.data,
+        data: normalizedTasks,
         total: response.data.total,
         success: true,
       };
