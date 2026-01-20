@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Bold,
   Italic,
@@ -38,7 +38,30 @@ export default function MarkdownEditor({
   onEnterReaderMode,
   isLoading = false,
 }: MarkdownEditorProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('split');
+  // Default to 'edit' mode on mobile, 'split' on desktop
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') return 'split';
+    return window.innerWidth >= 768 ? 'split' : 'edit';
+  });
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
+
+  // Update mobile state on resize
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Auto-switch to edit mode on mobile if in split mode
+      if (mobile && viewMode === 'split') {
+        setViewMode('edit');
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [viewMode]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const insertText = (before: string, after: string = '') => {
@@ -100,12 +123,13 @@ export default function MarkdownEditor({
       )}
     >
       {/* Toolbar - Sticky to stay visible when scrolling */}
-      <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-1">
+      <div className="sticky top-0 z-10 flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 overflow-hidden min-h-[48px] h-auto">
+        {/* Formatting buttons - left side */}
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
           <button
             type="button"
             onClick={() => insertText('**', '**')}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
+            className="flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
             title="Bold (Cmd/Ctrl+B)"
             aria-label="Bold"
           >
@@ -114,7 +138,7 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => insertText('_', '_')}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
+            className="flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
             title="Italic (Cmd/Ctrl+I)"
             aria-label="Italic"
           >
@@ -123,7 +147,7 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => insertText('[', '](url)')}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
+            className="flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
             title="Link (Cmd/Ctrl+K)"
             aria-label="Link"
           >
@@ -132,7 +156,7 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => insertText('`', '`')}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
+            className="flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
             title="Inline Code"
             aria-label="Inline Code"
           >
@@ -141,7 +165,7 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => insertText('- ', '')}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
+            className="flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
             title="Bullet List"
             aria-label="Bullet List"
           >
@@ -150,7 +174,7 @@ export default function MarkdownEditor({
           <button
             type="button"
             onClick={() => insertText('# ', '')}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
+            className="flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition"
             title="Heading"
             aria-label="Heading"
           >
@@ -158,16 +182,21 @@ export default function MarkdownEditor({
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+        {/* Spacer to push right side to the end when there's space */}
+        <div className="flex-1 min-w-0" />
+
+        {/* Stats and view mode buttons - right side */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          {/* Hide word count on mobile and smaller tablets to save space */}
+          <div className="hidden md:block text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap flex-shrink-0">
             {wordCount} words · {charCount} chars · {readingTime} min read
           </div>
-          <div className="flex items-center gap-1 border-l border-gray-300 dark:border-gray-700 pl-2 ml-2">
+          <div className="flex items-center gap-1 sm:gap-1.5 border-l border-gray-300 dark:border-gray-700 pl-2 sm:pl-3 ml-2 flex-shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('edit')}
               className={cn(
-                'p-2 rounded transition',
+                'flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center rounded transition',
                 viewMode === 'edit'
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
@@ -177,25 +206,28 @@ export default function MarkdownEditor({
             >
               <FileText size={16} />
             </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('split')}
-              className={cn(
-                'p-2 rounded transition',
-                viewMode === 'split'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
-              )}
-              title="Split View"
-              aria-label="Split View"
-            >
-              <Split size={16} />
-            </button>
+            {/* Hide split view on mobile */}
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={() => setViewMode('split')}
+                className={cn(
+                  'flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center rounded transition',
+                  viewMode === 'split'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                    : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
+                )}
+                title="Split View"
+                aria-label="Split View"
+              >
+                <Split size={16} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setViewMode('preview')}
               className={cn(
-                'p-2 rounded transition',
+                'flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center rounded transition',
                 viewMode === 'preview'
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
                   : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
@@ -213,7 +245,7 @@ export default function MarkdownEditor({
                   e.stopPropagation();
                   onEnterReaderMode();
                 }}
-                className="p-2 rounded transition hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                className="flex-shrink-0 p-2 min-h-[32px] min-w-[32px] flex items-center justify-center rounded transition hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400"
                 title="Open in Full-Screen Reader Mode"
                 aria-label="Open in Full-Screen Reader Mode"
               >
@@ -231,7 +263,7 @@ export default function MarkdownEditor({
           <div
             className={cn(
               'flex-1 flex flex-col min-h-0',
-              viewMode === 'split' && 'border-r border-gray-200 dark:border-gray-700'
+              viewMode === 'split' && !isMobile && 'border-r border-gray-200 dark:border-gray-700'
             )}
           >
             <textarea
