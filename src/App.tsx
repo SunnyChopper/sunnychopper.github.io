@@ -40,6 +40,8 @@ import StudyStatisticsPage from './pages/admin/StudyStatisticsPage';
 import TasksPage from './pages/admin/TasksPage';
 import WeeklyReviewPage from './pages/admin/WeeklyReviewPage';
 import ZenDashboardPage from './pages/admin/ZenDashboardPage';
+import MarkdownViewerPage from './pages/admin/MarkdownViewerPage';
+import ToolsOverviewPage from './pages/admin/ToolsOverviewPage';
 import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProductsPage from './pages/ProductsPage';
@@ -121,6 +123,9 @@ function AppContent() {
           />
           <Route path="knowledge-vault/study" element={<StudySessionPage />} />
           <Route path="knowledge-vault/statistics" element={<StudyStatisticsPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.tools} element={<ToolsOverviewPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.markdownViewer} element={<MarkdownViewerPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.markdownViewerFile} element={<MarkdownViewerPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
