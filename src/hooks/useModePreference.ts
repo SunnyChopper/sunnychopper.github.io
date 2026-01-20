@@ -1,0 +1,88 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { useBackendStatus } from '@/contexts/BackendStatusContext';
+import { queryKeys } from '@/lib/react-query/query-keys';
+import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
+
+type ModePreference = 'work' | 'leisure';
+
+/**
+ * Hook to fetch mode preference
+ */
+export function useModePreference() {
+  const { recordError, recordSuccess } = useBackendStatus();
+
+  const { data, isLoading, error, isError } = useQuery({
+    queryKey: queryKeys.modePreference.detail(),
+    queryFn: async () => {
+      try {
+        const result = await apiClient.getModePreference();
+        if (result.success) {
+          recordSuccess();
+        }
+        return result;
+      } catch (err: unknown) {
+        const apiError = extractApiError(err);
+        if (apiError && isNetworkError(apiError)) {
+          recordError(apiError);
+        }
+        throw err;
+      }
+    },
+    enabled: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes - mode doesn't change often
+  });
+
+  const apiError = error ? extractApiError(error) : null;
+
+  return {
+    mode: (data?.data || 'work') as ModePreference,
+    isLoading: isLoading && !isError,
+    isError,
+    error: apiError || error,
+  };
+}
+
+/**
+ * Hook for mode preference mutations with optimistic updates
+ */
+export function useModePreferenceMutations() {
+  const queryClient = useQueryClient();
+
+  const setModePreference = useMutation({
+    mutationFn: (mode: ModePreference) => apiClient.setModePreference(mode),
+    onMutate: async (newMode) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.modePreference.detail() });
+
+      // Snapshot the previous value
+      const previousMode = queryClient.getQueryData<{ data: ModePreference }>(
+        queryKeys.modePreference.detail()
+      );
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(queryKeys.modePreference.detail(), {
+        success: true,
+        data: newMode,
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousMode };
+    },
+    onError: (_err, _newMode, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousMode) {
+        queryClient.setQueryData(queryKeys.modePreference.detail(), context.previousMode);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: queryKeys.modePreference.detail() });
+    },
+  });
+
+  return {
+    setModePreference: setModePreference.mutateAsync,
+    isSetting: setModePreference.isPending,
+  };
+}
