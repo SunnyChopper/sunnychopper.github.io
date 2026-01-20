@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Menu, X as XIcon, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 import MarkdownFileTree from '@/components/organisms/MarkdownFileTree';
@@ -18,7 +18,11 @@ import { navigateToMarkdownFile } from '@/lib/markdown/navigation-utils';
 export default function MarkdownViewerPage() {
   const params = useParams<{ filePath?: string }>();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Sidebar starts closed on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 1024; // lg breakpoint
+  });
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [contextMenuFile, setContextMenuFile] = useState<string | null>(null);
@@ -41,6 +45,29 @@ export default function MarkdownViewerPage() {
 
   // Extract current folder path from filePath
   const currentFolderPath = filePath ? filePath.split('/').slice(0, -1).join('/') : '';
+
+  // Handle window resize to auto-close sidebar on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close sidebar on mobile when a file is selected
+  // This effect ensures the sidebar closes even if navigation happens outside of handleFileSelect
+  // Note: This is intentional - we need to sync UI state (sidebar) with route changes (filePath)
+  useEffect(() => {
+    if (filePath && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, [filePath]);
 
   const handleNewFile = () => {
     // Create local file and navigate to it
@@ -114,7 +141,10 @@ export default function MarkdownViewerPage() {
 
   const handleFileSelect = (_path: string) => {
     // File selection is handled by navigation in MarkdownFileItem
-    // This callback can be used for additional actions if needed
+    // Close sidebar on mobile when file is selected
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
   };
 
   const handleEditTags = (path: string) => {
@@ -156,22 +186,10 @@ export default function MarkdownViewerPage() {
 
   return (
     <div className="flex h-full bg-gray-50 dark:bg-gray-900">
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Markdown Viewer</h1>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-          aria-label="Toggle sidebar"
-        >
-          {sidebarOpen ? <XIcon size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
-
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed lg:static inset-y-0 left-0 z-30 lg:z-auto',
+          'fixed lg:static inset-y-0 left-0 z-40 lg:z-auto',
           'bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700',
           'w-64 lg:w-80 flex-shrink-0',
           'transform transition-transform duration-200 ease-in-out',
@@ -196,7 +214,7 @@ export default function MarkdownViewerPage() {
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-20"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={() => setSidebarOpen(false)}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
@@ -213,6 +231,17 @@ export default function MarkdownViewerPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <MarkdownViewer filePath={filePath} />
       </div>
+
+      {/* Floating Action Button for Mobile - Always visible when sidebar is closed */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="lg:hidden fixed bottom-6 right-6 z-40 bg-blue-600 dark:bg-blue-500 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-all hover:scale-110 active:scale-95 touch-manipulation"
+          aria-label="Open files menu"
+        >
+          <Menu size={24} />
+        </button>
+      )}
 
       {/* Upload Files Modal */}
       {showUploadModal && (
