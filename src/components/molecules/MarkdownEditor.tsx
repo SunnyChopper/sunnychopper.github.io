@@ -1,5 +1,17 @@
 import { useState, useRef } from 'react';
-import { Bold, Italic, Link, Code, List, Heading1, Eye, Split, FileText } from 'lucide-react';
+import {
+  Bold,
+  Italic,
+  Link,
+  Code,
+  List,
+  Heading1,
+  Eye,
+  Split,
+  FileText,
+  BookOpen,
+  Loader,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MarkdownRenderer from './MarkdownRenderer';
 
@@ -11,6 +23,9 @@ interface MarkdownEditorProps {
   placeholder?: string;
   minHeight?: string;
   className?: string;
+  fullWidth?: boolean;
+  onEnterReaderMode?: () => void;
+  isLoading?: boolean;
 }
 
 export default function MarkdownEditor({
@@ -19,6 +34,9 @@ export default function MarkdownEditor({
   placeholder = 'Write your note content here (supports Markdown)',
   minHeight = '400px',
   className,
+  fullWidth = false,
+  onEnterReaderMode,
+  isLoading = false,
 }: MarkdownEditorProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -77,12 +95,12 @@ export default function MarkdownEditor({
   return (
     <div
       className={cn(
-        'flex flex-col border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden',
+        'flex flex-col border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden h-full',
         className
       )}
     >
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      {/* Toolbar - Sticky to stay visible when scrolling */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -187,17 +205,32 @@ export default function MarkdownEditor({
             >
               <Eye size={16} />
             </button>
+            {onEnterReaderMode && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEnterReaderMode();
+                }}
+                className="p-2 rounded transition hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                title="Open in Full-Screen Reader Mode"
+                aria-label="Open in Full-Screen Reader Mode"
+              >
+                <BookOpen size={16} />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Editor/Preview Area */}
-      <div className="flex flex-1 overflow-hidden" style={{ minHeight }}>
+      <div className="flex flex-1 overflow-hidden min-h-0" style={{ minHeight }}>
         {/* Editor */}
         {(viewMode === 'edit' || viewMode === 'split') && (
           <div
             className={cn(
-              'flex-1 flex flex-col',
+              'flex-1 flex flex-col min-h-0',
               viewMode === 'split' && 'border-r border-gray-200 dark:border-gray-700'
             )}
           >
@@ -207,7 +240,10 @@ export default function MarkdownEditor({
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              className="flex-1 w-full px-4 py-3 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm resize-none focus:outline-none"
+              className={cn(
+                'flex-1 w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm resize-none focus:outline-none overflow-y-auto',
+                fullWidth ? 'px-8 py-6' : 'px-4 py-3'
+              )}
               style={{ minHeight }}
             />
           </div>
@@ -217,11 +253,16 @@ export default function MarkdownEditor({
         {(viewMode === 'preview' || viewMode === 'split') && (
           <div
             className={cn(
-              'flex-1 overflow-y-auto px-4 py-3 bg-gray-50 dark:bg-gray-900',
-              viewMode === 'preview' && 'w-full'
+              'flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900',
+              viewMode === 'preview' && 'w-full',
+              fullWidth ? 'px-8 py-6' : 'px-4 py-3'
             )}
           >
-            {value.trim() ? (
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full min-h-[400px]">
+                <Loader className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            ) : value.trim() ? (
               <MarkdownRenderer content={value} />
             ) : (
               <p className="text-gray-400 dark:text-gray-500 italic">{placeholder}</p>

@@ -28,7 +28,7 @@ import { ProjectCard } from '@/components/molecules/ProjectCard';
 import { FilterPanel } from '@/components/molecules/FilterPanel';
 import { ProjectCreateForm } from '@/components/organisms/ProjectCreateForm';
 import { ProjectEditForm } from '@/components/organisms/ProjectEditForm';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { StatusBadge } from '@/components/atoms/StatusBadge';

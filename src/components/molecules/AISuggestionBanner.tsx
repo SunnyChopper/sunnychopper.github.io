@@ -57,6 +57,9 @@ export function AISuggestionBanner({
     try {
       await onRefresh();
       loadSuggestions();
+    } catch (error) {
+      // Silently handle errors - suggestions are non-critical
+      console.error('Failed to refresh suggestions:', error);
     } finally {
       setIsRefreshing(false);
     }

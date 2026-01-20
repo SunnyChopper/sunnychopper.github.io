@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Settings,
+  Activity,
   Brain,
   ChevronDown,
   ChevronRight,
@@ -29,6 +30,8 @@ import {
   Network,
   Layers,
   Sparkles,
+  Wrench,
+  FileText,
 } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CommandPalette } from '@/components/organisms/CommandPalette';
@@ -36,6 +39,7 @@ import LeisureModeToggle from '@/components/atoms/LeisureModeToggle';
 import { WalletWidget } from '@/components/molecules/WalletWidget';
 import { BackendStatusBanner } from '@/components/molecules/BackendStatusBanner';
 import { ROUTES } from '@/routes';
+import { cn } from '@/lib/utils';
 
 interface NavItem {
   name: string;
@@ -48,10 +52,11 @@ interface NavItem {
 
 const workNavigation: NavItem[] = [
   { name: 'Dashboard', href: ROUTES.admin.dashboard, icon: LayoutDashboard },
+  { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
   {
     name: 'Growth System',
     href: ROUTES.admin.growthSystem,
-    icon: Brain,
+    icon: Activity,
     children: [
       { name: 'Tasks', href: ROUTES.admin.tasks, icon: CheckSquare },
       { name: 'Habits', href: ROUTES.admin.habits, icon: Calendar },
@@ -59,23 +64,28 @@ const workNavigation: NavItem[] = [
       { name: 'Goals', href: ROUTES.admin.goals, icon: Target },
       { name: 'Projects', href: ROUTES.admin.projects, icon: FolderKanban },
       { name: 'Logbook', href: ROUTES.admin.logbook, icon: BookOpen },
+      { name: 'Weekly Review', href: ROUTES.admin.weeklyReview, icon: Calendar },
     ],
   },
   {
     name: 'Knowledge Vault',
     href: ROUTES.admin.knowledgeVault,
-    icon: Library,
+    icon: Brain,
     children: [
-      { name: 'Library', href: ROUTES.admin.knowledgeVaultLibrary, icon: BookOpen },
+      { name: 'Library', href: ROUTES.admin.knowledgeVaultLibrary, icon: Library },
       { name: 'Courses', href: ROUTES.admin.knowledgeVaultCourses, icon: GraduationCap },
       { name: 'Skill Tree', href: ROUTES.admin.knowledgeVaultSkillTree, icon: Network },
       { name: 'Flashcards', href: ROUTES.admin.knowledgeVaultFlashcards, icon: Layers },
       { name: 'Concept Collider', href: ROUTES.admin.knowledgeVaultCollider, icon: Sparkles },
     ],
   },
-  { name: 'Weekly Review', href: ROUTES.admin.weeklyReview, icon: Calendar },
+  {
+    name: 'Tools',
+    href: ROUTES.admin.tools,
+    icon: Wrench,
+    children: [{ name: 'Markdown', href: ROUTES.admin.markdownViewer, icon: FileText }],
+  },
   { name: 'Reward Studio', href: ROUTES.admin.rewardStudio, icon: Palette },
-  { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
   { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
 ];
 
@@ -112,10 +122,7 @@ export default function AdminLayout() {
   const { user, signOut } = useAuth();
   const { isLeisureMode } = useMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>([
-    'Growth System',
-    'Knowledge Vault',
-  ]);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
@@ -146,8 +153,14 @@ export default function AdminLayout() {
 
   const isItemActive = (item: NavItem): boolean => {
     if (location.pathname === item.href) return true;
+    // Check if path starts with item href (for nested routes like markdown-viewer files)
+    if (location.pathname.startsWith(item.href + '/')) return true;
     if (item.children) {
-      return item.children.some((child) => location.pathname === child.href);
+      return item.children.some((child) => {
+        if (location.pathname === child.href) return true;
+        // Check if path starts with child href (for nested routes)
+        return location.pathname.startsWith(child.href + '/');
+      });
     }
     return false;
   };
@@ -338,13 +351,16 @@ export default function AdminLayout() {
                           </Link>
                           {item.children.map((child) => {
                             const ChildIcon = child.icon;
+                            const isChildActive =
+                              location.pathname === child.href ||
+                              location.pathname.startsWith(child.href + '/');
                             return (
                               <Link
                                 key={child.name}
                                 to={child.href}
                                 onClick={() => setSidebarOpen(false)}
                                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
-                                  location.pathname === child.href
+                                  isChildActive
                                     ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
                                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                                 }`}
@@ -398,12 +414,21 @@ export default function AdminLayout() {
       )}
 
       <div
-        className="min-h-screen transition-all duration-200"
+        className={cn(
+          'transition-all duration-200',
+          location.pathname.startsWith('/admin/markdown-viewer')
+            ? 'h-screen overflow-hidden'
+            : 'min-h-screen'
+        )}
         style={{ marginLeft: isLargeScreen ? `${sidebarWidth}px` : '0' }}
       >
-        <div className="pt-20 lg:pt-8 px-6 lg:px-12 pb-12">
+        {location.pathname.startsWith('/admin/markdown-viewer') ? (
           <Outlet />
-        </div>
+        ) : (
+          <div className="pt-20 lg:pt-8 px-6 lg:px-12 pb-12">
+            <Outlet />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -47,7 +47,7 @@ import { MetricProgressRing } from '@/components/molecules/MetricProgressRing';
 import { calculateProgress, getTrendData, getPeriodComparison } from '@/utils/metric-analytics';
 import { MetricCreateForm } from '@/components/organisms/MetricCreateForm';
 import { MetricEditForm } from '@/components/organisms/MetricEditForm';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { StatusBadge } from '@/components/atoms/StatusBadge';

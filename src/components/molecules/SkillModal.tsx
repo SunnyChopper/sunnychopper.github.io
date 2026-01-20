@@ -1,4 +1,4 @@
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import type { Skill } from '@/types';
 
 interface SkillModalProps {

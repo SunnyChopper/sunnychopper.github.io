@@ -45,6 +45,7 @@
     "@langchain/openai": "^1.2.0",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.16",
+    "@tanstack/react-virtual": "^3.13.18",
     "@types/prismjs": "^1.26.5",
     "aws-amplify": "^6.15.9",
     "axios": "^1.13.2",

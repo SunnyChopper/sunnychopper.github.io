@@ -31,6 +31,9 @@ export const ROUTES = {
     knowledgeVaultSkillTree: `${ADMIN_BASE}/knowledge-vault/skill-tree` as const,
     knowledgeVaultFlashcards: `${ADMIN_BASE}/knowledge-vault/flashcards` as const,
     knowledgeVaultCollider: `${ADMIN_BASE}/knowledge-vault/collider` as const,
+    tools: `${ADMIN_BASE}/tools` as const,
+    markdownViewer: `${ADMIN_BASE}/markdown-viewer` as const,
+    markdownViewerFile: `${ADMIN_BASE}/markdown-viewer/:filePath` as const,
   },
 } as const;
 
@@ -59,4 +62,7 @@ export const ADMIN_CHILD_ROUTES = {
   knowledgeVaultSkillTree: 'knowledge-vault/skill-tree' as const,
   knowledgeVaultFlashcards: 'knowledge-vault/flashcards' as const,
   knowledgeVaultCollider: 'knowledge-vault/collider' as const,
+  tools: 'tools' as const,
+  markdownViewer: 'markdown-viewer' as const,
+  markdownViewerFile: 'markdown-viewer/:filePath' as const,
 } as const;

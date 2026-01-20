@@ -29,7 +29,7 @@ import { TaskEditPanel } from '@/components/organisms/TaskEditPanel';
 import { TaskKanbanBoard } from '@/components/organisms/TaskKanbanBoard';
 import { TaskCalendarView } from '@/components/organisms/TaskCalendarView';
 import DependencyGraph from '@/components/organisms/DependencyGraph';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
 import {

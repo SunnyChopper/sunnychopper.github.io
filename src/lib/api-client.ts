@@ -13,6 +13,7 @@ import type {
   CreateMessageRequest,
   UpdateThreadRequest,
 } from '@/types/chatbot';
+import { apiLogger } from '@/lib/logger';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -42,13 +43,13 @@ class ApiClient {
     try {
       const tokens = authService.getStoredTokens();
       if (tokens?.accessToken) {
-        console.log('[ApiClient] Initializing token from storage on construction');
+        apiLogger.log('Initializing token from storage on construction');
         this.authToken = tokens.accessToken;
       } else {
-        console.log('[ApiClient] No token found in storage on construction');
+        apiLogger.log('No token found in storage on construction');
       }
     } catch (error) {
-      console.warn('[ApiClient] Error initializing token from storage:', error);
+      apiLogger.warn('Error initializing token from storage:', error);
     }
   }
 
@@ -58,12 +59,12 @@ class ApiClient {
       (config: InternalAxiosRequestConfig) => {
         if (this.authToken && config.headers) {
           config.headers.Authorization = `Bearer ${this.authToken}`;
-          console.log('[ApiClient] Request interceptor: Token attached to request', {
+          apiLogger.log('Request interceptor: Token attached to request', {
             url: config.url,
             hasToken: !!this.authToken,
           });
         } else {
-          console.warn('[ApiClient] Request interceptor: No token available for request', {
+          apiLogger.warn('Request interceptor: No token available for request', {
             url: config.url,
             hasToken: !!this.authToken,
           });
@@ -81,10 +82,7 @@ class ApiClient {
 
         // If error is 401 and we haven't already retried
         if (error.response?.status === 401 && !originalRequest._retry) {
-          console.log(
-            '[ApiClient] 401 error detected, attempting token refresh. URL:',
-            originalRequest.url
-          );
+          apiLogger.log('401 error detected, attempting token refresh. URL:', originalRequest.url);
           if (this.isRefreshing) {
             // If already refreshing, queue this request
             return new Promise((resolve, reject) => {
@@ -119,7 +117,7 @@ class ApiClient {
               return this.client(originalRequest);
             } else {
               // Refresh failed, clear tokens and redirect to login
-              console.log('[ApiClient] Token refresh failed, clearing auth state');
+              apiLogger.log('Token refresh failed, clearing auth state');
               this.processQueue(new Error('Token refresh failed'));
               authService.clearTokensOnly();
               this.authToken = null;
@@ -129,16 +127,16 @@ class ApiClient {
                 typeof window !== 'undefined' &&
                 window.location.pathname !== ROUTES.admin.login
               ) {
-                console.log('[ApiClient] Redirecting to login page');
+                apiLogger.log('Redirecting to login page');
                 window.location.href = ROUTES.admin.login;
               } else {
-                console.log('[ApiClient] Already on login page, skipping redirect');
+                apiLogger.log('Already on login page, skipping redirect');
               }
 
               return Promise.reject(error);
             }
           } catch (refreshError) {
-            console.log('[ApiClient] Token refresh exception, clearing auth state:', refreshError);
+            apiLogger.log('Token refresh exception, clearing auth state:', refreshError);
             this.processQueue(
               refreshError instanceof Error ? refreshError : new Error(String(refreshError))
             );
@@ -147,10 +145,10 @@ class ApiClient {
 
             // Only redirect if not already on login page to prevent infinite loops
             if (typeof window !== 'undefined' && window.location.pathname !== ROUTES.admin.login) {
-              console.log('[ApiClient] Redirecting to login page');
+              apiLogger.log('Redirecting to login page');
               window.location.href = ROUTES.admin.login;
             } else {
-              console.log('[ApiClient] Already on login page, skipping redirect');
+              apiLogger.log('Already on login page, skipping redirect');
             }
 
             return Promise.reject(refreshError);
@@ -178,7 +176,7 @@ class ApiClient {
 
   setAuthToken(token: string | null) {
     this.authToken = token;
-    console.log('[ApiClient] Token set:', {
+    apiLogger.log('Token set:', {
       hasToken: !!token,
       tokenLength: token?.length,
       tokenPreview: token ? `${token.substring(0, 20)}...` : null,
@@ -277,7 +275,7 @@ class ApiClient {
             return `${pathStr}: ${issue.message}`;
           })
           .join(', ')}`;
-        console.error('[ApiClient] Validation Error:', errorMessage, {
+        apiLogger.error('Validation Error:', errorMessage, {
           errors: result.error.issues,
           data,
         });
@@ -517,8 +515,14 @@ class ApiClient {
 
   async delete<T>(endpoint: string, _schema?: z.ZodSchema<T>): Promise<ApiResponse<T>> {
     try {
+      apiLogger.log(`[ApiClient] Making DELETE request to: ${endpoint}`);
       const response = await this.client.delete<ApiResponse<T>>(endpoint);
       const backendResponse = response.data;
+
+      apiLogger.log(`[ApiClient] DELETE request successful: ${endpoint}`, {
+        status: response.status,
+        hasData: !!backendResponse,
+      });
 
       // Check if backend wrapped the response
       if (backendResponse && typeof backendResponse === 'object' && 'success' in backendResponse) {
@@ -531,6 +535,8 @@ class ApiClient {
         data: backendResponse as T,
       };
     } catch (error) {
+      apiLogger.error(`[ApiClient] DELETE request failed: ${endpoint}`, error);
+
       // Handle error responses from backend
       if (axios.isAxiosError(error) && error.response) {
         const errorData = error.response.data as ApiResponse<T>;

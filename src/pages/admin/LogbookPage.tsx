@@ -20,7 +20,7 @@ import { logbookService } from '@/services/growth-system/logbook.service';
 import Button from '@/components/atoms/Button';
 import { LogbookEntryCard } from '@/components/molecules/LogbookEntryCard';
 import { LogbookEditor } from '@/components/organisms/LogbookEditor';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AILogbookAssistPanel } from '@/components/molecules/AILogbookAssistPanel';
 import { llmConfig } from '@/lib/llm';

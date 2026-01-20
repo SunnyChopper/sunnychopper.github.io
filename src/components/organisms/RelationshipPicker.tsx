@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import Button from '@/components/atoms/Button';
 import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
 import type { EntitySummary } from '@/types/growth-system';

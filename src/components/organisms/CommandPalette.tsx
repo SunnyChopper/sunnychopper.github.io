@@ -12,8 +12,9 @@ import {
   Settings,
   Sparkles,
   X,
+  FileText,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, generatePath } from 'react-router-dom';
 import {
   useTasks,
   useGoals,
@@ -22,6 +23,7 @@ import {
   useHabits,
   useLogbook,
 } from '@/hooks/useGrowthSystem';
+import { useMarkdownFiles } from '@/hooks/useMarkdownFiles';
 import type { Goal, Metric, LogbookEntry } from '@/types/growth-system';
 import { ROUTES } from '@/routes';
 
@@ -52,6 +54,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const { metrics } = useMetrics();
   const { habits } = useHabits();
   const { entries } = useLogbook();
+  const { files: markdownFiles } = useMarkdownFiles();
 
   const allCommands = useMemo((): CommandItem[] => {
     const commands: CommandItem[] = [
@@ -257,8 +260,31 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       });
     });
 
+    markdownFiles.forEach((file) => {
+      const filePath = encodeURIComponent(file.path);
+      commands.push({
+        id: `markdown-${file.id}`,
+        title: file.name,
+        subtitle: `Markdown • ${file.path}`,
+        icon: <FileText size={18} />,
+        type: 'entity',
+        action: () => {
+          navigate(
+            generatePath(ROUTES.admin.markdownViewerFile, {
+              filePath,
+            })
+          );
+        },
+        keywords: [
+          file.name.toLowerCase(),
+          file.path.toLowerCase(),
+          ...(file.tags || []).map((tag) => tag.toLowerCase()),
+        ],
+      });
+    });
+
     return commands;
-  }, [tasks, goals, projects, metrics, habits, entries, navigate]);
+  }, [tasks, goals, projects, metrics, habits, entries, markdownFiles, navigate]);
 
   const filteredCommands = useMemo(() => {
     if (!query.trim()) {

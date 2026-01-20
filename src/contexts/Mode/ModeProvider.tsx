@@ -1,38 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { ModeContext } from './types';
-import { apiClient } from '@/lib/api-client';
+import { useModePreference, useModePreferenceMutations } from '@/hooks/useModePreference';
 
 interface ModeProviderProps {
   children: ReactNode;
 }
 
 export const ModeProvider = ({ children }: ModeProviderProps) => {
-  const [isLeisureMode, setIsLeisureMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { mode, isLoading } = useModePreference();
+  const { setModePreference } = useModePreferenceMutations();
 
-  // Load mode preference from backend
-  useEffect(() => {
-    const loadMode = async () => {
-      try {
-        const response = await apiClient.getModePreference();
-        if (response.success && response.data) {
-          setIsLeisureMode(response.data === 'leisure');
-        } else {
-          // Default to work mode if API fails
-          setIsLeisureMode(false);
-        }
-      } catch (error) {
-        console.error('Failed to load mode preference:', error);
-        // Default to work mode on error
-        setIsLeisureMode(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadMode();
-  }, []);
+  const isLeisureMode = mode === 'leisure';
 
   // Sync HTML class with current mode
   useEffect(() => {
@@ -45,14 +24,11 @@ export const ModeProvider = ({ children }: ModeProviderProps) => {
 
   const toggleMode = async () => {
     const newMode = !isLeisureMode;
-    setIsLeisureMode(newMode);
-
     try {
-      await apiClient.setModePreference(newMode ? 'leisure' : 'work');
+      await setModePreference(newMode ? 'leisure' : 'work');
     } catch (error) {
       console.error('Failed to save mode preference:', error);
-      // Revert on error
-      setIsLeisureMode(!newMode);
+      // React Query will handle rollback via optimistic updates
     }
   };
 

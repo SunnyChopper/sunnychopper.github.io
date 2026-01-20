@@ -91,9 +91,18 @@
   }
 }
 
-/* Prism.js syntax highlighting - Dark mode support */
+/* Prism.js syntax highlighting - Light and dark mode support */
 @layer components {
-  /* Override Prism styles for dark mode compatibility */
+  /* Light mode code block styles */
+  pre[class*="language-"] {
+    background: rgb(249 250 251) !important; /* gray-50 */
+  }
+  
+  code[class*="language-"] {
+    color: rgb(17 24 39) !important; /* gray-900 */
+  }
+  
+  /* Dark mode code block styles */
   .dark pre[class*="language-"] {
     background: rgb(17 24 39) !important; /* gray-900 */
   }
@@ -108,6 +117,62 @@
     overflow-x: auto;
   }
   
+  /* Light mode Prism token colors - ensure tokens are visible */
+  pre[class*="language-"] .token.comment,
+  pre[class*="language-"] .token.prolog,
+  pre[class*="language-"] .token.doctype,
+  pre[class*="language-"] .token.cdata {
+    color: rgb(107 114 128); /* gray-500 */
+  }
+  
+  pre[class*="language-"] .token.punctuation {
+    color: rgb(55 65 81); /* gray-700 */
+  }
+  
+  pre[class*="language-"] .token.property,
+  pre[class*="language-"] .token.tag,
+  pre[class*="language-"] .token.boolean,
+  pre[class*="language-"] .token.number,
+  pre[class*="language-"] .token.constant,
+  pre[class*="language-"] .token.symbol,
+  pre[class*="language-"] .token.deleted {
+    color: rgb(220 38 38); /* red-600 */
+  }
+  
+  pre[class*="language-"] .token.selector,
+  pre[class*="language-"] .token.attr-name,
+  pre[class*="language-"] .token.string,
+  pre[class*="language-"] .token.char,
+  pre[class*="language-"] .token.builtin,
+  pre[class*="language-"] .token.inserted {
+    color: rgb(5 150 105); /* green-600 */
+  }
+  
+  pre[class*="language-"] .token.operator,
+  pre[class*="language-"] .token.entity,
+  pre[class*="language-"] .token.url,
+  pre[class*="language-"] .language-css .token.string,
+  pre[class*="language-"] .style .token.string {
+    color: rgb(17 24 39); /* gray-900 */
+  }
+  
+  pre[class*="language-"] .token.atrule,
+  pre[class*="language-"] .token.attr-value,
+  pre[class*="language-"] .token.keyword {
+    color: rgb(59 130 246); /* blue-500 */
+  }
+  
+  pre[class*="language-"] .token.function,
+  pre[class*="language-"] .token.class-name {
+    color: rgb(168 85 247); /* purple-500 */
+  }
+  
+  pre[class*="language-"] .token.regex,
+  pre[class*="language-"] .token.important,
+  pre[class*="language-"] .token.variable {
+    color: rgb(234 88 12); /* orange-600 */
+  }
+  
   /* KaTeX math rendering - ensure proper dark mode colors */
   .dark .katex {
     color: rgb(243 244 246);
@@ -115,6 +180,45 @@
   
   .dark .katex .mathnormal {
     color: rgb(243 244 246);
+  }
+
+  /* KaTeX display mode (block equations) styling */
+  .math-display {
+    display: block !important;
+    margin: 1.5em auto !important;
+    text-align: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+  }
+
+  /* Ensure katex-display spans are properly centered */
+  .math-display .katex-display {
+    display: inline-block;
+    margin: 0;
+    text-align: center;
+  }
+
+  /* Dark mode support for display mode */
+  .dark .math-display .katex-display {
+    color: rgb(243 244 246); /* gray-100 */
+  }
+
+  /* Prevent display math from being inline with paragraphs */
+  .prose .math-display {
+    display: block !important;
+    margin: 1.5em auto !important;
+  }
+
+  /* Ensure paragraphs don't interfere with math-display inside them */
+  .prose p .math-display {
+    display: block !important;
+    margin: 1.5em auto !important;
+  }
+
+  /* Break math-display out of paragraph flow */
+  p:has(.math-display) {
+    display: contents;
   }
 
   .accent-border-300 {
@@ -146,6 +250,7 @@
   .prose ol ul {
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
+    padding-left: 1.25rem;
   }
 
   .prose li {
@@ -153,13 +258,23 @@
     margin-bottom: 0.25rem;
   }
 
+  /* Ensure list item content aligns properly with bullet */
   .prose li > p {
     margin-top: 0;
     margin-bottom: 0;
+    padding-left: 0;
   }
 
   .prose li > p + p {
     margin-top: 0.5rem;
+  }
+
+  /* Nested lists inside list items should have consistent indentation */
+  .prose li > ul,
+  .prose li > ol {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-left: 1.25rem;
   }
 
   /* Ensure nested lists have proper indentation */
@@ -177,5 +292,79 @@
 
   .prose ol ol ol {
     list-style-type: lower-roman;
+  }
+
+  /* Reader mode scrollbar styling */
+  .reader-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  }
+
+  /* Task list (checkbox) styling for GFM */
+  .prose ul.contains-task-list {
+    list-style-type: none;
+    padding-left: 0;
+  }
+
+  .prose li.task-list-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    list-style-type: none;
+    padding-left: 0;
+  }
+
+  .prose li.task-list-item input[type="checkbox"] {
+    margin-top: 0.375rem;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: rgb(var(--accent-600));
+  }
+
+  .dark .prose li.task-list-item input[type="checkbox"] {
+    accent-color: rgb(var(--accent-500));
+  }
+
+  .prose li.task-list-item > p {
+    flex: 1;
+    margin: 0;
+  }
+
+  /* Markdown content wrapper spacing - connect consecutive wrappers */
+  .markdown-content-wrapper {
+    margin-top: 0.25rem;
+  }
+
+  /* Remove top margin from content wrappers in consecutive AnimatedSectionWrapper elements */
+  /* This makes consecutive paragraphs/lists connect without gaps */
+  .prose > div + div .markdown-content-wrapper {
+    margin-top: 0;
+  }
+
+  /* Make consecutive content wrapper borders connect visually */
+  /* Remove top border radius from inner divs in wrappers that follow others */
+  .prose > div + div .markdown-content-wrapper > div {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+
+  /* Remove bottom border radius from inner divs in wrappers that are followed by others */
+  .prose > div:not(:last-child) .markdown-content-wrapper > div {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  /* Restore border radius on first wrapper's top */
+  .prose > div:first-child .markdown-content-wrapper > div {
+    border-top-left-radius: 0.375rem;
+    border-top-right-radius: 0.375rem;
+  }
+
+  /* Restore border radius on last wrapper's bottom */
+  .prose > div:last-child .markdown-content-wrapper > div {
+    border-bottom-left-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
   }
 }

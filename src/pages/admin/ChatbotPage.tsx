@@ -20,9 +20,14 @@ import {
   ArrowLeft,
   ArrowRight,
 } from 'lucide-react';
-import { chatbotService } from '@/services/chatbot.service';
 import { findBestResponse } from '@/data/chatbot-responses';
-import type { ChatThread, ChatMessage } from '@/types/chatbot';
+import {
+  useChatThreads,
+  useChatThread,
+  useChatMessages,
+  useChatThreadMutations,
+  useChatMessageMutations,
+} from '@/hooks/useChatbot';
 
 interface MessageBranch {
   content: string;
@@ -31,9 +36,7 @@ interface MessageBranch {
 }
 
 export default function ChatbotPage() {
-  const [threads, setThreads] = useState<ChatThread[]>([]);
-  const [activeThread, setActiveThread] = useState<ChatThread | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
@@ -52,30 +55,21 @@ export default function ChatbotPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageIdCounterRef = useRef(0);
 
-  const loadThreads = async () => {
-    try {
-      const data = await chatbotService.getThreads();
-      setThreads(data);
-      if (data.length > 0 && !activeThread) {
-        setActiveThread(data[0]);
-      }
-    } catch (error) {
-      console.error('Error loading threads:', error);
-    }
-  };
+  // React Query hooks
+  const { threads } = useChatThreads();
+  const { thread: activeThread } = useChatThread(activeThreadId || undefined);
+  const { messages } = useChatMessages(activeThreadId || undefined);
+  const { createThread, updateThread, deleteThread } = useChatThreadMutations();
+  const { createMessage, updateMessage, deleteMessagesAfter } = useChatMessageMutations();
 
-  const loadMessages = async (threadId: string) => {
-    try {
-      const data = await chatbotService.getMessages(threadId);
-      setMessages(data);
-    } catch (error) {
-      console.error('Error loading messages:', error);
+  // Set first thread as active when threads load
+  useEffect(() => {
+    if (threads.length > 0 && !activeThreadId) {
+      setActiveThreadId(threads[0].id);
     }
-  };
+  }, [threads, activeThreadId]);
 
   useEffect(() => {
-    loadThreads();
-
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         setSidebarCollapsed(false);
@@ -87,13 +81,7 @@ export default function ChatbotPage() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [loadThreads]);
-
-  useEffect(() => {
-    if (activeThread) {
-      loadMessages(activeThread.id);
-    }
-  }, [activeThread]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -101,10 +89,8 @@ export default function ChatbotPage() {
 
   const handleCreateThread = async () => {
     try {
-      const newThread = await chatbotService.createThread({ title: 'New Chat' });
-      setThreads([newThread, ...threads]);
-      setActiveThread(newThread);
-      setMessages([]);
+      const newThread = await createThread({ title: 'New Chat' });
+      setActiveThreadId(newThread.id);
     } catch (error) {
       console.error('Error creating thread:', error);
     }
@@ -112,10 +98,10 @@ export default function ChatbotPage() {
 
   const handleDeleteThread = async (id: string) => {
     try {
-      await chatbotService.deleteThread(id);
-      setThreads(threads.filter((t) => t.id !== id));
-      if (activeThread?.id === id) {
-        setActiveThread(threads[0] || null);
+      await deleteThread(id);
+      if (activeThreadId === id) {
+        const remainingThread = threads.find((t) => t.id !== id);
+        setActiveThreadId(remainingThread?.id || null);
       }
     } catch (error) {
       console.error('Error deleting thread:', error);
@@ -125,8 +111,7 @@ export default function ChatbotPage() {
   const handleRenameThread = async (id: string) => {
     if (!editingTitle.trim()) return;
     try {
-      const updated = await chatbotService.updateThread({ id, title: editingTitle });
-      setThreads(threads.map((t) => (t.id === id ? updated : t)));
+      await updateThread({ id, title: editingTitle });
       setEditingThreadId(null);
     } catch (error) {
       console.error('Error renaming thread:', error);
@@ -160,17 +145,15 @@ export default function ChatbotPage() {
       let userMsg;
 
       if (isEdit && editedMessageId) {
-        await chatbotService.updateMessage(editedMessageId, userMessage);
-        await chatbotService.deleteMessagesAfter(editedMessageId, activeThread.id);
-        await loadMessages(activeThread.id);
+        await updateMessage({ id: editedMessageId, content: userMessage });
+        await deleteMessagesAfter({ messageId: editedMessageId, threadId: activeThread.id });
         userMsg = { id: editedMessageId };
       } else {
-        userMsg = await chatbotService.createMessage({
+        userMsg = await createMessage({
           thread_id: activeThread.id,
           role: 'user',
           content: userMessage,
         });
-        await loadMessages(activeThread.id);
       }
 
       const responseData = findBestResponse(userMessage);
@@ -201,7 +184,7 @@ export default function ChatbotPage() {
         setStreamingContent(chunk);
       });
 
-      await chatbotService.createMessage({
+      await createMessage({
         thread_id: activeThread.id,
         role: 'assistant',
         content: responseData.content,
@@ -217,7 +200,6 @@ export default function ChatbotPage() {
       setStreamingContent('');
       setStreamingThinking('');
       setThinkingComplete(false);
-      await loadMessages(activeThread.id);
       setIsLoading(false);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -293,12 +275,14 @@ export default function ChatbotPage() {
     const branch = branches[newIndex];
     if (!activeThread) return;
 
+    if (!activeThread) return;
+
     try {
-      await chatbotService.updateMessage(messageId, branch.content);
-      await chatbotService.deleteMessagesAfter(messageId, activeThread.id);
+      await updateMessage({ id: messageId, content: branch.content });
+      await deleteMessagesAfter({ messageId, threadId: activeThread.id });
 
       if (branch.response) {
-        await chatbotService.createMessage({
+        await createMessage({
           thread_id: activeThread.id,
           role: 'assistant',
           content: branch.response,
@@ -306,8 +290,6 @@ export default function ChatbotPage() {
           parent_id: messageId,
         });
       }
-
-      await loadMessages(activeThread.id);
     } catch (error) {
       console.error('Error switching branch:', error);
     }
@@ -366,12 +348,12 @@ export default function ChatbotPage() {
             <div
               key={thread.id}
               className={`group relative p-3 rounded-lg mb-1 cursor-pointer transition ${
-                activeThread?.id === thread.id
+                activeThreadId === thread.id
                   ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800'
                   : 'hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
               onClick={() => {
-                setActiveThread(thread);
+                setActiveThreadId(thread.id);
                 if (window.innerWidth < 1024) {
                   setSidebarCollapsed(true);
                 }

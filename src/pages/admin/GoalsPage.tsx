@@ -37,7 +37,7 @@ import { GoalDetailView } from '@/components/organisms/GoalDetailView';
 import { GoalKanbanView } from '@/components/organisms/GoalKanbanView';
 import { GoalTimelineView } from '@/components/organisms/GoalTimelineView';
 import { GoalHierarchicalTimeView } from '@/components/organisms/GoalHierarchicalTimeView';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { CelebrationEffect } from '@/components/atoms/CelebrationEffect';

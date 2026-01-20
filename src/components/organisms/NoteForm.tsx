@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ExternalLink, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 import type { Note, CreateNoteInput, UpdateNoteInput } from '@/types/knowledge-vault';
@@ -9,7 +9,7 @@ import LinkedItemsPicker from '@/components/molecules/LinkedItemsPicker';
 import NoteAIAssistPanel from '@/components/molecules/NoteAIAssistPanel';
 import { cn } from '@/lib/utils';
 import { llmConfig } from '@/lib/llm';
-import { apiClient } from '@/lib/api-client';
+import { useDraftNote, useDraftNoteMutations } from '@/hooks/useDraftNotes';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
 
@@ -21,12 +21,15 @@ interface NoteFormProps {
 
 export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
   const { createNote, updateNote } = useKnowledgeVault();
+  const { draft } = useDraftNote();
+  const { saveDraftNote, deleteDraftNote } = useDraftNoteMutations();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [metadataExpanded, setMetadataExpanded] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [formData, setFormData] = useState({
     title: note?.title || '',
@@ -37,38 +40,33 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
     linkedItems: note?.linkedItems || [],
   });
 
-  // Load draft from backend if creating new note
+  // Load draft from React Query cache if creating new note
   useEffect(() => {
-    if (!note) {
-      const loadDraft = async () => {
-        try {
-          const response = await apiClient.getDraftNote();
-          if (response.success && response.data) {
-            setFormData((prev) => ({
-              ...prev,
-              title: response.data!.title,
-              content: response.data!.content,
-              area: response.data!.area as Area,
-              sourceUrl: response.data!.sourceUrl,
-              tags: response.data!.tags,
-              linkedItems: response.data!.linkedItems,
-            }));
-          }
-        } catch (error) {
-          console.error('Failed to load draft note:', error);
-          // Silently fail - draft may not exist
-        }
-      };
-      loadDraft();
+    if (!note && draft) {
+      setFormData((prev) => ({
+        ...prev,
+        title: draft.title,
+        content: draft.content,
+        area: draft.area as Area,
+        sourceUrl: draft.sourceUrl,
+        tags: draft.tags,
+        linkedItems: draft.linkedItems,
+      }));
     }
-  }, [note]);
+  }, [note, draft]);
 
-  // Auto-save draft every 30 seconds
+  // Auto-save draft every 30 seconds (debounced)
   useEffect(() => {
     if (!note && (formData.title || formData.content)) {
-      const timer = setTimeout(async () => {
+      // Clear existing timer
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+
+      // Set new timer
+      autoSaveTimerRef.current = setTimeout(async () => {
         try {
-          await apiClient.saveDraftNote({
+          await saveDraftNote({
             title: formData.title,
             content: formData.content,
             area: formData.area,
@@ -82,19 +80,23 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
         }
       }, 30000);
 
-      return () => clearTimeout(timer);
+      return () => {
+        if (autoSaveTimerRef.current) {
+          clearTimeout(autoSaveTimerRef.current);
+        }
+      };
     }
-  }, [formData, note]);
+  }, [formData, note, saveDraftNote]);
 
   // Clear draft on successful save
   const clearDraft = useCallback(async () => {
     try {
-      await apiClient.deleteDraftNote();
+      await deleteDraftNote();
     } catch (error) {
       console.error('Failed to clear draft note:', error);
       // Silently fail - clearing draft is best effort
     }
-  }, []);
+  }, [deleteDraftNote]);
 
   // Real-time validation
   const validateTitle = useCallback((title: string) => {
