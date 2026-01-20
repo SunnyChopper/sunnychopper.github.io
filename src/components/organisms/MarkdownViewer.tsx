@@ -267,7 +267,8 @@ export default function MarkdownViewer({ filePath }: MarkdownViewerProps) {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 overflow-hidden">
       {/* Sticky top section - contains banners and header */}
-      <div className="sticky top-0 z-20 flex flex-col bg-white dark:bg-gray-900">
+      {/* On mobile, stick below AdminLayout header (64px = 16 * 4px) */}
+      <div className="sticky top-16 lg:top-0 z-10 flex flex-col bg-white dark:bg-gray-900">
         {/* Markdown Backend Health Warning */}
         <MarkdownBackendWarning />
 
@@ -450,7 +451,7 @@ export default function MarkdownViewer({ filePath }: MarkdownViewerProps) {
 
       {/* Content */}
       {!isReaderMode && (
-        <div className="flex-1 overflow-y-auto relative">
+        <div className="flex-1 overflow-y-auto relative pt-16 lg:pt-0">
           {/* Show spinner overlay when saving or reloading after save */}
           {(isSaving || isReloadingAfterSave) && (
             <div className="absolute inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm z-20 flex items-center justify-center">
