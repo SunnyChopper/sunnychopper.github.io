@@ -22,67 +22,12 @@ import type {
   UpdateLogbookEntryInput,
 } from '@/types/growth-system';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
-import type { ApiError } from '@/types/api-contracts';
+import { queryKeys } from '@/lib/react-query/query-keys';
+import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
 
 // TODO: These hooks use React Query to fetch data from backend API
 // Currently will fail until backend is implemented or mock data is provided
 // Auth requirement is temporarily bypassed (see ProtectedRoute component)
-
-// Helper to check if error is a network error
-const isNetworkError = (error: unknown): boolean => {
-  if (!error || typeof error !== 'object') return false;
-  const errorObj = error as { code?: string; error?: { code?: string } };
-  const errorCode = errorObj.code || errorObj.error?.code;
-  return (
-    errorCode === 'NETWORK_ERROR' ||
-    errorCode === 'ERR_CONNECTION_REFUSED' ||
-    errorCode === 'ECONNREFUSED' ||
-    errorCode === 'ETIMEDOUT' ||
-    errorCode === 'ERR_NETWORK'
-  );
-};
-
-// Helper to extract ApiError from React Query error
-const extractApiError = (error: unknown): ApiError | null => {
-  if (!error) return null;
-
-  // If it's already an ApiError
-  if (typeof error === 'object' && 'code' in error && 'message' in error) {
-    return error as ApiError;
-  }
-
-  // If it's wrapped in an object with error property
-  if (typeof error === 'object' && 'error' in error) {
-    const wrappedError = (error as { error: unknown }).error;
-    if (wrappedError && typeof wrappedError === 'object' && 'code' in wrappedError) {
-      return wrappedError as ApiError;
-    }
-  }
-
-  // If it's an Error object, try to extract network error info from message
-  if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    if (
-      message.includes('connection refused') ||
-      message.includes('econnrefused') ||
-      message.includes('network error') ||
-      message.includes('timeout') ||
-      message.includes('failed to fetch')
-    ) {
-      return {
-        message: error.message,
-        code:
-          message.includes('connection refused') || message.includes('econnrefused')
-            ? 'ERR_CONNECTION_REFUSED'
-            : message.includes('timeout')
-              ? 'ETIMEDOUT'
-              : 'NETWORK_ERROR',
-      };
-    }
-  }
-
-  return null;
-};
 
 export const useTasks = () => {
   // TODO: Temporarily not checking user authentication (bypassed in ProtectedRoute)
@@ -91,7 +36,7 @@ export const useTasks = () => {
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: ['tasks'],
+    queryKey: queryKeys.tasks.lists(),
     queryFn: async () => {
       try {
         const result = await tasksService.getAll();
@@ -114,7 +59,7 @@ export const useTasks = () => {
   const createMutation = useMutation({
     mutationFn: (input: CreateTaskInput) => tasksService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
   });
 
@@ -122,14 +67,14 @@ export const useTasks = () => {
     mutationFn: ({ id, input }: { id: string; input: UpdateTaskInput }) =>
       tasksService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => tasksService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
   });
 
@@ -154,7 +99,7 @@ export const useHabits = () => {
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: ['habits'],
+    queryKey: queryKeys.habits.lists(),
     queryFn: async () => {
       try {
         const result = await habitsService.getAll();
@@ -224,7 +169,7 @@ export const useMetrics = () => {
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: ['metrics'],
+    queryKey: queryKeys.metrics.lists(),
     queryFn: async () => {
       try {
         const result = await metricsService.getAll();
@@ -286,7 +231,7 @@ export const useGoals = () => {
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: ['goals'],
+    queryKey: queryKeys.goals.lists(),
     queryFn: async () => {
       try {
         const result = await goalsService.getAll();
@@ -348,7 +293,7 @@ export const useProjects = () => {
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: ['projects'],
+    queryKey: queryKeys.projects.lists(),
     queryFn: async () => {
       try {
         const result = await projectsService.getAll();
@@ -410,7 +355,7 @@ export const useLogbook = () => {
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: ['logbook'],
+    queryKey: queryKeys.logbook.lists(),
     queryFn: async () => {
       try {
         const result = await logbookService.getAll();

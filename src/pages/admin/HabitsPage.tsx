@@ -16,7 +16,7 @@ import { HabitCard } from '@/components/molecules/HabitCard';
 import { HabitLogWidget } from '@/components/molecules/HabitLogWidget';
 import { HabitCreateForm } from '@/components/organisms/HabitCreateForm';
 import { HabitEditForm } from '@/components/organisms/HabitEditForm';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AIHabitAssistPanel } from '@/components/molecules/AIHabitAssistPanel';
 import { llmConfig } from '@/lib/llm';

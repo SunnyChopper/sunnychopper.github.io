@@ -1,6 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import type { Habit, HabitLog } from '@/types/growth-system';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import Button from '@/components/atoms/Button';
 import { formatCompletionDate } from '@/utils/date-formatters';
 

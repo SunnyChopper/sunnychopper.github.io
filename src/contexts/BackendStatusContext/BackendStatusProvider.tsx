@@ -1,101 +1,112 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { useQuery } from '@tanstack/react-query';
 import type { ApiError } from '@/types/api-contracts';
 import { BackendStatusContext, type BackendStatus, type BackendStatusContextValue } from './types';
+import { apiClient } from '@/lib/api-client';
+import { queryKeys } from '@/lib/react-query/query-keys';
+import { extractApiError } from '@/lib/react-query/error-utils';
 
 interface BackendStatusProviderProps {
   children: ReactNode;
 }
 
 export function BackendStatusProvider({ children }: BackendStatusProviderProps) {
-  const [status, setStatus] = useState<BackendStatus>({
-    isOnline: true, // Optimistically assume online
-    isChecking: false,
-    lastError: null,
-    errorCount: 0,
+  // Implement health check directly in provider to avoid circular dependency
+  // This cannot use useBackendHealth because that hook depends on useBackendStatus
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.backendHealth.detail(),
+    queryFn: async () => {
+      try {
+        // Try a lightweight health check endpoint
+        const response = await apiClient.get('/health');
+
+        if (response.success) {
+          return { isOnline: true };
+        } else {
+          const apiError: ApiError = response.error || {
+            message: 'Health check failed',
+            code: 'HEALTH_CHECK_FAILED',
+          };
+          return { isOnline: false, error: apiError };
+        }
+      } catch {
+        // If health endpoint doesn't exist, try a lightweight endpoint
+        try {
+          const fallbackResponse = await apiClient.get('/tasks?limit=1');
+          if (fallbackResponse.success) {
+            return { isOnline: true };
+          } else {
+            const apiError: ApiError = fallbackResponse.error || {
+              message: 'Connection check failed',
+              code: 'CONNECTION_CHECK_FAILED',
+            };
+            return { isOnline: false, error: apiError };
+          }
+        } catch {
+          const apiError: ApiError = {
+            message: 'Unable to reach backend server',
+            code: 'NETWORK_ERROR',
+          };
+          return { isOnline: false, error: apiError };
+        }
+      }
+    },
+    enabled: true,
+    retry: false, // Don't retry health checks automatically
+    // Note: refetchInterval will be set dynamically via queryClient.setQueryData
+    // For now, we'll let components trigger manual refetches when needed
   });
 
+  const isOnline = data?.isOnline ?? false;
+  const apiError = error ? extractApiError(error) : null;
+  const healthError = data?.error || apiError;
+
+  // Track error count separately since it accumulates
+  const [errorCount, setErrorCount] = useState(0);
+  const [lastError, setLastError] = useState<ApiError | null>(null);
+
+  // Sync React Query state with local status state
+  // This is a valid use case: syncing external state (React Query) with local state
+  useEffect(() => {
+    if (healthError) {
+      setLastError(healthError as ApiError);
+      setErrorCount((prev) => prev + 1);
+    } else if (isOnline) {
+      setLastError(null);
+      setErrorCount(0);
+    } else {
+      // Keep last error but don't increment count if we're just offline
+      // Only increment on new errors
+    }
+  }, [isOnline, healthError]);
+
+  // Derive status from query state and local error tracking
+  const status: BackendStatus = {
+    isOnline,
+    isChecking: isLoading,
+    lastError,
+    errorCount,
+  };
+
   const recordError = useCallback((error: ApiError) => {
-    setStatus((prev) => ({
-      isOnline: false,
-      isChecking: false,
-      lastError: error,
-      errorCount: prev.errorCount + 1,
-    }));
+    setLastError(error);
+    setErrorCount((prev) => prev + 1);
   }, []);
 
   const recordSuccess = useCallback(() => {
-    setStatus(() => ({
-      isOnline: true,
-      isChecking: false,
-      lastError: null,
-      errorCount: 0,
-    }));
+    setLastError(null);
+    setErrorCount(0);
+  }, []);
+
+  const resetErrorCount = useCallback(() => {
+    setErrorCount(0);
   }, []);
 
   const checkConnection = useCallback(async (): Promise<boolean> => {
-    setStatus((prev) => ({ ...prev, isChecking: true }));
-
-    try {
-      // Try a lightweight health check endpoint
-      // If health endpoint doesn't exist, try a simple GET to a common endpoint
-      const response = await apiClient.get('/health');
-
-      if (response.success) {
-        recordSuccess();
-        return true;
-      } else {
-        const error: ApiError = response.error || {
-          message: 'Health check failed',
-          code: 'HEALTH_CHECK_FAILED',
-        };
-        recordError(error);
-        return false;
-      }
-    } catch {
-      // If health endpoint doesn't exist, try a lightweight endpoint
-      try {
-        const fallbackResponse = await apiClient.get('/tasks?limit=1');
-        if (fallbackResponse.success) {
-          recordSuccess();
-          return true;
-        } else {
-          const apiError: ApiError = fallbackResponse.error || {
-            message: 'Connection check failed',
-            code: 'CONNECTION_CHECK_FAILED',
-          };
-          recordError(apiError);
-          return false;
-        }
-      } catch {
-        const apiError: ApiError = {
-          message: 'Unable to reach backend server',
-          code: 'NETWORK_ERROR',
-        };
-        recordError(apiError);
-        return false;
-      }
-    }
-  }, [recordError, recordSuccess]);
-
-  const resetErrorCount = useCallback(() => {
-    setStatus((prev) => ({
-      ...prev,
-      errorCount: 0,
-    }));
-  }, []);
-
-  // Auto-check connection periodically when offline
-  useEffect(() => {
-    if (!status.isOnline && status.errorCount > 0) {
-      const interval = setInterval(() => {
-        checkConnection();
-      }, 30000); // Check every 30 seconds when offline
-
-      return () => clearInterval(interval);
-    }
-  }, [status.isOnline, status.errorCount, checkConnection]);
+    const result = await refetch();
+    return result.data?.isOnline ?? false;
+  }, [refetch]);
 
   const value: BackendStatusContextValue = {
     status,

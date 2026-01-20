@@ -14,7 +14,7 @@ import {
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 import VaultItemCard from '@/components/organisms/VaultItemCard';
 import CourseStackCard from '@/components/organisms/CourseStackCard';
-import Dialog from '@/components/organisms/Dialog';
+import Dialog from '@/components/molecules/Dialog';
 import NoteForm from '@/components/organisms/NoteForm';
 import DocumentForm from '@/components/organisms/DocumentForm';
 import FlashcardForm from '@/components/organisms/FlashcardForm';

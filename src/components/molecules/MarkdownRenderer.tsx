@@ -1,213 +1,209 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { cn } from '@/lib/utils';
-
-// Dynamic imports for optional dependencies
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let remarkMath: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let rehypeKatex: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let Prism: any = null;
-
-const loadMathSupport = async () => {
-  if (typeof window !== 'undefined') {
-    try {
-      if (!remarkMath) {
-        remarkMath = (await import('remark-math')).default;
-      }
-      if (!rehypeKatex) {
-        rehypeKatex = (await import('rehype-katex')).default;
-        // Import KaTeX CSS
-        await import('katex/dist/katex.min.css');
-      }
-    } catch {
-      // Math support not available - packages need to be installed
-      // Install with: npm install remark-math rehype-katex katex
-    }
-  }
-  return { remarkMath, rehypeKatex };
-};
-
-const loadPrism = async () => {
-  if (typeof window !== 'undefined' && !Prism) {
-    try {
-      const prism = await import('prismjs');
-      Prism = prism.default;
-
-      // Import Prism CSS (will use custom dark mode styles from index.css)
-      await import('prismjs/themes/prism-tomorrow.css');
-
-      // Load common language support
-      const languages = [
-        'javascript',
-        'typescript',
-        'python',
-        'java',
-        'cpp',
-        'c',
-        'csharp',
-        'go',
-        'rust',
-        'php',
-        'ruby',
-        'swift',
-        'kotlin',
-        'sql',
-        'bash',
-        'json',
-        'yaml',
-        'markdown',
-        'css',
-        'html',
-        'jsx',
-        'tsx',
-      ];
-
-      for (const lang of languages) {
-        try {
-          await import(/* @vite-ignore */ `prismjs/components/prism-${lang}`);
-        } catch {
-          // Language not available, skip
-        }
-      }
-    } catch {
-      // Syntax highlighting not available - packages need to be installed
-      // Install with: npm install prismjs @types/prismjs
-    }
-  }
-  return Prism;
-};
+import { useMarkdownCollapseState } from '@/hooks/useMarkdownCollapseState';
+import { useMarkdownPlugins } from '@/hooks/useMarkdownPlugins';
+import { getRemarkMath, getRehypeKatex } from '@/lib/markdown/plugins';
+import { extractTextFromNode, generateHeadingId } from '@/lib/markdown/heading-utils';
+import MarkdownSectionProvider from '@/components/molecules/MarkdownSectionProvider';
+import MarkdownContentWrapper from '@/components/molecules/MarkdownContentWrapper';
+import CollapsibleHeading from '@/components/molecules/CollapsibleHeading';
+import MarkdownCodeBlock from '@/components/molecules/MarkdownCodeBlock';
+import { createDefaultMarkdownComponents } from '@/lib/markdown/markdown-components';
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
   components?: Partial<Components>;
+  filePath?: string;
 }
 
 export default function MarkdownRenderer({
   content,
   className,
   components: customComponents,
+  filePath,
 }: MarkdownRendererProps) {
   const codeRefs = useRef<Map<string, HTMLPreElement>>(new Map());
-  const [mathLoaded, setMathLoaded] = useState(false);
-  const [prismLoaded, setPrismLoaded] = useState(false);
+  const { mathLoaded, prismLoaded, Prism } = useMarkdownPlugins(content);
+  const collapseState = useMarkdownCollapseState(filePath);
 
+  // Map to track heading IDs for stability across re-renders
+  // Key: `${level}-${textHash}` or `${level}-${textHash}-${occurrence}`, Value: full heading ID with counter
+  // This ensures the same heading always gets the same ID
+  const headingIdMapRef = useRef<Map<string, string>>(new Map());
+  const headingCountersRef = useRef<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0 });
+  // Map to track how many times we've seen each unique heading text at each level
+  // Key: `${level}-${textHash}`, Value: occurrence count
+  const headingOccurrenceMapRef = useRef<Map<string, number>>(new Map());
+  const codeBlockCounterRef = useRef(0);
+  const codeBlockIdGeneratorRef = useRef(0);
+
+  // Reset ID map and counters ONLY when content changes
+  // This ensures heading IDs remain stable across re-renders caused by collapse state changes
   useEffect(() => {
-    // Load math support
-    loadMathSupport().then(() => {
-      setMathLoaded(true);
-    });
-
-    // Load Prism and highlight code blocks
-    loadPrism().then((prism) => {
-      if (prism) {
-        setPrismLoaded(true);
-        // Highlight existing code blocks
-        setTimeout(() => {
-          codeRefs.current.forEach((preElement) => {
-            const codeElement = preElement.querySelector('code');
-            if (codeElement && !codeElement.classList.contains('prism-highlighted')) {
-              const language =
-                codeElement.getAttribute('data-language') ||
-                codeElement.className.replace(/language-?/, '');
-              if (language && prism.languages[language]) {
-                try {
-                  const code = codeElement.textContent || '';
-                  codeElement.innerHTML = prism.highlight(
-                    code,
-                    prism.languages[language],
-                    language
-                  );
-                  codeElement.classList.add('prism-highlighted');
-                } catch {
-                  // Failed to highlight, continue without highlighting
-                }
-              }
-            }
-          });
-        }, 0);
-      }
-    });
+    headingIdMapRef.current.clear();
+    headingCountersRef.current = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    headingOccurrenceMapRef.current.clear();
+    codeBlockCounterRef.current = 0;
+    codeBlockIdGeneratorRef.current = 0;
   }, [content]);
 
+  // Highlight existing code blocks when Prism loads
+  useEffect(() => {
+    if (prismLoaded && Prism) {
+      setTimeout(() => {
+        codeRefs.current.forEach((preElement) => {
+          const codeElement = preElement.querySelector('code');
+          if (codeElement && !codeElement.classList.contains('prism-highlighted')) {
+            const language =
+              codeElement.getAttribute('data-language') ||
+              codeElement.className.replace(/language-?/, '');
+            if (language && Prism.languages[language]) {
+              try {
+                const code = codeElement.textContent || '';
+                codeElement.innerHTML = Prism.highlight(code, Prism.languages[language], language);
+                codeElement.classList.add('prism-highlighted');
+              } catch {
+                // Failed to highlight, continue without highlighting
+              }
+            }
+          }
+        });
+      }, 0);
+    }
+  }, [prismLoaded, Prism, content]);
+
   // Build plugins array dynamically
-  const remarkPlugins = [remarkGfm];
-  const rehypePlugins = [rehypeRaw];
+  const remarkPlugins = useMemo(() => {
+    const plugins = [remarkGfm];
+    const remarkMath = getRemarkMath();
+    if (mathLoaded && remarkMath) {
+      plugins.push(remarkMath);
+    }
+    return plugins;
+  }, [mathLoaded]);
 
-  if (mathLoaded && remarkMath) {
-    remarkPlugins.push(remarkMath);
-  }
-  if (mathLoaded && rehypeKatex) {
-    rehypePlugins.push(rehypeKatex);
-  }
+  const rehypePlugins = useMemo(() => {
+    const plugins = [rehypeRaw];
+    const rehypeKatex = getRehypeKatex();
+    if (mathLoaded && rehypeKatex) {
+      plugins.push(rehypeKatex);
+    }
+    return plugins;
+  }, [mathLoaded]);
 
-  const defaultComponents: Partial<Components> = {
-    // Lists
-    ul({ className, children, ...props }) {
-      return (
-        <ul className={cn('my-4 list-disc space-y-2', className)} {...props}>
-          {children}
-        </ul>
-      );
+  // Get collapsed headings set for efficient lookups
+  const collapsedHeadingsSet = collapseState.collapsedHeadings;
+
+  // Reset occurrence map at the start of each render to track heading order correctly
+  // This ensures we process headings in order and assign occurrence indices correctly
+  // The headingIdMap persists across re-renders (when content doesn't change) to maintain stable IDs
+  // Using useLayoutEffect to clear before render, satisfying React's ref mutation rules
+  useLayoutEffect(() => {
+    headingOccurrenceMapRef.current.clear();
+  });
+
+  // Create heading component factory
+  // Note: Refs are accessed during component render (not creation), which is safe for ID generation
+  const createHeadingComponent = useMemo(
+    () => (level: 1 | 2 | 3 | 4) => {
+      const HeadingComponent = ({ className, children }: React.ComponentProps<'h1'>) => {
+        const textContent = extractTextFromNode(children ?? '');
+        // Reading refs during render is safe here - we're not mutating them, only reading for stable IDs
+        const headingId = generateHeadingId(
+          level,
+          textContent,
+          headingIdMapRef.current,
+          headingCountersRef.current,
+          headingOccurrenceMapRef.current
+        );
+        const isCollapsed = collapsedHeadingsSet.has(headingId);
+
+        return (
+          <CollapsibleHeading
+            level={level}
+            headingId={headingId}
+            isCollapsed={isCollapsed}
+            onToggle={() => collapseState.toggleHeading(headingId)}
+            className={className}
+          >
+            {children}
+          </CollapsibleHeading>
+        );
+      };
+      HeadingComponent.displayName = `Heading${level}`;
+      return HeadingComponent;
     },
-    ol({ className, children, ...props }) {
+    [collapsedHeadingsSet, collapseState]
+  );
+
+  // Create pre component - handles the wrapper for code blocks
+  // For fenced code blocks, we pass through children since our code component creates the pre
+  // For other pre elements, wrap them normally
+  const preComponent = useMemo<Components['pre']>(() => {
+    const PreComponent: Components['pre'] = ({ children, ...props }) => {
+      // Check if this pre contains a code element with a language class (fenced code block)
+      // If so, our code component will handle creating the pre, so we just pass through the children
+      if (React.isValidElement(children) && children.type === 'code') {
+        const codeProps = children.props as { className?: string };
+        if (typeof codeProps.className === 'string' && codeProps.className.includes('language-')) {
+          // Pass through children - the code component will create the pre element with proper wrapping
+          return <>{children}</>;
+        }
+      }
+
+      // For other pre elements (not fenced code blocks), wrap normally
       return (
-        <ol className={cn('my-4 list-decimal space-y-2', className)} {...props}>
-          {children}
-        </ol>
+        <MarkdownContentWrapper>
+          <pre {...props}>{children}</pre>
+        </MarkdownContentWrapper>
       );
-    },
-    li({ className, children, ...props }) {
+    };
+    return PreComponent;
+  }, []);
+
+  // Create div component - handles math-display elements
+  const divComponent = useMemo<Components['div']>(() => {
+    const DivComponent: Components['div'] = ({ className, children, ...props }) => {
+      let isMathDisplay = false;
+      if (className) {
+        if (typeof className === 'string') {
+          isMathDisplay = className.includes('math-display');
+        } else if (Array.isArray(className)) {
+          const classNameArray = className as Array<string | number | boolean | null | undefined>;
+          isMathDisplay = classNameArray.some(
+            (c) => typeof c === 'string' && c.includes('math-display')
+          );
+        }
+      }
+
+      if (isMathDisplay) {
+        const classNames = typeof className === 'string' ? className : undefined;
+        return (
+          <div className={cn('math-display', classNames)} {...props}>
+            {children}
+          </div>
+        );
+      }
+
+      // For other divs, render normally
+      const classNames = typeof className === 'string' ? className : undefined;
       return (
-        <li className={cn(className)} {...props}>
+        <div className={classNames} {...props}>
           {children}
-        </li>
+        </div>
       );
-    },
-    // Paragraphs
-    p({ className, children, ...props }) {
-      return (
-        <p className={cn('my-4 leading-relaxed', className)} {...props}>
-          {children}
-        </p>
-      );
-    },
-    // Headings
-    h1({ className, children, ...props }) {
-      return (
-        <h1 className={cn('text-3xl font-bold mt-8 mb-4 font-serif', className)} {...props}>
-          {children}
-        </h1>
-      );
-    },
-    h2({ className, children, ...props }) {
-      return (
-        <h2 className={cn('text-2xl font-bold mt-6 mb-3 font-serif', className)} {...props}>
-          {children}
-        </h2>
-      );
-    },
-    h3({ className, children, ...props }) {
-      return (
-        <h3 className={cn('text-xl font-semibold mt-5 mb-2 font-serif', className)} {...props}>
-          {children}
-        </h3>
-      );
-    },
-    h4({ className, children, ...props }) {
-      return (
-        <h4 className={cn('text-lg font-semibold mt-4 mb-2 font-serif', className)} {...props}>
-          {children}
-        </h4>
-      );
-    },
-    // Code blocks
-    code({ className, children, ...props }) {
+    };
+    return DivComponent;
+  }, []);
+
+  // Create code component
+  const codeComponent = useMemo<Components['code']>(() => {
+    const CodeComponent: Components['code'] = ({ className, children, ...props }) => {
       const match = /language-(\w+)/.exec(className || '');
       const language = match ? match[1] : '';
       const isInline = !className || !className.includes('language-');
@@ -223,166 +219,97 @@ export default function MarkdownRenderer({
         );
       }
 
-      const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
+      // Generate code block ID using a counter
+      // Note: Mutating refs during render is intentional here for ID generation
+      // This is safe because IDs are only used for tracking collapsed state, not for rendering logic
 
+      const codeId = `code-${codeBlockIdGeneratorRef.current}`;
+
+      codeBlockIdGeneratorRef.current += 1;
+      const isCollapsed = collapseState.collapsedCodeBlocks.has(codeId);
+      const codeText = String(children).replace(/\n$/, '');
+
+      // Code blocks should not be wrapped in MarkdownContentWrapper - they need full width
       return (
-        <pre
-          ref={(el) => {
-            if (el) {
-              codeRefs.current.set(codeId, el);
-              // Try to highlight immediately if Prism is loaded
-              if (prismLoaded && Prism) {
-                setTimeout(() => {
-                  const codeEl = el.querySelector('code');
-                  if (codeEl && !codeEl.classList.contains('prism-highlighted')) {
-                    const lang = language || codeEl.className.replace(/language-?/, '');
-                    if (lang && Prism.languages[lang]) {
-                      try {
-                        codeEl.innerHTML = Prism.highlight(
-                          codeEl.textContent || '',
-                          Prism.languages[lang],
-                          lang
-                        );
-                        codeEl.classList.add('prism-highlighted');
-                      } catch {
-                        // Ignore highlighting errors
-                      }
-                    }
-                  }
-                }, 0);
-              }
-            } else {
-              codeRefs.current.delete(codeId);
-            }
-          }}
-          className="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 overflow-x-auto my-4"
-          data-language={language}
-        >
-          <code
-            id={codeId}
-            className={cn(
-              'block text-sm font-mono text-gray-100',
-              language && `language-${language}`
-            )}
-            data-language={language}
-            {...props}
-          >
-            {children}
-          </code>
-        </pre>
-      );
-    },
-    // Blockquotes
-    blockquote({ className, children, ...props }) {
-      return (
-        <blockquote
-          className={cn(
-            'border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-4',
-            className
-          )}
-          {...props}
+        <MarkdownCodeBlock
+          code={codeText}
+          language={language}
+          className={className}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => collapseState.toggleCodeBlock(codeId)}
+          prismLoaded={prismLoaded}
+          Prism={Prism}
+          codeRefs={codeRefs}
+          codeId={codeId}
         >
           {children}
-        </blockquote>
+        </MarkdownCodeBlock>
       );
-    },
-    // Tables
-    table({ className, children, ...props }) {
-      return (
-        <div className="overflow-x-auto my-4">
-          <table
-            className={cn(
-              'min-w-full border-collapse border border-gray-300 dark:border-gray-700',
-              className
-            )}
-            {...props}
-          >
-            {children}
-          </table>
-        </div>
-      );
-    },
-    th({ className, children, ...props }) {
-      return (
-        <th
-          className={cn(
-            'border border-gray-300 dark:border-gray-700 px-4 py-2 bg-gray-100 dark:bg-gray-800 font-semibold text-left',
-            className
-          )}
-          {...props}
-        >
-          {children}
-        </th>
-      );
-    },
-    td({ className, children, ...props }) {
-      return (
-        <td
-          className={cn('border border-gray-300 dark:border-gray-700 px-4 py-2', className)}
-          {...props}
-        >
-          {children}
-        </td>
-      );
-    },
-    // Links
-    a({ className, href, children, ...props }) {
-      return (
-        <a
-          href={href}
-          className={cn('text-blue-600 dark:text-blue-400 hover:underline', className)}
-          {...props}
-        >
-          {children}
-        </a>
-      );
-    },
-    // Strong/Bold
-    strong({ className, children, ...props }) {
-      return (
-        <strong className={cn('font-bold', className)} {...props}>
-          {children}
-        </strong>
-      );
-    },
-    // Emphasis/Italic
-    em({ className, children, ...props }) {
-      return (
-        <em className={cn('italic', className)} {...props}>
-          {children}
-        </em>
-      );
-    },
-    // Horizontal rule
-    hr({ className, ...props }) {
-      return (
-        <hr className={cn('my-8 border-gray-300 dark:border-gray-700', className)} {...props} />
-      );
-    },
-  };
+    };
+    return CodeComponent;
+  }, [collapseState, prismLoaded, Prism]);
+
+  // Create default components
+  // Note: The components created here will access refs during their render phase (not during this useMemo),
+  // which is safe because we only read refs for stable ID generation, never mutate them.
+  // The React compiler warning below is a false positive - refs are only read (not mutated) for ID generation.
+  // This is intentional and safe: we need stable IDs across re-renders, and reading refs doesn't cause issues.
+  // Refs are only read (not mutated) during component render for stable ID generation.
+  // This is safe and intentional - components need access to refs to generate consistent IDs.
+  /* eslint-disable react-hooks/refs */
+  // Refs are only read (not mutated) during component render for stable ID generation.
+  const defaultComponents = useMemo(
+    () =>
+      createDefaultMarkdownComponents(MarkdownContentWrapper, codeComponent, {
+        h1: createHeadingComponent(1) as Components['h1'],
+        h2: createHeadingComponent(2) as Components['h2'],
+        h3: createHeadingComponent(3) as Components['h3'],
+        h4: createHeadingComponent(4) as Components['h4'],
+      }),
+    [createHeadingComponent, codeComponent]
+  );
+  /* eslint-enable react-hooks/refs */
 
   // Merge custom components with defaults (custom takes precedence)
-  const mergedComponents = {
-    ...defaultComponents,
-    ...customComponents,
-    // Ensure code component is always from defaults (for syntax highlighting)
-    code: defaultComponents.code,
-  };
+  const mergedComponents = useMemo(
+    () => ({
+      ...defaultComponents,
+      ...customComponents,
+      // Ensure code, pre, and div components are always from defaults
+      // (for syntax highlighting, indentation, and math display)
+      code: defaultComponents.code,
+      pre: preComponent,
+      div: divComponent,
+    }),
+    [defaultComponents, customComponents, preComponent, divComponent]
+  );
 
   return (
-    <div
-      className={cn(
-        'prose prose-sm dark:prose-invert max-w-none prose-headings:font-serif',
-        className
-      )}
-    >
-      <ReactMarkdown
-        remarkPlugins={remarkPlugins}
-        rehypePlugins={rehypePlugins}
-        components={mergedComponents}
+    <MarkdownSectionProvider key={content} collapsedHeadings={collapsedHeadingsSet}>
+      <div
+        className={cn(
+          'prose prose-sm dark:prose-invert max-w-none prose-headings:font-serif',
+          'prose-headings:mt-0 prose-headings:mb-0',
+          'prose-h1:mt-0 prose-h1:mb-0',
+          'prose-h2:mt-0 prose-h2:mb-0',
+          'prose-h3:mt-0 prose-h3:mb-0',
+          'prose-h4:mt-0 prose-h4:mb-0',
+          'prose-p:my-2 prose-p:leading-relaxed',
+          'prose-ul:my-2 prose-ol:my-2',
+          'prose-li:my-0.5',
+          'prose-blockquote:my-2',
+          '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+          className
+        )}
       >
-        {content}
-      </ReactMarkdown>
-    </div>
+        <ReactMarkdown
+          remarkPlugins={remarkPlugins}
+          rehypePlugins={rehypePlugins}
+          components={mergedComponents}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    </MarkdownSectionProvider>
   );
 }

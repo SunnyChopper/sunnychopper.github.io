@@ -2,6 +2,7 @@ import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import Button from '@/components/atoms/Button';
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 
 export function BackendStatusBanner() {
   const { status, checkConnection } = useBackendStatus();
@@ -17,6 +18,8 @@ export function BackendStatusBanner() {
     setIsRetrying(true);
     try {
       await checkConnection();
+    } catch (error) {
+      logger.error('Unexpected error during connection check:', error);
     } finally {
       setIsRetrying(false);
     }

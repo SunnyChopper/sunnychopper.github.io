@@ -238,6 +238,51 @@ function areStoredTokensExpired(): boolean {
 }
 
 /**
+ * Get time until token expiration in seconds
+ * Returns null if token is invalid or already expired
+ */
+function getTimeUntilExpiration(token: string | null | undefined): number | null {
+  if (!token) {
+    return null;
+  }
+
+  const decodedToken = decodeJWT(token);
+  if (!decodedToken) {
+    return null;
+  }
+
+  const exp = decodedToken.exp;
+  if (!exp || typeof exp !== 'number') {
+    return null;
+  }
+
+  const currentTime = Math.floor(Date.now() / 1000);
+  const timeUntilExpiration = exp - currentTime;
+
+  return timeUntilExpiration > 0 ? timeUntilExpiration : null;
+}
+
+/**
+ * Check if token should be refreshed proactively
+ * Refreshes if token expires within the specified buffer time (default: 5 minutes)
+ */
+function shouldRefreshTokenProactively(bufferSeconds: number = 300): boolean {
+  const tokens = getStoredTokens();
+  if (!tokens?.accessToken) {
+    return false;
+  }
+
+  const timeUntilExpiration = getTimeUntilExpiration(tokens.accessToken);
+  if (timeUntilExpiration === null) {
+    // Token is expired or invalid, should refresh
+    return true;
+  }
+
+  // Refresh if token expires within the buffer time
+  return timeUntilExpiration <= bufferSeconds;
+}
+
+/**
  * Validate if stored user is still valid (token not expired, email is valid)
  */
 function validateStoredUser(storedUser: User): boolean {
@@ -796,4 +841,14 @@ export const authService = {
    * Check if stored tokens are expired
    */
   areStoredTokensExpired,
+
+  /**
+   * Get time until token expiration in seconds
+   */
+  getTimeUntilExpiration,
+
+  /**
+   * Check if token should be refreshed proactively
+   */
+  shouldRefreshTokenProactively,
 };
