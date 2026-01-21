@@ -10,6 +10,7 @@ interface TaskKanbanBoardProps {
   onTaskUpdate: (id: string, input: UpdateTaskInput) => void;
   onTaskEdit: (task: Task) => void;
   onTaskCreate: (status: TaskStatus) => void;
+  onTaskClick?: (task: Task) => void;
 }
 
 const STATUSES: TaskStatus[] = ['NotStarted', 'InProgress', 'Blocked', 'OnHold'];
@@ -28,6 +29,7 @@ export function TaskKanbanBoard({
   onTaskUpdate,
   onTaskEdit,
   onTaskCreate,
+  onTaskClick,
 }: TaskKanbanBoardProps) {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
@@ -125,6 +127,8 @@ export function TaskKanbanBoard({
             <div
               key={status}
               className="flex-shrink-0 w-80 flex flex-col"
+              role="region"
+              aria-label={`${TASK_STATUS_LABELS[status]} column`}
               onDragOver={(e) => handleDragOver(e, status)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, status)}
@@ -156,8 +160,15 @@ export function TaskKanbanBoard({
                           ref={(el) => {
                             if (el) menuRefs.current.set(status, el);
                           }}
+                          role="presentation"
                           className="absolute right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-1"
                           onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            // Prevent keyboard events from bubbling
+                            if (e.key === 'Escape') {
+                              setOpenMenuStatus(null);
+                            }
+                          }}
                         >
                           {/* Move all tasks to another status */}
                           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
@@ -239,13 +250,42 @@ export function TaskKanbanBoard({
                   </div>
                 ) : (
                   statusTasks.map((task) => (
+                    // Task card: draggable and optionally clickable for viewing details
+                    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
                     <div
                       key={task.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, task)}
                       onDragEnd={handleDragEnd}
-                      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group ${
-                        draggedTask?.id === task.id ? 'opacity-40 rotate-2 scale-95' : ''
+                      onClick={(e) => {
+                        // Don't trigger click if clicking the edit button or dragging
+                        if (
+                          (e.target as HTMLElement).closest('button') ||
+                          draggedTask?.id === task.id
+                        ) {
+                          return;
+                        }
+                        onTaskClick?.(task);
+                      }}
+                      onKeyDown={(e) => {
+                        // Support keyboard navigation (Enter or Space)
+                        if (onTaskClick && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onTaskClick(task);
+                        }
+                      }}
+                      role={onTaskClick ? 'button' : 'listitem'}
+                      tabIndex={onTaskClick ? 0 : undefined}
+                      aria-label={
+                        onTaskClick ? `View task details: ${task.title}` : `Task: ${task.title}`
+                      }
+                      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 transition-all group ${
+                        draggedTask?.id === task.id
+                          ? 'opacity-40 rotate-2 scale-95'
+                          : onTaskClick
+                            ? 'cursor-pointer hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                            : 'cursor-grab active:cursor-grabbing hover:shadow-md'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2.5">
@@ -260,8 +300,9 @@ export function TaskKanbanBoard({
                             e.stopPropagation();
                             onTaskEdit(task);
                           }}
-                          className="flex-shrink-0 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all"
+                          className="flex-shrink-0 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
                           title="Edit task"
+                          aria-label={`Edit task: ${task.title}`}
                         >
                           <Pencil className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
                         </button>

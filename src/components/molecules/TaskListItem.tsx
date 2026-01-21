@@ -58,11 +58,21 @@ export function TaskListItem({
   const scheduledInfo = formatDate(task.scheduledDate);
 
   return (
+    // Task card: clickable when onClick is provided, with full keyboard and accessibility support
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={`group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 ${
-        onClick ? 'cursor-pointer' : ''
+        onClick
+          ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+          : ''
       }`}
-      onClick={handleClick}
+      onClick={(e) => {
+        // Don't trigger click if clicking on action buttons
+        if ((e.target as HTMLElement).closest('button')) {
+          return;
+        }
+        handleClick();
+      }}
       onKeyDown={(e) => {
         if (onClick && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();
@@ -71,7 +81,7 @@ export function TaskListItem({
       }}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
-      aria-label={onClick ? `View task: ${task.title}` : undefined}
+      aria-label={onClick ? `View task details: ${task.title}` : undefined}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -164,10 +174,14 @@ export function TaskListItem({
           </div>
         </div>
 
+        {/* Action buttons container - stops event propagation to prevent card click */}
+        {}
         <div
           className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
+          role="group"
+          aria-label="Task actions"
         >
           <Button
             variant="secondary"
