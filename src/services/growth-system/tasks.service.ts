@@ -47,6 +47,23 @@ function normalizeTaskStatus(status: string): TaskStatus {
 }
 
 /**
+ * Denormalizes task status from frontend format (without spaces) to API format (with spaces).
+ * The frontend uses statuses like "NotStarted" but the backend expects "Not Started".
+ */
+function denormalizeTaskStatus(status: TaskStatus): string {
+  const statusMap: Record<TaskStatus, string> = {
+    NotStarted: 'Not Started',
+    InProgress: 'In Progress',
+    Blocked: 'Blocked',
+    OnHold: 'On Hold',
+    Done: 'Done',
+    Cancelled: 'Cancelled',
+  };
+
+  return statusMap[status] || status;
+}
+
+/**
  * Normalizes a task object by converting status from API format to frontend format.
  */
 function normalizeTask(task: Task): Task {
@@ -61,7 +78,9 @@ export const tasksService = {
     // Build query parameters
     const queryParams = new URLSearchParams();
     if (filters?.search) queryParams.append('search', filters.search);
-    if (filters?.status) queryParams.append('status', filters.status);
+    // Convert status from frontend format (camelCase) to backend format (with spaces)
+    if (filters?.status)
+      queryParams.append('status', denormalizeTaskStatus(filters.status as TaskStatus));
     if (filters?.priority) queryParams.append('priority', filters.priority);
     if (filters?.area) queryParams.append('area', filters.area);
     if (filters?.subCategory) queryParams.append('subCategory', filters.subCategory);
@@ -123,9 +142,11 @@ export const tasksService = {
     }
 
     // Prepare request body matching backend schema
-    const requestBody: CreateTaskInput = {
+    // Convert status from frontend format (camelCase) to backend format (with spaces)
+    const requestBody: Omit<CreateTaskInput, 'status'> & { status?: string } = {
       ...input,
       pointValue: pointValue ?? undefined,
+      status: input.status ? denormalizeTaskStatus(input.status) : undefined,
     };
 
     const response = await apiClient.post<Task>('/tasks', requestBody);
@@ -139,7 +160,13 @@ export const tasksService = {
   },
 
   async update(id: string, input: UpdateTaskInput): Promise<ApiResponse<Task>> {
-    const response = await apiClient.patch<Task>(`/tasks/${id}`, input);
+    // Convert status from frontend format (camelCase) to backend format (with spaces)
+    const requestBody: Omit<UpdateTaskInput, 'status'> & { status?: string } = {
+      ...input,
+      status: input.status ? denormalizeTaskStatus(input.status) : undefined,
+    };
+
+    const response = await apiClient.patch<Task>(`/tasks/${id}`, requestBody);
     if (response.success && response.data) {
       return {
         ...response,
