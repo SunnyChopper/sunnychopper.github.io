@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -31,6 +31,9 @@ export default function Dialog({
   className,
   size = 'md',
 }: DialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -41,6 +44,20 @@ export default function Dialog({
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  // Handle Escape key and focus management
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   return (
     <AnimatePresence>
@@ -55,6 +72,10 @@ export default function Dialog({
           />
           <div className="fixed inset-0 flex items-center justify-center p-4 z-[70] pointer-events-none overflow-y-auto">
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? 'dialog-title' : undefined}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -70,14 +91,21 @@ export default function Dialog({
             >
               <div className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-700">
                 <button
+                  ref={closeButtonRef}
                   onClick={onClose}
-                  className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                  className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+                  aria-label="Close dialog"
                 >
                   <X size={24} />
                 </button>
 
                 {title && (
-                  <h3 className="text-2xl font-bold pr-8 text-gray-900 dark:text-white">{title}</h3>
+                  <h3
+                    id="dialog-title"
+                    className="text-2xl font-bold pr-8 text-gray-900 dark:text-white"
+                  >
+                    {title}
+                  </h3>
                 )}
               </div>
 
