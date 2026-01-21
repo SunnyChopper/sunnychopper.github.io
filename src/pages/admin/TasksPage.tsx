@@ -8,6 +8,8 @@ import {
   Network,
   Filter,
   X,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import type {
   Task,
@@ -29,9 +31,11 @@ import { TaskEditPanel } from '@/components/organisms/TaskEditPanel';
 import { TaskKanbanBoard } from '@/components/organisms/TaskKanbanBoard';
 import { TaskCalendarView } from '@/components/organisms/TaskCalendarView';
 import DependencyGraph from '@/components/organisms/DependencyGraph';
+import { TaskDetailDialog } from '@/components/organisms/TaskDetailDialog';
 import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
+import { useToast } from '@/hooks/use-toast';
 import {
   AREAS,
   PRIORITIES,
@@ -47,6 +51,7 @@ const STATUS_OPTIONS: TaskStatus[] = [...TASK_STATUSES];
 const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 
 export default function TasksPage() {
+  const { showToast, ToastContainer } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +68,10 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [taskToView, setTaskToView] = useState<Task | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const [allProjects, setAllProjects] = useState<EntitySummary[]>([]);
   const [allGoals, setAllGoals] = useState<EntitySummary[]>([]);
@@ -179,24 +188,44 @@ export default function TasksPage() {
       if (createStatus) {
         input.status = createStatus;
       }
-      await tasksService.create(input);
+      const response = await tasksService.create(input);
+      if (!response.success) {
+        // Extract error message from API response, including validation details
+        let errorMessage = response.error?.message || 'Failed to create task. Please try again.';
+
+        // If there are validation details, append them
+        if (response.error?.details) {
+          const details = response.error.details;
+          // Handle both array and object details
+          if (Array.isArray(details)) {
+            const validationErrors = details
+              .map((d: { msg?: string }) => d.msg)
+              .filter(Boolean)
+              .join(', ');
+            if (validationErrors) {
+              errorMessage = `${errorMessage}: ${validationErrors}`;
+            }
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
       await loadTasks();
       setIsCreateDialogOpen(false);
       setCreateStatus(undefined);
-    } catch (error) {
-      console.error('Failed to create task:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleUpdateTask = async (taskId: string, input: UpdateTaskInput) => {
+  const handleUpdateTask = async (taskId: string, input: UpdateTaskInput): Promise<void> => {
     setIsSubmitting(true);
     try {
       await tasksService.update(taskId, input);
       await loadTasks();
     } catch (error) {
       console.error('Failed to update task:', error);
+      throw error; // Re-throw so TaskEditPanel can handle it
     } finally {
       setIsSubmitting(false);
     }
@@ -208,19 +237,45 @@ export default function TasksPage() {
 
   const confirmDelete = async () => {
     if (!taskToDelete) return;
+    setDeleteError(null);
+    setIsDeleting(true);
+
     try {
       await tasksService.delete(taskToDelete.id);
       await loadTasks();
+
+      // Success: show toast and close dialog
+      showToast({
+        type: 'success',
+        title: 'Task deleted',
+        message: `"${taskToDelete.title}" has been deleted successfully.`,
+      });
+
       setTaskToDelete(null);
       setIsEditPanelOpen(false);
     } catch (error) {
-      console.error('Failed to delete task:', error);
+      // Error: show error message and keep dialog open
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to delete task. Please try again.';
+      setDeleteError(errorMessage);
+      showToast({
+        type: 'error',
+        title: 'Failed to delete task',
+        message: errorMessage,
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleEditTask = (task: Task) => {
     setSelectedTask(task);
     setIsEditPanelOpen(true);
+  };
+
+  const handleViewTask = (task: Task) => {
+    setTaskToView(task);
+    setIsDetailDialogOpen(true);
   };
 
   const handleClearFilters = () => {
@@ -506,6 +561,7 @@ export default function TasksPage() {
                   task={task}
                   onEdit={handleEditTask}
                   onDelete={handleDeleteTask}
+                  onClick={handleViewTask}
                   dependencyCount={taskDependencies.get(task.id)?.length || 0}
                   blockedByCount={taskBlockedBy.get(task.id)?.length || 0}
                   blockedByTasks={getTaskBlockedBy(task.id)}
@@ -524,6 +580,7 @@ export default function TasksPage() {
             tasks={filteredTasks}
             onTaskUpdate={handleUpdateTask}
             onTaskEdit={handleEditTask}
+            onTaskClick={handleViewTask}
             onTaskCreate={(status) => {
               setCreateStatus(status);
               setIsCreateDialogOpen(true);
@@ -591,25 +648,88 @@ export default function TasksPage() {
         />
       )}
 
-      <Dialog isOpen={!!taskToDelete} onClose={() => setTaskToDelete(null)} title="Delete Task">
-        <div className="space-y-4">
+      <Dialog
+        isOpen={!!taskToDelete}
+        onClose={() => !isDeleting && setTaskToDelete(null)}
+        title="Delete Task"
+      >
+        <div className="space-y-4 relative">
+          {/* Loading Overlay */}
+          {isDeleting && (
+            <div
+              className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-blue-400" />
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Deleting task...
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {deleteError && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-red-800 dark:text-red-200 text-sm font-medium">Error</p>
+                  <p className="text-red-700 dark:text-red-300 text-sm mt-1">{deleteError}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDeleteError(null)}
+                  className="p-1 hover:bg-red-100 dark:hover:bg-red-900/50 rounded transition-colors"
+                  aria-label="Dismiss error"
+                >
+                  <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                </button>
+              </div>
+            </div>
+          )}
+
           <p className="text-gray-700 dark:text-gray-300">
             Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
           </p>
-          <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setTaskToDelete(null)}>
+          <div
+            className={`flex justify-end gap-3 ${isDeleting ? 'pointer-events-none opacity-60' : ''}`}
+          >
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setTaskToDelete(null);
+                setDeleteError(null);
+              }}
+              disabled={isDeleting}
+            >
               Cancel
             </Button>
             <Button
               variant="primary"
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </Button>
           </div>
         </div>
       </Dialog>
+
+      <ToastContainer />
+
+      <TaskDetailDialog
+        task={taskToView}
+        isOpen={isDetailDialogOpen}
+        onClose={() => {
+          setIsDetailDialogOpen(false);
+          setTaskToView(null);
+        }}
+        onEdit={handleEditTask}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import type {
   CreateTaskInput,
   Area,
@@ -20,7 +20,7 @@ import {
 } from '@/constants/growth-system';
 
 interface TaskCreateFormProps {
-  onSubmit: (input: CreateTaskInput) => void;
+  onSubmit: (input: CreateTaskInput) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -44,21 +44,55 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
 
   const [showAIAssist, setShowAIAssist] = useState(false);
   const [aiMode, setAIMode] = useState<'parse' | 'categorize' | 'estimate'>('parse');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isAIConfigured = llmConfig.isConfigured();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const extractValidationErrors = (details: unknown): string => {
+    if (!Array.isArray(details)) return '';
+    const validationErrors = (details as Array<{ msg?: string }>)
+      .map((d) => d.msg)
+      .filter(Boolean)
+      .join(', ');
+    return validationErrors ? `: ${validationErrors}` : '';
+  };
+
+  const extractErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+      return err.message;
+    }
+    if (typeof err === 'object' && err !== null && 'error' in err) {
+      const apiError = err as { error?: { message?: string; details?: unknown } };
+      if (apiError.error?.message) {
+        const validationDetails = extractValidationErrors(apiError.error.details);
+        return `${apiError.error.message}${validationDetails}`;
+      }
+    }
+    return 'Failed to create task. Please try again.';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const input: CreateTaskInput = {
-      ...formData,
-      description: formData.description || undefined,
-      extendedDescription: formData.extendedDescription || undefined,
-      notes: formData.notes || undefined,
-      dueDate: formData.dueDate || undefined,
-      scheduledDate: formData.scheduledDate || undefined,
-      size: formData.size || undefined,
-      pointValue: formData.pointValue || undefined,
-    };
-    onSubmit(input);
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const input: CreateTaskInput = {
+        ...formData,
+        description: formData.description || undefined,
+        extendedDescription: formData.extendedDescription || undefined,
+        notes: formData.notes || undefined,
+        dueDate: formData.dueDate || undefined,
+        scheduledDate: formData.scheduledDate || undefined,
+        size: formData.size || undefined,
+        pointValue: formData.pointValue || undefined,
+      };
+      await onSubmit(input);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area];
@@ -91,6 +125,18 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-red-800 dark:text-red-200 text-sm font-medium">Error</p>
+              <p className="text-red-700 dark:text-red-300 text-sm mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAIConfigured && (
         <div className="mb-4">
           <button
@@ -357,11 +403,16 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onCancel}
+          disabled={isLoading || isSubmitting}
+        >
           Cancel
         </Button>
-        <Button type="submit" variant="primary" disabled={isLoading}>
-          {isLoading ? 'Creating...' : 'Create Task'}
+        <Button type="submit" variant="primary" disabled={isLoading || isSubmitting}>
+          {isLoading || isSubmitting ? 'Creating...' : 'Create Task'}
         </Button>
       </div>
     </form>
