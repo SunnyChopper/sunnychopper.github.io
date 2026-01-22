@@ -11,7 +11,14 @@ import type {
   SuccessCriterion,
 } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
-import { AREAS, GOAL_STATUSES, GOAL_TIME_HORIZONS, PRIORITIES } from '@/constants/growth-system';
+import {
+  AREAS,
+  AREA_LABELS,
+  GOAL_STATUSES,
+  GOAL_STATUS_LABELS,
+  GOAL_TIME_HORIZONS,
+  PRIORITIES,
+} from '@/constants/growth-system';
 
 interface GoalEditFormProps {
   goal: Goal;
@@ -115,7 +122,7 @@ export function GoalEditForm({ goal, onSubmit, onCancel, isLoading }: GoalEditFo
           >
             {AREAS.map((area) => (
               <option key={area} value={area}>
-                {area}
+                {AREA_LABELS[area]}
               </option>
             ))}
           </select>
@@ -189,7 +196,7 @@ export function GoalEditForm({ goal, onSubmit, onCancel, isLoading }: GoalEditFo
           >
             {GOAL_STATUSES.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {GOAL_STATUS_LABELS[status]}
               </option>
             ))}
           </select>

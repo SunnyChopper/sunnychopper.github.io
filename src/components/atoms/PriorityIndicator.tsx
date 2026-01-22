@@ -1,7 +1,7 @@
 import type { Priority } from '@/types/growth-system';
 
 interface PriorityIndicatorProps {
-  priority: Priority;
+  priority: Priority | null | undefined;
   variant?: 'dot' | 'badge' | 'bar';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -26,13 +26,19 @@ const priorityColors: Record<Priority, { bg: string; text: string; border: strin
   },
 };
 
+// Default priority fallback
+const DEFAULT_PRIORITY: Priority = 'P3';
+
 export function PriorityIndicator({
   priority,
   variant = 'badge',
   size = 'md',
   className = '',
 }: PriorityIndicatorProps) {
-  const colors = priorityColors[priority];
+  // Normalize priority: use default if invalid or missing
+  const normalizedPriority: Priority =
+    priority && priority in priorityColors ? priority : DEFAULT_PRIORITY;
+  const colors = priorityColors[normalizedPriority];
 
   if (variant === 'dot') {
     const dotSizes = {
@@ -66,7 +72,7 @@ export function PriorityIndicator({
     <span
       className={`inline-flex items-center rounded font-semibold ${colors.text} border ${colors.border} bg-opacity-10 ${badgeSizes[size]} ${className}`}
     >
-      {priority}
+      {normalizedPriority}
     </span>
   );
 }

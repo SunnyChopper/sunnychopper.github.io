@@ -9,8 +9,10 @@ import type {
 import Button from '@/components/atoms/Button';
 import {
   AREAS,
+  AREA_LABELS,
   PRIORITIES,
   PROJECT_STATUSES,
+  PROJECT_STATUS_LABELS,
   SUBCATEGORIES_BY_AREA,
 } from '@/constants/growth-system';
 
@@ -97,7 +99,7 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
           >
             {AREAS.map((area) => (
               <option key={area} value={area}>
-                {area}
+                {AREA_LABELS[area]}
               </option>
             ))}
           </select>
@@ -156,7 +158,7 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
           >
             {PROJECT_STATUSES.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {PROJECT_STATUS_LABELS[status]}
               </option>
             ))}
           </select>
