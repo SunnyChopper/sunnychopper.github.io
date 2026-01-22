@@ -18,11 +18,11 @@ Requires JWT authentication via `Authorization: Bearer {token}` header.
 
 ### Query Parameters (Optional)
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `includeCompleted` | boolean | `false` | Include completed tasks/goals in response |
-| `taskLimit` | number | `undefined` (all) | Limit number of tasks returned |
-| `transactionLimit` | number | `10` | Limit number of wallet transactions returned |
+| Parameter          | Type    | Default           | Description                                  |
+| ------------------ | ------- | ----------------- | -------------------------------------------- |
+| `includeCompleted` | boolean | `false`           | Include completed tasks/goals in response    |
+| `taskLimit`        | number  | `undefined` (all) | Limit number of tasks returned               |
+| `transactionLimit` | number  | `10`              | Limit number of wallet transactions returned |
 
 ### Example Request
 
@@ -217,7 +217,8 @@ const response = await apiClient.getDashboardSummary({
 });
 
 if (response.success && response.data) {
-  const { tasks, goals, projects, habits, metrics, logbookEntries, rewards, wallet } = response.data;
+  const { tasks, goals, projects, habits, metrics, logbookEntries, rewards, wallet } =
+    response.data;
   // Use the aggregated data
 }
 ```

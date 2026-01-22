@@ -486,8 +486,8 @@ export const useTaskDependencies = (taskIds: string[]) => {
         );
 
         const results = await Promise.all(dependencyPromises);
-        const dependencyMap = new Map<string, typeof results[0]['dependencies']>();
-        const allDependencies: typeof results[0]['dependencies'] = [];
+        const dependencyMap = new Map<string, (typeof results)[0]['dependencies']>();
+        const allDependencies: (typeof results)[0]['dependencies'] = [];
 
         results.forEach(({ dependencies }) => {
           allDependencies.push(...dependencies);

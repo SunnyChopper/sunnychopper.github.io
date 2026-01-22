@@ -3,6 +3,7 @@
 ## Problem Analysis
 
 When loading dashboard pages, the application was making **25-30+ API calls**, including:
+
 - Multiple repeated calls to the same endpoints (tasks, goals, projects called 2-3 times each)
 - 404 errors for `wallet`, `api-keys`, and `notes` endpoints (5+ failed requests)
 - Network failures for `mode` endpoint
@@ -23,11 +24,13 @@ When loading dashboard pages, the application was making **25-30+ API calls**, i
 ### ✅ 1. Converted TasksPage to React Query (COMPLETED)
 
 **Before:**
+
 - Used `useState`/`useEffect` with direct `tasksService.getAll()` calls
 - Refetched on every mount and filter change
 - No caching between page navigations
 
 **After:**
+
 - Uses `useTasks()`, `useProjects()`, `useGoals()` React Query hooks
 - Automatic caching and deduplication
 - Only refetches when data is stale or explicitly invalidated
@@ -38,10 +41,12 @@ When loading dashboard pages, the application was making **25-30+ API calls**, i
 ### ✅ 2. Batched Task Dependencies (COMPLETED)
 
 **Before:**
+
 - Called `getDependencies()` individually for each task
 - If you had 10 tasks, that's 10 separate API calls
 
 **After:**
+
 - Created `useTaskDependencies()` hook that batches all dependency calls
 - Fetches all dependencies in parallel in a single query
 - Cached with 2-minute staleTime
@@ -52,6 +57,7 @@ When loading dashboard pages, the application was making **25-30+ API calls**, i
 
 **Proposed Solution:**
 Create a `/api/dashboard/summary` endpoint that returns:
+
 ```json
 {
   "tasks": [...],
@@ -66,6 +72,7 @@ Create a `/api/dashboard/summary` endpoint that returns:
 ```
 
 **Implementation Steps:**
+
 1. Add endpoint to backend: `GET /api/dashboard/summary`
 2. Create frontend hook: `useDashboardSummary()`
 3. Update `DashboardPage` to use single hook instead of 6 separate hooks
@@ -76,10 +83,12 @@ Create a `/api/dashboard/summary` endpoint that returns:
 ### 🔄 4. Convert Context Providers to React Query (RECOMMENDED)
 
 **Current Issue:**
+
 - `WalletProvider` and `RewardsProvider` use `useEffect` with direct service calls
 - No caching, refetch on every mount
 
 **Proposed Solution:**
+
 - Create `useWallet()` and `useRewards()` React Query hooks
 - Replace context providers with hooks (or keep providers but use hooks internally)
 - Add proper caching with appropriate staleTime
@@ -89,6 +98,7 @@ Create a `/api/dashboard/summary` endpoint that returns:
 ### 🔄 5. Fix 404 Errors (RECOMMENDED)
 
 **Options:**
+
 1. **Remove calls** if endpoints aren't needed:
    - Check where `wallet`, `api-keys`, `notes` are called
    - Remove or conditionally call only when needed
@@ -107,15 +117,18 @@ Create a `/api/dashboard/summary` endpoint that returns:
 ### 🔄 6. Optimize React Query Configuration (RECOMMENDED)
 
 **Current:**
+
 - `staleTime: 5 * 60 * 1000` (5 minutes) for all queries
 
 **Proposed:**
+
 - **Frequently changing data** (tasks, habits): 2-5 minutes
 - **Moderately changing data** (goals, projects): 10-15 minutes
 - **Rarely changing data** (projects, goals metadata): 30+ minutes
 - **Static data** (API keys, configs): 1 hour+
 
 **Implementation:**
+
 ```typescript
 // In useGrowthSystem.ts
 useQuery({
@@ -136,12 +149,14 @@ useQuery({
 ## Expected Results
 
 ### Before Optimization:
+
 - **25-30+ API calls** on dashboard load
 - **14+ seconds** total load time
 - **5+ 404 errors**
 - **Multiple duplicate calls** to same endpoints
 
 ### After Full Optimization:
+
 - **1-3 API calls** on dashboard load (1 aggregated + 1-2 for specific widgets)
 - **2-4 seconds** total load time
 - **0 404 errors**

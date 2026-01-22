@@ -64,8 +64,11 @@ export default function ProjectsPage() {
   const isAIConfigured = llmConfig.isConfigured();
 
   // Use dashboard hook for initial data loading (single API call)
-  const { projects: dashboardProjects, goals: dashboardGoals, isLoading: dashboardLoading } =
-    useGrowthSystemDashboard();
+  const {
+    projects: dashboardProjects,
+    goals: dashboardGoals,
+    isLoading: dashboardLoading,
+  } = useGrowthSystemDashboard();
 
   // Use individual hooks for mutations (they read from cache populated by dashboard hook)
   const { createProject, updateProject, deleteProject } = useProjects();
@@ -230,7 +233,6 @@ export default function ProjectsPage() {
       }
     }
   };
-
 
   const getProjectStats = (projectId: string) => {
     const tasks = projectTasks.get(projectId) || [];
@@ -500,7 +502,9 @@ export default function ProjectsPage() {
             </p>
             {projectToDelete && (
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                <p className="font-semibold text-gray-900 dark:text-white">{projectToDelete.name}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  {projectToDelete.name}
+                </p>
               </div>
             )}
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

@@ -24,13 +24,7 @@ export default function WeeklyReviewPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState<'review' | 'plan' | 'complete'>('review');
 
-  const {
-    tasks,
-    habits,
-    metrics,
-    goals,
-    logbookEntries: entries,
-  } = useGrowthSystemDashboard();
+  const { tasks, habits, metrics, goals, logbookEntries: entries } = useGrowthSystemDashboard();
 
   const calculateWeeklyStats = useCallback(() => {
     const oneWeekAgo = new Date();

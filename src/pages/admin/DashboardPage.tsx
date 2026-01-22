@@ -153,7 +153,9 @@ export default function DashboardPage() {
               value={activeProjects.length}
               icon={<FolderKanban size={24} />}
               link={ROUTES.admin.projects}
-              description={dashboardError ? 'Connection error' : `${projects.length} total projects`}
+              description={
+                dashboardError ? 'Connection error' : `${projects.length} total projects`
+              }
             />
           </>
         )}

@@ -21,12 +21,7 @@ import type {
   EntitySummary,
   TaskDependency,
 } from '@/types/growth-system';
-import {
-  useTasks,
-  useProjects,
-  useGoals,
-  useTaskDependencies,
-} from '@/hooks/useGrowthSystem';
+import { useTasks, useProjects, useGoals, useTaskDependencies } from '@/hooks/useGrowthSystem';
 import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import { tasksService } from '@/services/growth-system/tasks.service';
 import Button from '@/components/atoms/Button';
@@ -76,8 +71,12 @@ export default function TasksPage() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   // Use dashboard hook for initial data loading (single API call)
-  const { tasks: dashboardTasks, projects: dashboardProjects, goals: dashboardGoals, isLoading: dashboardLoading } =
-    useGrowthSystemDashboard();
+  const {
+    tasks: dashboardTasks,
+    projects: dashboardProjects,
+    goals: dashboardGoals,
+    isLoading: dashboardLoading,
+  } = useGrowthSystemDashboard();
 
   // Use individual hooks for mutations (they read from cache populated by dashboard hook)
   const { createTask, updateTask, deleteTask } = useTasks();
@@ -85,10 +84,7 @@ export default function TasksPage() {
   const { goals: _goals } = useGoals();
 
   // Use dashboard data for initial render (individual hooks will read from cache if dashboard loaded)
-  const tasks = useMemo(
-    () => (dashboardTasks.length > 0 ? dashboardTasks : []),
-    [dashboardTasks]
-  );
+  const tasks = useMemo(() => (dashboardTasks.length > 0 ? dashboardTasks : []), [dashboardTasks]);
   const projects = useMemo(
     () => (dashboardProjects.length > 0 ? dashboardProjects : _projects),
     [dashboardProjects, _projects]
