@@ -34,6 +34,10 @@ export const useTasks = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
+  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
+  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.tasks.lists(),
@@ -53,13 +57,16 @@ export const useTasks = () => {
         throw err;
       }
     },
-    enabled: true,
+    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    staleTime: 10 * 60 * 1000, // 10 minutes - goals don't change frequently
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 
   const createMutation = useMutation({
     mutationFn: (input: CreateTaskInput) => tasksService.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -68,6 +75,7 @@ export const useTasks = () => {
       tasksService.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -75,6 +83,7 @@ export const useTasks = () => {
     mutationFn: (id: string) => tasksService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -97,6 +106,10 @@ export const useHabits = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
+  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
+  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.habits.lists(),
@@ -115,13 +128,16 @@ export const useHabits = () => {
         throw err;
       }
     },
-    enabled: true,
+    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    staleTime: 5 * 60 * 1000, // 5 minutes - habits change moderately
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
   });
 
   const createMutation = useMutation({
     mutationFn: (input: CreateHabitInput) => habitsService.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -130,6 +146,7 @@ export const useHabits = () => {
       habitsService.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -137,6 +154,7 @@ export const useHabits = () => {
     mutationFn: (id: string) => habitsService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -144,6 +162,7 @@ export const useHabits = () => {
     mutationFn: habitsService.logCompletion,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -167,6 +186,10 @@ export const useMetrics = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
+  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
+  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.metrics.lists(),
@@ -185,13 +208,16 @@ export const useMetrics = () => {
         throw err;
       }
     },
-    enabled: true,
+    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    staleTime: 5 * 60 * 1000, // 5 minutes - metrics change moderately
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
   });
 
   const createMutation = useMutation({
     mutationFn: (input: CreateMetricInput) => metricsService.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -200,6 +226,7 @@ export const useMetrics = () => {
       metricsService.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -207,6 +234,7 @@ export const useMetrics = () => {
     mutationFn: (id: string) => metricsService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['metrics'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -229,6 +257,10 @@ export const useGoals = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
+  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
+  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.goals.lists(),
@@ -247,13 +279,16 @@ export const useGoals = () => {
         throw err;
       }
     },
-    enabled: true,
+    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    staleTime: 10 * 60 * 1000, // 10 minutes - goals don't change frequently
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 
   const createMutation = useMutation({
     mutationFn: (input: CreateGoalInput) => goalsService.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -262,6 +297,7 @@ export const useGoals = () => {
       goalsService.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -269,6 +305,7 @@ export const useGoals = () => {
     mutationFn: (id: string) => goalsService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -291,6 +328,10 @@ export const useProjects = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
+  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
+  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.projects.lists(),
@@ -309,13 +350,16 @@ export const useProjects = () => {
         throw err;
       }
     },
-    enabled: true,
+    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    staleTime: 10 * 60 * 1000, // 10 minutes - projects don't change frequently
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
 
   const createMutation = useMutation({
     mutationFn: (input: CreateProjectInput) => projectsService.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -324,6 +368,7 @@ export const useProjects = () => {
       projectsService.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -331,6 +376,7 @@ export const useProjects = () => {
     mutationFn: (id: string) => projectsService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -353,6 +399,10 @@ export const useLogbook = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
+  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
+  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.logbook.lists(),
@@ -371,13 +421,16 @@ export const useLogbook = () => {
         throw err;
       }
     },
-    enabled: true,
+    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    staleTime: 2 * 60 * 1000, // 2 minutes - logbook entries change frequently
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   const createMutation = useMutation({
     mutationFn: (input: CreateLogbookEntryInput) => logbookService.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['logbook'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -386,6 +439,7 @@ export const useLogbook = () => {
       logbookService.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['logbook'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -393,6 +447,7 @@ export const useLogbook = () => {
     mutationFn: (id: string) => logbookService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['logbook'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
     },
   });
 
@@ -407,5 +462,64 @@ export const useLogbook = () => {
     createEntry: createMutation.mutateAsync,
     updateEntry: updateMutation.mutateAsync,
     deleteEntry: deleteMutation.mutateAsync,
+  };
+};
+
+/**
+ * Hook to fetch task dependencies for multiple tasks in a batched manner
+ * This is more efficient than calling getDependencies for each task individually
+ */
+export const useTaskDependencies = (taskIds: string[]) => {
+  const { recordError, recordSuccess } = useBackendStatus();
+
+  const { data, isLoading, error, isError } = useQuery({
+    queryKey: [...queryKeys.tasks.all, 'dependencies', taskIds.sort().join(',')],
+    queryFn: async () => {
+      try {
+        // Batch fetch dependencies for all tasks in parallel
+        const { tasksService } = await import('@/services/growth-system/tasks.service');
+        const dependencyPromises = taskIds.map((taskId) =>
+          tasksService.getDependencies(taskId).then((res) => ({
+            taskId,
+            dependencies: res.success && res.data ? res.data : [],
+          }))
+        );
+
+        const results = await Promise.all(dependencyPromises);
+        const dependencyMap = new Map<string, typeof results[0]['dependencies']>();
+        const allDependencies: typeof results[0]['dependencies'] = [];
+
+        results.forEach(({ dependencies }) => {
+          allDependencies.push(...dependencies);
+        });
+
+        if (results.length > 0) {
+          recordSuccess();
+        }
+
+        return {
+          dependencyMap,
+          allDependencies,
+        };
+      } catch (err: unknown) {
+        const apiError = extractApiError(err);
+        if (apiError && isNetworkError(apiError)) {
+          recordError(apiError);
+        }
+        throw err;
+      }
+    },
+    enabled: taskIds.length > 0,
+    staleTime: 2 * 60 * 1000, // 2 minutes - dependencies don't change frequently
+  });
+
+  const apiError = error ? extractApiError(error) : null;
+
+  return {
+    dependencyMap: data?.dependencyMap || new Map(),
+    allDependencies: data?.allDependencies || [],
+    isLoading: isLoading && !isError,
+    isError,
+    error: apiError || error,
   };
 };
