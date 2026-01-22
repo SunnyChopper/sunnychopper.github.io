@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Calendar, CheckSquare, Target, Repeat, ArrowRight, Sparkles } from 'lucide-react';
 import Button from '@/components/atoms/Button';
-import { useTasks, useHabits, useMetrics, useGoals, useLogbook } from '@/hooks/useGrowthSystem';
+import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import { ROUTES } from '@/routes';
 
 interface WeeklyStats {
@@ -24,11 +24,13 @@ export default function WeeklyReviewPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState<'review' | 'plan' | 'complete'>('review');
 
-  const { tasks } = useTasks();
-  const { habits } = useHabits();
-  const { metrics } = useMetrics();
-  const { goals } = useGoals();
-  const { entries } = useLogbook();
+  const {
+    tasks,
+    habits,
+    metrics,
+    goals,
+    logbookEntries: entries,
+  } = useGrowthSystemDashboard();
 
   const calculateWeeklyStats = useCallback(() => {
     const oneWeekAgo = new Date();

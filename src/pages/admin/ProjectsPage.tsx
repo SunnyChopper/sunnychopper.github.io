@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -20,9 +20,9 @@ import type {
   EntitySummary,
   FilterOptions,
 } from '@/types/growth-system';
-import { projectsService } from '@/services/growth-system/projects.service';
+import { useProjects, useGoals } from '@/hooks/useGrowthSystem';
+import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import { tasksService } from '@/services/growth-system/tasks.service';
-import { goalsService } from '@/services/growth-system/goals.service';
 import Button from '@/components/atoms/Button';
 import { ProjectCard } from '@/components/molecules/ProjectCard';
 import { FilterPanel } from '@/components/molecules/FilterPanel';
@@ -45,8 +45,6 @@ import { llmConfig } from '@/lib/llm';
 const STATUSES: ProjectStatus[] = [...PROJECT_STATUSES];
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({});
 
@@ -58,7 +56,6 @@ export default function ProjectsPage() {
 
   const [projectTasks, setProjectTasks] = useState<Map<string, Task[]>>(new Map());
   const [projectGoals] = useState<Map<string, EntitySummary[]>>(new Map());
-  const [allGoals, setAllGoals] = useState<EntitySummary[]>([]);
   const [isGoalPickerOpen, setIsGoalPickerOpen] = useState(false);
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
 
@@ -66,68 +63,72 @@ export default function ProjectsPage() {
   const [aiMode, setAIMode] = useState<'health' | 'generate' | 'risks'>('health');
   const isAIConfigured = llmConfig.isConfigured();
 
-  const loadProjects = async () => {
-    setIsLoading(true);
-    try {
-      const response = await projectsService.getAll();
-      if (response.success && response.data) {
-        setProjects(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to load projects:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Use dashboard hook for initial data loading (single API call)
+  const { projects: dashboardProjects, goals: dashboardGoals, isLoading: dashboardLoading } =
+    useGrowthSystemDashboard();
 
-  const loadProjectTasks = async (projectId: string) => {
-    try {
-      const response = await tasksService.getByProject(projectId);
-      if (response.success && response.data) {
-        setProjectTasks((prev) => new Map(prev).set(projectId, response.data!));
-      }
-    } catch (error) {
-      console.error('Failed to load project tasks:', error);
-    }
-  };
+  // Use individual hooks for mutations (they read from cache populated by dashboard hook)
+  const { createProject, updateProject, deleteProject } = useProjects();
+  const { goals: _goals } = useGoals();
 
-  const loadGoals = async () => {
-    try {
-      const response = await goalsService.getAll();
-      if (response.success && response.data) {
-        const goalEntities: EntitySummary[] = response.data.map((g) => ({
-          id: g.id,
-          title: g.title,
-          type: 'goal',
-          area: g.area,
-          status: g.status,
-        }));
-        setAllGoals(goalEntities);
-      }
-    } catch (error) {
-      console.error('Failed to load goals:', error);
-    }
-  };
+  // Use dashboard data for initial render (individual hooks will read from cache if dashboard loaded)
+  const projects = useMemo(
+    () => (dashboardProjects.length > 0 ? dashboardProjects : []),
+    [dashboardProjects]
+  );
+  const goals = useMemo(
+    () => (dashboardGoals.length > 0 ? dashboardGoals : _goals),
+    [dashboardGoals, _goals]
+  );
+  const isLoading = dashboardLoading;
 
+  // Convert goals to EntitySummary format
+  const allGoals = useMemo<EntitySummary[]>(
+    () =>
+      goals.map((g) => ({
+        id: g.id,
+        title: g.title,
+        type: 'goal' as const,
+        area: g.area,
+        status: g.status,
+      })),
+    [goals]
+  );
+
+  // Load project tasks when a project is selected
   useEffect(() => {
-    loadProjects();
-    loadGoals();
-  }, []);
-
-  useEffect(() => {
-    if (selectedProject) {
+    if (selectedProject && !projectTasks.has(selectedProject.id)) {
+      const loadProjectTasks = async (projectId: string) => {
+        try {
+          const response = await tasksService.getByProject(projectId);
+          if (response.success && response.data) {
+            setProjectTasks((prev) => new Map(prev).set(projectId, response.data!));
+          }
+        } catch (error) {
+          console.error('Failed to load project tasks:', error);
+        }
+      };
       loadProjectTasks(selectedProject.id);
     }
-  }, [selectedProject]);
+  }, [selectedProject, projectTasks]);
+
+  // Filter projects based on search and filters
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      return (
+        (!searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (!filters.status || project.status === filters.status) &&
+        (!filters.area || project.area === filters.area) &&
+        (!filters.priority || project.priority === filters.priority)
+      );
+    });
+  }, [projects, searchQuery, filters]);
 
   const handleCreateProject = async (input: CreateProjectInput) => {
     setIsSubmitting(true);
     try {
-      const response = await projectsService.create(input);
-      if (response.success && response.data) {
-        setProjects([response.data, ...projects]);
-        setIsCreateDialogOpen(false);
-      }
+      await createProject(input);
+      setIsCreateDialogOpen(false);
     } catch (error) {
       console.error('Failed to create project:', error);
     } finally {
@@ -138,10 +139,8 @@ export default function ProjectsPage() {
   const handleUpdateProject = async (id: string, input: UpdateProjectInput) => {
     setIsSubmitting(true);
     try {
-      const response = await projectsService.update(id, input);
+      const response = await updateProject({ id, input });
       if (response.success && response.data) {
-        const updatedProjects = projects.map((p) => (p.id === id ? response.data! : p));
-        setProjects(updatedProjects);
         if (selectedProject && selectedProject.id === id) {
           setSelectedProject(response.data);
         }
@@ -159,15 +158,11 @@ export default function ProjectsPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await projectsService.delete(projectToDelete.id);
-      if (response.success) {
-        const updatedProjects = projects.filter((p) => p.id !== projectToDelete.id);
-        setProjects(updatedProjects);
-        if (selectedProject && selectedProject.id === projectToDelete.id) {
-          setSelectedProject(null);
-        }
-        setProjectToDelete(null);
+      await deleteProject(projectToDelete.id);
+      if (selectedProject && selectedProject.id === projectToDelete.id) {
+        setSelectedProject(null);
       }
+      setProjectToDelete(null);
     } catch (error) {
       console.error('Failed to delete project:', error);
     } finally {
@@ -227,28 +222,15 @@ export default function ProjectsPage() {
       };
       await tasksService.create(taskInput);
     }
-    loadProjectTasks(selectedProject.id);
+    // Reload project tasks after creating new tasks
+    if (selectedProject) {
+      const response = await tasksService.getByProject(selectedProject.id);
+      if (response.success && response.data) {
+        setProjectTasks((prev) => new Map(prev).set(selectedProject.id, response.data!));
+      }
+    }
   };
 
-  const matchesSearch = (project: Project): boolean => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      project.name.toLowerCase().includes(query) ||
-      (project.description !== null && project.description.toLowerCase().includes(query))
-    );
-  };
-
-  const matchesFilters = (project: Project): boolean => {
-    if (filters.area && project.area !== filters.area) return false;
-    if (filters.status && project.status !== filters.status) return false;
-    if (filters.priority && project.priority !== filters.priority) return false;
-    return true;
-  };
-
-  const filteredProjects = projects.filter(
-    (project) => matchesSearch(project) && matchesFilters(project)
-  );
 
   const getProjectStats = (projectId: string) => {
     const tasks = projectTasks.get(projectId) || [];
@@ -506,6 +488,40 @@ export default function ProjectsPage() {
           onSave={handleGoalSave}
           entityType="goal"
         />
+
+        <Dialog
+          isOpen={!!projectToDelete}
+          onClose={() => setProjectToDelete(null)}
+          title="Delete Project"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete this project? This action cannot be undone.
+            </p>
+            {projectToDelete && (
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                <p className="font-semibold text-gray-900 dark:text-white">{projectToDelete.name}</p>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button
+                variant="secondary"
+                onClick={() => setProjectToDelete(null)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleDeleteProject}
+                disabled={isSubmitting}
+                className="!bg-red-600 hover:!bg-red-700"
+              >
+                {isSubmitting ? 'Deleting...' : 'Delete Project'}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
       </div>
     );
   }

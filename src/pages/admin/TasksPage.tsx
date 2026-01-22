@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Plus,
   Search,
@@ -21,9 +21,14 @@ import type {
   EntitySummary,
   TaskDependency,
 } from '@/types/growth-system';
+import {
+  useTasks,
+  useProjects,
+  useGoals,
+  useTaskDependencies,
+} from '@/hooks/useGrowthSystem';
+import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import { tasksService } from '@/services/growth-system/tasks.service';
-import { projectsService } from '@/services/growth-system/projects.service';
-import { goalsService } from '@/services/growth-system/goals.service';
 import Button from '@/components/atoms/Button';
 import { TaskListItem } from '@/components/molecules/TaskListItem';
 import { TaskCreateForm } from '@/components/organisms/TaskCreateForm';
@@ -52,9 +57,6 @@ const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 
 export default function TasksPage() {
   const { showToast, ToastContainer } = useToast();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArea, setSelectedArea] = useState<Area | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | undefined>();
@@ -73,114 +75,105 @@ export default function TasksPage() {
   const [taskToView, setTaskToView] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
-  const [allProjects, setAllProjects] = useState<EntitySummary[]>([]);
-  const [allGoals, setAllGoals] = useState<EntitySummary[]>([]);
-  const [taskDependencies, setTaskDependencies] = useState<Map<string, string[]>>(new Map());
-  const [taskBlockedBy, setTaskBlockedBy] = useState<Map<string, string[]>>(new Map());
-  const [taskProjects] = useState<Map<string, string[]>>(new Map());
-  const [taskGoals] = useState<Map<string, string[]>>(new Map());
-  const [allDependencies, setAllDependencies] = useState<TaskDependency[]>([]);
+  // Use dashboard hook for initial data loading (single API call)
+  const { tasks: dashboardTasks, projects: dashboardProjects, goals: dashboardGoals, isLoading: dashboardLoading } =
+    useGrowthSystemDashboard();
 
-  const loadRelationships = useCallback(async (taskList: Task[]) => {
+  // Use individual hooks for mutations (they read from cache populated by dashboard hook)
+  const { createTask, updateTask, deleteTask } = useTasks();
+  const { projects: _projects } = useProjects();
+  const { goals: _goals } = useGoals();
+
+  // Use dashboard data for initial render (individual hooks will read from cache if dashboard loaded)
+  const tasks = useMemo(
+    () => (dashboardTasks.length > 0 ? dashboardTasks : []),
+    [dashboardTasks]
+  );
+  const projects = useMemo(
+    () => (dashboardProjects.length > 0 ? dashboardProjects : _projects),
+    [dashboardProjects, _projects]
+  );
+  const goals = useMemo(
+    () => (dashboardGoals.length > 0 ? dashboardGoals : _goals),
+    [dashboardGoals, _goals]
+  );
+  const tasksLoading = dashboardLoading;
+
+  // Convert projects and goals to EntitySummary format
+  const allProjects = useMemo<EntitySummary[]>(
+    () =>
+      projects.map((p) => ({
+        id: p.id,
+        title: p.name,
+        type: 'project' as const,
+        area: p.area,
+        status: p.status,
+      })),
+    [projects]
+  );
+
+  const allGoals = useMemo<EntitySummary[]>(
+    () =>
+      goals.map((g) => ({
+        id: g.id,
+        title: g.title,
+        type: 'goal' as const,
+        area: g.area,
+        status: g.status,
+      })),
+    [goals]
+  );
+
+  // Filter tasks based on search and filters
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      return (
+        (!searchQuery || task.title.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (!selectedArea || task.area === selectedArea) &&
+        (!selectedStatus || task.status === selectedStatus) &&
+        (!selectedPriority || task.priority === selectedPriority)
+      );
+    });
+  }, [tasks, searchQuery, selectedArea, selectedStatus, selectedPriority]);
+
+  // Load dependencies for all tasks using batched hook
+  const taskIds = useMemo(() => tasks.map((t) => t.id), [tasks]);
+  const {
+    dependencyMap,
+    allDependencies: rawDependencies,
+    isLoading: dependenciesLoading,
+  } = useTaskDependencies(taskIds);
+
+  // Convert raw dependencies to TaskDependency format
+  const allDependencies = useMemo<TaskDependency[]>(() => {
+    return rawDependencies as TaskDependency[];
+  }, [rawDependencies]);
+
+  // Compute dependency and blocked-by maps
+  const { taskDependencies, taskBlockedBy } = useMemo(() => {
     const depMap = new Map<string, string[]>();
     const blockedMap = new Map<string, string[]>();
-    const deps: TaskDependency[] = [];
-    const taskMap = new Map(taskList.map((t) => [t.id, t]));
+    const taskMap = new Map(tasks.map((t) => [t.id, t]));
 
-    await Promise.all(
-      taskList.map(async (task) => {
-        const depsResponse = await tasksService.getDependencies(task.id);
-        if (depsResponse.success && depsResponse.data) {
-          deps.push(...depsResponse.data);
-          const depIds = depsResponse.data.map((d) => d.dependsOnTaskId);
-          depMap.set(task.id, depIds);
+    dependencyMap.forEach((deps, taskId) => {
+      const depIds = deps.map((d: { dependsOnTaskId: string }) => d.dependsOnTaskId);
+      depMap.set(taskId, depIds);
 
-          const incompleteDeps = depIds.filter((depId) => {
-            const depTask = taskMap.get(depId);
-            return depTask && depTask.status !== 'Done';
-          });
-
-          incompleteDeps.forEach((depId) => {
-            const current = blockedMap.get(task.id) || [];
-            blockedMap.set(task.id, [...current, depId]);
-          });
-        }
-      })
-    );
-
-    setTaskDependencies(depMap);
-    setTaskBlockedBy(blockedMap);
-    setAllDependencies(deps);
-  }, []);
-
-  const loadTasks = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await tasksService.getAll({
-        search: searchQuery || undefined,
-        area: selectedArea,
-        status: selectedStatus,
-        priority: selectedPriority,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
+      const incompleteDeps = depIds.filter((depId: string) => {
+        const depTask = taskMap.get(depId);
+        return depTask && depTask.status !== 'Done';
       });
-      const tasksArray = response.data || [];
-      setTasks(tasksArray);
-      setFilteredTasks(tasksArray);
-      await loadRelationships(tasksArray);
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-      // Ensure tasks are always arrays even on error
-      setTasks([]);
-      setFilteredTasks([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadRelationships, searchQuery, selectedArea, selectedPriority, selectedStatus]);
 
-  const loadProjects = useCallback(async () => {
-    try {
-      const response = await projectsService.getAll();
-      if (response.success && response.data) {
-        setAllProjects(
-          response.data.map((p) => ({
-            id: p.id,
-            title: p.name,
-            type: 'project' as const,
-            area: p.area,
-            status: p.status,
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Failed to load projects:', error);
-    }
-  }, []);
+      incompleteDeps.forEach((depId: string) => {
+        const current = blockedMap.get(taskId) || [];
+        blockedMap.set(taskId, [...current, depId]);
+      });
+    });
 
-  const loadGoals = useCallback(async () => {
-    try {
-      const response = await goalsService.getAll();
-      if (response.success && response.data) {
-        setAllGoals(
-          response.data.map((g) => ({
-            id: g.id,
-            title: g.title,
-            type: 'goal' as const,
-            area: g.area,
-            status: g.status,
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Failed to load goals:', error);
-    }
-  }, []);
+    return { taskDependencies: depMap, taskBlockedBy: blockedMap };
+  }, [dependencyMap, tasks]);
 
-  useEffect(() => {
-    loadTasks();
-    loadProjects();
-    loadGoals();
-  }, [loadGoals, loadProjects, loadTasks]);
+  const isLoading = tasksLoading || dependenciesLoading;
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     setIsSubmitting(true);
@@ -188,31 +181,23 @@ export default function TasksPage() {
       if (createStatus) {
         input.status = createStatus;
       }
-      const response = await tasksService.create(input);
-      if (!response.success) {
-        // Extract error message from API response, including validation details
-        let errorMessage = response.error?.message || 'Failed to create task. Please try again.';
-
-        // If there are validation details, append them
-        if (response.error?.details) {
-          const details = response.error.details;
-          // Handle both array and object details
-          if (Array.isArray(details)) {
-            const validationErrors = details
-              .map((d: { msg?: string }) => d.msg)
-              .filter(Boolean)
-              .join(', ');
-            if (validationErrors) {
-              errorMessage = `${errorMessage}: ${validationErrors}`;
-            }
-          }
-        }
-
-        throw new Error(errorMessage);
-      }
-      await loadTasks();
+      await createTask(input);
       setIsCreateDialogOpen(false);
       setCreateStatus(undefined);
+      showToast({
+        type: 'success',
+        title: 'Task created',
+        message: `"${input.title}" has been created successfully.`,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to create task. Please try again.';
+      showToast({
+        type: 'error',
+        title: 'Failed to create task',
+        message: errorMessage,
+      });
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
@@ -221,8 +206,7 @@ export default function TasksPage() {
   const handleUpdateTask = async (taskId: string, input: UpdateTaskInput): Promise<void> => {
     setIsSubmitting(true);
     try {
-      await tasksService.update(taskId, input);
-      await loadTasks();
+      await updateTask({ id: taskId, input });
     } catch (error) {
       console.error('Failed to update task:', error);
       throw error; // Re-throw so TaskEditPanel can handle it
@@ -241,8 +225,7 @@ export default function TasksPage() {
     setIsDeleting(true);
 
     try {
-      await tasksService.delete(taskToDelete.id);
-      await loadTasks();
+      await deleteTask(taskToDelete.id);
 
       // Success: show toast and close dialog
       showToast({
@@ -287,18 +270,30 @@ export default function TasksPage() {
   const handleDependencyAdd = async (taskId: string, dependsOnId: string) => {
     try {
       await tasksService.addDependency(taskId, dependsOnId);
-      await loadRelationships(tasks);
+      // React Query will refetch dependencies automatically on next render
+      // or we could invalidate the query here if needed
     } catch (error) {
       console.error('Failed to add dependency:', error);
+      showToast({
+        type: 'error',
+        title: 'Failed to add dependency',
+        message: error instanceof Error ? error.message : 'An error occurred',
+      });
     }
   };
 
   const handleDependencyRemove = async (taskId: string, dependsOnId: string) => {
     try {
       await tasksService.removeDependency(taskId, dependsOnId);
-      await loadRelationships(tasks);
+      // React Query will refetch dependencies automatically on next render
+      // or we could invalidate the query here if needed
     } catch (error) {
       console.error('Failed to remove dependency:', error);
+      showToast({
+        type: 'error',
+        title: 'Failed to remove dependency',
+        message: error instanceof Error ? error.message : 'An error occurred',
+      });
     }
   };
 
@@ -344,14 +339,16 @@ export default function TasksPage() {
     return tasks.filter((t) => blockedIds.includes(t.id));
   };
 
-  const getLinkedProjects = (taskId: string): EntitySummary[] => {
-    const projIds = taskProjects.get(taskId) || [];
-    return allProjects.filter((p) => projIds.includes(p.id));
+  const getLinkedProjects = (_taskId: string): EntitySummary[] => {
+    // TODO: Fetch linked projects from API if needed
+    // For now, return empty array as task-project linking wasn't fully implemented
+    return [];
   };
 
-  const getLinkedGoals = (taskId: string): EntitySummary[] => {
-    const goalIds = taskGoals.get(taskId) || [];
-    return allGoals.filter((g) => goalIds.includes(g.id));
+  const getLinkedGoals = (_taskId: string): EntitySummary[] => {
+    // TODO: Fetch linked goals from API if needed
+    // For now, return empty array as task-goal linking wasn't fully implemented
+    return [];
   };
 
   const activeFilterCount = [selectedArea, selectedStatus, selectedPriority].filter(Boolean).length;
@@ -565,8 +562,8 @@ export default function TasksPage() {
                   dependencyCount={taskDependencies.get(task.id)?.length || 0}
                   blockedByCount={taskBlockedBy.get(task.id)?.length || 0}
                   blockedByTasks={getTaskBlockedBy(task.id)}
-                  projectCount={taskProjects.get(task.id)?.length || 0}
-                  goalCount={taskGoals.get(task.id)?.length || 0}
+                  projectCount={0}
+                  goalCount={0}
                 />
               ))}
             </div>

@@ -1,12 +1,5 @@
 import { useState, useMemo } from 'react';
-import {
-  useTasks,
-  useHabits,
-  useMetrics,
-  useGoals,
-  useProjects,
-  useLogbook,
-} from '@/hooks/useGrowthSystem';
+import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import {
   CheckSquare,
   Calendar,
@@ -61,22 +54,19 @@ export default function DashboardPage() {
   const { isLeisureMode } = useMode();
   const { status: backendStatus } = useBackendStatus();
 
-  const { tasks, isLoading: tasksLoading, isError: tasksError } = useTasks();
-  const { habits, isError: habitsError } = useHabits();
-  const { metrics, isError: metricsError } = useMetrics();
-  const { goals, isError: goalsError } = useGoals();
-  const { projects, isLoading: projectsLoading, isError: projectsError } = useProjects();
-  const { entries, isError: entriesError } = useLogbook();
+  const {
+    tasks,
+    goals,
+    projects,
+    habits,
+    metrics,
+    logbookEntries: entries,
+    isLoading: dashboardLoading,
+    isError: dashboardError,
+  } = useGrowthSystemDashboard();
 
   // Check if any data source has a network error
-  const hasNetworkError =
-    tasksError ||
-    habitsError ||
-    metricsError ||
-    goalsError ||
-    projectsError ||
-    entriesError ||
-    !backendStatus.isOnline;
+  const hasNetworkError = dashboardError || !backendStatus.isOnline;
 
   const activeTasks = tasks.filter((t) => t.status !== 'Done' && t.status !== 'Cancelled');
   const activeHabits = habits.filter((h) => h.frequency === 'Daily');
@@ -142,28 +132,28 @@ export default function DashboardPage() {
               value={activeTasks.length}
               icon={<CheckSquare size={24} />}
               link={ROUTES.admin.tasks}
-              description={tasksError ? 'Connection error' : `${tasks.length} total tasks`}
+              description={dashboardError ? 'Connection error' : `${tasks.length} total tasks`}
             />
             <StatCard
               title="Metrics Tracked"
               value={metrics.length}
               icon={<TrendingUp size={24} />}
               link={ROUTES.admin.metrics}
-              description={metricsError ? 'Connection error' : 'Key performance indicators'}
+              description={dashboardError ? 'Connection error' : 'Key performance indicators'}
             />
             <StatCard
               title="Active Goals"
               value={activeGoals.length}
               icon={<Target size={24} />}
               link={ROUTES.admin.goals}
-              description={goalsError ? 'Connection error' : `${goals.length} total goals`}
+              description={dashboardError ? 'Connection error' : `${goals.length} total goals`}
             />
             <StatCard
               title="Active Projects"
               value={activeProjects.length}
               icon={<FolderKanban size={24} />}
               link={ROUTES.admin.projects}
-              description={projectsError ? 'Connection error' : `${projects.length} total projects`}
+              description={dashboardError ? 'Connection error' : `${projects.length} total projects`}
             />
           </>
         )}
@@ -172,14 +162,14 @@ export default function DashboardPage() {
           value={activeHabits.length}
           icon={<Calendar size={24} />}
           link={ROUTES.admin.habits}
-          description={habitsError ? 'Connection error' : `${habits.length} total habits`}
+          description={dashboardError ? 'Connection error' : `${habits.length} total habits`}
         />
         <StatCard
           title="Journal Entries"
           value={entries.length}
           icon={<BookOpen size={24} />}
           link={ROUTES.admin.logbook}
-          description={entriesError ? 'Connection error' : 'Daily reflections'}
+          description={dashboardError ? 'Connection error' : 'Daily reflections'}
         />
         {isLeisureMode && (
           <>
@@ -220,7 +210,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-800 p-5 rounded-lg border border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Recent Tasks</h2>
-            {tasksError ? (
+            {dashboardError ? (
               <div className="text-center py-6">
                 <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400 mx-auto mb-2" />
                 <p className="text-sm text-amber-600 dark:text-amber-400">Unable to load tasks</p>
@@ -228,7 +218,7 @@ export default function DashboardPage() {
                   Backend connection unavailable
                 </p>
               </div>
-            ) : tasksLoading ? (
+            ) : dashboardLoading ? (
               <div className="space-y-2 animate-pulse">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
@@ -274,7 +264,7 @@ export default function DashboardPage() {
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">
               Active Projects
             </h2>
-            {projectsError ? (
+            {dashboardError ? (
               <div className="text-center py-6">
                 <AlertCircle className="w-8 h-8 text-amber-500 dark:text-amber-400 mx-auto mb-2" />
                 <p className="text-sm text-amber-600 dark:text-amber-400">
@@ -284,7 +274,7 @@ export default function DashboardPage() {
                   Backend connection unavailable
                 </p>
               </div>
-            ) : projectsLoading ? (
+            ) : dashboardLoading ? (
               <div className="space-y-2 animate-pulse">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg" />
