@@ -31,6 +31,7 @@ import type {
   WeeklyReview,
   EntitySummary,
 } from './growth-system';
+import type { RewardWithRedemptions, WalletBalance, WalletTransaction } from './rewards';
 
 export interface ApiError {
   message: string;
@@ -168,6 +169,40 @@ export interface LogbookApiContract {
   linkHabit: (entryId: string, habitId: string) => Promise<ApiResponse<void>>;
   unlinkHabit: (entryId: string, habitId: string) => Promise<ApiResponse<void>>;
   getLinkedHabits: (entryId: string) => Promise<ApiListResponse<Habit>>;
+}
+
+/**
+ * Dashboard Summary API Contract
+ *
+ * This endpoint aggregates all dashboard data into a single response,
+ * reducing the number of API calls from 6-8 separate requests to 1.
+ *
+ * Request: GET /api/dashboard/summary
+ * - No query parameters required
+ * - Requires authentication (JWT token in Authorization header)
+ *
+ * Response: DashboardSummaryResponse
+ */
+export interface DashboardSummaryResponse {
+  tasks: Task[];
+  goals: Goal[];
+  projects: Project[];
+  habits: Habit[];
+  metrics: Metric[];
+  logbookEntries: LogbookEntry[];
+  rewards: RewardWithRedemptions[];
+  wallet: {
+    balance: WalletBalance;
+    recentTransactions: WalletTransaction[]; // Last 10 transactions
+  };
+}
+
+export interface DashboardSummaryRequest {
+  // Optional filters for limiting data returned
+  // If not provided, returns all data
+  includeCompleted?: boolean; // Include completed tasks/goals (default: false)
+  taskLimit?: number; // Limit number of tasks returned (default: all)
+  transactionLimit?: number; // Limit number of transactions (default: 10)
 }
 
 export interface AIApiContract {

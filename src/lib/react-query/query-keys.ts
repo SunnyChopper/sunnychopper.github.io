@@ -121,4 +121,34 @@ export const queryKeys = {
     detail: () => [...queryKeys.backendHealth.all, 'detail'] as const,
     markdown: () => ['markdown-backend-health'] as const,
   },
+
+  // Dashboard Summary (Growth System)
+  dashboard: {
+    all: ['dashboard'] as const,
+    summary: (options?: Record<string, unknown>) =>
+      options
+        ? ([...queryKeys.dashboard.all, 'summary', options] as const)
+        : ([...queryKeys.dashboard.all, 'summary'] as const),
+  },
+
+  // Wallet
+  wallet: {
+    all: ['wallet'] as const,
+    balance: () => [...queryKeys.wallet.all, 'balance'] as const,
+    transactions: (limit?: number) =>
+      limit
+        ? ([...queryKeys.wallet.all, 'transactions', limit] as const)
+        : ([...queryKeys.wallet.all, 'transactions'] as const),
+  },
+
+  // Rewards
+  rewards: {
+    all: ['rewards'] as const,
+    lists: () => [...queryKeys.rewards.all, 'list'] as const,
+    list: (filters?: Record<string, unknown>) =>
+      filters ? [...queryKeys.rewards.lists(), filters] : queryKeys.rewards.lists(),
+    details: () => [...queryKeys.rewards.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.rewards.details(), id] as const,
+    withRedemptions: () => [...queryKeys.rewards.all, 'with-redemptions'] as const,
+  },
 };
