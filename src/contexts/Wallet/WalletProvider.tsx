@@ -1,54 +1,22 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { walletService } from '@/services/rewards';
-import {
-  WalletContext,
-  type WalletContextType,
-  type WalletBalance,
-  type WalletTransaction,
-} from './types';
+import { useWallet, useWalletMutations } from '@/hooks/useWallet';
+import { useQueryClient } from '@tanstack/react-query';
+import { WalletContext, type WalletContextType, type WalletTransaction } from './types';
 
 interface WalletProviderProps {
   children: ReactNode;
 }
 
 export const WalletProvider = ({ children }: WalletProviderProps) => {
-  const [balance, setBalance] = useState<WalletBalance | null>(null);
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { balance, transactions, loading, error } = useWallet();
+  const { addPoints: addPointsMutation, spendPoints: spendPointsMutation } = useWalletMutations();
+  const queryClient = useQueryClient();
 
   const refreshWallet = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [balanceResponse, transactionsResponse] = await Promise.all([
-        walletService.getBalance(),
-        walletService.getTransactions(50),
-      ]);
-
-      if (balanceResponse.success && balanceResponse.data) {
-        setBalance(balanceResponse.data);
-      } else {
-        setError(balanceResponse.error?.message || 'Failed to load wallet');
-      }
-
-      if (transactionsResponse.success && transactionsResponse.data) {
-        setTransactions(transactionsResponse.data);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load wallet';
-      setError(errorMessage);
-      console.error('Error loading wallet:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshWallet();
-  }, [refreshWallet]);
+    // Invalidate queries to trigger refetch
+    await queryClient.invalidateQueries({ queryKey: ['wallet'] });
+  }, [queryClient]);
 
   const addPoints = useCallback(
     async (
@@ -58,30 +26,15 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
       sourceEntityType?: 'task' | 'reward' | null,
       sourceEntityId?: string | null
     ) => {
-      try {
-        setError(null);
-        const response = await walletService.addPoints(
-          amount,
-          source,
-          description,
-          sourceEntityType,
-          sourceEntityId
-        );
-
-        if (response.success && response.data) {
-          setBalance(response.data.balance);
-          setTransactions((prev) => [response.data!.transaction, ...prev]);
-        } else {
-          setError(response.error?.message || 'Failed to add points');
-          throw new Error(response.error?.message || 'Failed to add points');
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to add points';
-        setError(errorMessage);
-        throw err;
-      }
+      await addPointsMutation({
+        amount,
+        source,
+        description,
+        sourceEntityType,
+        sourceEntityId,
+      });
     },
-    []
+    [addPointsMutation]
   );
 
   const spendPoints = useCallback(
@@ -92,37 +45,22 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
       sourceEntityType?: 'task' | 'reward' | null,
       sourceEntityId?: string | null
     ) => {
-      try {
-        setError(null);
-        const response = await walletService.spendPoints(
-          amount,
-          source,
-          description,
-          sourceEntityType,
-          sourceEntityId
-        );
-
-        if (response.success && response.data) {
-          setBalance(response.data.balance);
-          setTransactions((prev) => [response.data!.transaction, ...prev]);
-        } else {
-          setError(response.error?.message || 'Failed to spend points');
-          throw new Error(response.error?.message || 'Failed to spend points');
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to spend points';
-        setError(errorMessage);
-        throw err;
-      }
+      await spendPointsMutation({
+        amount,
+        source,
+        description,
+        sourceEntityType,
+        sourceEntityId,
+      });
     },
-    []
+    [spendPointsMutation]
   );
 
   const value: WalletContextType = {
     balance,
     transactions,
     loading,
-    error,
+    error: error ? (error instanceof Error ? error.message : String(error)) : null,
     refreshWallet,
     addPoints,
     spendPoints,
