@@ -7,7 +7,6 @@ import DashboardRedirect from './components/routing/DashboardRedirect';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import AdminLayout from './components/templates/AdminLayout';
 import MainLayout from './components/templates/MainLayout';
-import { BackendStatusProvider } from './contexts/BackendStatusContext';
 import { KnowledgeVaultProvider } from './contexts/KnowledgeVault';
 import { ModeProvider } from './contexts/Mode';
 import { usePageTracking } from './hooks/usePageTracking';
@@ -146,15 +145,13 @@ function App() {
   return (
     <>
       <Loader isLoading={isLoading} />
-      <BackendStatusProvider>
-        <ModeProvider>
-          <KnowledgeVaultProvider>
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </KnowledgeVaultProvider>
-        </ModeProvider>
-      </BackendStatusProvider>
+      <ModeProvider>
+        <KnowledgeVaultProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </KnowledgeVaultProvider>
+      </ModeProvider>
     </>
   );
 }

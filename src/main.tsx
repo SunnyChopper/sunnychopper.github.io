@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { configureAmplify } from './lib/aws-config';
 import { AuthProvider } from './contexts/Auth';
+import { BackendStatusProvider } from './contexts/BackendStatusContext';
 import { WalletProvider } from './contexts/Wallet';
 import { RewardsProvider } from './contexts/Rewards';
 import './index.css';
@@ -88,13 +89,15 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <WalletProvider>
-          <RewardsProvider>
-            <App />
-          </RewardsProvider>
-        </WalletProvider>
-      </AuthProvider>
+      <BackendStatusProvider>
+        <AuthProvider>
+          <WalletProvider>
+            <RewardsProvider>
+              <App />
+            </RewardsProvider>
+          </WalletProvider>
+        </AuthProvider>
+      </BackendStatusProvider>
     </QueryClientProvider>
   </StrictMode>
 );
