@@ -4,3 +4,4 @@ export { metricsService } from './metrics.service';
 export { goalsService } from './goals.service';
 export { projectsService } from './projects.service';
 export { logbookService } from './logbook.service';
+export { dashboardService } from './dashboard.service';
