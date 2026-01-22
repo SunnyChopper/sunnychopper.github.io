@@ -1,6 +1,13 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import type { ApiResponse, ApiError, NoteDraft, ModePreference } from '@/types/api-contracts';
+import type {
+  ApiResponse,
+  ApiError,
+  NoteDraft,
+  ModePreference,
+  DashboardSummaryResponse,
+  DashboardSummaryRequest,
+} from '@/types/api-contracts';
 import { authService } from '@/lib/auth/auth.service';
 import { ROUTES } from '@/routes';
 import type { z } from 'zod';
@@ -637,6 +644,25 @@ class ApiClient {
 
   async setModePreference(mode: 'work' | 'leisure'): Promise<ApiResponse<void>> {
     return this.post<void>('/preferences/mode', { mode });
+  }
+
+  // Dashboard Summary (aggregated endpoint)
+  async getDashboardSummary(
+    options?: DashboardSummaryRequest
+  ): Promise<ApiResponse<DashboardSummaryResponse>> {
+    const queryParams = new URLSearchParams();
+    if (options?.includeCompleted !== undefined) {
+      queryParams.append('includeCompleted', String(options.includeCompleted));
+    }
+    if (options?.taskLimit) {
+      queryParams.append('taskLimit', String(options.taskLimit));
+    }
+    if (options?.transactionLimit) {
+      queryParams.append('transactionLimit', String(options.transactionLimit));
+    }
+
+    const endpoint = `/dashboard/summary${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.get<DashboardSummaryResponse>(endpoint);
   }
 
   // Feature Configs
