@@ -296,7 +296,7 @@ Make it actionable and specific to the goal's area (${goal.area}).`;
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
       const activeGoals = goals.filter(
-        (g) => g.status === 'Active' || g.status === 'OnTrack' || g.status === 'AtRisk'
+        (g) => g.status === 'Active' || g.status === 'On Track' || g.status === 'At Risk'
       );
 
       const goalsSummary = activeGoals.map((g) => ({

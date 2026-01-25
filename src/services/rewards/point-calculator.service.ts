@@ -16,7 +16,7 @@ const AREA_MULTIPLIERS: Record<Area, number> = {
   Love: 1.2,
   Happiness: 1.1,
   Operations: 1.0,
-  DayJob: 1.1,
+  'Day Job': 1.1,
 };
 
 export const pointCalculatorService = {

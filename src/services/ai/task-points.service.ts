@@ -44,7 +44,7 @@ Your job is to analyze a task and calculate an appropriate point value that:
 Base point calculation:
 - Use size (story points/hours) as the primary factor
 - Apply multipliers for priority (P1=2.0x, P2=1.5x, P3=1.2x, P4=1.0x)
-- Apply multipliers for area importance (Health=1.3x, Wealth=1.2x, Love=1.2x, Happiness=1.1x, Operations=1.0x, DayJob=1.1x)
+- Apply multipliers for area importance (Health=1.3x, Wealth=1.2x, Love=1.2x, Happiness=1.1x, Operations=1.0x, "Day Job"=1.1x)
 - Apply multipliers for complexity and skill requirements
 
 Typical ranges:

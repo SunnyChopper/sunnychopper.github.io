@@ -243,7 +243,7 @@ Suggest 5-10 relevant tags with relevance scores.`;
 
       const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
 
-      const prompt = `Suggest the most appropriate area for this note. Available areas: Health, Wealth, Love, Happiness, Operations, DayJob.
+      const prompt = `Suggest the most appropriate area for this note. Available areas: Health, Wealth, Love, Happiness, Operations, "Day Job".
 
 Title: ${title}
 Content:
