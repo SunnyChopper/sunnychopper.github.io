@@ -14,6 +14,10 @@
 - **Cognito env usage**: `src/lib/aws-config.ts`, `src/lib/auth/cognito-config.ts`.
 - **Build quirks**: `vite.config.ts` (Node polyfills + `async_hooks` polyfill for LangGraph; copies `public/CNAME` → `dist/CNAME`).
 
+## Normalization & DTOs
+
+- Read and follow: `docs/reference/normalization-and-dtos.md`
+
 ## Commands (source of truth: `package.json`)
 
 - **Dev**: `npm run dev`
