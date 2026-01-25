@@ -9,8 +9,6 @@ import type {
   FilterOptions,
   PaginatedResponse,
   DependencyGraph,
-  TaskStatus,
-  Area,
 } from '@/types/growth-system';
 import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 
@@ -22,112 +20,14 @@ interface BackendPaginatedResponse<T> {
   hasMore: boolean;
 }
 
-/**
- * Normalizes task status from API format (with spaces) to frontend format (without spaces).
- * The backend returns statuses like "Not Started" but the frontend expects "NotStarted".
- */
-function normalizeTaskStatus(status: string): TaskStatus {
-  const statusMap: Record<string, TaskStatus> = {
-    'Not Started': 'NotStarted',
-    'In Progress': 'InProgress',
-    'On Hold': 'OnHold',
-    Blocked: 'Blocked',
-    Done: 'Done',
-    Cancelled: 'Cancelled',
-  };
-
-  // If already in correct format, return as-is
-  if (
-    statusMap[status] === undefined &&
-    ['NotStarted', 'InProgress', 'OnHold', 'Blocked', 'Done', 'Cancelled'].includes(status)
-  ) {
-    return status as TaskStatus;
-  }
-
-  return statusMap[status] || (status as TaskStatus);
-}
-
-/**
- * Denormalizes task status from frontend format (without spaces) to API format (with spaces).
- * The frontend uses statuses like "NotStarted" but the backend expects "Not Started".
- */
-function denormalizeTaskStatus(status: TaskStatus): string {
-  const statusMap: Record<TaskStatus, string> = {
-    NotStarted: 'Not Started',
-    InProgress: 'In Progress',
-    Blocked: 'Blocked',
-    OnHold: 'On Hold',
-    Done: 'Done',
-    Cancelled: 'Cancelled',
-  };
-
-  return statusMap[status] || status;
-}
-
-/**
- * Normalizes area from API format (with spaces) to frontend format (without spaces).
- * The backend returns areas like "Day Job" but the frontend expects "DayJob".
- */
-function normalizeArea(area: string): Area {
-  const areaMap: Record<string, Area> = {
-    'Day Job': 'DayJob',
-    Health: 'Health',
-    Wealth: 'Wealth',
-    Love: 'Love',
-    Happiness: 'Happiness',
-    Operations: 'Operations',
-  };
-
-  // If already in correct format, return as-is
-  if (
-    areaMap[area] === undefined &&
-    ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'].includes(area)
-  ) {
-    return area as Area;
-  }
-
-  return areaMap[area] || (area as Area);
-}
-
-/**
- * Denormalizes area from frontend format (without spaces) to API format (with spaces).
- * The frontend uses areas like "DayJob" but the backend expects "Day Job".
- */
-function denormalizeArea(area: Area): string {
-  const areaMap: Record<Area, string> = {
-    Health: 'Health',
-    Wealth: 'Wealth',
-    Love: 'Love',
-    Happiness: 'Happiness',
-    Operations: 'Operations',
-    DayJob: 'Day Job',
-  };
-
-  return areaMap[area] || area;
-}
-
-/**
- * Normalizes a task object by converting status and area from API format to frontend format.
- */
-function normalizeTask(task: Task): Task {
-  return {
-    ...task,
-    status: normalizeTaskStatus(task.status as string),
-    area: normalizeArea(task.area as string),
-  };
-}
-
 export const tasksService = {
   async getAll(filters?: FilterOptions): Promise<PaginatedResponse<Task>> {
     // Build query parameters
     const queryParams = new URLSearchParams();
     if (filters?.search) queryParams.append('search', filters.search);
-    // Convert status from frontend format (camelCase) to backend format (with spaces)
-    if (filters?.status)
-      queryParams.append('status', denormalizeTaskStatus(filters.status as TaskStatus));
+    if (filters?.status) queryParams.append('status', filters.status);
     if (filters?.priority) queryParams.append('priority', filters.priority);
-    // Convert area from frontend format (camelCase) to backend format (with spaces)
-    if (filters?.area) queryParams.append('area', denormalizeArea(filters.area));
+    if (filters?.area) queryParams.append('area', filters.area);
     if (filters?.subCategory) queryParams.append('subCategory', filters.subCategory);
     if (filters?.projectId) queryParams.append('projectId', filters.projectId);
     if (filters?.goalId) queryParams.append('goalId', filters.goalId);
@@ -141,11 +41,9 @@ export const tasksService = {
     const response = await apiClient.get<BackendPaginatedResponse<Task>>(endpoint);
 
     if (response.success && response.data) {
-      // Normalize task statuses from API format (with spaces) to frontend format (without spaces)
       const tasks = response.data.tasks || [];
-      const normalizedTasks = tasks.map(normalizeTask);
       return {
-        data: normalizedTasks,
+        data: tasks,
         total: response.data.total,
         page: response.data.page,
         pageSize: response.data.pageSize,
@@ -158,12 +56,6 @@ export const tasksService = {
 
   async getById(id: string): Promise<ApiResponse<Task>> {
     const response = await apiClient.get<Task>(`/tasks/${id}`);
-    if (response.success && response.data) {
-      return {
-        ...response,
-        data: normalizeTask(response.data),
-      };
-    }
     return response;
   },
 
@@ -187,45 +79,21 @@ export const tasksService = {
     }
 
     // Prepare request body matching backend schema
-    // Convert area and status from frontend format (camelCase) to backend format (with spaces)
-    const requestBody: Omit<CreateTaskInput, 'area' | 'status'> & {
-      area: string;
-      status?: string;
-    } = {
+    const requestBody = {
       ...input,
-      area: denormalizeArea(input.area),
       pointValue: pointValue ?? undefined,
-      status: input.status ? denormalizeTaskStatus(input.status) : undefined,
     };
 
     const response = await apiClient.post<Task>('/tasks', requestBody);
-    if (response.success && response.data) {
-      return {
-        ...response,
-        data: normalizeTask(response.data),
-      };
-    }
     return response;
   },
 
   async update(id: string, input: UpdateTaskInput): Promise<ApiResponse<Task>> {
-    // Convert area and status from frontend format (camelCase) to backend format (with spaces)
-    const requestBody: Omit<UpdateTaskInput, 'area' | 'status'> & {
-      area?: string;
-      status?: string;
-    } = {
+    const requestBody = {
       ...input,
-      area: input.area ? denormalizeArea(input.area) : undefined,
-      status: input.status ? denormalizeTaskStatus(input.status) : undefined,
     };
 
     const response = await apiClient.patch<Task>(`/tasks/${id}`, requestBody);
-    if (response.success && response.data) {
-      return {
-        ...response,
-        data: normalizeTask(response.data),
-      };
-    }
     return response;
   },
 
@@ -271,11 +139,9 @@ export const tasksService = {
       `/projects/${projectId}/tasks`
     );
     if (response.success && response.data) {
-      // Normalize task statuses from API format to frontend format
       const tasks = response.data.tasks || [];
-      const normalizedTasks = tasks.map(normalizeTask);
       return {
-        data: normalizedTasks,
+        data: tasks,
         total: response.data.total,
         success: true,
       };
@@ -296,11 +162,9 @@ export const tasksService = {
   async getByGoal(goalId: string): Promise<ApiListResponse<Task>> {
     const response = await apiClient.get<BackendPaginatedResponse<Task>>(`/goals/${goalId}/tasks`);
     if (response.success && response.data) {
-      // Normalize task statuses from API format to frontend format
       const tasks = response.data.tasks || [];
-      const normalizedTasks = tasks.map(normalizeTask);
       return {
-        data: normalizedTasks,
+        data: tasks,
         total: response.data.total,
         success: true,
       };

@@ -1,8 +1,14 @@
 import { apiClient } from '@/lib/api-client';
-import type { DashboardSummaryResponse, DashboardSummaryRequest } from '@/types/api-contracts';
+import type {
+  ApiResponse,
+  DashboardSummaryResponse,
+  DashboardSummaryRequest,
+} from '@/types/api-contracts';
 
 export const dashboardService = {
-  getSummary: async (options?: DashboardSummaryRequest) => {
+  getSummary: async (
+    options?: DashboardSummaryRequest
+  ): Promise<ApiResponse<DashboardSummaryResponse>> => {
     const queryParams = new URLSearchParams();
     if (options?.includeCompleted !== undefined) {
       queryParams.append('includeCompleted', String(options.includeCompleted));
@@ -15,6 +21,7 @@ export const dashboardService = {
     }
 
     const endpoint = `/growth-system/dashboard${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return apiClient.get<DashboardSummaryResponse>(endpoint);
+    const response = await apiClient.get<DashboardSummaryResponse>(endpoint);
+    return response;
   },
 };
