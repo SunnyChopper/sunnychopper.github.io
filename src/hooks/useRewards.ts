@@ -9,12 +9,7 @@ import type { CreateRewardInput, UpdateRewardInput, RewardCategory } from '@/typ
  * Hook to fetch all rewards with redemptions
  */
 export function useRewards() {
-  const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
-
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
 
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.rewards.withRedemptions(),
@@ -33,7 +28,6 @@ export function useRewards() {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
     staleTime: 10 * 60 * 1000, // 10 minutes - rewards rarely change
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
@@ -66,7 +60,7 @@ export function useRewardMutations() {
     mutationFn: (input: CreateRewardInput) => rewardsService.create(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.rewards.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -75,7 +69,7 @@ export function useRewardMutations() {
       rewardsService.update(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.rewards.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -83,7 +77,7 @@ export function useRewardMutations() {
     mutationFn: (id: string) => rewardsService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.rewards.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -94,7 +88,7 @@ export function useRewardMutations() {
       // Invalidate both rewards and wallet queries
       queryClient.invalidateQueries({ queryKey: queryKeys.rewards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 

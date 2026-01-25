@@ -9,12 +9,7 @@ import type { WalletTransaction } from '@/types/rewards';
  * Hook to fetch wallet balance
  */
 export function useWalletBalance() {
-  const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
-
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
 
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.wallet.balance(),
@@ -33,7 +28,6 @@ export function useWalletBalance() {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
     staleTime: 5 * 60 * 1000, // 5 minutes - balance doesn't change that frequently
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
@@ -52,12 +46,7 @@ export function useWalletBalance() {
  * Hook to fetch wallet transactions
  */
 export function useWalletTransactions(limit: number = 50) {
-  const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
-
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
 
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.wallet.transactions(limit),
@@ -76,7 +65,6 @@ export function useWalletTransactions(limit: number = 50) {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
     staleTime: 5 * 60 * 1000, // 5 minutes - transactions don't change that frequently
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
@@ -132,7 +120,7 @@ export function useWalletMutations() {
     onSuccess: () => {
       // Invalidate wallet queries to refetch balance and transactions
       queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -161,7 +149,7 @@ export function useWalletMutations() {
     onSuccess: () => {
       // Invalidate wallet queries to refetch balance and transactions
       queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
