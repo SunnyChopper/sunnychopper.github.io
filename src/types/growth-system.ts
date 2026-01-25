@@ -1,4 +1,4 @@
-export type Area = 'Health' | 'Wealth' | 'Love' | 'Happiness' | 'Operations' | 'DayJob';
+export type Area = 'Health' | 'Wealth' | 'Love' | 'Happiness' | 'Operations' | 'Day Job';
 
 export type SubCategory =
   | 'Physical'
@@ -11,7 +11,7 @@ export type SubCategory =
   | 'Expenses'
   | 'Investments'
   | 'Debt'
-  | 'NetWorth'
+  | 'Net Worth'
   | 'Romantic'
   | 'Family'
   | 'Friends'
@@ -31,9 +31,15 @@ export type SubCategory =
 
 export type Priority = 'P1' | 'P2' | 'P3' | 'P4';
 
-export type TaskStatus = 'NotStarted' | 'InProgress' | 'Blocked' | 'OnHold' | 'Done' | 'Cancelled';
-export type ProjectStatus = 'Planning' | 'Active' | 'OnHold' | 'Completed' | 'Cancelled';
-export type GoalStatus = 'Planning' | 'Active' | 'OnTrack' | 'AtRisk' | 'Achieved' | 'Abandoned';
+export type TaskStatus =
+  | 'Not Started'
+  | 'In Progress'
+  | 'Blocked'
+  | 'On Hold'
+  | 'Done'
+  | 'Cancelled';
+export type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed' | 'Cancelled';
+export type GoalStatus = 'Planning' | 'Active' | 'On Track' | 'At Risk' | 'Achieved' | 'Abandoned';
 export type MetricStatus = 'Active' | 'Paused' | 'Archived';
 
 export type TimeHorizon = 'Yearly' | 'Quarterly' | 'Monthly' | 'Weekly' | 'Daily';
@@ -445,7 +451,7 @@ export interface UpdateProjectInput {
   status?: ProjectStatus;
   impact?: number;
   startDate?: string;
-  endDate?: string;
+  targetEndDate?: string;
   completedDate?: string;
   notes?: string;
 }

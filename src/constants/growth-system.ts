@@ -20,34 +20,34 @@ export const AREAS: readonly Area[] = [
   'Love',
   'Happiness',
   'Operations',
-  'DayJob',
+  'Day Job',
 ];
 
 export const SUBCATEGORIES_BY_AREA: Record<Area, readonly SubCategory[]> = {
   Health: ['Physical', 'Mental', 'Spiritual', 'Nutrition', 'Sleep', 'Exercise'],
-  Wealth: ['Income', 'Expenses', 'Investments', 'Debt', 'NetWorth'],
+  Wealth: ['Income', 'Expenses', 'Investments', 'Debt', 'Net Worth'],
   Love: ['Romantic', 'Family', 'Friends', 'Social'],
   Happiness: ['Joy', 'Gratitude', 'Purpose', 'Peace'],
   Operations: ['Productivity', 'Organization', 'Systems', 'Habits'],
-  DayJob: ['Career', 'Skills', 'Projects', 'Performance'],
+  'Day Job': ['Career', 'Skills', 'Projects', 'Performance'],
 };
 
 export const PRIORITIES: readonly Priority[] = ['P1', 'P2', 'P3', 'P4'];
 
 export const TASK_STATUSES: readonly TaskStatus[] = [
-  'NotStarted',
-  'InProgress',
+  'Not Started',
+  'In Progress',
   'Blocked',
-  'OnHold',
+  'On Hold',
   'Done',
   'Cancelled',
 ];
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  NotStarted: 'Not Started',
-  InProgress: 'In Progress',
+  'Not Started': 'Not Started',
+  'In Progress': 'In Progress',
   Blocked: 'Blocked',
-  OnHold: 'On Hold',
+  'On Hold': 'On Hold',
   Done: 'Done',
   Cancelled: 'Cancelled',
 };
@@ -55,7 +55,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   Planning: 'Planning',
   Active: 'Active',
-  OnHold: 'On Hold',
+  'On Hold': 'On Hold',
   Completed: 'Completed',
   Cancelled: 'Cancelled',
 };
@@ -63,8 +63,8 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
 export const GOAL_STATUS_LABELS: Record<GoalStatus, string> = {
   Planning: 'Planning',
   Active: 'Active',
-  OnTrack: 'On Track',
-  AtRisk: 'At Risk',
+  'On Track': 'On Track',
+  'At Risk': 'At Risk',
   Achieved: 'Achieved',
   Abandoned: 'Abandoned',
 };
@@ -75,7 +75,7 @@ export const AREA_LABELS: Record<Area, string> = {
   Love: 'Love',
   Happiness: 'Happiness',
   Operations: 'Operations',
-  DayJob: 'Day Job',
+  'Day Job': 'Day Job',
 };
 
 export const SUBCATEGORY_LABELS: Record<SubCategory, string> = {
@@ -91,7 +91,7 @@ export const SUBCATEGORY_LABELS: Record<SubCategory, string> = {
   Expenses: 'Expenses',
   Investments: 'Investments',
   Debt: 'Debt',
-  NetWorth: 'Net Worth',
+  'Net Worth': 'Net Worth',
   // Love
   Romantic: 'Romantic',
   Family: 'Family',
@@ -107,7 +107,7 @@ export const SUBCATEGORY_LABELS: Record<SubCategory, string> = {
   Organization: 'Organization',
   Systems: 'Systems',
   Habits: 'Habits',
-  // DayJob
+  // Day Job
   Career: 'Career',
   Skills: 'Skills',
   Projects: 'Projects',
@@ -124,8 +124,8 @@ export const GOAL_TIME_HORIZONS: readonly TimeHorizon[] = [
 export const GOAL_STATUSES: readonly GoalStatus[] = [
   'Planning',
   'Active',
-  'OnTrack',
-  'AtRisk',
+  'On Track',
+  'At Risk',
   'Achieved',
   'Abandoned',
 ];
@@ -133,7 +133,7 @@ export const GOAL_STATUSES: readonly GoalStatus[] = [
 export const PROJECT_STATUSES: readonly ProjectStatus[] = [
   'Planning',
   'Active',
-  'OnHold',
+  'On Hold',
   'Completed',
   'Cancelled',
 ];
@@ -168,7 +168,7 @@ export function getAreaColor(area: Area): string {
     Love: '#ec4899',
     Happiness: '#f97316',
     Operations: '#6b7280',
-    DayJob: '#3b82f6',
+    'Day Job': '#3b82f6',
   };
   return colors[area];
 }
