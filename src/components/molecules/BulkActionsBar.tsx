@@ -56,8 +56,8 @@ export function BulkActionsBar({
                     [
                       'Planning',
                       'Active',
-                      'OnTrack',
-                      'AtRisk',
+                      'On Track',
+                      'At Risk',
                       'Achieved',
                       'Abandoned',
                     ] as GoalStatus[]

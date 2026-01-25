@@ -12,10 +12,13 @@ interface StatusBadgeProps {
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
-  NotStarted: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300' },
-  InProgress: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' },
+  'Not Started': { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-300' },
+  'In Progress': {
+    bg: 'bg-blue-100 dark:bg-blue-900/30',
+    text: 'text-blue-700 dark:text-blue-400',
+  },
   Blocked: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400' },
-  OnHold: {
+  'On Hold': {
     bg: 'bg-yellow-100 dark:bg-yellow-900/30',
     text: 'text-yellow-700 dark:text-yellow-400',
   },
@@ -30,8 +33,11 @@ const statusColors: Record<string, { bg: string; text: string }> = {
     bg: 'bg-green-100 dark:bg-green-900/30',
     text: 'text-green-700 dark:text-green-400',
   },
-  OnTrack: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400' },
-  AtRisk: {
+  'On Track': {
+    bg: 'bg-green-100 dark:bg-green-900/30',
+    text: 'text-green-700 dark:text-green-400',
+  },
+  'At Risk': {
     bg: 'bg-orange-100 dark:bg-orange-900/30',
     text: 'text-orange-700 dark:text-orange-400',
   },
@@ -51,7 +57,7 @@ const sizeClasses = {
 };
 
 export function StatusBadge({ status, size = 'md', className = '' }: StatusBadgeProps) {
-  const colors = statusColors[status] || statusColors.NotStarted;
+  const colors = statusColors[status] || statusColors['Not Started'];
   const isCompleted = status === 'Done' || status === 'Completed' || status === 'Achieved';
   const isCancelled = status === 'Cancelled' || status === 'Abandoned';
 

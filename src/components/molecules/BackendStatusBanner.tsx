@@ -4,7 +4,7 @@ import Button from '@/components/atoms/Button';
 import { useState } from 'react';
 import { logger } from '@/lib/logger';
 
-export function BackendStatusBanner() {
+export function BackendStatusBanner({ className }: { className?: string }) {
   const { status, checkConnection } = useBackendStatus();
   const [isRetrying, setIsRetrying] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -30,7 +30,9 @@ export function BackendStatusBanner() {
   };
 
   return (
-    <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-6 py-3">
+    <div
+      className={`bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 px-6 py-3 ${className}`}
+    >
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />

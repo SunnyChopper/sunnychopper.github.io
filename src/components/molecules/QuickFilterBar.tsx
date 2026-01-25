@@ -40,8 +40,8 @@ export function QuickFilterBar({
       icon: AlertCircle,
       color:
         'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800',
-      count: (goals) => goals.filter((g) => g.status === 'AtRisk').length,
-      filter: (goal) => goal.status === 'AtRisk',
+      count: (goals) => goals.filter((g) => g.status === 'At Risk').length,
+      filter: (goal) => goal.status === 'At Risk',
     },
     {
       id: 'due_this_week',

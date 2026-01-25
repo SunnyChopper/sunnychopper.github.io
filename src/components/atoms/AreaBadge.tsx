@@ -16,7 +16,7 @@ const areaColors: Record<Area, { bg: string; text: string }> = {
     text: 'text-orange-700 dark:text-orange-400',
   },
   Operations: { bg: 'bg-gray-100 dark:bg-gray-900/30', text: 'text-gray-700 dark:text-gray-400' },
-  DayJob: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' },
+  'Day Job': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' },
 };
 
 const sizeClasses = {
@@ -25,9 +25,18 @@ const sizeClasses = {
   lg: 'px-3 py-1.5 text-base',
 };
 
+const defaultColors = {
+  bg: 'bg-gray-100 dark:bg-gray-900/30',
+  text: 'text-gray-700 dark:text-gray-400',
+};
+
 export function AreaBadge({ area, size = 'md', className = '' }: AreaBadgeProps) {
-  const colors = areaColors[area];
-  const label = AREA_LABELS[area];
+  const colors = areaColors[area] || defaultColors;
+  const label = AREA_LABELS[area] || area;
+
+  if (!areaColors[area]) {
+    console.warn(`AreaBadge: Unknown area "${area}". Using default colors.`);
+  }
 
   return (
     <span

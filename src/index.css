@@ -294,10 +294,91 @@
     list-style-type: lower-roman;
   }
 
-  /* Reader mode scrollbar styling */
+  /* Mac-like scrollbar styling - Global application */
+  /* Thin, subtle scrollbars that auto-hide (show on hover/interaction) */
+  
+  /* Firefox - thin scrollbar, hidden by default, shown on hover */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  /* Show scrollbar on hover for scrollable elements */
+  *:hover {
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  }
+
+  .dark *:hover {
+    scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+  }
+
+  /* WebKit browsers (Chrome, Safari, Edge) - Mac-like auto-hide scrollbars */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Hide scrollbar thumb by default, show on hover (Mac-like behavior) */
+  *::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 0.2s ease;
+  }
+
+  /* Show scrollbar on hover - Light mode */
+  *:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.3);
+  }
+
+  *:hover::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.5);
+  }
+
+  *:hover::-webkit-scrollbar-thumb:active {
+    background-color: rgba(156, 163, 175, 0.7);
+  }
+
+  /* Show scrollbar on hover - Dark mode */
+  .dark *:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.4);
+  }
+
+  .dark *:hover::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.6);
+  }
+
+  .dark *:hover::-webkit-scrollbar-thumb:active {
+    background-color: rgba(156, 163, 175, 0.8);
+  }
+
+  /* Reader mode scrollbar - inherits global styling */
   .reader-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    scrollbar-color: transparent transparent;
+  }
+
+  .reader-scrollbar:hover {
+    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  }
+
+  .dark .reader-scrollbar:hover {
+    scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+  }
+
+  /* Hide scrollbar utility - completely removes scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
 
   /* Task list (checkbox) styling for GFM */
