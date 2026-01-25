@@ -8,7 +8,7 @@ import type {
 } from '@/types/knowledge-vault';
 import type { Area } from '@/types/growth-system';
 
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
+const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 
 interface FlashcardFormProps {
   flashcard?: Flashcard;

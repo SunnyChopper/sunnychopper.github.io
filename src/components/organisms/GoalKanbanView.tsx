@@ -36,8 +36,8 @@ const KANBAN_COLUMNS: { status: GoalStatus; label: string; color: string }[] = [
     color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
   },
   { status: 'Active', label: 'Active', color: 'bg-blue-500 text-white' },
-  { status: 'OnTrack', label: 'On Track', color: 'bg-green-500 text-white' },
-  { status: 'AtRisk', label: 'At Risk', color: 'bg-orange-500 text-white' },
+  { status: 'On Track', label: 'On Track', color: 'bg-green-500 text-white' },
+  { status: 'At Risk', label: 'At Risk', color: 'bg-orange-500 text-white' },
   { status: 'Achieved', label: 'Achieved', color: 'bg-purple-500 text-white' },
 ];
 

@@ -58,7 +58,7 @@ export function AIInsightsWidget() {
     // Calculate data signatures to detect actual changes
     const tasksDone = tasks.filter((t: Task) => t.status === 'Done').length;
     const goalsActive = goals.filter((g: Goal) => g.status === 'Active').length;
-    const goalsAtRisk = goals.filter((g: Goal) => g.status === 'AtRisk').length;
+    const goalsAtRisk = goals.filter((g: Goal) => g.status === 'At Risk').length;
 
     const currentData = {
       tasksLength: tasks.length,
@@ -135,7 +135,7 @@ export function AIInsightsWidget() {
     }
 
     const highPriorityTasks = tasks.filter(
-      (t) => t.priority === 'P1' && (t.status === 'NotStarted' || t.status === 'InProgress')
+      (t) => t.priority === 'P1' && (t.status === 'Not Started' || t.status === 'In Progress')
     );
     if (highPriorityTasks.length > 0) {
       newInsights.push({
@@ -151,7 +151,7 @@ export function AIInsightsWidget() {
       });
     }
 
-    const atRiskGoals = goals.filter((g: Goal) => g.status === 'AtRisk');
+    const atRiskGoals = goals.filter((g: Goal) => g.status === 'At Risk');
     if (atRiskGoals.length > 0) {
       newInsights.push({
         id: 'at-risk-goals',

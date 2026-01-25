@@ -24,6 +24,19 @@ interface MorningLaunchpadProps {
 }
 
 export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
+  return (
+    <AnimatePresence>
+      {isOpen && <MorningLaunchpadContent isOpen={isOpen} onClose={onClose} />}
+    </AnimatePresence>
+  );
+}
+
+interface MorningLaunchpadContentProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function MorningLaunchpadContent({ isOpen, onClose }: MorningLaunchpadContentProps) {
   const navigate = useNavigate();
   const { tasks, updateTask } = useTasks();
   const { habits } = useHabits();
@@ -224,310 +237,302 @@ export function MorningLaunchpad({ isOpen, onClose }: MorningLaunchpadProps) {
   }, [isOpen, onClose]);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-md z-40"
+      />
+      <div className="fixed inset-0 z-50 overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md z-40"
-          />
-          <div className="fixed inset-0 z-50 overflow-hidden flex flex-col">
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden"
-              >
-                <motion.div
-                  initial={{ x: -100, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -100, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  className="flex-1 bg-gray-900 dark:bg-gray-950 text-white overflow-y-auto"
-                >
-                  <div className="p-8 lg:p-12">
-                    <div className="flex items-center gap-3 mb-8">
-                      <Target className="w-10 h-10 text-blue-400" />
-                      <div>
-                        <h2 className="text-4xl font-bold">Mission Control</h2>
-                        <p className="text-gray-400 text-lg">Build your session playlist</p>
-                      </div>
-                    </div>
-
-                    {orderedTasks.length > 0 ? (
-                      <motion.div
-                        className="space-y-4"
-                        initial="hidden"
-                        animate="visible"
-                        variants={{
-                          visible: {
-                            transition: {
-                              staggerChildren: 0.05,
-                            },
-                          },
-                        }}
-                      >
-                        {orderedTasks.map((task, index) => (
-                          <motion.div
-                            key={task.id}
-                            variants={{
-                              hidden: { opacity: 0, x: -20 },
-                              visible: { opacity: 1, x: 0 },
-                            }}
-                            className={`bg-gray-800 border border-gray-700 rounded-xl p-6 transition-all ${
-                              completingTaskId === task.id
-                                ? 'scale-95 opacity-50'
-                                : 'hover:border-blue-500/50'
-                            }`}
-                          >
-                            <div className="flex items-start gap-4">
-                              <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                                <div className="w-12 h-12 rounded-full bg-blue-500/20 border-2 border-blue-500 flex items-center justify-center">
-                                  <span className="text-xl font-bold text-blue-300">
-                                    {index + 1}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                  <button
-                                    onClick={() => handleMoveUp(index)}
-                                    disabled={index === 0}
-                                    className={`p-1 rounded transition-colors ${
-                                      index === 0
-                                        ? 'text-gray-700 cursor-not-allowed'
-                                        : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700'
-                                    }`}
-                                  >
-                                    <ChevronUp className="w-5 h-5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleMoveDown(index)}
-                                    disabled={index === orderedTasks.length - 1}
-                                    className={`p-1 rounded transition-colors ${
-                                      index === orderedTasks.length - 1
-                                        ? 'text-gray-700 cursor-not-allowed'
-                                        : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700'
-                                    }`}
-                                  >
-                                    <ChevronDown className="w-5 h-5" />
-                                  </button>
-                                </div>
-                              </div>
-
-                              <button
-                                onClick={() => handleMarkAsDone(task)}
-                                disabled={completingTaskId === task.id}
-                                className="flex-shrink-0 mt-1 group"
-                              >
-                                {completingTaskId === task.id ? (
-                                  <motion.div
-                                    initial={{ scale: 1 }}
-                                    animate={{ scale: [1, 1.2, 1] }}
-                                    transition={{ repeat: Infinity, duration: 1 }}
-                                  >
-                                    <CheckCircle2 className="w-8 h-8 text-green-500" />
-                                  </motion.div>
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full border-2 border-gray-600 group-hover:border-green-500 group-hover:bg-green-500/20 transition-all flex items-center justify-center">
-                                    <CheckCircle2 className="w-5 h-5 text-gray-600 group-hover:text-green-500 transition-all" />
-                                  </div>
-                                )}
-                              </button>
-
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-4 mb-3">
-                                  <h3 className="text-xl font-bold text-white leading-tight">
-                                    {task.title}
-                                  </h3>
-                                  <span
-                                    className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-semibold border ${getPriorityColor(
-                                      task.priority
-                                    )}`}
-                                  >
-                                    {task.priority}
-                                  </span>
-                                </div>
-
-                                {task.description && (
-                                  <p className="text-gray-300 mb-4 line-clamp-2">
-                                    {task.description}
-                                  </p>
-                                )}
-
-                                <div className="flex flex-wrap items-center gap-4 mb-4">
-                                  {task.size && (
-                                    <div className="flex items-center gap-1.5 text-gray-400">
-                                      <Clock className="w-4 h-4" />
-                                      <span className="text-sm">{task.size}h</span>
-                                    </div>
-                                  )}
-                                  {task.dueDate && (
-                                    <div className="flex items-center gap-1.5 text-gray-400">
-                                      <Calendar className="w-4 h-4" />
-                                      <span className="text-sm">
-                                        Due {new Date(task.dueDate).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  )}
-                                  <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs font-medium">
-                                    {task.area}
-                                  </span>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => handleDefer(task)}
-                                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm font-medium transition-colors"
-                                  >
-                                    Defer to Tomorrow
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </motion.div>
-                    ) : (
-                      <div className="text-center py-16">
-                        <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-4" />
-                        <h3 className="text-2xl font-bold text-white mb-2">All Clear!</h3>
-                        <p className="text-gray-400 mb-6">
-                          No tasks scheduled for today. Time to plan or relax!
-                        </p>
-                        <Link
-                          to={ROUTES.admin.tasks}
-                          onClick={onClose}
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
-                        >
-                          Add Tasks
-                          <ArrowRight className="w-5 h-5" />
-                        </Link>
-                      </div>
-                    )}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden"
+          >
+            <motion.div
+              initial={{ x: -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="flex-1 bg-gray-900 dark:bg-gray-950 text-white overflow-y-auto"
+            >
+              <div className="p-8 lg:p-12">
+                <div className="flex items-center gap-3 mb-8">
+                  <Target className="w-10 h-10 text-blue-400" />
+                  <div>
+                    <h2 className="text-4xl font-bold">Mission Control</h2>
+                    <p className="text-gray-400 text-lg">Build your session playlist</p>
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.div
-                  initial={{ x: 100, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: 100, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  className="flex-1 bg-gradient-to-br from-blue-900 to-cyan-900 dark:from-blue-950 dark:to-cyan-950 text-white overflow-y-auto"
-                >
-                  <div className="p-8 lg:p-12 h-full flex flex-col">
-                    <div className="flex items-center gap-3 mb-8">
-                      <Sparkles className="w-10 h-10 text-cyan-400" />
+                {orderedTasks.length > 0 ? (
+                  <motion.div
+                    className="space-y-4"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                      visible: {
+                        transition: {
+                          staggerChildren: 0.05,
+                        },
+                      },
+                    }}
+                  >
+                    {orderedTasks.map((task, index) => (
+                      <motion.div
+                        key={task.id}
+                        variants={{
+                          hidden: { opacity: 0, x: -20 },
+                          visible: { opacity: 1, x: 0 },
+                        }}
+                        className={`bg-gray-800 border border-gray-700 rounded-xl p-6 transition-all ${
+                          completingTaskId === task.id
+                            ? 'scale-95 opacity-50'
+                            : 'hover:border-blue-500/50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                            <div className="w-12 h-12 rounded-full bg-blue-500/20 border-2 border-blue-500 flex items-center justify-center">
+                              <span className="text-xl font-bold text-blue-300">{index + 1}</span>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => handleMoveUp(index)}
+                                disabled={index === 0}
+                                className={`p-1 rounded transition-colors ${
+                                  index === 0
+                                    ? 'text-gray-700 cursor-not-allowed'
+                                    : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700'
+                                }`}
+                              >
+                                <ChevronUp className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => handleMoveDown(index)}
+                                disabled={index === orderedTasks.length - 1}
+                                className={`p-1 rounded transition-colors ${
+                                  index === orderedTasks.length - 1
+                                    ? 'text-gray-700 cursor-not-allowed'
+                                    : 'text-gray-400 hover:text-blue-400 hover:bg-gray-700'
+                                }`}
+                              >
+                                <ChevronDown className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleMarkAsDone(task)}
+                            disabled={completingTaskId === task.id}
+                            className="flex-shrink-0 mt-1 group"
+                          >
+                            {completingTaskId === task.id ? (
+                              <motion.div
+                                initial={{ scale: 1 }}
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ repeat: Infinity, duration: 1 }}
+                              >
+                                <CheckCircle2 className="w-8 h-8 text-green-500" />
+                              </motion.div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full border-2 border-gray-600 group-hover:border-green-500 group-hover:bg-green-500/20 transition-all flex items-center justify-center">
+                                <CheckCircle2 className="w-5 h-5 text-gray-600 group-hover:text-green-500 transition-all" />
+                              </div>
+                            )}
+                          </button>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-4 mb-3">
+                              <h3 className="text-xl font-bold text-white leading-tight">
+                                {task.title}
+                              </h3>
+                              <span
+                                className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-semibold border ${getPriorityColor(
+                                  task.priority
+                                )}`}
+                              >
+                                {task.priority}
+                              </span>
+                            </div>
+
+                            {task.description && (
+                              <p className="text-gray-300 mb-4 line-clamp-2">{task.description}</p>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-4 mb-4">
+                              {task.size && (
+                                <div className="flex items-center gap-1.5 text-gray-400">
+                                  <Clock className="w-4 h-4" />
+                                  <span className="text-sm">{task.size}h</span>
+                                </div>
+                              )}
+                              {task.dueDate && (
+                                <div className="flex items-center gap-1.5 text-gray-400">
+                                  <Calendar className="w-4 h-4" />
+                                  <span className="text-sm">
+                                    Due {new Date(task.dueDate).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              )}
+                              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs font-medium">
+                                {task.area}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleDefer(task)}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                              >
+                                Defer to Tomorrow
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <div className="text-center py-16">
+                    <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-white mb-2">All Clear!</h3>
+                    <p className="text-gray-400 mb-6">
+                      No tasks scheduled for today. Time to plan or relax!
+                    </p>
+                    <Link
+                      to={ROUTES.admin.tasks}
+                      onClick={onClose}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                    >
+                      Add Tasks
+                      <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="flex-1 bg-gradient-to-br from-blue-900 to-cyan-900 dark:from-blue-950 dark:to-cyan-950 text-white overflow-y-auto"
+            >
+              <div className="p-8 lg:p-12 h-full flex flex-col">
+                <div className="flex items-center gap-3 mb-8">
+                  <Sparkles className="w-10 h-10 text-cyan-400" />
+                  <div>
+                    <h2 className="text-4xl font-bold">Mission Briefing</h2>
+                    <p className="text-cyan-200 text-lg">Your personalized daily overview</p>
+                  </div>
+                </div>
+
+                <div className="flex-1 mb-8">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="p-3 bg-cyan-400/20 rounded-full">
+                        <Sparkles className="w-6 h-6 text-cyan-300" />
+                      </div>
                       <div>
-                        <h2 className="text-4xl font-bold">Mission Briefing</h2>
-                        <p className="text-cyan-200 text-lg">Your personalized daily overview</p>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 mb-8">
-                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                        <div className="flex items-start gap-4 mb-6">
-                          <div className="p-3 bg-cyan-400/20 rounded-full">
-                            <Sparkles className="w-6 h-6 text-cyan-300" />
-                          </div>
-                          <div>
-                            <h3 className="text-2xl font-bold mb-1">Daily Overview</h3>
-                            <p className="text-cyan-200 text-sm">
-                              {new Date().toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                              })}
-                            </p>
-                          </div>
-                        </div>
-
-                        <p className="text-lg leading-relaxed text-white/90">{briefing}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Calendar className="w-5 h-5 text-cyan-300" />
-                          <h4 className="font-semibold text-cyan-100">Today</h4>
-                        </div>
-                        <p className="text-3xl font-bold">{new Date().getDate()}</p>
-                        <p className="text-sm text-cyan-200 mt-1">
+                        <h3 className="text-2xl font-bold mb-1">Daily Overview</h3>
+                        <p className="text-cyan-200 text-sm">
                           {new Date().toLocaleDateString('en-US', {
-                            month: 'short',
+                            weekday: 'long',
                             year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
                           })}
                         </p>
                       </div>
-
-                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Target className="w-5 h-5 text-cyan-300" />
-                          <h4 className="font-semibold text-cyan-100">Completion</h4>
-                        </div>
-                        <p className="text-3xl font-bold">{completionRate}%</p>
-                        <p className="text-sm text-cyan-200 mt-1">
-                          {completedToday} of {orderedTasks.length + completedToday} tasks
-                        </p>
-                      </div>
-
-                      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Flame className="w-5 h-5 text-cyan-300" />
-                          <h4 className="font-semibold text-cyan-100">Habits</h4>
-                        </div>
-                        <p className="text-3xl font-bold">
-                          {habits.filter((h: Habit) => h.frequency === 'Daily').length}
-                        </p>
-                        <p className="text-sm text-cyan-200 mt-1">Daily routines</p>
-                      </div>
                     </div>
+
+                    <p className="text-lg leading-relaxed text-white/90">{briefing}</p>
                   </div>
-                </motion.div>
-              </motion.div>
-            </div>
+                </div>
 
-            <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.2 }}
-              className="flex-shrink-0"
-            >
-              <button
-                onClick={handleEngage}
-                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-xl py-6 px-8 flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-2xl"
-              >
-                <Rocket className="w-8 h-8" />
-                <span>Engage - Enter Focus Mode</span>
-                <motion.div
-                  animate={{
-                    x: [0, 5, 0],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                >
-                  <ArrowRight className="w-6 h-6" />
-                </motion.div>
-              </button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Calendar className="w-5 h-5 text-cyan-300" />
+                      <h4 className="font-semibold text-cyan-100">Today</h4>
+                    </div>
+                    <p className="text-3xl font-bold">{new Date().getDate()}</p>
+                    <p className="text-sm text-cyan-200 mt-1">
+                      {new Date().toLocaleDateString('en-US', {
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  </div>
+
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Target className="w-5 h-5 text-cyan-300" />
+                      <h4 className="font-semibold text-cyan-100">Completion</h4>
+                    </div>
+                    <p className="text-3xl font-bold">{completionRate}%</p>
+                    <p className="text-sm text-cyan-200 mt-1">
+                      {completedToday} of {orderedTasks.length + completedToday} tasks
+                    </p>
+                  </div>
+
+                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Flame className="w-5 h-5 text-cyan-300" />
+                      <h4 className="font-semibold text-cyan-100">Habits</h4>
+                    </div>
+                    <p className="text-3xl font-bold">
+                      {habits.filter((h: Habit) => h.frequency === 'Daily').length}
+                    </p>
+                    <p className="text-sm text-cyan-200 mt-1">Daily routines</p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
+          </motion.div>
+        </div>
 
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 z-50 text-white hover:text-gray-300 transition-colors bg-black/30 hover:bg-black/50 rounded-full p-2"
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.2 }}
+          className="flex-shrink-0"
+        >
+          <button
+            onClick={handleEngage}
+            className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold text-xl py-6 px-8 flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-2xl"
+          >
+            <Rocket className="w-8 h-8" />
+            <span>Engage - Enter Focus Mode</span>
+            <motion.div
+              animate={{
+                x: [0, 5, 0],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
             >
-              <X size={24} />
-            </button>
-          </div>
-        </>
-      )}
-    </AnimatePresence>
+              <ArrowRight className="w-6 h-6" />
+            </motion.div>
+          </button>
+        </motion.div>
+
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-50 text-white hover:text-gray-300 transition-colors bg-black/30 hover:bg-black/50 rounded-full p-2"
+        >
+          <X size={24} />
+        </button>
+      </div>
+    </>
   );
 }

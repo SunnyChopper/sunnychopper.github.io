@@ -26,7 +26,7 @@ export function GoalsDashboardWidget({
 }: GoalsDashboardWidgetProps) {
   // Get top 3 priority goals
   const activeGoals = goals
-    .filter((g) => g.status === 'Active' || g.status === 'OnTrack' || g.status === 'AtRisk')
+    .filter((g) => g.status === 'Active' || g.status === 'On Track' || g.status === 'At Risk')
     .sort((a, b) => {
       // Sort by priority first
       const priorityOrder = { P1: 0, P2: 1, P3: 2, P4: 3 };

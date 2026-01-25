@@ -4,7 +4,7 @@ import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 import type { Document, CreateDocumentInput, UpdateDocumentInput } from '@/types/knowledge-vault';
 import type { Area } from '@/types/growth-system';
 
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
+const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 
 interface DocumentFormProps {
   document?: Document;

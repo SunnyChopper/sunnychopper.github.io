@@ -53,7 +53,7 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
   const generateDailyPlan = useCallback(async () => {
     // Calculate data signatures to detect actual changes
     const activeTasks = tasks
-      .filter((t: Task) => t.status === 'NotStarted' || t.status === 'InProgress')
+      .filter((t: Task) => t.status === 'Not Started' || t.status === 'In Progress')
       .filter((t: Task) => t.status !== 'Blocked');
     const dailyHabits = habits.filter((h: Habit) => h.frequency === 'Daily');
     const activeMetrics = metrics.filter((m: Metric) => m.status === 'Active');

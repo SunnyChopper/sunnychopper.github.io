@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { llmConfig } from '@/lib/llm';
 import { useDraftNote, useDraftNoteMutations } from '@/hooks/useDraftNotes';
 
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
+const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 
 interface NoteFormProps {
   note?: Note;

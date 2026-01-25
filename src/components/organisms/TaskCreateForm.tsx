@@ -33,7 +33,7 @@ export function TaskCreateForm({ onSubmit, onCancel, isLoading }: TaskCreateForm
     area: 'Operations',
     subCategory: undefined,
     priority: 'P3',
-    status: 'NotStarted',
+    status: 'Not Started',
     size: undefined,
     dueDate: '',
     scheduledDate: '',

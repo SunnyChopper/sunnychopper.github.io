@@ -281,10 +281,10 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
             if (goal.status === 'Achieved') {
               colorClasses =
                 'from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 border-purple-600 dark:border-purple-500';
-            } else if (goal.status === 'AtRisk') {
+            } else if (goal.status === 'At Risk') {
               colorClasses =
                 'from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700 border-orange-600 dark:border-orange-500';
-            } else if (goal.status === 'OnTrack') {
+            } else if (goal.status === 'On Track') {
               colorClasses =
                 'from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border-green-600 dark:border-green-500';
             }

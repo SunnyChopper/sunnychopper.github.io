@@ -43,18 +43,49 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
+  if (!isOpen) return null;
+
+  return <CommandPaletteContent onClose={onClose} />;
+}
+
+interface CommandPaletteContentProps {
+  onClose: () => void;
+}
+
+function CommandPaletteContent({ onClose }: CommandPaletteContentProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const { tasks } = useTasks();
-  const { goals } = useGoals();
-  const { projects } = useProjects();
-  const { metrics } = useMetrics();
-  const { habits } = useHabits();
-  const { entries } = useLogbook();
-  const { files: markdownFiles } = useMarkdownFiles();
+  const { tasks, isLoading: tasksLoading, isError: tasksError } = useTasks();
+  const { goals, isLoading: goalsLoading, isError: goalsError } = useGoals();
+  const { projects, isLoading: projectsLoading, isError: projectsError } = useProjects();
+  const { metrics, isLoading: metricsLoading, isError: metricsError } = useMetrics();
+  const { habits, isLoading: habitsLoading, isError: habitsError } = useHabits();
+  const { entries, isLoading: logbookLoading, isError: logbookError } = useLogbook();
+  const {
+    files: markdownFiles,
+    isLoading: markdownLoading,
+    isError: markdownError,
+  } = useMarkdownFiles();
+
+  const isAnyLoading =
+    tasksLoading ||
+    goalsLoading ||
+    projectsLoading ||
+    metricsLoading ||
+    habitsLoading ||
+    logbookLoading ||
+    markdownLoading;
+  const hasError =
+    tasksError ||
+    goalsError ||
+    projectsError ||
+    metricsError ||
+    habitsError ||
+    logbookError ||
+    markdownError;
 
   const allCommands = useMemo((): CommandItem[] => {
     const commands: CommandItem[] = [
@@ -308,10 +339,8 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   }, [query]);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isOpen]);
+    inputRef.current?.focus();
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -337,7 +366,10 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     onClose();
   };
 
-  if (!isOpen) return null;
+  const isSearching = query.trim().length > 0;
+  const showLoadingState = isSearching && isAnyLoading;
+  const showErrorState = isSearching && hasError && filteredCommands.length === 0;
+  const showEmptyState = !showLoadingState && !showErrorState && filteredCommands.length === 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] px-4">
@@ -375,7 +407,24 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
         </div>
 
         <div className="max-h-[60vh] overflow-y-auto">
-          {filteredCommands.length > 0 ? (
+          {showLoadingState ? (
+            <div className="py-4 px-4 space-y-3 animate-pulse">
+              {[0, 1, 2].map((row) => (
+                <div key={row} className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : showErrorState ? (
+            <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+              <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>Unable to load results. Check your connection.</p>
+            </div>
+          ) : filteredCommands.length > 0 ? (
             <div className="py-2">
               {filteredCommands.map((cmd, idx) => (
                 <button
@@ -418,7 +467,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
           ) : (
             <div className="py-12 text-center text-gray-500 dark:text-gray-400">
               <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>No results found</p>
+              <p>{showEmptyState ? 'No results found' : 'Start typing to search'}</p>
             </div>
           )}
         </div>

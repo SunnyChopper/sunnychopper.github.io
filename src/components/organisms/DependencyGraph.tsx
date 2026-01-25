@@ -133,11 +133,11 @@ export default function DependencyGraph({
     switch (status) {
       case 'Done':
         return 'fill-green-500 dark:fill-green-600';
-      case 'InProgress':
+      case 'In Progress':
         return 'fill-blue-500 dark:fill-blue-600';
       case 'Blocked':
         return 'fill-red-500 dark:fill-red-600';
-      case 'OnHold':
+      case 'On Hold':
         return 'fill-yellow-500 dark:fill-yellow-600';
       default:
         return 'fill-gray-400 dark:fill-gray-600';
@@ -148,11 +148,11 @@ export default function DependencyGraph({
     switch (status) {
       case 'Done':
         return 'stroke-green-600 dark:stroke-green-700';
-      case 'InProgress':
+      case 'In Progress':
         return 'stroke-blue-600 dark:stroke-blue-700';
       case 'Blocked':
         return 'stroke-red-600 dark:stroke-red-700';
-      case 'OnHold':
+      case 'On Hold':
         return 'stroke-yellow-600 dark:stroke-yellow-700';
       default:
         return 'stroke-gray-500 dark:stroke-gray-700';
