@@ -242,7 +242,6 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <BackendStatusBanner />
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
 
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
@@ -426,6 +425,7 @@ export default function AdminLayout() {
           <Outlet />
         ) : (
           <div className="pt-20 lg:pt-8 px-6 lg:px-12 pb-12">
+            <BackendStatusBanner className="-mx-6 lg:-mx-12 -mt-6 lg:-mt-8 mb-6" />
             <Outlet />
           </div>
         )}
