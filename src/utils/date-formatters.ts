@@ -1,5 +1,25 @@
 import type { Habit, HabitLog } from '@/types/growth-system';
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+export function parseDateInput(dateString: string): Date {
+  if (DATE_ONLY_PATTERN.test(dateString)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(dateString);
+}
+
+export function formatDateString(
+  dateString: string | null,
+  options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
+): string | null {
+  if (!dateString) return null;
+  const parsed = parseDateInput(dateString);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleDateString('en-US', options);
+}
+
 /**
  * Format a date as a relative string (e.g., "2 days ago", "Today", "Yesterday")
  */
