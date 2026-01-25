@@ -34,13 +34,13 @@ export const useTasks = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+  // Block list fetches while the dashboard query is pending/successful
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.growthSystem.data());
+  const dashboardControlsLoading = !!dashboardQueryState && dashboardQueryState.status !== 'error';
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: queryKeys.tasks.lists(),
+    queryKey: queryKeys.growthSystem.tasks.lists(),
     queryFn: async () => {
       try {
         const result = await tasksService.getAll();
@@ -57,7 +57,7 @@ export const useTasks = () => {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    enabled: !dashboardControlsLoading, // Only fetch if dashboard isn't controlling data
     staleTime: 10 * 60 * 1000, // 10 minutes - goals don't change frequently
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
@@ -65,8 +65,8 @@ export const useTasks = () => {
   const createMutation = useMutation({
     mutationFn: (input: CreateTaskInput) => tasksService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -74,25 +74,27 @@ export const useTasks = () => {
     mutationFn: ({ id, input }: { id: string; input: UpdateTaskInput }) =>
       tasksService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => tasksService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const apiError = error ? extractApiError(error) : null;
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
+  const isWaitingForDashboard = dashboardControlsLoading && !data?.data;
+
   return {
     tasks: isError && isNetworkErr ? [] : data?.data || [],
-    isLoading: isLoading && !isError,
+    isLoading: (isWaitingForDashboard || isLoading) && !isError,
     isError,
     error: apiError || error,
     createTask: createMutation.mutateAsync,
@@ -106,13 +108,13 @@ export const useHabits = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+  // Block list fetches while the dashboard query is pending/successful
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.growthSystem.data());
+  const dashboardControlsLoading = !!dashboardQueryState && dashboardQueryState.status !== 'error';
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: queryKeys.habits.lists(),
+    queryKey: queryKeys.growthSystem.habits.lists(),
     queryFn: async () => {
       try {
         const result = await habitsService.getAll();
@@ -128,7 +130,7 @@ export const useHabits = () => {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    enabled: !dashboardControlsLoading, // Only fetch if dashboard isn't controlling data
     staleTime: 5 * 60 * 1000, // 5 minutes - habits change moderately
     gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
   });
@@ -136,8 +138,8 @@ export const useHabits = () => {
   const createMutation = useMutation({
     mutationFn: (input: CreateHabitInput) => habitsService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habits'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.habits.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -145,33 +147,35 @@ export const useHabits = () => {
     mutationFn: ({ id, input }: { id: string; input: UpdateHabitInput }) =>
       habitsService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habits'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.habits.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => habitsService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habits'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.habits.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const logCompletionMutation = useMutation({
     mutationFn: habitsService.logCompletion,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['habits'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.habits.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const apiError = error ? extractApiError(error) : null;
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
+  const isWaitingForDashboard = dashboardControlsLoading && !data?.data;
+
   return {
     habits: isError && isNetworkErr ? [] : data?.data || [],
-    isLoading: isLoading && !isError,
+    isLoading: (isWaitingForDashboard || isLoading) && !isError,
     isError,
     error: apiError || error || data?.error,
     createHabit: createMutation.mutateAsync,
@@ -186,13 +190,13 @@ export const useMetrics = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+  // Block list fetches while the dashboard query is pending/successful
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.growthSystem.data());
+  const dashboardControlsLoading = !!dashboardQueryState && dashboardQueryState.status !== 'error';
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: queryKeys.metrics.lists(),
+    queryKey: queryKeys.growthSystem.metrics.lists(),
     queryFn: async () => {
       try {
         const result = await metricsService.getAll();
@@ -208,7 +212,7 @@ export const useMetrics = () => {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    enabled: !dashboardControlsLoading, // Only fetch if dashboard isn't controlling data
     staleTime: 5 * 60 * 1000, // 5 minutes - metrics change moderately
     gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
   });
@@ -216,8 +220,8 @@ export const useMetrics = () => {
   const createMutation = useMutation({
     mutationFn: (input: CreateMetricInput) => metricsService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metrics'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.metrics.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -225,25 +229,27 @@ export const useMetrics = () => {
     mutationFn: ({ id, input }: { id: string; input: UpdateMetricInput }) =>
       metricsService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metrics'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.metrics.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => metricsService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['metrics'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.metrics.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const apiError = error ? extractApiError(error) : null;
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
+  const isWaitingForDashboard = dashboardControlsLoading && !data?.data;
+
   return {
     metrics: isError && isNetworkErr ? [] : data?.data || [],
-    isLoading: isLoading && !isError,
+    isLoading: (isWaitingForDashboard || isLoading) && !isError,
     isError,
     error: apiError || error || data?.error,
     createMetric: createMutation.mutateAsync,
@@ -257,13 +263,13 @@ export const useGoals = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+  // Block list fetches while the dashboard query is pending/successful
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.growthSystem.data());
+  const dashboardControlsLoading = !!dashboardQueryState && dashboardQueryState.status !== 'error';
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: queryKeys.goals.lists(),
+    queryKey: queryKeys.growthSystem.goals.lists(),
     queryFn: async () => {
       try {
         const result = await goalsService.getAll();
@@ -279,7 +285,7 @@ export const useGoals = () => {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    enabled: !dashboardControlsLoading, // Only fetch if dashboard isn't controlling data
     staleTime: 10 * 60 * 1000, // 10 minutes - goals don't change frequently
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
@@ -287,8 +293,8 @@ export const useGoals = () => {
   const createMutation = useMutation({
     mutationFn: (input: CreateGoalInput) => goalsService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -296,25 +302,27 @@ export const useGoals = () => {
     mutationFn: ({ id, input }: { id: string; input: UpdateGoalInput }) =>
       goalsService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => goalsService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.goals.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const apiError = error ? extractApiError(error) : null;
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
+  const isWaitingForDashboard = dashboardControlsLoading && !data?.data;
+
   return {
     goals: isError && isNetworkErr ? [] : data?.data || [],
-    isLoading: isLoading && !isError,
+    isLoading: (isWaitingForDashboard || isLoading) && !isError,
     isError,
     error: apiError || error || data?.error,
     createGoal: createMutation.mutateAsync,
@@ -328,13 +336,13 @@ export const useProjects = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+  // Block list fetches while the dashboard query is pending/successful
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.growthSystem.data());
+  const dashboardControlsLoading = !!dashboardQueryState && dashboardQueryState.status !== 'error';
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: queryKeys.projects.lists(),
+    queryKey: queryKeys.growthSystem.projects.lists(),
     queryFn: async () => {
       try {
         const result = await projectsService.getAll();
@@ -350,7 +358,7 @@ export const useProjects = () => {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    enabled: !dashboardControlsLoading, // Only fetch if dashboard isn't controlling data
     staleTime: 10 * 60 * 1000, // 10 minutes - projects don't change frequently
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
   });
@@ -358,8 +366,8 @@ export const useProjects = () => {
   const createMutation = useMutation({
     mutationFn: (input: CreateProjectInput) => projectsService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -367,25 +375,27 @@ export const useProjects = () => {
     mutationFn: ({ id, input }: { id: string; input: UpdateProjectInput }) =>
       projectsService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => projectsService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.projects.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const apiError = error ? extractApiError(error) : null;
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
+  const isWaitingForDashboard = dashboardControlsLoading && !data?.data;
+
   return {
     projects: isError && isNetworkErr ? [] : data?.data || [],
-    isLoading: isLoading && !isError,
+    isLoading: (isWaitingForDashboard || isLoading) && !isError,
     isError,
     error: apiError || error || data?.error,
     createProject: createMutation.mutateAsync,
@@ -399,13 +409,13 @@ export const useLogbook = () => {
   const queryClient = useQueryClient();
   const { recordError, recordSuccess } = useBackendStatus();
 
-  // Check if dashboard query has been successfully loaded (prevents duplicate API calls)
-  const dashboardQueryState = queryClient.getQueryState(queryKeys.dashboard.summary());
-  const hasDashboardData = dashboardQueryState?.status === 'success' && dashboardQueryState?.data;
+  // Block list fetches while the dashboard query is pending/successful
+  const dashboardQueryState = queryClient.getQueryState(queryKeys.growthSystem.data());
+  const dashboardControlsLoading = !!dashboardQueryState && dashboardQueryState.status !== 'error';
 
   // TODO: Temporarily allowing queries without user authentication
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: queryKeys.logbook.lists(),
+    queryKey: queryKeys.growthSystem.logbook.lists(),
     queryFn: async () => {
       try {
         const result = await logbookService.getAll();
@@ -421,7 +431,7 @@ export const useLogbook = () => {
         throw err;
       }
     },
-    enabled: !hasDashboardData, // Only fetch if dashboard hasn't loaded data
+    enabled: !dashboardControlsLoading, // Only fetch if dashboard isn't controlling data
     staleTime: 2 * 60 * 1000, // 2 minutes - logbook entries change frequently
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
@@ -429,8 +439,8 @@ export const useLogbook = () => {
   const createMutation = useMutation({
     mutationFn: (input: CreateLogbookEntryInput) => logbookService.create(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['logbook'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.logbook.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
@@ -438,25 +448,27 @@ export const useLogbook = () => {
     mutationFn: ({ id, input }: { id: string; input: UpdateLogbookEntryInput }) =>
       logbookService.update(id, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['logbook'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.logbook.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => logbookService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['logbook'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.logbook.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
     },
   });
 
   const apiError = error ? extractApiError(error) : null;
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
+  const isWaitingForDashboard = dashboardControlsLoading && !data?.data;
+
   return {
     entries: isError && isNetworkErr ? [] : data?.data || [],
-    isLoading: isLoading && !isError,
+    isLoading: (isWaitingForDashboard || isLoading) && !isError,
     isError,
     error: apiError || error || data?.error,
     createEntry: createMutation.mutateAsync,
@@ -473,7 +485,7 @@ export const useTaskDependencies = (taskIds: string[]) => {
   const { recordError, recordSuccess } = useBackendStatus();
 
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: [...queryKeys.tasks.all, 'dependencies', taskIds.sort().join(',')],
+    queryKey: [...queryKeys.growthSystem.tasks.all(), 'dependencies', taskIds.sort().join(',')],
     queryFn: async () => {
       try {
         // Batch fetch dependencies for all tasks in parallel

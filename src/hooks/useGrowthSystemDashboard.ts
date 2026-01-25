@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { dashboardService } from '@/services/growth-system';
+import { growthSystemService } from '@/services/growth-system';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
 import type { DashboardSummaryRequest } from '@/types/api-contracts';
 
 /**
- * Hook to fetch all Growth System data from the dashboard summary endpoint.
+ * Hook to fetch all Growth System data from the growth system endpoint.
  * This hook:
  * 1. Fetches all data in a single request
  * 2. Populates individual React Query caches for each data type
@@ -17,47 +17,47 @@ export function useGrowthSystemDashboard(options?: DashboardSummaryRequest) {
   const { recordError, recordSuccess } = useBackendStatus();
 
   const { data, isLoading, error, isError } = useQuery({
-    queryKey: queryKeys.dashboard.summary(options as Record<string, unknown>),
+    queryKey: queryKeys.growthSystem.data(options as Record<string, unknown>),
     queryFn: async () => {
       try {
-        const result = await dashboardService.getSummary(options);
+        const result = await growthSystemService.getData(options);
 
         if (result.success && result.data) {
           // Populate individual query caches so existing hooks can read from cache
           const summaryData = result.data;
 
           // Populate tasks cache
-          queryClient.setQueryData(queryKeys.tasks.lists(), {
+          queryClient.setQueryData(queryKeys.growthSystem.tasks.lists(), {
             success: true,
             data: summaryData.tasks,
           });
 
           // Populate goals cache
-          queryClient.setQueryData(queryKeys.goals.lists(), {
+          queryClient.setQueryData(queryKeys.growthSystem.goals.lists(), {
             success: true,
             data: summaryData.goals,
           });
 
           // Populate projects cache
-          queryClient.setQueryData(queryKeys.projects.lists(), {
+          queryClient.setQueryData(queryKeys.growthSystem.projects.lists(), {
             success: true,
             data: summaryData.projects,
           });
 
           // Populate habits cache
-          queryClient.setQueryData(queryKeys.habits.lists(), {
+          queryClient.setQueryData(queryKeys.growthSystem.habits.lists(), {
             success: true,
             data: summaryData.habits,
           });
 
           // Populate metrics cache
-          queryClient.setQueryData(queryKeys.metrics.lists(), {
+          queryClient.setQueryData(queryKeys.growthSystem.metrics.lists(), {
             success: true,
             data: summaryData.metrics,
           });
 
           // Populate logbook cache
-          queryClient.setQueryData(queryKeys.logbook.lists(), {
+          queryClient.setQueryData(queryKeys.growthSystem.logbook.lists(), {
             success: true,
             data: summaryData.logbookEntries,
           });
@@ -80,6 +80,7 @@ export function useGrowthSystemDashboard(options?: DashboardSummaryRequest) {
             data: summaryData.wallet.recentTransactions,
           });
 
+          // Populate rewards cache
           recordSuccess();
         }
 
