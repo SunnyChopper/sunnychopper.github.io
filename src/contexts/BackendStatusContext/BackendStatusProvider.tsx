@@ -31,25 +31,11 @@ export function BackendStatusProvider({ children }: BackendStatusProviderProps) 
           return { isOnline: false, error: apiError };
         }
       } catch {
-        // If health endpoint doesn't exist, try a lightweight endpoint
-        try {
-          const fallbackResponse = await apiClient.get('/tasks?limit=1');
-          if (fallbackResponse.success) {
-            return { isOnline: true };
-          } else {
-            const apiError: ApiError = fallbackResponse.error || {
-              message: 'Connection check failed',
-              code: 'CONNECTION_CHECK_FAILED',
-            };
-            return { isOnline: false, error: apiError };
-          }
-        } catch {
-          const apiError: ApiError = {
-            message: 'Unable to reach backend server',
-            code: 'NETWORK_ERROR',
-          };
-          return { isOnline: false, error: apiError };
-        }
+        const apiError: ApiError = {
+          message: 'Unable to reach backend server',
+          code: 'NETWORK_ERROR',
+        };
+        return { isOnline: false, error: apiError };
       }
     },
     enabled: true,
