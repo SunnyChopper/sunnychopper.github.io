@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-export const AreaSchema = z.enum(['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob']);
+export const AreaSchema = z.enum([
+  'Health',
+  'Wealth',
+  'Love',
+  'Happiness',
+  'Operations',
+  'Day Job',
+]);
 
 export const SubCategorySchema = z.enum([
   'Physical',
@@ -13,7 +20,7 @@ export const SubCategorySchema = z.enum([
   'Expenses',
   'Investments',
   'Debt',
-  'NetWorth',
+  'Net Worth',
   'Romantic',
   'Family',
   'Friends',
@@ -35,10 +42,10 @@ export const SubCategorySchema = z.enum([
 export const PrioritySchema = z.enum(['P1', 'P2', 'P3', 'P4']);
 
 export const TaskStatusSchema = z.enum([
-  'NotStarted',
-  'InProgress',
+  'Not Started',
+  'In Progress',
   'Blocked',
-  'OnHold',
+  'On Hold',
   'Done',
   'Cancelled',
 ]);
@@ -46,7 +53,7 @@ export const TaskStatusSchema = z.enum([
 export const ProjectStatusSchema = z.enum([
   'Planning',
   'Active',
-  'OnHold',
+  'On Hold',
   'Completed',
   'Cancelled',
 ]);
@@ -54,8 +61,8 @@ export const ProjectStatusSchema = z.enum([
 export const GoalStatusSchema = z.enum([
   'Planning',
   'Active',
-  'OnTrack',
-  'AtRisk',
+  'On Track',
+  'At Risk',
   'Achieved',
   'Abandoned',
 ]);

@@ -1,18 +1,18 @@
 import type { Area, SubCategory, Priority } from '@/types/growth-system';
 
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
+const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4'];
 
 const SUBCATEGORIES: Record<Area, SubCategory[]> = {
   Health: ['Physical', 'Mental', 'Spiritual', 'Nutrition', 'Sleep', 'Exercise'],
-  Wealth: ['Income', 'Expenses', 'Investments', 'Debt', 'NetWorth'],
+  Wealth: ['Income', 'Expenses', 'Investments', 'Debt', 'Net Worth'],
   Love: ['Romantic', 'Family', 'Friends', 'Social'],
   Happiness: ['Joy', 'Gratitude', 'Purpose', 'Peace'],
   Operations: ['Productivity', 'Organization', 'Systems', 'Habits'],
-  DayJob: ['Career', 'Skills', 'Projects', 'Performance'],
+  'Day Job': ['Career', 'Skills', 'Projects', 'Performance'],
 };
 
-export const SYSTEM_PROMPT = `You are an AI assistant specialized in personal productivity and task management. You help users organize their tasks, projects, and goals across six life areas: Health, Wealth, Love, Happiness, Operations, and DayJob.
+export const SYSTEM_PROMPT = `You are an AI assistant specialized in personal productivity and task management. You help users organize their tasks, projects, and goals across six life areas: Health, Wealth, Love, Happiness, Operations, and Day Job.
 
 Available Areas: ${AREAS.join(', ')}
 Available Priorities: ${PRIORITIES.join(', ')} (P1 = highest urgency)
@@ -34,7 +34,7 @@ Respond with JSON in this exact format:
   "task": {
     "title": "extracted title",
     "description": "extracted description or null",
-    "area": "one of: Health, Wealth, Love, Happiness, Operations, DayJob",
+    "area": "one of: Health, Wealth, Love, Happiness, Operations, Day Job",
     "subCategory": "appropriate subcategory or null",
     "priority": "P1, P2, P3, or P4",
     "dueDate": "YYYY-MM-DD format or null",
