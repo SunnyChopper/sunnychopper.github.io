@@ -21,7 +21,7 @@ import FlashcardForm from '@/components/organisms/FlashcardForm';
 import type { VaultItemType, Note, CourseLesson, Course } from '@/types/knowledge-vault';
 import type { Area } from '@/types/growth-system';
 
-const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'];
+const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 
 type ViewMode = 'grid' | 'list';
 type FilterType = 'all' | VaultItemType;

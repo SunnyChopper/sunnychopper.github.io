@@ -39,7 +39,7 @@ export default function WeeklyReviewPage() {
 
     const weekMetricLogs = metrics.length * 3;
 
-    const activeGoals = goals.filter((g) => g.status === 'Active' || g.status === 'OnTrack');
+    const activeGoals = goals.filter((g) => g.status === 'Active' || g.status === 'On Track');
 
     const weekEntries = entries.filter((e) => new Date(e.date) >= oneWeekAgo);
 
@@ -108,7 +108,7 @@ export default function WeeklyReviewPage() {
         });
       }
 
-      const atRiskGoals = goals.filter((g) => g.status === 'AtRisk');
+      const atRiskGoals = goals.filter((g) => g.status === 'At Risk');
       if (atRiskGoals.length > 0) {
         newInsights.push({
           category: 'Goals',

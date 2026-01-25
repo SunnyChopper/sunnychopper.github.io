@@ -394,7 +394,7 @@ export default function GoalsPage() {
         const matchesQuickFilters = quickFilters.every((qf) => {
           switch (qf) {
             case 'at_risk':
-              return goal.status === 'AtRisk';
+              return goal.status === 'At Risk';
             case 'due_this_week': {
               if (!goal.targetDate) return false;
               const target = new Date(goal.targetDate);

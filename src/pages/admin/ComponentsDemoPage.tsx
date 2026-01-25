@@ -54,7 +54,7 @@ export default function ComponentsDemoPage() {
               <AreaBadge area="Love" />
               <AreaBadge area="Happiness" />
               <AreaBadge area="Operations" />
-              <AreaBadge area="DayJob" />
+              <AreaBadge area="Day Job" />
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
               <AreaBadge area="Health" size="sm" />
@@ -103,17 +103,17 @@ export default function ComponentsDemoPage() {
               Status Badges
             </h3>
             <div className="flex flex-wrap gap-2">
-              <StatusBadge status="NotStarted" />
-              <StatusBadge status="InProgress" />
+              <StatusBadge status="Not Started" />
+              <StatusBadge status="In Progress" />
               <StatusBadge status="Blocked" />
-              <StatusBadge status="OnHold" />
+              <StatusBadge status="On Hold" />
               <StatusBadge status="Done" />
               <StatusBadge status="Cancelled" />
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
               <StatusBadge status="Active" />
-              <StatusBadge status="OnTrack" />
-              <StatusBadge status="AtRisk" />
+              <StatusBadge status="On Track" />
+              <StatusBadge status="At Risk" />
               <StatusBadge status="Achieved" />
             </div>
           </div>
@@ -191,9 +191,9 @@ export default function ComponentsDemoPage() {
               filters={filters}
               onFiltersChange={setFilters}
               availableFilters={{
-                areas: ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'DayJob'],
+                areas: ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'],
                 priorities: ['P1', 'P2', 'P3', 'P4'],
-                statuses: ['NotStarted', 'InProgress', 'Done'],
+                statuses: ['Not Started', 'In Progress', 'Done'],
               }}
             />
           </div>
