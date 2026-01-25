@@ -10,6 +10,11 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  LayoutGrid,
+  List,
+  Calendar as CalendarIcon,
+  Filter,
+  X,
 } from 'lucide-react';
 import type {
   Project,
@@ -19,13 +24,17 @@ import type {
   Task,
   EntitySummary,
   FilterOptions,
+  Area,
+  Priority,
 } from '@/types/growth-system';
 import { useProjects, useGoals } from '@/hooks/useGrowthSystem';
+import { useProjectHealthMap } from '@/hooks/useProjectHealthMap';
 import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import { tasksService } from '@/services/growth-system/tasks.service';
 import Button from '@/components/atoms/Button';
 import { ProjectCard } from '@/components/molecules/ProjectCard';
-import { FilterPanel } from '@/components/molecules/FilterPanel';
+import { ProjectListItem } from '@/components/molecules/ProjectListItem';
+import { ProjectTimelineView } from '@/components/organisms/ProjectTimelineView';
 import { ProjectCreateForm } from '@/components/organisms/ProjectCreateForm';
 import { ProjectEditForm } from '@/components/organisms/ProjectEditForm';
 import Dialog from '@/components/molecules/Dialog';
@@ -34,19 +43,33 @@ import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
-import { SUBCATEGORY_LABELS, PROJECT_STATUSES } from '@/constants/growth-system';
+import {
+  SUBCATEGORY_LABELS,
+  PROJECT_STATUSES,
+  PROJECT_STATUS_LABELS,
+  AREAS,
+  AREA_LABELS,
+  PRIORITIES,
+} from '@/constants/growth-system';
 import { TaskListItem } from '@/components/molecules/TaskListItem';
 import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
 import { RelationshipPicker } from '@/components/organisms/RelationshipPicker';
 import { AIProjectAssistPanel } from '@/components/molecules/AIProjectAssistPanel';
 import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
 import { llmConfig } from '@/lib/llm';
+import { formatDateString } from '@/utils/date-formatters';
 
 const STATUSES: ProjectStatus[] = [...PROJECT_STATUSES];
+const AREA_OPTIONS: Area[] = [...AREAS];
+const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
+
+type ViewMode = 'grid' | 'list' | 'timeline';
 
 export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -127,6 +150,13 @@ export default function ProjectsPage() {
     });
   }, [projects, searchQuery, filters]);
 
+  const filteredProjectIds = useMemo(
+    () => filteredProjects.map((project) => project.id),
+    [filteredProjects]
+  );
+
+  const { projectHealthMap, isLoading: isHealthLoading } = useProjectHealthMap(filteredProjectIds);
+
   const handleCreateProject = async (input: CreateProjectInput) => {
     setIsSubmitting(true);
     try {
@@ -180,6 +210,14 @@ export default function ProjectsPage() {
   const handleBackToGrid = () => {
     setSelectedProject(null);
   };
+
+  const handleClearFilters = () => {
+    setFilters({});
+  };
+
+  const activeFilterCount = useMemo(() => {
+    return [filters.area, filters.status, filters.priority].filter(Boolean).length;
+  }, [filters]);
 
   const handleGoalLink = async (projectId: string, goalId: string) => {
     // TODO: Implement linkToGoal in projectsService
@@ -235,13 +273,24 @@ export default function ProjectsPage() {
   };
 
   const getProjectStats = (projectId: string) => {
+    const health = projectHealthMap.get(projectId);
+    if (health) {
+      return {
+        taskCount: health.taskCount,
+        completedTaskCount: health.completedTaskCount,
+        hasHealthData: true,
+      };
+    }
+
     const tasks = projectTasks.get(projectId) || [];
     const completedTasks = tasks.filter((t) => t.status === 'Done').length;
-    const goals = projectGoals.get(projectId) || [];
+    const hasLocalTasks = tasks.length > 0;
+
     return {
       taskCount: tasks.length,
       completedTaskCount: completedTasks,
-      goalCount: goals.length,
+      hasHealthData: hasLocalTasks,
+      isHealthLoading,
     };
   };
 
@@ -320,7 +369,7 @@ export default function ProjectsPage() {
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Start Date</div>
                   <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {new Date(selectedProject.startDate).toLocaleDateString()}
+                    {formatDateString(selectedProject.startDate) || '—'}
                   </div>
                 </div>
               )}
@@ -328,7 +377,7 @@ export default function ProjectsPage() {
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Target End</div>
                   <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {new Date(selectedProject.endDate).toLocaleDateString()}
+                    {formatDateString(selectedProject.endDate) || '—'}
                   </div>
                 </div>
               )}
@@ -546,68 +595,226 @@ export default function ProjectsPage() {
           </Button>
         </div>
 
-        <div className="mb-6">
-          <div className="relative">
+        <div className="mb-4 flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[300px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search projects..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          <Button
+            variant="secondary"
+            onClick={() => setShowFilters(!showFilters)}
+            className="relative"
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+              title="Grid view"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">Grid</span>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+              title="List view"
+            >
+              <List className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">List</span>
+            </button>
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
+                viewMode === 'timeline'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+              title="Timeline view"
+            >
+              <CalendarIcon className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">Timeline</span>
+            </button>
+          </div>
         </div>
+
+        {showFilters && (
+          <div className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
+              <div className="flex items-center gap-2">
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Clear all
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Area
+                </label>
+                <select
+                  value={filters.area || ''}
+                  onChange={(e) =>
+                    setFilters({ ...filters, area: (e.target.value as Area) || undefined })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Areas</option>
+                  {AREA_OPTIONS.map((area) => (
+                    <option key={area} value={area}>
+                      {AREA_LABELS[area]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={filters.status || ''}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      status: (e.target.value as ProjectStatus) || undefined,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Statuses</option>
+                  {STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {PROJECT_STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Priority
+                </label>
+                <select
+                  value={filters.priority || ''}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      priority: (e.target.value as Priority) || undefined,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Priorities</option>
+                  {PRIORITY_OPTIONS.map((priority) => (
+                    <option key={priority} value={priority}>
+                      {priority}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         <AISuggestionBanner entityType="project" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-1">
-            <FilterPanel
-              filters={filters}
-              onFiltersChange={setFilters}
-              availableFilters={{
-                statuses: STATUSES,
-              }}
-            />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Loading projects...</p>
+            </div>
           </div>
-
-          <div className="lg:col-span-3">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600 dark:text-gray-400">Loading projects...</p>
-                </div>
-              </div>
-            ) : filteredProjects.length === 0 ? (
-              <EmptyState
-                title="No projects found"
-                description={
-                  searchQuery || filters.area || filters.status || filters.priority
-                    ? 'Try adjusting your filters or search query'
-                    : 'Get started by creating your first project'
-                }
-                actionLabel="Create Project"
-                onAction={() => setIsCreateDialogOpen(true)}
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredProjects.map((project) => {
-                  const stats = getProjectStats(project.id);
-                  return (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onClick={handleProjectClick}
-                      {...stats}
-                    />
-                  );
-                })}
-              </div>
-            )}
+        ) : filteredProjects.length === 0 ? (
+          <EmptyState
+            title="No projects found"
+            description={
+              searchQuery || filters.area || filters.status || filters.priority
+                ? 'Try adjusting your filters or search query'
+                : 'Get started by creating your first project'
+            }
+            actionLabel="Create Project"
+            onAction={() => setIsCreateDialogOpen(true)}
+          />
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredProjects.map((project) => {
+              const stats = getProjectStats(project.id);
+              return (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onClick={handleProjectClick}
+                  {...stats}
+                />
+              );
+            })}
           </div>
-        </div>
+        ) : viewMode === 'list' ? (
+          <div className="space-y-3">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Showing {filteredProjects.length}{' '}
+              {filteredProjects.length === 1 ? 'project' : 'projects'}
+            </div>
+            {filteredProjects.map((project) => {
+              const stats = getProjectStats(project.id);
+              return (
+                <ProjectListItem
+                  key={project.id}
+                  project={project}
+                  onClick={handleProjectClick}
+                  onEdit={(p) => {
+                    setSelectedProject(p);
+                    setIsEditDialogOpen(true);
+                  }}
+                  onDelete={setProjectToDelete}
+                  {...stats}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <ProjectTimelineView
+            projects={filteredProjects}
+            onProjectClick={handleProjectClick}
+            projectHealthMap={projectHealthMap}
+            isHealthLoading={isHealthLoading}
+          />
+        )}
       </div>
 
       <Dialog

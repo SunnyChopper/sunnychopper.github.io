@@ -7,6 +7,7 @@ import type {
   ProjectStatus,
 } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
+import { ImpactScoreSelector } from '@/components/molecules/ImpactScoreSelector';
 import {
   AREAS,
   AREA_LABELS,
@@ -53,7 +54,7 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
     onSubmit(input);
   };
 
-  const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area];
+  const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area] || [];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -166,16 +167,11 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Impact Score (1-10)
-        </label>
-        <input
-          type="number"
-          min="1"
-          max="10"
-          value={formData.impact}
-          onChange={(e) => setFormData({ ...formData, impact: parseInt(e.target.value) || 5 })}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <ImpactScoreSelector
+          label="Impact Score (1-5)"
+          value={formData.impact ?? 5}
+          onChange={(value) => setFormData({ ...formData, impact: value })}
+          disabled={isLoading}
         />
       </div>
 
