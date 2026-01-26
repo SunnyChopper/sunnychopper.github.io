@@ -10,6 +10,7 @@ interface EntityLinkChipProps {
   onClick?: (id: string) => void;
   size?: 'sm' | 'md';
   className?: string;
+  removeAriaLabel?: string;
 }
 
 const typeColors: Record<string, { bg: string; text: string; hover: string }> = {
@@ -58,6 +59,7 @@ export function EntityLinkChip({
   onClick,
   size = 'md',
   className = '',
+  removeAriaLabel,
 }: EntityLinkChipProps) {
   const colors = typeColors[type];
 
@@ -85,6 +87,7 @@ export function EntityLinkChip({
         <button
           type="button"
           onClick={handleRemove}
+          aria-label={removeAriaLabel || `Remove ${label}`}
           className="inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-0.5 transition-colors"
         >
           <X className="w-3 h-3" />

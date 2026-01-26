@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link as LinkIcon } from 'lucide-react';
 import type { Metric, Goal, MetricLog } from '@/types/growth-system';
 import { goalsService } from '@/services/growth-system/goals.service';
+import { useGoals } from '@/hooks/useGrowthSystem';
 import { calculateProgress } from '@/utils/metric-analytics';
 
 interface GoalMetricLinkProps {
@@ -11,40 +12,29 @@ interface GoalMetricLinkProps {
 }
 
 export function GoalMetricLink({ metric, logs, onLinkChange }: GoalMetricLinkProps) {
+  const { goals: allGoals } = useGoals();
   const [linkedGoals, setLinkedGoals] = useState<Goal[]>([]);
-  const [allGoals, setAllGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadGoals = useCallback(async () => {
+  const loadGoals = useCallback(() => {
     try {
-      const allGoalsResponse = await goalsService.getAll();
-      if (allGoalsResponse.success && allGoalsResponse.data) {
-        setAllGoals(allGoalsResponse.data);
-
-        // Load linked goals
-        const linked: Goal[] = [];
-        for (const goal of allGoalsResponse.data) {
-          const metricsResponse = await goalsService.getLinkedMetrics(goal.id);
-          if (
-            metricsResponse.success &&
-            metricsResponse.data &&
-            metricsResponse.data.some((gm) => gm.id === metric.id)
-          ) {
-            linked.push(goal);
-          }
-        }
-        setLinkedGoals(linked);
-      }
+      // Filter goals from cached data by checking if metric's goalIds includes the goal ID
+      const linked = allGoals.filter((goal) => metric.goalIds?.includes(goal.id) ?? false);
+      setLinkedGoals(linked);
     } catch (error) {
       console.error('Failed to load goals:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [metric.id]);
+  }, [metric.id, metric.goalIds, allGoals]);
 
   useEffect(() => {
-    loadGoals();
-  }, [loadGoals]);
+    if (allGoals.length > 0) {
+      loadGoals();
+    } else {
+      setIsLoading(false);
+    }
+  }, [loadGoals, allGoals]);
 
   const handleLinkGoal = async (goalId: string) => {
     try {

@@ -29,21 +29,32 @@ interface ProjectProgressRowProps extends ProjectSummaryBaseProps {
 
 export const ProjectImpactStars = ({ impact }: { impact: number }) => {
   const impactColors = getImpactColors(impact);
+  const isMaxImpact = impact === 5;
+
   return (
-    <div className="flex items-center gap-0.5" aria-label={`Impact: ${impactColors.label}`}>
-      {[1, 2, 3, 4, 5].map((starValue) => (
-        <Star
-          key={starValue}
-          className={cn(
-            'w-3.5 h-3.5 transition-colors',
-            starValue <= (impact || 0)
-              ? `fill-current ${impactColors.stars}`
-              : 'fill-none text-gray-300 dark:text-gray-600'
-          )}
-          aria-hidden="true"
-        />
-      ))}
-      <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">{impact}/5</span>
+    <div className="flex items-center gap-2" aria-label={`Impact: ${impactColors.label}`}>
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((starValue) => (
+          <Star
+            key={starValue}
+            className={cn(
+              'w-3.5 h-3.5 transition-colors',
+              starValue <= (impact || 0)
+                ? `fill-current ${impactColors.stars}`
+                : 'fill-none text-gray-300 dark:text-gray-600'
+            )}
+            aria-hidden="true"
+          />
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{impact}/5</span>
+        {isMaxImpact && (
+          <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 leading-none">
+            Max
+          </span>
+        )}
+      </div>
     </div>
   );
 };
@@ -143,8 +154,8 @@ export const ProjectProgressRow = ({
 
 export const ProjectDueRow = ({ project, className = '' }: ProjectSummaryBaseProps) => {
   const startDate = useMemo(() => formatDateString(project.startDate), [project.startDate]);
-  const endDate = useMemo(() => formatDateString(project.endDate), [project.endDate]);
-  const dateUrgency = useMemo(() => getDateUrgency(project.endDate), [project.endDate]);
+  const endDate = useMemo(() => formatDateString(project.targetEndDate), [project.targetEndDate]);
+  const dateUrgency = useMemo(() => getDateUrgency(project.targetEndDate), [project.targetEndDate]);
 
   const dateLabel =
     startDate || endDate
@@ -187,22 +198,24 @@ export const ProjectSummaryDetails = ({
   const descriptionClass = descriptionClampLines === 1 ? 'line-clamp-1' : 'line-clamp-2';
 
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('flex flex-col flex-1 space-y-2', className)}>
       {showDescription && project.description && (
-        <p className={cn('text-sm text-gray-600 dark:text-gray-400', descriptionClass)}>
+        <p className={cn('text-xs text-gray-600 dark:text-gray-400', descriptionClass)}>
           {project.description}
         </p>
       )}
-      <ProjectProgressRow
-        project={project}
-        taskCount={taskCount}
-        completedTaskCount={completedTaskCount}
-        hasHealthData={hasHealthData}
-        isHealthLoading={isHealthLoading}
-        showScheduleHealth
-      />
-      <ProjectMetaRow project={project} />
-      <ProjectDueRow project={project} />
+      <div className="mt-auto space-y-2">
+        <ProjectProgressRow
+          project={project}
+          taskCount={taskCount}
+          completedTaskCount={completedTaskCount}
+          hasHealthData={hasHealthData}
+          isHealthLoading={isHealthLoading}
+          showScheduleHealth
+        />
+        <ProjectMetaRow project={project} />
+        <ProjectDueRow project={project} />
+      </div>
     </div>
   );
 };

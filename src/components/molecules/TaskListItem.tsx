@@ -1,4 +1,5 @@
 import { Pencil, Trash2, Calendar, Clock, GitBranch, Coins } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { Task } from '@/types/growth-system';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
@@ -16,6 +17,11 @@ interface TaskListItemProps {
   blockedByTasks?: Task[];
   projectCount?: number;
   goalCount?: number;
+  deleteLabel?: string;
+  deleteAriaLabel?: string;
+  deleteIcon?: ReactNode;
+  deleteButtonClassName?: string;
+  actionsVisibility?: 'hover' | 'always';
 }
 
 export function TaskListItem({
@@ -28,6 +34,11 @@ export function TaskListItem({
   blockedByTasks = [],
   projectCount = 0,
   goalCount = 0,
+  deleteLabel = 'Delete task',
+  deleteAriaLabel,
+  deleteIcon,
+  deleteButtonClassName,
+  actionsVisibility = 'hover',
 }: TaskListItemProps) {
   const handleClick = () => {
     if (onClick) {
@@ -56,6 +67,9 @@ export function TaskListItem({
 
   const dueInfo = formatDate(task.dueDate);
   const scheduledInfo = formatDate(task.scheduledDate);
+
+  const actionVisibilityClass =
+    actionsVisibility === 'always' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
 
   return (
     // Task card: clickable when onClick is provided, with full keyboard and accessibility support
@@ -177,7 +191,7 @@ export function TaskListItem({
         {/* Action buttons container - stops event propagation to prevent card click */}
         {}
         <div
-          className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+          className={`flex items-center gap-1.5 transition-opacity ${actionVisibilityClass}`}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
           role="group"
@@ -195,9 +209,13 @@ export function TaskListItem({
             variant="secondary"
             size="sm"
             onClick={() => onDelete(task)}
-            className="!p-2 hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20 dark:hover:!text-red-400"
+            className={
+              deleteButtonClassName ||
+              '!p-2 hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20 dark:hover:!text-red-400'
+            }
+            aria-label={deleteAriaLabel || deleteLabel}
           >
-            <Trash2 className="w-4 h-4" />
+            {deleteIcon || <Trash2 className="w-4 h-4" />}
           </Button>
         </div>
       </div>

@@ -41,7 +41,7 @@ export function ProjectCard({
         }
       }}
       className={cn(
-        'group relative flex flex-col bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer text-left overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900',
+        'group relative flex flex-col h-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer text-left overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900',
         project.impact > 0 && impactColors.accent
       )}
       role="button"
@@ -59,14 +59,14 @@ export function ProjectCard({
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <PriorityIndicator priority={project.priority} />
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-1.5">
+            <h3 className="font-semibold text-base text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 mb-1">
               {project.name}
             </h3>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <StatusBadge status={project.status} size="sm" />
             </div>
           </div>
@@ -75,7 +75,7 @@ export function ProjectCard({
           {hasHealthData ? (
             <ProgressRing progress={progress} size="sm" className="shrink-0" />
           ) : (
-            <div className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
+            <div className="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-600 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
               --
             </div>
           )}
