@@ -2,6 +2,7 @@ import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
 import { LessonContentSchema } from '@/lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
 import { getContentGeneratorContext } from '../context-manager';
+import type { z } from 'zod';
 
 /**
  * Content Generator Agent
@@ -69,9 +70,14 @@ export class ContentGeneratorAgent extends BaseAgent {
     const userMessage = this._buildLessonPrompt(context, lesson, state.course.difficulty);
 
     const messages = this.buildPrompt(systemMessage, userMessage);
-    const result = await this.invokeStructured(LessonContentSchema, messages);
+    // Note: invokeStructured returns never, but we need to cast for type safety
+    // This should be refactored to use backend endpoints
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = (await this.invokeStructured(LessonContentSchema, messages)) as any as z.infer<
+      typeof LessonContentSchema
+    >;
 
-    if (result?.content) {
+    if (result && 'content' in result && result.content) {
       lesson.content = result.content;
     } else {
       throw new Error(`No content in result for lesson ${lesson.id}`);

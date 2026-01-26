@@ -1,5 +1,8 @@
 import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
-import { CourseStructureSchema } from '@/lib/llm/schemas/course-ai-schemas';
+import {
+  CourseStructureSchema,
+  type CourseStructureOutput,
+} from '@/lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationStateUpdate, CourseGenerationInput } from '../types';
 
 /**
@@ -36,18 +39,26 @@ Create a comprehensive course structure with:
 Ensure the modules are logically sequenced and build upon each other.`;
 
     const messages = this.buildPrompt(systemMessage, userMessage);
-    const result = await this.invokeStructured(CourseStructureSchema, messages);
+    const result = (await this.invokeStructured(
+      CourseStructureSchema,
+      messages
+    )) as unknown as CourseStructureOutput;
 
     // Convert to state update
     const timestamp = new Date().toISOString();
-    const modules = result.modules.map((mod, index) => ({
-      id: `module-${index}`,
-      title: mod.title,
-      description: mod.description,
-      moduleIndex: index,
-      learningObjectives: mod.learningObjectives,
-      lessons: [], // Will be populated by Module Architect
-    }));
+    const modules = result.modules.map(
+      (
+        mod: { title: string; description: string; learningObjectives: string[] },
+        index: number
+      ) => ({
+        id: `module-${index}`,
+        title: mod.title,
+        description: mod.description,
+        moduleIndex: index,
+        learningObjectives: mod.learningObjectives,
+        lessons: [], // Will be populated by Module Architect
+      })
+    );
 
     return {
       course: {

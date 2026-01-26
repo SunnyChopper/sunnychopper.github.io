@@ -1,5 +1,5 @@
 import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
-import { ModuleLessonsSchema } from '@/lib/llm/schemas/course-ai-schemas';
+import { ModuleLessonsSchema, type ModuleLessonsOutput } from '@/lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
 import { getModuleContextOptimized } from '../context-manager';
 import { generateId } from '@/mocks/storage';
@@ -49,19 +49,34 @@ Create detailed lesson outlines for this module:
 Make sure lessons build upon concepts from previous modules and lessons.`;
 
       const messages = this.buildPrompt(systemMessage, userMessage);
-      const result = await this.invokeStructured(ModuleLessonsSchema, messages);
+      const result = (await this.invokeStructured(
+        ModuleLessonsSchema,
+        messages
+      )) as unknown as ModuleLessonsOutput;
 
       // Convert to lesson structure
-      const lessons = result.lessons.map((lesson, lessonIndex) => ({
-        id: generateId(),
-        title: lesson.title,
-        description: lesson.description,
-        lessonIndex,
-        estimatedMinutes: lesson.estimatedMinutes,
-        learningObjectives: lesson.learningObjectives,
-        keyConcepts: lesson.keyConcepts,
-        prerequisites: lesson.prerequisites,
-      }));
+      const lessons = result.lessons.map(
+        (
+          lesson: {
+            title: string;
+            description: string;
+            estimatedMinutes: number;
+            learningObjectives: string[];
+            keyConcepts: string[];
+            prerequisites: string[];
+          },
+          lessonIndex: number
+        ) => ({
+          id: generateId(),
+          title: lesson.title,
+          description: lesson.description,
+          lessonIndex,
+          estimatedMinutes: lesson.estimatedMinutes,
+          learningObjectives: lesson.learningObjectives,
+          keyConcepts: lesson.keyConcepts,
+          prerequisites: lesson.prerequisites,
+        })
+      );
 
       updatedModules[i] = {
         ...module,
