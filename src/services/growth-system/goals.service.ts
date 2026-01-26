@@ -9,6 +9,7 @@ import type {
   Habit,
   GoalProgressBreakdown,
   GoalActivity,
+  SuccessCriterion,
 } from '@/types/growth-system';
 
 interface BackendPaginatedResponse<T> {
@@ -17,6 +18,37 @@ interface BackendPaginatedResponse<T> {
   page: number;
   pageSize: number;
   hasMore: boolean;
+}
+
+// Backend success criterion schema (different from frontend)
+interface BackendSuccessCriterion {
+  id: string;
+  description: string; // Backend uses 'description', frontend uses 'text'
+  targetValue?: number | null;
+  unit?: string | null;
+  isCompleted: boolean;
+  completedAt: string | null;
+}
+
+// Normalize backend goal to frontend Goal type
+function normalizeGoal(backendGoal: any): Goal {
+  return {
+    ...backendGoal,
+    successCriteria: Array.isArray(backendGoal.successCriteria)
+      ? backendGoal.successCriteria.map(
+          (criterion: BackendSuccessCriterion): SuccessCriterion => ({
+            id: criterion.id,
+            text: criterion.description, // Map 'description' to 'text'
+            isCompleted: criterion.isCompleted,
+            completedAt: criterion.completedAt,
+            linkedMetricId: null,
+            linkedTaskId: null,
+            targetDate: null,
+            order: 0,
+          })
+        )
+      : [],
+  };
 }
 
 export const goalsService = {
@@ -31,11 +63,11 @@ export const goalsService = {
     if (filters?.priority) queryParams.append('priority', filters.priority);
 
     const endpoint = `/goals${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    const response = await apiClient.get<BackendPaginatedResponse<Goal>>(endpoint);
+    const response = await apiClient.get<BackendPaginatedResponse<any>>(endpoint);
 
     if (response.success && response.data) {
       return {
-        data: response.data.data,
+        data: response.data.data.map(normalizeGoal),
         total: response.data.total,
         success: true,
       };
@@ -45,7 +77,13 @@ export const goalsService = {
   },
 
   async getById(id: string): Promise<ApiResponse<Goal>> {
-    const response = await apiClient.get<Goal>(`/goals/${id}`);
+    const response = await apiClient.get<any>(`/goals/${id}`);
+    if (response.success && response.data) {
+      return {
+        ...response,
+        data: normalizeGoal(response.data),
+      };
+    }
     return response;
   },
 
@@ -60,11 +98,56 @@ export const goalsService = {
   },
 
   async update(id: string, input: UpdateGoalInput): Promise<ApiResponse<Goal>> {
-    const requestBody = {
+    // Transform success criteria from frontend format to backend format
+    const requestBody: any = {
       ...input,
     };
 
-    const response = await apiClient.patch<Goal>(`/goals/${id}`, requestBody);
+    // Transform success criteria if present
+    if (
+      input.successCriteria &&
+      Array.isArray(input.successCriteria) &&
+      input.successCriteria.length > 0
+    ) {
+      // Check if it's already in backend format (has 'description' field) or frontend format (has 'text' field)
+      const firstCriterion = input.successCriteria[0];
+      if (typeof firstCriterion === 'string') {
+        // Convert string[] to BackendSuccessCriterion[]
+        requestBody.successCriteria = (input.successCriteria as string[]).map((text: string) => ({
+          description: text,
+          isCompleted: false,
+          completedAt: null,
+        }));
+      } else if ('text' in firstCriterion) {
+        // Convert SuccessCriterion[] (frontend) to BackendSuccessCriterion[]
+        requestBody.successCriteria = (input.successCriteria as SuccessCriterion[]).map(
+          (criterion) => {
+            const backendCriterion: any = {
+              description: criterion.text, // Map 'text' to 'description'
+              isCompleted: criterion.isCompleted,
+              completedAt: criterion.completedAt,
+            };
+            // Only include ID if it exists and is not empty (preserve existing criteria)
+            if (criterion.id && criterion.id.trim() !== '') {
+              backendCriterion.id = criterion.id;
+            }
+            return backendCriterion;
+          }
+        );
+      }
+      // If it already has 'description', assume it's already in backend format
+    }
+
+    const response = await apiClient.patch<any>(`/goals/${id}`, requestBody);
+
+    // Normalize the response
+    if (response.success && response.data) {
+      return {
+        ...response,
+        data: normalizeGoal(response.data),
+      };
+    }
+
     return response;
   },
 
@@ -123,6 +206,22 @@ export const goalsService = {
       };
     }
     throw new Error(response.error?.message || 'Failed to fetch linked projects');
+  },
+
+  async getByProject(
+    projectId: string
+  ): Promise<ApiListResponse<import('../../types/growth-system').Goal>> {
+    const response = await apiClient.get<
+      BackendPaginatedResponse<import('../../types/growth-system').Goal>
+    >(`/projects/${projectId}/goals`);
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+    throw new Error(response.error?.message || 'Failed to fetch goals for project');
   },
 
   async getLinkedTasks(goalId: string): Promise<ApiListResponse<Task>> {
