@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Plus,
   Search,
@@ -25,8 +25,16 @@ import type {
   Priority,
   Area,
 } from '@/types/growth-system';
+import type { ApiError } from '@/types/api-contracts';
 import { goalsService } from '@/services/growth-system/goals.service';
 import { goalProgressService } from '@/services/growth-system/goal-progress.service';
+import { useTasks, useProjects, useMetrics, useHabits } from '@/hooks/useGrowthSystem';
+import {
+  getTasksByGoal,
+  getProjectsByGoal,
+  getMetricsByGoal,
+  getHabitsByGoal,
+} from '@/utils/growth-system-filters';
 import Button from '@/components/atoms/Button';
 import { GoalCard } from '@/components/molecules/GoalCard';
 import { QuickFilterBar } from '@/components/molecules/QuickFilterBar';
@@ -67,11 +75,19 @@ export default function GoalsPage() {
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Get cached tasks, projects, metrics, and habits from React Query
+  const { tasks: allTasks } = useTasks();
+  const { projects: allProjects } = useProjects();
+  const { metrics: allMetrics } = useMetrics();
+  const { habits: allHabits } = useHabits();
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [parentGoalForSubgoal, setParentGoalForSubgoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
+  const [createError, setCreateError] = useState<string | ApiError | null>(null);
 
   const [goalProjects, setGoalProjects] = useState<Map<string, EntitySummary[]>>(new Map());
   const [goalTasks, setGoalTasks] = useState<Map<string, Task[]>>(new Map());
@@ -105,80 +121,151 @@ export default function GoalsPage() {
     type: CelebrationType;
     message?: string;
   }>({ show: false, type: 'milestone_25' });
+  const hasLoadedGoalsRef = useRef(false);
 
-  const loadGoalData = async (goalId: string) => {
+  // Track which goals are currently loading to prevent duplicate loads
+  const loadingGoalsRef = useRef<Set<string>>(new Set());
+
+  // Use refs to store latest values without causing callback recreation
+  const allTasksRef = useRef(allTasks);
+  const allProjectsRef = useRef(allProjects);
+  const allMetricsRef = useRef(allMetrics);
+  const allHabitsRef = useRef(allHabits);
+
+  // Keep refs in sync with latest values
+  useEffect(() => {
+    allTasksRef.current = allTasks;
+    allProjectsRef.current = allProjects;
+    allMetricsRef.current = allMetrics;
+    allHabitsRef.current = allHabits;
+  }, [allTasks, allProjects, allMetrics, allHabits]);
+
+  const loadGoalData = useCallback(async (goalId: string, goal?: Goal) => {
+    // Prevent duplicate concurrent loads of the same goal
+    if (loadingGoalsRef.current.has(goalId)) {
+      return;
+    }
+
+    loadingGoalsRef.current.add(goalId);
+
     try {
-      // Load linked entities
-      const [tasksRes, metricsRes, habitsRes, projectsRes] = await Promise.all([
-        goalsService.getLinkedTasks(goalId),
-        goalsService.getLinkedMetrics(goalId),
-        goalsService.getLinkedHabits(goalId),
-        goalsService.getLinkedProjects(goalId),
-      ]);
+      // Parse tasks, projects, metrics, and habits from cached data instead of making API calls
+      // Use refs to get latest values without including them in dependencies
+      const tasks = getTasksByGoal(allTasksRef.current, goalId);
+      const projects = getProjectsByGoal(allProjectsRef.current, goalId);
+      const metrics = getMetricsByGoal(allMetricsRef.current, goalId);
+      const habits = getHabitsByGoal(allHabitsRef.current, goalId);
 
-      if (tasksRes.success && tasksRes.data) {
-        setGoalTasks((prev) => new Map(prev).set(goalId, tasksRes.data!));
-      }
+      // Store linked entities (always store tasks, habits, even if empty, to indicate we've loaded them)
+      setGoalTasks((prev) => new Map(prev).set(goalId, tasks));
+      setGoalHabits((prev) => new Map(prev).set(goalId, habits));
 
-      if (habitsRes.success && habitsRes.data) {
-        setGoalHabits((prev) => new Map(prev).set(goalId, habitsRes.data!));
-      }
+      // Always store metrics (even if empty) to indicate we've loaded them
+      setGoalMetrics((prev) => new Map(prev).set(goalId, metrics));
 
-      if (metricsRes.success && metricsRes.data) {
-        // Load metrics details
-        const metricsDetails: Metric[] = [];
+      // Load metric logs once for all metrics (optimization: load all logs once, not per metric)
+      if (metrics.length > 0) {
         const storage = getStorageAdapter();
+        const allLogs = await storage.getAll<MetricLog>('metricLogs');
 
-        for (const metric of metricsRes.data) {
-          metricsDetails.push(metric);
-          // Load logs for each metric
-          const allLogs = await storage.getAll<MetricLog>('metricLogs');
+        // Filter and sort logs for each metric
+        for (const metric of metrics) {
           const metricLogs = allLogs
             .filter((log) => log.metricId === metric.id)
             .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime());
-          setGoalMetricLogs((prev) => new Map(prev).set(metric.id, metricLogs));
+          if (metricLogs.length > 0) {
+            setGoalMetricLogs((prev) => new Map(prev).set(metric.id, metricLogs));
+          }
         }
-        setGoalMetrics((prev) => new Map(prev).set(goalId, metricsDetails));
       }
 
-      if (projectsRes.success && projectsRes.data) {
-        // Convert to EntitySummary
-        const projectEntities: EntitySummary[] = [];
+      // Always store projects (even if empty) to indicate we've loaded them
+      // Convert to EntitySummary
+      const projectEntities: EntitySummary[] = projects.map((project) => ({
+        id: project.id,
+        title: project.name,
+        type: 'project',
+        area: project.area,
+        status: project.status,
+      }));
+      setGoalProjects((prev) => new Map(prev).set(goalId, projectEntities));
 
-        for (const project of projectsRes.data) {
-          projectEntities.push({
-            id: project.id,
-            title: project.name,
-            type: 'project',
-            area: project.area,
-            status: project.status,
-          });
+      // Calculate linked counts from data we already have (avoid duplicate API calls)
+      const counts = {
+        tasks: tasks.length,
+        metrics: metrics.length,
+        habits: habits.length,
+        projects: projects.length,
+      };
+      setGoalsLinkedCounts((prev) => new Map(prev).set(goalId, counts));
+
+      // Use the goal we already have instead of fetching again
+      let goalForHealth = goal;
+      if (!goalForHealth) {
+        // Only fetch if we don't have it
+        const goalResponse = await goalsService.getById(goalId);
+        if (!goalResponse.success || !goalResponse.data) {
+          return;
         }
-        setGoalProjects((prev) => new Map(prev).set(goalId, projectEntities));
+        goalForHealth = goalResponse.data;
       }
 
-      // Load progress
-      const progressData = await goalProgressService.computeProgress(goalId);
+      // Compute progress using data we already fetched (avoid duplicate API calls)
+      const weights = goalForHealth.progressConfig || {
+        criteriaWeight: 40,
+        tasksWeight: 30,
+        metricsWeight: 20,
+        habitsWeight: 10,
+      };
+
+      // Calculate criteria progress
+      const criteriaProgress = goalProgressService.calculateCriteriaProgress(
+        goalForHealth.successCriteria
+      );
+
+      // Calculate tasks progress
+      const tasksProgress = goalProgressService.calculateTasksProgress(tasks);
+
+      // Calculate metrics progress (requires fetching metric details and logs)
+      const metricsProgress = await goalProgressService.calculateMetricsProgress(
+        metrics.map((m) => m.id)
+      );
+
+      // Calculate habits progress
+      const habitsProgress = await goalProgressService.calculateHabitsProgress(habits);
+
+      // Calculate weighted overall progress
+      const totalWeight =
+        weights.criteriaWeight + weights.tasksWeight + weights.metricsWeight + weights.habitsWeight;
+      let overall = 0;
+      if (totalWeight > 0) {
+        overall =
+          ((criteriaProgress.percentage * weights.criteriaWeight) / 100 +
+            (tasksProgress.percentage * weights.tasksWeight) / 100 +
+            (metricsProgress.percentage * weights.metricsWeight) / 100 +
+            (habitsProgress.consistency * weights.habitsWeight) / 100) /
+          (totalWeight / 100);
+      }
+
+      const progressData: GoalProgressBreakdown = {
+        overall: Math.round(overall),
+        criteria: criteriaProgress,
+        tasks: tasksProgress,
+        metrics: metricsProgress,
+        habits: habitsProgress,
+      };
       setGoalsProgress((prev) => new Map(prev).set(goalId, progressData));
 
-      // Fetch goal for health calculation
-      const goalResponse = await goalsService.getById(goalId);
-      if (goalResponse.success && goalResponse.data) {
-        // Load health data
-        const healthData = await goalProgressService.calculateHealth(
-          goalResponse.data,
-          progressData
-        );
-        setGoalsHealth((prev) => new Map(prev).set(goalId, healthData));
-      }
-
-      // Load linked counts
-      const counts = await goalProgressService.getLinkedCounts(goalId);
-      setGoalsLinkedCounts((prev) => new Map(prev).set(goalId, counts));
+      // Calculate health using the goal we have
+      const healthData = await goalProgressService.calculateHealth(goalForHealth, progressData);
+      setGoalsHealth((prev) => new Map(prev).set(goalId, healthData));
     } catch (error) {
       console.error('Failed to load goal data:', error);
+    } finally {
+      loadingGoalsRef.current.delete(goalId);
     }
-  };
+    // No dependencies - we use refs to access latest values to prevent infinite loops
+  }, []);
 
   const loadGoals = async () => {
     setIsLoading(true);
@@ -195,10 +282,17 @@ export default function GoalsPage() {
 
         setGoals(loadedGoals);
 
-        // Load data for each goal
-        loadedGoals.forEach((goal) => {
-          loadGoalData(goal.id);
-        });
+        // Batch load goal data with controlled concurrency to avoid request avalanche
+        // Process goals in batches of 5 to limit concurrent requests
+        const shouldPreloadGoalData = false;
+        if (shouldPreloadGoalData) {
+          const batchSize = 5;
+          for (let i = 0; i < loadedGoals.length; i += batchSize) {
+            const batch = loadedGoals.slice(i, i + batchSize);
+            // Load each goal's data in parallel within the batch
+            await Promise.all(batch.map((goal) => loadGoalData(goal.id, goal)));
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load goals:', error);
@@ -208,20 +302,65 @@ export default function GoalsPage() {
   };
 
   useEffect(() => {
+    if (hasLoadedGoalsRef.current) {
+      return;
+    }
+    hasLoadedGoalsRef.current = true;
     loadGoals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Track the last loaded goal ID to prevent unnecessary reloads
+  const lastLoadedGoalIdRef = useRef<string | null>(null);
+  const lastLoadedGoalVersionRef = useRef<string | null>(null);
+
+  // Extract stable values from selectedGoal to use as dependencies
+  const selectedGoalId = selectedGoal?.id;
+  const selectedGoalUpdatedAt = selectedGoal?.updatedAt;
+
+  useEffect(() => {
+    if (!selectedGoal) {
+      lastLoadedGoalIdRef.current = null;
+      lastLoadedGoalVersionRef.current = null;
+      return;
+    }
+
+    // Create a version string from the goal's updatedAt timestamp to detect actual changes
+    const goalVersion = `${selectedGoal.id}-${selectedGoal.updatedAt}`;
+
+    // Only reload if the goal ID changed OR the goal was actually updated
+    if (
+      lastLoadedGoalIdRef.current === selectedGoal.id &&
+      lastLoadedGoalVersionRef.current === goalVersion
+    ) {
+      return;
+    }
+
+    lastLoadedGoalIdRef.current = selectedGoal.id;
+    lastLoadedGoalVersionRef.current = goalVersion;
+    loadGoalData(selectedGoal.id, selectedGoal);
+    // loadGoalData is stable (no dependencies), so we only need to track selectedGoal changes
+    // We use extracted values to avoid including the whole object
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGoalId, selectedGoalUpdatedAt]);
+
   const handleCreateGoal = async (input: CreateGoalInput) => {
     setIsSubmitting(true);
+    setCreateError(null);
     try {
       const response = await goalsService.create(input);
       if (response.success && response.data) {
         setGoals([response.data, ...goals]);
         setIsCreateDialogOpen(false);
+        setParentGoalForSubgoal(null); // Reset parent goal after creation
+        setCreateError(null);
+      } else if (response.error) {
+        // Pass the full error object so the form can display detailed validation errors
+        setCreateError(response.error);
       }
     } catch (error) {
       console.error('Failed to create goal:', error);
+      setCreateError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -235,6 +374,9 @@ export default function GoalsPage() {
         const updatedGoals = goals.map((g) => (g.id === id ? response.data! : g));
         setGoals(updatedGoals);
         if (selectedGoal && selectedGoal.id === id) {
+          // Reset the ref so the useEffect will reload the goal data
+          lastLoadedGoalIdRef.current = null;
+          // Update selectedGoal - this will trigger the useEffect to reload data
           setSelectedGoal(response.data);
         }
         setIsEditDialogOpen(false);
@@ -315,7 +457,7 @@ export default function GoalsPage() {
         }
 
         // Reload progress
-        loadGoalData(selectedGoal.id);
+        loadGoalData(selectedGoal.id, response.data);
       }
     } catch (error) {
       console.error('Failed to toggle criterion:', error);
@@ -446,7 +588,10 @@ export default function GoalsPage() {
     {} as Record<string, Goal[]>
   );
 
-  if (selectedGoal) {
+  // Memoize goal detail data to prevent unnecessary re-renders
+  const goalDetailData = useMemo(() => {
+    if (!selectedGoal) return null;
+
     const tasks = goalTasks.get(selectedGoal.id) || [];
     const metrics = (goalMetrics.get(selectedGoal.id) || []).map((m) => ({
       metric: m,
@@ -460,6 +605,12 @@ export default function GoalsPage() {
       weeklyProgress: 0,
     }));
     const projects = goalProjects.get(selectedGoal.id) || [];
+
+    return { tasks, metrics, habits, projects };
+  }, [selectedGoal?.id, goalTasks, goalMetrics, goalMetricLogs, goalHabits, goalProjects]);
+
+  if (selectedGoal && goalDetailData) {
+    const { tasks, metrics, habits, projects } = goalDetailData;
 
     return (
       <>
@@ -494,6 +645,7 @@ export default function GoalsPage() {
             onSubmit={handleUpdateGoal}
             onCancel={() => setIsEditDialogOpen(false)}
             isLoading={isSubmitting}
+            allGoals={goals}
           />
         </Dialog>
 
@@ -516,7 +668,13 @@ export default function GoalsPage() {
             Track your goals and success criteria
           </p>
         </div>
-        <Button variant="primary" onClick={() => setIsCreateDialogOpen(true)}>
+        <Button
+          variant="primary"
+          onClick={() => {
+            setParentGoalForSubgoal(null);
+            setIsCreateDialogOpen(true);
+          }}
+        >
           <Plus className="w-5 h-5 mr-2" />
           New Goal
         </Button>
@@ -757,7 +915,10 @@ export default function GoalsPage() {
               : 'Get started by creating your first goal'
           }
           actionLabel="Create Goal"
-          onAction={() => setIsCreateDialogOpen(true)}
+          onAction={() => {
+            setParentGoalForSubgoal(null);
+            setIsCreateDialogOpen(true);
+          }}
           variant={goals.length === 0 ? 'onboarding' : 'default'}
           onboardingSteps={
             goals.length === 0
@@ -790,9 +951,8 @@ export default function GoalsPage() {
             await handleUpdateGoal(goalId, updates as UpdateGoalInput);
             await loadGoals(); // Reload to reflect changes
           }}
-          onCreateGoal={(status) => {
-            // TODO: Set initial status for new goal
-            console.log('Create goal with status:', status);
+          onCreateGoal={() => {
+            setParentGoalForSubgoal(null);
             setIsCreateDialogOpen(true);
           }}
         />
@@ -806,8 +966,7 @@ export default function GoalsPage() {
           goalsHealth={goalsHealth}
           onGoalClick={handleGoalClick}
           onCreateSubgoal={(parentGoal) => {
-            // TODO: Implement create subgoal with parentGoalId set
-            console.log('Create subgoal for:', parentGoal.title);
+            setParentGoalForSubgoal(parentGoal);
             setIsCreateDialogOpen(true);
           }}
         />
@@ -859,14 +1018,28 @@ export default function GoalsPage() {
 
       <Dialog
         isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
-        title="Create New Goal"
+        onClose={() => {
+          setIsCreateDialogOpen(false);
+          setParentGoalForSubgoal(null);
+        }}
+        title={
+          parentGoalForSubgoal
+            ? `Create Subgoal for "${parentGoalForSubgoal.title}"`
+            : 'Create New Goal'
+        }
         className="max-w-2xl"
       >
         <GoalCreateForm
           onSubmit={handleCreateGoal}
-          onCancel={() => setIsCreateDialogOpen(false)}
+          onCancel={() => {
+            setIsCreateDialogOpen(false);
+            setParentGoalForSubgoal(null);
+            setCreateError(null);
+          }}
           isLoading={isSubmitting}
+          parentGoal={parentGoalForSubgoal}
+          error={createError}
+          allGoals={goals}
         />
       </Dialog>
 

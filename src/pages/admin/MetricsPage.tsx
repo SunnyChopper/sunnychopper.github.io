@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Plus,
   Search,
@@ -29,7 +29,7 @@ import type {
   Area,
 } from '@/types/growth-system';
 import { metricsService } from '@/services/growth-system/metrics.service';
-import { goalsService } from '@/services/growth-system/goals.service';
+import { useGoals, useMetrics } from '@/hooks/useGrowthSystem';
 import Button from '@/components/atoms/Button';
 import { MetricCard } from '@/components/molecules/MetricCard';
 import { MetricLogForm } from '@/components/molecules/MetricLogForm';
@@ -66,6 +66,10 @@ const STATUSES = ['Active', 'Paused', 'Archived'];
 type ViewMode = 'grid' | 'list' | 'area' | 'status' | 'momentum' | 'priority';
 
 export default function MetricsPage() {
+  // Get cached metrics and goals from React Query
+  const { metrics: cachedMetrics } = useMetrics();
+  const { goals: cachedGoals } = useGoals();
+
   const [metrics, setMetrics] = useState<Metric[]>([]);
   const [metricLogs, setMetricLogs] = useState<Map<string, MetricLog[]>>(new Map());
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -118,38 +122,36 @@ export default function MetricsPage() {
     }
   };
 
+  const loadGoals = useCallback(() => {
+    // Use cached goals
+    if (cachedGoals.length > 0) {
+      setGoals(cachedGoals);
+    }
+
+    // Build goal-metric relationships from cached data
+    // For each goal, find metrics that have this goal in their goalIds array
+    const goalMetricMap = new Map<string, string[]>();
+    for (const goal of cachedGoals) {
+      const linkedMetricIds = cachedMetrics
+        .filter((metric) => metric.goalIds?.includes(goal.id) ?? false)
+        .map((metric) => metric.id);
+      if (linkedMetricIds.length > 0) {
+        goalMetricMap.set(goal.id, linkedMetricIds);
+      }
+    }
+    setGoalMetrics(goalMetricMap);
+  }, [cachedGoals, cachedMetrics]);
+
   useEffect(() => {
     loadMetrics();
-    loadGoals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadGoals = async () => {
-    try {
-      const response = await goalsService.getAll();
-      if (response.success && response.data) {
-        setGoals(response.data);
-        // Load goal-metric relationships
-        const goalMetricMap = new Map<string, string[]>();
-        for (const goal of response.data) {
-          try {
-            const metricResponse = await goalsService.getLinkedMetrics(goal.id);
-            if (metricResponse.success && metricResponse.data) {
-              goalMetricMap.set(
-                goal.id,
-                metricResponse.data.map((gm) => gm.id)
-              );
-            }
-          } catch {
-            // Ignore errors for individual goals
-          }
-        }
-        setGoalMetrics(goalMetricMap);
-      }
-    } catch (error) {
-      console.error('Failed to load goals:', error);
+  useEffect(() => {
+    if (cachedGoals.length > 0 && cachedMetrics.length > 0) {
+      loadGoals();
     }
-  };
+  }, [cachedGoals, cachedMetrics, loadGoals]);
 
   const handleCreateMetric = async (input: CreateMetricInput) => {
     setIsSubmitting(true);

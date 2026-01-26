@@ -264,65 +264,35 @@ export default function TasksPage() {
   };
 
   const handleDependencyAdd = async (taskId: string, dependsOnId: string) => {
-    try {
-      await tasksService.addDependency(taskId, dependsOnId);
-      // React Query will refetch dependencies automatically on next render
-      // or we could invalidate the query here if needed
-    } catch (error) {
-      console.error('Failed to add dependency:', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to add dependency',
-        message: error instanceof Error ? error.message : 'An error occurred',
-      });
-    }
+    await tasksService.addDependency(taskId, dependsOnId);
+    // React Query will refetch dependencies automatically on next render
+    // or we could invalidate the query here if needed
   };
 
   const handleDependencyRemove = async (taskId: string, dependsOnId: string) => {
-    try {
-      await tasksService.removeDependency(taskId, dependsOnId);
-      // React Query will refetch dependencies automatically on next render
-      // or we could invalidate the query here if needed
-    } catch (error) {
-      console.error('Failed to remove dependency:', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to remove dependency',
-        message: error instanceof Error ? error.message : 'An error occurred',
-      });
-    }
+    await tasksService.removeDependency(taskId, dependsOnId);
+    // React Query will refetch dependencies automatically on next render
+    // or we could invalidate the query here if needed
   };
 
   const handleProjectLink = async (taskId: string, projectId: string) => {
-    try {
-      await tasksService.linkToProject(taskId, projectId);
-    } catch (error) {
-      console.error('Failed to link project:', error);
-    }
+    await tasksService.linkToProject(taskId, projectId);
+    // Notify ProjectsPage to refresh its task list
+    window.dispatchEvent(new CustomEvent('task-project-link-changed', { detail: { projectId } }));
   };
 
   const handleProjectUnlink = async (taskId: string, projectId: string) => {
-    try {
-      await tasksService.unlinkFromProject(taskId, projectId);
-    } catch (error) {
-      console.error('Failed to unlink project:', error);
-    }
+    await tasksService.unlinkFromProject(taskId, projectId);
+    // Notify ProjectsPage to refresh its task list
+    window.dispatchEvent(new CustomEvent('task-project-link-changed', { detail: { projectId } }));
   };
 
   const handleGoalLink = async (taskId: string, goalId: string) => {
-    try {
-      await tasksService.linkToGoal(taskId, goalId);
-    } catch (error) {
-      console.error('Failed to link goal:', error);
-    }
+    await tasksService.linkToGoal(taskId, goalId);
   };
 
   const handleGoalUnlink = async (taskId: string, goalId: string) => {
-    try {
-      await tasksService.unlinkFromGoal(taskId, goalId);
-    } catch (error) {
-      console.error('Failed to unlink goal:', error);
-    }
+    await tasksService.unlinkFromGoal(taskId, goalId);
   };
 
   const getTaskDependencies = (taskId: string): Task[] => {

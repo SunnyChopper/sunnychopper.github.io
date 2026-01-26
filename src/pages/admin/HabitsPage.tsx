@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, Search, Repeat, Calendar, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import type {
   Habit,
@@ -11,6 +11,7 @@ import type {
 } from '@/types/growth-system';
 import { habitsService } from '@/services/growth-system/habits.service';
 import { goalsService } from '@/services/growth-system/goals.service';
+import { useHabits } from '@/hooks/useGrowthSystem';
 import Button from '@/components/atoms/Button';
 import { HabitCard } from '@/components/molecules/HabitCard';
 import { HabitLogWidget } from '@/components/molecules/HabitLogWidget';
@@ -38,12 +39,14 @@ type ViewMode = 'today' | 'all';
 const HABIT_TYPES: HabitType[] = ['Build', 'Maintain', 'Reduce', 'Quit'];
 
 export default function HabitsPage() {
-  const [habits, setHabits] = useState<Habit[]>([]);
+  // Use React Query hook to prevent duplicate fetches
+  const { habits, isLoading, createHabit, updateHabit, deleteHabit, logCompletion } = useHabits();
   const [habitLogs, setHabitLogs] = useState<Map<string, HabitLog[]>>(new Map());
   const [linkedGoals, setLinkedGoals] = useState<Map<string, Goal[]>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('today');
+  // Use ref to track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
@@ -63,46 +66,59 @@ export default function HabitsPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [activityView, setActivityView] = useState<'heatmap' | 'calendar'>('heatmap');
 
-  const loadLinkedGoals = async (habitId: string) => {
-    try {
-      const storage = await import('../../lib/storage').then((m) => m.getStorageAdapter());
-      const allHabitGoals = await storage.getAll<{ habitId: string; goalId: string }>('habitGoals');
-      const linkedGoalIds = allHabitGoals
-        .filter((hg: { habitId: string; goalId: string }) => hg.habitId === habitId)
-        .map((hg: { goalId: string }) => hg.goalId);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
+  const loadLinkedGoals = async (habit: Habit) => {
+    if (!habit.goalIds || habit.goalIds.length === 0) {
+      if (isMountedRef.current) {
+        setLinkedGoals((prev) => new Map(prev).set(habit.id, []));
+      }
+      return;
+    }
+
+    try {
       const allGoalsResponse = await goalsService.getAll();
-      if (allGoalsResponse.success && allGoalsResponse.data) {
-        const goals = allGoalsResponse.data.filter((g: Goal) => linkedGoalIds.includes(g.id));
-        setLinkedGoals((prev) => new Map(prev).set(habitId, goals));
+      if (allGoalsResponse.success && allGoalsResponse.data && isMountedRef.current) {
+        const goals = allGoalsResponse.data.filter((g: Goal) => habit.goalIds?.includes(g.id));
+        setLinkedGoals((prev) => new Map(prev).set(habit.id, goals));
       }
     } catch (error) {
       console.error('Failed to load linked goals:', error);
     }
   };
 
-  const loadHabits = async () => {
-    setIsLoading(true);
-    try {
-      const response = await habitsService.getAll();
-      if (response.success && response.data) {
-        setHabits(response.data);
-        response.data.forEach((habit) => {
-          loadHabitLogs(habit.id);
-          loadLinkedGoals(habit.id);
-        });
-      }
-    } catch (error) {
-      console.error('Failed to load habits:', error);
-    } finally {
-      setIsLoading(false);
+  // Load linked goals when habits are loaded
+  useEffect(() => {
+    if (habits.length > 0) {
+      habits.forEach((habit) => {
+        if (!linkedGoals.has(habit.id)) {
+          loadLinkedGoals(habit);
+        }
+      });
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habits]);
+
+  // Update selectedHabit when habits list changes (e.g., after update)
+  useEffect(() => {
+    if (selectedHabit) {
+      const updatedHabit = habits.find((h) => h.id === selectedHabit.id);
+      if (updatedHabit && updatedHabit !== selectedHabit) {
+        setSelectedHabit(updatedHabit);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habits]);
 
   const loadHabitLogs = async (habitId: string) => {
     try {
       const response = await habitsService.getLogsByHabit(habitId);
-      if (response.success && response.data) {
+      if (response.success && response.data && isMountedRef.current) {
         setHabitLogs((prev) => new Map(prev).set(habitId, response.data!));
       }
     } catch (error) {
@@ -110,18 +126,13 @@ export default function HabitsPage() {
     }
   };
 
-  useEffect(() => {
-    loadHabits();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleCreateHabit = async (input: CreateHabitInput) => {
     setIsSubmitting(true);
     try {
-      const response = await habitsService.create(input);
+      const response = await createHabit(input);
       if (response.success && response.data) {
-        setHabits([response.data, ...habits]);
         setIsCreateDialogOpen(false);
+        // React Query will automatically refetch and update the habits list
       }
     } catch (error) {
       console.error('Failed to create habit:', error);
@@ -133,14 +144,13 @@ export default function HabitsPage() {
   const handleUpdateHabit = async (id: string, input: UpdateHabitInput) => {
     setIsSubmitting(true);
     try {
-      const response = await habitsService.update(id, input);
+      const response = await updateHabit({ id, input });
       if (response.success && response.data) {
-        const updatedHabits = habits.map((h) => (h.id === id ? response.data! : h));
-        setHabits(updatedHabits);
         if (selectedHabit && selectedHabit.id === id) {
           setSelectedHabit(response.data);
         }
         setIsEditDialogOpen(false);
+        // React Query will automatically refetch and update the habits list
       }
     } catch (error) {
       console.error('Failed to update habit:', error);
@@ -154,14 +164,13 @@ export default function HabitsPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await habitsService.delete(habitToDelete.id);
+      const response = await deleteHabit(habitToDelete.id);
       if (response.success) {
-        const updatedHabits = habits.filter((h) => h.id !== habitToDelete.id);
-        setHabits(updatedHabits);
         if (selectedHabit && selectedHabit.id === habitToDelete.id) {
           setSelectedHabit(null);
         }
         setHabitToDelete(null);
+        // React Query will automatically refetch and update the habits list
       }
     } catch (error) {
       console.error('Failed to delete habit:', error);
@@ -173,7 +182,7 @@ export default function HabitsPage() {
   const handleLogCompletion = async (input: CreateHabitLogInput) => {
     setIsSubmitting(true);
     try {
-      const response = await habitsService.logCompletion(input);
+      const response = await logCompletion(input);
       if (response.success && response.data) {
         loadHabitLogs(input.habitId);
         setIsLogDialogOpen(false);
@@ -188,6 +197,12 @@ export default function HabitsPage() {
 
   const handleHabitClick = (habit: Habit) => {
     setSelectedHabit(habit);
+    // Load logs only when viewing habit detail
+    loadHabitLogs(habit.id);
+    // Ensure linked goals are loaded for this habit
+    if (!linkedGoals.has(habit.id)) {
+      loadLinkedGoals(habit);
+    }
   };
 
   const handleBackToGrid = () => {
@@ -217,6 +232,7 @@ export default function HabitsPage() {
   };
 
   const getStreak = (habitId: string): number => {
+    // Only calculate streak if logs are loaded for this habit
     const logs = habitLogs.get(habitId) || [];
     if (logs.length === 0) return 0;
 
@@ -247,7 +263,9 @@ export default function HabitsPage() {
   };
 
   const isTodayCompleted = (habitId: string): boolean => {
+    // Only check if logs are loaded for this habit
     const logs = habitLogs.get(habitId) || [];
+    if (logs.length === 0) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -259,7 +277,9 @@ export default function HabitsPage() {
   };
 
   const getTodayProgress = (habitId: string): number => {
+    // Only calculate if logs are loaded for this habit
     const logs = habitLogs.get(habitId) || [];
+    if (logs.length === 0) return 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -273,7 +293,9 @@ export default function HabitsPage() {
   };
 
   const getWeeklyProgress = (habitId: string): number => {
+    // Only calculate if logs are loaded for this habit
     const logs = habitLogs.get(habitId) || [];
+    if (logs.length === 0) return 0;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -297,11 +319,14 @@ export default function HabitsPage() {
   };
 
   const getTotalCompletions = (habitId: string): number => {
+    // Only calculate if logs are loaded for this habit
     const logs = habitLogs.get(habitId) || [];
+    if (logs.length === 0) return 0;
     return logs.reduce((sum, log) => sum + (log.amount || 1), 0);
   };
 
   const getLastCompletedDate = (habitId: string): string | null => {
+    // Only calculate if logs are loaded for this habit
     const logs = habitLogs.get(habitId) || [];
     if (logs.length === 0) return null;
     const sortedLogs = [...logs].sort(
