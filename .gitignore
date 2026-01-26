@@ -10,3 +10,4 @@ dist/
 terraform.tfvars
 *.tfvars
 !terraform.tfvars.example
+.cursor/debug.log

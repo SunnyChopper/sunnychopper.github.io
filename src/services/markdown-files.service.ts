@@ -354,12 +354,16 @@ export const markdownFilesService = {
       };
     }
 
-    console.log('[MarkdownService] Updating file by ID:', fileId);
+    if (import.meta.env.DEV) {
+      console.log('[MarkdownService] Updating file by ID:', fileId);
+    }
     const request: UpdateFileRequest = { content };
     const response = await apiClient.put<UpdateFileResponse>(`/markdown-files/${fileId}`, request);
 
     if (response.success && response.data) {
-      console.log('[MarkdownService] File updated successfully:', fileId);
+      if (import.meta.env.DEV) {
+        console.log('[MarkdownService] File updated successfully:', fileId);
+      }
       return {
         success: true,
         data: response.data.file,
@@ -518,7 +522,9 @@ export const markdownFilesService = {
     // Return success since local deletion is the critical part for local files
     // For regular files, the backend error is more important
     if (isBackendUnavailable(response.error)) {
-      console.log(`[MarkdownService] Backend unavailable, but localStorage purged: ${filePath}`);
+      if (import.meta.env.DEV) {
+        console.log(`[MarkdownService] Backend unavailable, but localStorage purged: ${filePath}`);
+      }
       return {
         success: true,
       };
@@ -663,9 +669,11 @@ export const markdownFilesService = {
         let retryDelay = 500; // Start with 500ms delay
 
         while (!fileResponse.success && retries > 0) {
-          console.log(
-            `[MarkdownService] Metadata fetch failed for ${file.name}, retrying... (${retries} attempts left)`
-          );
+          if (import.meta.env.DEV) {
+            console.log(
+              `[MarkdownService] Metadata fetch failed for ${file.name}, retrying... (${retries} attempts left)`
+            );
+          }
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
           fileResponse = await this.getFileById(fileId);
           retries--;

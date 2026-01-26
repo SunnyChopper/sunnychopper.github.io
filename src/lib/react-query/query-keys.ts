@@ -114,12 +114,6 @@ export const queryKeys = {
     detail: () => [...queryKeys.modePreference.all, 'detail'] as const,
   },
 
-  // API Keys
-  apiKeys: {
-    all: ['api-keys'] as const,
-    detail: () => [...queryKeys.apiKeys.all, 'detail'] as const,
-  },
-
   // Feature Configs
   featureConfigs: {
     all: ['feature-configs'] as const,

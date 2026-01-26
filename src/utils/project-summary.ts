@@ -58,10 +58,10 @@ export const getScheduleHealth = (
   hasHealthData?: boolean
 ) => {
   if (!hasHealthData) return null;
-  if (!project.startDate || !project.endDate) return null;
+  if (!project.startDate || !project.targetEndDate) return null;
   if (project.status === 'Completed' || project.status === 'Cancelled') return null;
   const start = new Date(project.startDate).getTime();
-  const end = new Date(project.endDate).getTime();
+  const end = new Date(project.targetEndDate).getTime();
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
 
   const now = +new Date();
