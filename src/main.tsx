@@ -9,6 +9,25 @@ import { RewardsProvider } from './contexts/Rewards';
 import './index.css';
 import App from './App.tsx';
 
+// Initialize theme synchronously before React renders
+// This ensures the loader respects dark mode immediately
+(function initializeTheme() {
+  const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'system' | null;
+  const theme = storedTheme || 'system';
+
+  let effectiveTheme = theme;
+
+  if (theme === 'system') {
+    effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  if (effectiveTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+})();
+
 configureAmplify();
 
 const queryClient = new QueryClient({

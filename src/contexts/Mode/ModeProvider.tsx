@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { ModeContext } from './types';
 import { useModePreference, useModePreferenceMutations } from '@/hooks/useModePreference';
+import Loader from '@/components/molecules/Loader';
 
 interface ModeProviderProps {
   children: ReactNode;
@@ -37,9 +38,9 @@ export const ModeProvider = ({ children }: ModeProviderProps) => {
     toggleMode,
   };
 
-  // Don't render children until mode is loaded to avoid flash
+  // Show loader while mode is loading instead of returning null
   if (isLoading) {
-    return null;
+    return <Loader isLoading={true} />;
   }
 
   return <ModeContext.Provider value={value}>{children}</ModeContext.Provider>;
