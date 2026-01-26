@@ -1,8 +1,5 @@
 import type { z } from 'zod';
-import { getFeatureConfig, getFeatureConfigSync } from '@/lib/llm/config/feature-config-store';
-import { getApiKey, hasApiKey, hasApiKeySync } from '@/lib/llm/config/api-key-store';
-import { createProvider } from '@/lib/llm/providers/provider-factory';
-import type { BaseLLMProvider } from '@/lib/llm/providers/base-provider';
+import { getFeatureConfigSync } from '@/lib/llm/config/feature-config-store';
 import type { AIFeature } from '@/lib/llm/config/feature-types';
 
 /**
@@ -12,64 +9,42 @@ import type { AIFeature } from '@/lib/llm/config/feature-types';
  */
 export abstract class BaseAgent {
   protected feature: AIFeature;
-  protected provider: BaseLLMProvider | null = null;
 
   constructor(feature: AIFeature) {
     this.feature = feature;
   }
 
   /**
-   * Get or create the LLM provider instance.
-   * Uses existing feature configuration and provider factory pattern.
+   * LangGraph agents should use backend endpoints.
+   * Direct provider access is no longer supported.
    */
-  protected async getProvider(): Promise<BaseLLMProvider> {
-    if (this.provider) {
-      return this.provider;
-    }
-
-    const featureConfig = await getFeatureConfig(this.feature);
-    if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-      throw new Error(
-        `LLM not configured for feature: ${this.feature}. Please configure in Settings.`
-      );
-    }
-
-    const apiKey = await getApiKey(featureConfig.provider);
-    if (!apiKey) {
-      throw new Error('API key not found');
-    }
-
-    this.provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
-    return this.provider;
+  protected async getProvider(): Promise<never> {
+    throw new Error(
+      `Direct LLM provider access is not supported. ${this.constructor.name} should use backend endpoints.`
+    );
   }
 
   /**
    * Invoke LLM with error handling.
+   * LangGraph agents should use backend endpoints instead.
    */
-  protected async invokeLLM(messages: Array<{ role: string; content: string }>): Promise<string> {
-    try {
-      const provider = await this.getProvider();
-      return await provider.invoke(messages);
-    } catch (error) {
-      console.error(`[${this.constructor.name}] Error invoking LLM:`, error);
-      throw error instanceof Error ? error : new Error('Failed to invoke LLM');
-    }
+  protected async invokeLLM(_messages: Array<{ role: string; content: string }>): Promise<never> {
+    throw new Error(
+      `Direct LLM invocation is not supported. ${this.constructor.name} should use backend endpoints.`
+    );
   }
 
   /**
    * Invoke LLM with structured output using Zod schema.
+   * LangGraph agents should use backend endpoints instead.
    */
   protected async invokeStructured<T extends z.ZodType>(
-    schema: T,
-    messages: Array<{ role: string; content: string }>
-  ): Promise<z.infer<T>> {
-    try {
-      const provider = await this.getProvider();
-      return await provider.invokeStructured(schema, messages);
-    } catch (error) {
-      console.error(`[${this.constructor.name}] Error invoking structured LLM:`, error);
-      throw error instanceof Error ? error : new Error('Failed to invoke structured LLM');
-    }
+    _schema: T,
+    _messages: Array<{ role: string; content: string }>
+  ): Promise<never> {
+    throw new Error(
+      `Direct structured LLM invocation is not supported. ${this.constructor.name} should use backend endpoints.`
+    );
   }
 
   /**
@@ -88,10 +63,10 @@ export abstract class BaseAgent {
 
   /**
    * Check if the agent is properly configured.
-   * Uses sync versions for synchronous check.
+   * Backend always handles API keys via Secrets Manager.
    */
   isConfigured(): boolean {
     const featureConfig = getFeatureConfigSync(this.feature);
-    return featureConfig !== null && hasApiKeySync(featureConfig.provider);
+    return featureConfig !== null;
   }
 }
