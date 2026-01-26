@@ -6,6 +6,7 @@ import { extractApiError } from '@/lib/react-query/error-utils';
 import { updateLocalFile, purgeLocalFile } from '@/hooks/useLocalFiles';
 import { useMarkdownBackendStatus } from '@/hooks/useMarkdownBackendStatus';
 import { buildUpdateFile } from '@/lib/markdown/file-utils';
+import { removeMarkdownFileCache, upsertMarkdownFileCache } from '@/lib/react-query/markdown-cache';
 import type { FileTreeNode } from '@/types/markdown-files';
 
 /**
@@ -70,9 +71,10 @@ export function useMarkdownFiles(folder?: string) {
       // Backend save succeeded - don't save to localStorage
       return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.tree() });
+    onSuccess: (result) => {
+      if (result.success && result.data) {
+        upsertMarkdownFileCache(queryClient, result.data);
+      }
     },
   });
 
@@ -111,21 +113,21 @@ export function useMarkdownFiles(folder?: string) {
       // Backend save succeeded - don't save to localStorage
       return result;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.tree() });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.markdownFiles.detail(variables.filePath),
-      });
+    onSuccess: (result) => {
+      if (result.success && result.data) {
+        upsertMarkdownFileCache(queryClient, result.data);
+      }
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async ({ filePath, fileId }: { filePath: string; fileId?: string }) => {
-      console.log(
-        `[useMarkdownFiles] deleteMutation started for: ${filePath}`,
-        fileId ? `(ID: ${fileId})` : ''
-      );
+      if (import.meta.env.DEV) {
+        console.log(
+          `[useMarkdownFiles] deleteMutation started for: ${filePath}`,
+          fileId ? `(ID: ${fileId})` : ''
+        );
+      }
 
       // Always purge from localStorage first - this is aggressive and will remove the file
       // regardless of exact path matching. This ensures complete local deletion.
@@ -146,10 +148,9 @@ export function useMarkdownFiles(folder?: string) {
       // Return success for local files since local deletion is what matters
       return result;
     },
-    onSuccess: () => {
-      console.log(`[useMarkdownFiles] deleteMutation succeeded, invalidating queries`);
-      queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.tree() });
+    onSuccess: (_result, variables) => {
+      console.log(`[useMarkdownFiles] deleteMutation succeeded, updating caches`);
+      removeMarkdownFileCache(queryClient, variables.filePath);
     },
   });
 
@@ -243,14 +244,11 @@ export function useMarkdownFiles(folder?: string) {
             data: finalTree,
           });
         }
-      }
 
-      // Delay invalidation slightly to give backend time to process
-      // The optimistic update will show immediately, and backend refresh will happen shortly after
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.tree() });
-      }, 1500);
+        result.data.forEach((file) => {
+          upsertMarkdownFileCache(queryClient, file);
+        });
+      }
     },
   });
 

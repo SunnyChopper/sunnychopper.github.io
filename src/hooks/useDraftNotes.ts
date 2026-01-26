@@ -73,10 +73,6 @@ export function useDraftNoteMutations() {
         queryClient.setQueryData(queryKeys.draftNotes.detail(), context.previousDraft);
       }
     },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: queryKeys.draftNotes.detail() });
-    },
   });
 
   const deleteDraftNote = useMutation({
@@ -104,10 +100,6 @@ export function useDraftNoteMutations() {
       if (context?.previousDraft) {
         queryClient.setQueryData(queryKeys.draftNotes.detail(), context.previousDraft);
       }
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: queryKeys.draftNotes.detail() });
     },
   });
 

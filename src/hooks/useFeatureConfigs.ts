@@ -51,15 +51,29 @@ export function useFeatureConfigMutations() {
   const setFeatureConfig = useMutation({
     mutationFn: ({ feature, config }: { feature: AIFeature; config: FeatureProviderConfig }) =>
       apiClient.setFeatureConfig(feature, config),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.featureConfigs.detail() });
+    onSuccess: (_response, variables) => {
+      const current = queryClient.getQueryData<{
+        success: boolean;
+        data?: Record<AIFeature, FeatureProviderConfig>;
+      }>(queryKeys.featureConfigs.detail());
+      const next = {
+        ...(current?.data || ({} as Record<AIFeature, FeatureProviderConfig>)),
+        [variables.feature]: variables.config,
+      };
+      queryClient.setQueryData(queryKeys.featureConfigs.detail(), { success: true, data: next });
     },
   });
 
   const resetFeatureConfig = useMutation({
     mutationFn: (feature: AIFeature) => apiClient.resetFeatureConfig(feature),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.featureConfigs.detail() });
+    onSuccess: (_response, feature) => {
+      const current = queryClient.getQueryData<{
+        success: boolean;
+        data?: Record<AIFeature, FeatureProviderConfig>;
+      }>(queryKeys.featureConfigs.detail());
+      if (!current?.data) return;
+      const { [feature]: _removed, ...rest } = current.data;
+      queryClient.setQueryData(queryKeys.featureConfigs.detail(), { success: true, data: rest });
     },
   });
 

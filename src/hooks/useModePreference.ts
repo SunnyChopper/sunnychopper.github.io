@@ -75,10 +75,6 @@ export function useModePreferenceMutations() {
         queryClient.setQueryData(queryKeys.modePreference.detail(), context.previousMode);
       }
     },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: queryKeys.modePreference.detail() });
-    },
   });
 
   return {

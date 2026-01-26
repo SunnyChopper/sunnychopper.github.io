@@ -24,6 +24,20 @@ import type {
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
+import {
+  removeGoalCache,
+  removeHabitCache,
+  removeLogbookEntryCache,
+  removeMetricCache,
+  removeProjectCache,
+  removeTaskCache,
+  upsertGoalCache,
+  upsertHabitCache,
+  upsertLogbookEntryCache,
+  upsertMetricCache,
+  upsertProjectCache,
+  upsertTaskCache,
+} from '@/lib/react-query/growth-system-cache';
 
 // TODO: These hooks use React Query to fetch data from backend API
 // Currently will fail until backend is implemented or mock data is provided
@@ -64,26 +78,27 @@ export const useTasks = () => {
 
   const createMutation = useMutation({
     mutationFn: (input: CreateTaskInput) => tasksService.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertTaskCache(queryClient, response.data);
+      }
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateTaskInput }) =>
       tasksService.update(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertTaskCache(queryClient, response.data);
+      }
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => tasksService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (_response, taskId) => {
+      removeTaskCache(queryClient, taskId);
     },
   });
 
@@ -137,35 +152,33 @@ export const useHabits = () => {
 
   const createMutation = useMutation({
     mutationFn: (input: CreateHabitInput) => habitsService.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.habits.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertHabitCache(queryClient, response.data);
+      }
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateHabitInput }) =>
       habitsService.update(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.habits.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertHabitCache(queryClient, response.data);
+      }
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => habitsService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.habits.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (_response, habitId) => {
+      removeHabitCache(queryClient, habitId);
     },
   });
 
   const logCompletionMutation = useMutation({
     mutationFn: habitsService.logCompletion,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.habits.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
-    },
+    onSuccess: () => {},
   });
 
   const apiError = error ? extractApiError(error) : null;
@@ -219,26 +232,27 @@ export const useMetrics = () => {
 
   const createMutation = useMutation({
     mutationFn: (input: CreateMetricInput) => metricsService.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.metrics.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertMetricCache(queryClient, response.data);
+      }
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateMetricInput }) =>
       metricsService.update(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.metrics.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertMetricCache(queryClient, response.data);
+      }
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => metricsService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.metrics.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (_response, metricId) => {
+      removeMetricCache(queryClient, metricId);
     },
   });
 
@@ -292,26 +306,27 @@ export const useGoals = () => {
 
   const createMutation = useMutation({
     mutationFn: (input: CreateGoalInput) => goalsService.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.goals.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertGoalCache(queryClient, response.data);
+      }
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateGoalInput }) =>
       goalsService.update(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.goals.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertGoalCache(queryClient, response.data);
+      }
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => goalsService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.goals.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (_response, goalId) => {
+      removeGoalCache(queryClient, goalId);
     },
   });
 
@@ -365,26 +380,27 @@ export const useProjects = () => {
 
   const createMutation = useMutation({
     mutationFn: (input: CreateProjectInput) => projectsService.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.projects.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertProjectCache(queryClient, response.data);
+      }
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateProjectInput }) =>
       projectsService.update(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.projects.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertProjectCache(queryClient, response.data);
+      }
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => projectsService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.projects.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (_response, projectId) => {
+      removeProjectCache(queryClient, projectId);
     },
   });
 
@@ -438,26 +454,27 @@ export const useLogbook = () => {
 
   const createMutation = useMutation({
     mutationFn: (input: CreateLogbookEntryInput) => logbookService.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.logbook.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertLogbookEntryCache(queryClient, response.data);
+      }
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateLogbookEntryInput }) =>
       logbookService.update(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.logbook.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertLogbookEntryCache(queryClient, response.data);
+      }
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => logbookService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.logbook.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (_response, entryId) => {
+      removeLogbookEntryCache(queryClient, entryId);
     },
   });
 
