@@ -13,7 +13,14 @@ interface TaskKanbanBoardProps {
   onTaskClick?: (task: Task) => void;
 }
 
-const STATUSES: TaskStatus[] = ['Not Started', 'In Progress', 'Blocked', 'On Hold'];
+const STATUSES: TaskStatus[] = [
+  'Not Started',
+  'In Progress',
+  'Blocked',
+  'On Hold',
+  'Done',
+  'Cancelled',
+];
 
 const STATUS_HEADER_COLORS: Record<TaskStatus, string> = {
   'Not Started': 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',

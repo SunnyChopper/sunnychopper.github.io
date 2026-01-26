@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
 import type {
   Goal,
@@ -72,17 +72,77 @@ export function GoalDetailView({
   const [progress, setProgress] = useState<GoalProgressBreakdown | null>(null);
   const [isLoadingProgress, setIsLoadingProgress] = useState(true);
 
+  // Use refs to store latest values for use in effect without causing re-renders
+  const latestValuesRef = useRef({ goal, tasks, metrics, habits });
+  latestValuesRef.current = { goal, tasks, metrics, habits };
+
+  // Create stable ID arrays for dependency tracking to avoid infinite loops
+  const taskIds = useMemo(
+    () =>
+      tasks
+        .map((t) => t.id)
+        .sort()
+        .join(','),
+    [tasks]
+  );
+  const metricIds = useMemo(
+    () =>
+      metrics
+        .map((m) => m.metric.id)
+        .sort()
+        .join(','),
+    [metrics]
+  );
+  const habitIds = useMemo(
+    () =>
+      habits
+        .map((h) => h.habit.id)
+        .sort()
+        .join(','),
+    [habits]
+  );
+  const successCriteriaHash = useMemo(() => {
+    if (!goal.successCriteria || goal.successCriteria.length === 0) return '';
+    return JSON.stringify(
+      goal.successCriteria.map((c): { id: string; isCompleted: boolean } => {
+        if (typeof c === 'string') {
+          const str = c as string;
+          return { id: str, isCompleted: str.includes('✓') };
+        }
+        const criterion = c as { id: string; isCompleted: boolean };
+        return { id: criterion.id, isCompleted: criterion.isCompleted };
+      })
+    );
+  }, [goal.successCriteria]);
+
   useEffect(() => {
     const loadProgress = async () => {
       setIsLoadingProgress(true);
       try {
-        const progressData = await goalProgressService.computeProgress(goal.id);
+        // Get latest values from ref to ensure we use current props
+        const {
+          goal: currentGoal,
+          tasks: currentTasks,
+          metrics: currentMetrics,
+          habits: currentHabits,
+        } = latestValuesRef.current;
+
+        // Pass goal object and tasks, metrics, and habits to avoid API calls - they're already filtered from cache
+        const metricsArray = currentMetrics.map((m) => m.metric);
+        const habitsArray = currentHabits.map((h) => h.habit);
+        const progressData = await goalProgressService.computeProgress(
+          currentGoal,
+          currentTasks,
+          metricsArray,
+          habitsArray
+        );
         setProgress(progressData);
       } catch (error) {
         console.error('Failed to compute progress:', error);
         // Fallback to basic criteria-based progress
+        const { goal: currentGoal } = latestValuesRef.current;
         const criteriaProgress = goalProgressService.calculateCriteriaProgress(
-          goal.successCriteria
+          currentGoal.successCriteria
         );
         setProgress({
           overall: criteriaProgress.percentage,
@@ -97,7 +157,7 @@ export function GoalDetailView({
     };
 
     loadProgress();
-  }, [goal.id, goal.successCriteria]);
+  }, [goal.id, successCriteriaHash, taskIds, metricIds, habitIds]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -188,11 +248,18 @@ export function GoalDetailView({
         </div>
 
         {/* Progress Dashboard */}
-        {!isLoadingProgress && progress && (
+        {isLoadingProgress ? (
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+              <p className="text-gray-600 dark:text-gray-400">Loading progress overview...</p>
+            </div>
+          </div>
+        ) : progress ? (
           <div className="mb-6">
             <GoalProgressDashboard progress={progress} showBreakdown={true} />
           </div>
-        )}
+        ) : null}
 
         {/* Entity Sections Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -215,26 +282,38 @@ export function GoalDetailView({
             showEmpty={true}
           />
 
-          {/* Projects Section - Placeholder for now */}
-          {projects.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Projects ({projects.length})
-              </h3>
+          {/* Projects Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Projects ({projects.length})
+            </h3>
+            {projects.length > 0 ? (
               <div className="space-y-2">
                 {projects.map((project) => (
                   <div
                     key={project.id}
-                    className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                    className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-colors cursor-pointer"
                   >
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {project.title}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {project.title}
+                      </p>
+                      <span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+                        {project.status}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No projects linked</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
+                  Link projects that contribute to achieving this goal
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

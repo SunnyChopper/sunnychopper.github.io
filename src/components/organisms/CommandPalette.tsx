@@ -89,6 +89,21 @@ function CommandPaletteContent({ onClose }: CommandPaletteContentProps) {
 
   const allCommands = useMemo((): CommandItem[] => {
     const commands: CommandItem[] = [
+      ...(import.meta.env.DEV
+        ? [
+            {
+              id: 'action-debug-inspector',
+              title: 'Toggle Debug Inspector',
+              subtitle: 'Open the dev-only debug overlay',
+              icon: <Command size={18} />,
+              type: 'action' as const,
+              action: () => {
+                window.dispatchEvent(new Event('toggleDebugInspector'));
+              },
+              keywords: ['debug', 'inspector', 'devtools'],
+            },
+          ]
+        : []),
       {
         id: 'nav-dashboard',
         title: 'Dashboard',

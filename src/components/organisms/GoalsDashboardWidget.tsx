@@ -117,7 +117,7 @@ export function GoalsDashboardWidget({
               transition={{ delay: index * 0.1 }}
             >
               <Link to={`${ROUTES.admin.goals}?goalId=${goal.id}`}>
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-all group">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-all group min-h-[140px] flex flex-col">
                   {/* Top Row */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -157,8 +157,8 @@ export function GoalsDashboardWidget({
                     </div>
                   </div>
 
-                  {/* Bottom Row */}
-                  <div className="flex items-center justify-between text-xs">
+                  {/* Bottom Row - push to bottom */}
+                  <div className="flex items-center justify-between text-xs mt-auto">
                     <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                       <TrendingUp className="w-3.5 h-3.5" />
                       <span>{progress}% complete</span>

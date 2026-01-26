@@ -33,25 +33,13 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
     status: 'Planning',
     impact: 5,
     startDate: '',
-    endDate: '',
+    targetEndDate: '',
     notes: '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const input: CreateProjectInput = {
-      name: formData.name,
-      area: formData.area,
-      description: formData.description || undefined,
-      subCategory: formData.subCategory || undefined,
-      priority: formData.priority,
-      status: formData.status,
-      impact: formData.impact,
-      startDate: formData.startDate || undefined,
-      endDate: formData.endDate || undefined,
-      notes: formData.notes || undefined,
-    };
-    onSubmit(input);
+    onSubmit(formData);
   };
 
   const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area] || [];
@@ -190,12 +178,12 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            End Date
+            Target End Date
           </label>
           <input
             type="date"
-            value={formData.endDate}
-            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            value={formData.targetEndDate}
+            onChange={(e) => setFormData({ ...formData, targetEndDate: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

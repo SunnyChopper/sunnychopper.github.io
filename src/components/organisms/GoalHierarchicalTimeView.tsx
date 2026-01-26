@@ -1,7 +1,11 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, Plus, Home, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Plus, Home, ChevronRight, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Goal, TimeHorizon, GoalProgressBreakdown } from '@/types/growth-system';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
 import { GoalCard } from '@/components/molecules/GoalCard';
 
 interface GoalHierarchicalTimeViewProps {
@@ -56,45 +60,17 @@ export function GoalHierarchicalTimeView({
     return counts;
   };
 
-  // Get the next time horizon level
-  const getNextHorizon = (currentHorizon: TimeHorizon): TimeHorizon | null => {
-    const currentIndex = TIME_HORIZONS.indexOf(currentHorizon);
-    return currentIndex < TIME_HORIZONS.length - 1 ? TIME_HORIZONS[currentIndex + 1] : null;
-  };
-
-  // Get count of goals at the next time horizon
-  const getNextHorizonCount = (currentHorizon: TimeHorizon): number => {
-    const nextHorizon = getNextHorizon(currentHorizon);
-    if (!nextHorizon) return 0;
-    return goals.filter((g) => g.timeHorizon === nextHorizon).length;
-  };
+  // Get the next time horizon level (not used but kept for future reference)
+  // const getNextHorizon = (currentHorizon: TimeHorizon): TimeHorizon | null => {
+  //   const currentIndex = TIME_HORIZONS.indexOf(currentHorizon);
+  //   return currentIndex < TIME_HORIZONS.length - 1 ? TIME_HORIZONS[currentIndex + 1] : null;
+  // };
 
   // Zoom into a goal (drill down by explicit children OR by time horizon)
+  // This shows the goal details AND its subgoals in one view
   const handleZoomInto = (goal: Goal) => {
-    const explicitChildCount = getChildCount(goal.id);
-
-    if (explicitChildCount > 0) {
-      // Has explicit children - drill into those
-      setNavigationStack((prev) => [...prev, { type: 'goal', goal }]);
-    } else {
-      // No explicit children - check if we can drill into next time horizon
-      const nextHorizon = getNextHorizon(goal.timeHorizon);
-      const nextHorizonGoalCount = nextHorizon
-        ? goals.filter((g) => g.timeHorizon === nextHorizon).length
-        : 0;
-
-      if (nextHorizonGoalCount > 0) {
-        // Drill into next time horizon
-        setNavigationStack((prev) => [
-          ...prev,
-          { type: 'goal', goal },
-          { type: 'horizon', horizon: nextHorizon! },
-        ]);
-      } else {
-        // No children and no next horizon - open detail view
-        onGoalClick(goal);
-      }
-    }
+    // Always show goal details when zooming in
+    setNavigationStack((prev) => [...prev, { type: 'goal', goal }]);
   };
 
   // Navigate back one level
@@ -115,15 +91,8 @@ export function GoalHierarchicalTimeView({
   // Get goals to display at current level
   const currentLevelGoals = useMemo(() => {
     if (navigationStack.length === 0) {
-      // Root level - show only goals at the top-most time horizon
-      // Find the first time horizon that has goals without parents
-      for (const horizon of TIME_HORIZONS) {
-        const horizonGoals = goals.filter((g) => g.timeHorizon === horizon && !g.parentGoalId);
-        if (horizonGoals.length > 0) {
-          return horizonGoals;
-        }
-      }
-      return [];
+      // Root level - show ALL parent goals (goals without a parentGoalId), regardless of timeHorizon
+      return goals.filter((g) => !g.parentGoalId);
     }
 
     const lastNav = navigationStack[navigationStack.length - 1];
@@ -137,11 +106,18 @@ export function GoalHierarchicalTimeView({
     }
   }, [goals, navigationStack]);
 
-  // Group by time horizon
+  // Group by time horizon and sort by due date (earliest first)
   const groupedGoals = useMemo(() => {
     return TIME_HORIZONS.reduce(
       (acc, horizon) => {
-        acc[horizon] = currentLevelGoals.filter((g) => g.timeHorizon === horizon);
+        const horizonGoals = currentLevelGoals.filter((g) => g.timeHorizon === horizon);
+        // Sort by targetDate: goals with dates first (earliest first), then goals without dates
+        acc[horizon] = horizonGoals.sort((a, b) => {
+          if (!a.targetDate && !b.targetDate) return 0;
+          if (!a.targetDate) return 1; // Goals without dates go to end
+          if (!b.targetDate) return -1; // Goals with dates come first
+          return new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime();
+        });
         return acc;
       },
       {} as Record<TimeHorizon, Goal[]>
@@ -244,6 +220,144 @@ export function GoalHierarchicalTimeView({
         )}
       </div>
 
+      {/* Show Goal Details when viewing a specific goal's subgoals */}
+      {(() => {
+        const lastNav = navigationStack[navigationStack.length - 1];
+        if (lastNav && lastNav.type === 'goal') {
+          const goal = lastNav.goal;
+          const progress = goalsProgress.get(goal.id);
+          const linkedCounts = goalsLinkedCounts.get(goal.id);
+          const health = goalsHealth.get(goal.id);
+          const overallProgress = progress?.overall || 0;
+          const explicitChildCount = getChildCount(goal.id);
+
+          // Get the next time horizon (one level lower)
+          const getNextTimeHorizon = (currentHorizon: TimeHorizon): TimeHorizon | null => {
+            const currentIndex = TIME_HORIZONS.indexOf(currentHorizon);
+            return currentIndex < TIME_HORIZONS.length - 1 ? TIME_HORIZONS[currentIndex + 1] : null;
+          };
+
+          const nextHorizon = getNextTimeHorizon(goal.timeHorizon);
+          const canCreateSubgoal =
+            explicitChildCount > 0 &&
+            goal.timeHorizon !== 'Daily' &&
+            nextHorizon !== null &&
+            onCreateSubgoal;
+
+          return (
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-3">
+                    <PriorityIndicator priority={goal.priority} size="md" />
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {goal.title}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <AreaBadge area={goal.area} />
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                      {goal.timeHorizon}
+                    </span>
+                    <StatusBadge status={goal.status} size="sm" />
+                    {health?.status && (
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          health.status === 'healthy'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : health.status === 'at_risk'
+                              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                              : health.status === 'behind'
+                                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400'
+                        }`}
+                      >
+                        {health.status === 'healthy'
+                          ? 'On Track'
+                          : health.status === 'at_risk'
+                            ? 'At Risk'
+                            : health.status === 'behind'
+                              ? 'Behind'
+                              : 'Dormant'}
+                      </span>
+                    )}
+                  </div>
+                  {goal.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                      {goal.description}
+                    </p>
+                  )}
+                  {goal.targetDate && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-gray-600 dark:text-gray-400">Due:</span>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {new Date(goal.targetDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {linkedCounts && (
+                    <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                      {linkedCounts.tasks > 0 && (
+                        <span>
+                          {linkedCounts.tasks} task{linkedCounts.tasks !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {linkedCounts.metrics > 0 && (
+                        <span>
+                          {linkedCounts.metrics} metric{linkedCounts.metrics !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {linkedCounts.habits > 0 && (
+                        <span>
+                          {linkedCounts.habits} habit{linkedCounts.habits !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {linkedCounts.projects > 0 && (
+                        <span>
+                          {linkedCounts.projects} project{linkedCounts.projects !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <ProgressRing progress={overallProgress} size="lg" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Progress</p>
+                  </div>
+                  <button
+                    onClick={() => onGoalClick(goal)}
+                    className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border border-blue-200 dark:border-blue-800"
+                  >
+                    View Details
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Create Subgoal Button */}
+              {canCreateSubgoal && (
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => onCreateSubgoal(goal)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all shadow-sm hover:shadow-md font-medium"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>Create {nextHorizon} Subgoal</span>
+                  </button>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    Quickly create a {nextHorizon?.toLowerCase()} goal one timeframe lower
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Goals at Current Level */}
       {currentLevelGoals.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-12 text-center">
@@ -299,11 +413,8 @@ export function GoalHierarchicalTimeView({
                     const health = goalsHealth.get(goal.id);
                     const explicitChildCount = getChildCount(goal.id);
                     const subgoalCounts = getSubgoalCounts(goal.id);
-                    const nextHorizon = getNextHorizon(goal.timeHorizon);
-                    const nextHorizonCount = getNextHorizonCount(goal.timeHorizon);
 
-                    // Can drill down if has explicit children OR there are goals in the next horizon
-                    const canDrillDown = explicitChildCount > 0 || nextHorizonCount > 0;
+                    // All goals support drill-down to show unified view of goal details + subgoals
 
                     return (
                       <motion.div
@@ -313,101 +424,86 @@ export function GoalHierarchicalTimeView({
                         transition={{ duration: 0.2 }}
                       >
                         <div className="relative group">
-                          {/* Wrapper for drill-down if can drill */}
-                          {canDrillDown ? (
-                            <div>
-                              {/* Overlay indicator for drill-down */}
-                              <div className="absolute -inset-0.5 bg-blue-500/10 dark:bg-blue-400/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border-2 border-blue-500/50 dark:border-blue-400/50" />
+                          {/* All goals support drill-down to show details + subgoals */}
+                          <div>
+                            {/* Overlay indicator for drill-down */}
+                            <div className="absolute -inset-0.5 bg-blue-500/10 dark:bg-blue-400/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border-2 border-blue-500/50 dark:border-blue-400/50" />
 
-                              {/* Click to drill down */}
-                              <div
-                                onClick={() => handleZoomInto(goal)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    handleZoomInto(goal);
-                                  }
-                                }}
-                                role="button"
-                                tabIndex={0}
-                                aria-label={`Zoom into goal: ${goal.title}`}
-                                className="cursor-pointer relative"
-                              >
-                                <GoalCard
-                                  goal={goal}
-                                  onClick={() => {}} // Prevent default card click
-                                  progress={progress}
-                                  linkedCounts={linkedCounts}
-                                  healthStatus={health?.status}
-                                  daysRemaining={health?.daysRemaining}
-                                  momentum={health?.momentum}
-                                />
+                            {/* Click to drill down */}
+                            <div
+                              onClick={() => handleZoomInto(goal)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleZoomInto(goal);
+                                }
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`Zoom into goal: ${goal.title}`}
+                              className="cursor-pointer relative"
+                            >
+                              <GoalCard
+                                goal={goal}
+                                onClick={() => {}} // Prevent default card click
+                                progress={progress}
+                                linkedCounts={linkedCounts}
+                                healthStatus={health?.status}
+                                daysRemaining={health?.daysRemaining}
+                                momentum={health?.momentum}
+                              />
 
-                                {/* Zoom indicator badge on card */}
-                                <div className="absolute top-3 right-3 bg-blue-600 dark:bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <span>Zoom In</span>
-                                  <ChevronRight className="w-3 h-3" />
-                                </div>
-                              </div>
-
-                              {/* Subgoal indicator */}
-                              <div className="mt-2 flex items-center gap-2 text-sm">
-                                <button
-                                  onClick={() => handleZoomInto(goal)}
-                                  className="flex-1 flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 text-blue-700 dark:text-blue-400 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/30 dark:hover:to-blue-800/40 rounded-lg transition-all border-2 border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 shadow-sm hover:shadow"
-                                >
-                                  <span className="font-semibold">
-                                    {explicitChildCount > 0 ? (
-                                      <>
-                                        {explicitChildCount}{' '}
-                                        {explicitChildCount === 1 ? 'subgoal' : 'subgoals'}
-                                        {Object.keys(subgoalCounts).length > 0 && (
-                                          <span className="text-xs ml-2 font-normal">
-                                            (
-                                            {Object.entries(subgoalCounts)
-                                              .map(([h, c]) => `${c} ${h.toLowerCase()}`)
-                                              .join(', ')}
-                                            )
-                                          </span>
-                                        )}
-                                      </>
-                                    ) : nextHorizon && nextHorizonCount > 0 ? (
-                                      <>
-                                        View {nextHorizonCount} {nextHorizon.toLowerCase()}{' '}
-                                        {nextHorizonCount === 1 ? 'goal' : 'goals'}
-                                      </>
-                                    ) : null}
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-xs">View</span>
-                                    <ChevronRight className="w-4 h-4" />
-                                  </div>
-                                </button>
-                                {onCreateSubgoal && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onCreateSubgoal(goal);
-                                    }}
-                                    className="px-3 py-3 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
-                                    title="Add subgoal"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                )}
+                              {/* Zoom indicator badge on card */}
+                              <div className="absolute top-3 right-3 bg-blue-600 dark:bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span>Zoom In</span>
+                                <ChevronRight className="w-3 h-3" />
                               </div>
                             </div>
-                          ) : (
-                            <GoalCard
-                              goal={goal}
-                              onClick={onGoalClick}
-                              progress={progress}
-                              linkedCounts={linkedCounts}
-                              healthStatus={health?.status}
-                              daysRemaining={health?.daysRemaining}
-                              momentum={health?.momentum}
-                            />
-                          )}
+
+                            {/* Subgoal indicator */}
+                            <div className="mt-2 flex items-center gap-2 text-sm">
+                              <button
+                                onClick={() => handleZoomInto(goal)}
+                                className="flex-1 flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/30 text-blue-700 dark:text-blue-400 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/30 dark:hover:to-blue-800/40 rounded-lg transition-all border-2 border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700 shadow-sm hover:shadow"
+                              >
+                                <span className="font-semibold">
+                                  {explicitChildCount > 0 ? (
+                                    <>
+                                      {explicitChildCount}{' '}
+                                      {explicitChildCount === 1 ? 'subgoal' : 'subgoals'}
+                                      {Object.keys(subgoalCounts).length > 0 && (
+                                        <span className="text-xs ml-2 font-normal">
+                                          (
+                                          {Object.entries(subgoalCounts)
+                                            .map(([h, c]) => `${c} ${h.toLowerCase()}`)
+                                            .join(', ')}
+                                          )
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    'View goal details'
+                                  )}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs">View</span>
+                                  <ChevronRight className="w-4 h-4" />
+                                </div>
+                              </button>
+                              {onCreateSubgoal && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onCreateSubgoal(goal);
+                                  }}
+                                  className="px-3 py-3 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
+                                  title="Add subgoal"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </motion.div>
                     );
