@@ -82,6 +82,8 @@ export interface Task {
   recurrenceRule: RecurrenceRule | null;
   pointValue: number | null;
   pointsAwarded: boolean | null;
+  projectIds: string[];
+  goalIds: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -122,9 +124,10 @@ export interface Project {
   status: ProjectStatus;
   impact: number;
   startDate: string | null;
-  endDate: string | null;
-  completedDate: string | null;
+  targetEndDate: string | null;
+  actualEndDate: string | null;
   notes: string | null;
+  goalIds?: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -232,6 +235,7 @@ export interface Metric {
   thresholdHigh: number | null;
   source: MetricSource;
   status: MetricStatus;
+  goalIds?: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -292,6 +296,7 @@ export interface Habit {
   frictionUp: string | null;
   frictionDown: string | null;
   notes: string | null;
+  goalIds?: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -409,6 +414,8 @@ export interface CreateTaskInput {
   isRecurring?: boolean;
   recurrenceRule?: RecurrenceRule;
   pointValue?: number;
+  projectIds?: string[];
+  goalIds?: string[];
 }
 
 export interface UpdateTaskInput {
@@ -427,6 +434,8 @@ export interface UpdateTaskInput {
   isRecurring?: boolean;
   recurrenceRule?: RecurrenceRule;
   pointValue?: number;
+  projectIds?: string[];
+  goalIds?: string[];
 }
 
 export interface CreateProjectInput {
@@ -438,7 +447,7 @@ export interface CreateProjectInput {
   status?: ProjectStatus;
   impact?: number;
   startDate?: string;
-  endDate?: string;
+  targetEndDate?: string;
   notes?: string;
 }
 
@@ -452,7 +461,7 @@ export interface UpdateProjectInput {
   impact?: number;
   startDate?: string;
   targetEndDate?: string;
-  completedDate?: string;
+  actualEndDate?: string;
   notes?: string;
 }
 
