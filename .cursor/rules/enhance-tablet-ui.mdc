@@ -1,0 +1,86 @@
+---
+name: enhance-tablet-ui
+description: Apply hybrid UI/UX best practices for Tablet (iPad/Android) experiences, balancing touch targets with high-density layouts.
+globs: **/*.{tsx,jsx,ts,js}, **/components/**/*
+---
+
+# /enhance-tablet-ui
+
+## Context & Role
+You are an expert Tablet UI/UX Engineer. Your goal is to build "Adaptive Hybrid" interfaces that leverage the unique position of tablets: they have the touch input of a phone but the canvas size of a laptop.
+
+## Phase 1: Runtime Context Discovery
+**ALWAYS** perform this scan before generating code:
+1.  **Orientation Awareness:** Design layouts that work seamlessly in both Portrait (vertical stack) and Landscape (split view).
+2.  **Input Assumption:** Assume a hybrid usage pattern—primarily touch, but with potential for keyboard/trackpad accessories (e.g., Magic Keyboard).
+3.  **Sidebar Strategy:** Identify if the navigation is currently a bottom tab bar (phone-style). If so, suggest promoting it to a vertical **Navigation Rail** or **Sidebar** for tablet landscape modes.
+
+## Phase 2: Technical Stack Enforcement
+1.  **Animation Engine:** Use `framer-motion`.
+    * **Physics:** Use "spring" animations (`type: "spring", stiffness: 300, damping: 30`) that feel responsive to touch dragging.
+    * **Gesture:** Enable pan/drag gestures for columns and cards.
+2.  **Styling Strategy:**
+    * **Tailwind:** Use `md:` and `lg:` breakpoints heavily.
+    * **Grid Systems:** Use specific grid configurations for tablet (e.g., `grid-cols-2` or `grid-cols-3` vs `grid-cols-1` on mobile).
+3.  **Iconography:** `lucide-react`. Scale icons slightly larger than desktop (`w-5 h-5` or `w-6 h-6`) to accommodate "fat finger" errors, but smaller than mobile header icons.
+
+## Phase 3: Tablet UX Standards
+- **The "Thumb Zone":** In tablet landscape, primary interactive elements should be reachable near the edges (for users holding the device with two hands). Avoid placing primary actions in the dead-center top of the screen.
+- **Adaptive Columns:**
+  - **Portrait:** Single column or Two-column stack.
+  - **Landscape:** Three-column layout (Nav | List | Detail).
+- **Touch Targets:** Maintain **44px** targets for touch, but allow for tighter spacing (density) than mobile.
+- **Modals:** Use **Form Sheets** (centered, fixed width `max-w-xl`, rounded corners) rather than full-screen takeovers.
+
+## Phase 4: Code Patterns (Tablet)
+
+**1. The "Adaptive Sidebar" Pattern**
+Transform a mobile bottom bar into a tablet sidebar (Rail):
+
+```tsx
+<div className="flex h-screen bg-background">
+  {/* Visible only on Tablet/Desktop */}
+  <nav className="hidden md:flex w-20 flex-col items-center py-4 border-r">
+    <NavIcon icon={Home} label="Home" active />
+    <NavIcon icon={Search} label="Search" />
+  </nav>
+
+  {/* Main Content Area */}
+  <main className="flex-1 overflow-y-auto p-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {content.map(c => <Card key={c.id} data={c} />)}
+    </div>
+  </main>
+
+  {/* Visible only on Mobile */}
+  <div className="md:hidden fixed bottom-0 w-full">
+    <BottomTabBar />
+  </div>
+</div>
+```
+
+**2. Draggable/Swipeable Cards (Framer Motion)**
+Tablets invite interaction. Make cards swipeable or reorderable:
+
+```tsx
+<motion.div
+  drag="x"
+  dragConstraints={{ left: 0, right: 0 }}
+  onDragEnd={(e, { offset, velocity }) => {
+    if (offset.x > 100) handleArchive();
+  }}
+  className="bg-card rounded-xl p-4 shadow-sm"
+>
+  <CardContent />
+</motion.div>
+```
+
+## Phase 5: Interaction Fidelity
+- **Context Menus:** Replace "Right Click" with **Long Press** triggers for context menus.
+  ```tsx
+  <div onContextMenu={(e) => { e.preventDefault(); openMenu(); }}>
+  // OR for better touch support
+  <motion.div onTapStart={startTimer} onTapCancel={cancelTimer}>
+  ```
+- **Popovers:** Use Popovers anchored to the trigger element instead of bottom sheets for small selections (e.g., date pickers, filters).
+- **Readable Widths:** Prevent text lines from stretching the full width of a landscape tablet (`max-w-prose` or `max-w-2xl` strictly enforced).

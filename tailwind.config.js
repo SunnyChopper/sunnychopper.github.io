@@ -16,6 +16,12 @@ export default {
         sans: ['Montserrat', 'system-ui', 'sans-serif'],
         serif: ['Playfair Display', 'Georgia', 'serif'],
       },
+      padding: {
+        safe: 'env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)',
+      },
+      margin: {
+        safe: 'env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)',
+      },
     },
   },
   plugins: [typography],
