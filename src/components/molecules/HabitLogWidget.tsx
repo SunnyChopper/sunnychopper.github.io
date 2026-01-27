@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Habit, CreateHabitLogInput } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
+import { toLocalDateTimeString, fromLocalDateTimeString } from '@/utils/date-formatters';
 
 interface HabitLogWidgetProps {
   habit: Habit;
@@ -63,13 +64,11 @@ export function HabitLogWidget({ habit, onSubmit, onCancel, isLoading }: HabitLo
         </label>
         <input
           type="datetime-local"
-          value={formData.completedAt?.slice(0, 16) || ''}
+          value={toLocalDateTimeString(formData.completedAt)}
           onChange={(e) =>
             setFormData({
               ...formData,
-              completedAt: e.target.value
-                ? new Date(e.target.value).toISOString()
-                : new Date().toISOString(),
+              completedAt: fromLocalDateTimeString(e.target.value),
             })
           }
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"

@@ -1,4 +1,5 @@
 import { Check, Flame, Calendar, Target } from 'lucide-react';
+import { motion } from 'framer-motion';
 import type { Habit } from '@/types/growth-system';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 
@@ -152,7 +153,10 @@ export function HabitCard({
   };
 
   return (
-    <div
+    <motion.div
+      layout
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.98 }}
       className={`group bg-white dark:bg-gray-800 rounded-lg border ${
         todayCompleted
           ? 'border-green-300 dark:border-green-700 bg-green-50/30 dark:bg-green-900/10'
@@ -160,7 +164,11 @@ export function HabitCard({
       } p-4 hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200`}
     >
       {/* Header Section - Name + Streak */}
-      <div onClick={() => onClick(habit)} className="cursor-pointer">
+      <motion.div
+        onClick={() => onClick(habit)}
+        className="cursor-pointer"
+        whileTap={{ scale: 0.98 }}
+      >
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1.5">
@@ -274,20 +282,22 @@ export function HabitCard({
             {habit.habitType}
           </span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Action Button */}
       {onQuickLog && !todayCompleted && (
-        <button
+        <motion.button
           onClick={(e) => {
             e.stopPropagation();
             onQuickLog(habit);
           }}
-          className="w-full mt-3 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.95 }}
+          className="w-full mt-3 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md min-h-[44px] touch-manipulation"
         >
           Mark Complete
-        </button>
+        </motion.button>
       )}
-    </div>
+    </motion.div>
   );
 }

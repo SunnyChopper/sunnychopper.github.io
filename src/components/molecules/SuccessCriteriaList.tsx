@@ -74,24 +74,27 @@ export function SuccessCriteriaList({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
-          className={`group flex items-start gap-3 p-3 rounded-lg transition-colors ${
+          className={`group flex items-center gap-2.5 p-2 rounded-lg transition-colors ${
             criterion.isCompleted
               ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800'
               : 'bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
           }`}
         >
           {/* Checkbox */}
-          <button
+          <motion.button
             onClick={() => handleToggle(criterion)}
             disabled={!editable}
-            className={`flex-shrink-0 w-5 h-5 rounded border-2 transition-all duration-200 ${
+            whileTap={{ scale: 0.9 }}
+            whileHover={editable ? { scale: 1.05 } : {}}
+            className={`flex-shrink-0 w-4 h-4 rounded border-2 transition-all duration-200 ${
               criterion.isCompleted
                 ? 'bg-green-500 border-green-500 dark:bg-green-600 dark:border-green-600'
                 : 'bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500 hover:border-green-500 dark:hover:border-green-600'
             } ${!editable ? 'cursor-default' : 'cursor-pointer'} flex items-center justify-center`}
+            aria-label={criterion.isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
           >
-            {criterion.isCompleted && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
-          </button>
+            {criterion.isCompleted && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+          </motion.button>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
@@ -106,7 +109,8 @@ export function SuccessCriteriaList({
                 className="w-full px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               />
             ) : (
-              <div
+              <button
+                type="button"
                 onClick={() => handleStartEdit(criterion)}
                 onKeyDown={(e) => {
                   if (editable && (e.key === 'Enter' || e.key === ' ')) {
@@ -114,17 +118,16 @@ export function SuccessCriteriaList({
                     handleStartEdit(criterion);
                   }
                 }}
-                role={editable ? 'button' : undefined}
-                tabIndex={editable ? 0 : undefined}
+                disabled={!editable}
                 aria-label={editable ? 'Edit criterion' : undefined}
-                className={`text-sm ${
+                className={`text-sm text-left w-full ${
                   criterion.isCompleted
                     ? 'line-through text-gray-500 dark:text-gray-400'
                     : 'text-gray-900 dark:text-white'
-                } ${editable ? 'cursor-text' : ''}`}
+                } ${editable ? 'cursor-text' : 'cursor-default'}`}
               >
                 {criterion.text}
-              </div>
+              </button>
             )}
 
             {/* Meta information */}
@@ -157,12 +160,15 @@ export function SuccessCriteriaList({
 
           {/* Remove button (visible on hover if editable) */}
           {editable && onRemoveCriterion && (
-            <button
+            <motion.button
               onClick={() => onRemoveCriterion(criterion.id)}
-              className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-all"
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.1 }}
+              className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-2 -m-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Remove criterion"
             >
-              <X className="w-4 h-4 text-red-600 dark:text-red-400" />
-            </button>
+              <X className="w-4 h-4 text-red-600 dark:text-red-400" strokeWidth={2} />
+            </motion.button>
           )}
         </motion.div>
       ))}
