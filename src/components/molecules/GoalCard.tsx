@@ -112,6 +112,7 @@ export function GoalCard({
 
   return (
     <motion.div
+      layoutId={`goal-card-${goal.id}`}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => onClick(goal)}

@@ -38,6 +38,21 @@ export function GoalEditForm({
   isLoading,
   allGoals = [],
 }: GoalEditFormProps) {
+  // Helper function to convert date to YYYY-MM-DD format for date input
+  const formatDateForInput = (date: string | Date | null | undefined): string => {
+    if (!date) return '';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return '';
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return '';
+    }
+  };
+
   const [formData, setFormData] = useState<UpdateGoalInput>({
     title: goal.title,
     description: goal.description || '',
@@ -46,7 +61,7 @@ export function GoalEditForm({
     timeHorizon: goal.timeHorizon,
     priority: goal.priority,
     status: goal.status,
-    targetDate: goal.targetDate || '',
+    targetDate: formatDateForInput(goal.targetDate),
     successCriteria:
       goal.successCriteria && goal.successCriteria.length > 0
         ? typeof goal.successCriteria[0] === 'string'
