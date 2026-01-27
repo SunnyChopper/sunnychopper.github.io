@@ -239,6 +239,14 @@ export interface Metric {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  // Optional fields that may be included in API responses
+  currentValue?: number;
+  baselineValue?: number | null;
+  trackingFrequency?: 'Daily' | 'Weekly' | 'Monthly';
+  logCount?: number;
+  milestoneCount?: number;
+  // Logs may be included in API responses (e.g., GET /metrics)
+  logs?: MetricLog[];
 }
 
 export interface MetricLog {
@@ -585,6 +593,7 @@ export interface CreateLogbookEntryInput {
 }
 
 export interface UpdateLogbookEntryInput {
+  date?: string; // Allow date updates to fix timezone-shifted dates
   title?: string;
   notes?: string;
   mood?: LogbookMood;
