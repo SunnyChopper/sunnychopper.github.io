@@ -7,6 +7,7 @@ import type {
   LogbookMood,
 } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
+import { parseDateInput } from '@/utils/date-formatters';
 
 interface LogbookEditorProps {
   entry?: LogbookEntry;
@@ -23,11 +24,12 @@ const MOODS: { value: LogbookMood; label: string; icon: typeof Smile }[] = [
 ];
 
 // Helper to get local date string YYYY-MM-DD
-const getLocalDateString = () => {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+// Uses parseDateInput to ensure consistent date handling
+const getLocalDateString = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
@@ -35,12 +37,13 @@ const getLocalDateString = () => {
 // This prevents timezone conversion issues when the backend returns ISO strings
 // IMPORTANT: Never create Date objects that could cause timezone shifts - always extract the string directly
 const extractDateOnly = (dateString: string): string => {
-  // If already in YYYY-MM-DD format, return as-is
+  // If already in YYYY-MM-DD format, return as-is (most common case)
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
     return dateString;
   }
 
   // If it's an ISO string (contains 'T'), extract just the date part before 'T'
+  // This is safe because we're extracting the string directly, not parsing as a Date
   if (dateString.includes('T')) {
     const datePart = dateString.split('T')[0];
     // Verify it's a valid YYYY-MM-DD format
@@ -56,10 +59,19 @@ const extractDateOnly = (dateString: string): string => {
     return dateMatch[1];
   }
 
-  // If we can't extract a valid date, log a warning and return the original
-  // This should not happen in normal operation since dates should be normalized in the service layer
-  console.warn('Could not extract YYYY-MM-DD from date string:', dateString);
-  return dateString;
+  // If we can't extract a valid date, use parseDateInput as a last resort
+  // This handles edge cases where the date might be in a different format
+  try {
+    const parsedDate = parseDateInput(dateString);
+    // Use local date components to avoid timezone shifts
+    const year = parsedDate.getFullYear();
+    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(parsedDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.warn('Could not extract YYYY-MM-DD from date string:', dateString, error);
+    return dateString;
+  }
 };
 
 export function LogbookEditor({
@@ -110,7 +122,39 @@ export function LogbookEditor({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // Normalize the date to ensure it's in YYYY-MM-DD format
+    // This prevents timezone conversion issues
+    const normalizedDate = extractDateOnly(formData.date);
+
+    if (entry) {
+      // For updates, include the normalized date to fix any timezone-shifted dates
+      // This ensures the backend uses the correct date from the form
+      const updateData: UpdateLogbookEntryInput = {
+        date: normalizedDate, // Include date to fix timezone issues
+        title: formData.title || undefined,
+        notes: formData.notes || undefined,
+        mood: formData.mood,
+        energy: formData.energy,
+      };
+      // Remove undefined values to keep the request clean
+      Object.keys(updateData).forEach((key) => {
+        if (updateData[key as keyof UpdateLogbookEntryInput] === undefined) {
+          delete updateData[key as keyof UpdateLogbookEntryInput];
+        }
+      });
+      onSubmit(updateData);
+    } else {
+      // For creates, include the normalized date
+      const createData: CreateLogbookEntryInput = {
+        date: normalizedDate,
+        title: formData.title || undefined,
+        notes: formData.notes || undefined,
+        mood: formData.mood,
+        energy: formData.energy,
+      };
+      onSubmit(createData);
+    }
   };
 
   return (
@@ -143,7 +187,12 @@ export function LogbookEditor({
           <input
             type="date"
             value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            onChange={(e) => {
+              // Normalize the date value immediately to prevent timezone issues
+              const dateValue = e.target.value;
+              const normalizedDate = extractDateOnly(dateValue);
+              setFormData({ ...formData, date: normalizedDate });
+            }}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
