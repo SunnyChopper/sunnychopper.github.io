@@ -1,5 +1,6 @@
 import { Pencil, Trash2, Calendar, Clock, GitBranch, Coins } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import type { Task } from '@/types/growth-system';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
@@ -72,9 +73,14 @@ export function TaskListItem({
     actionsVisibility === 'always' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
 
   return (
-    // Task card: clickable when onClick is provided, with full keyboard and accessibility support
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-    <div
+    <motion.div
+      layoutId={`task-item-${task.id}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ duration: 0.2 }}
       className={`group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 ${
         onClick
           ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
@@ -189,36 +195,39 @@ export function TaskListItem({
         </div>
 
         {/* Action buttons container - stops event propagation to prevent card click */}
-        {}
-        <div
+        <motion.div
           className={`flex items-center gap-1.5 transition-opacity ${actionVisibilityClass}`}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
           role="group"
           aria-label="Task actions"
         >
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onEdit(task)}
-            className="!p-2 hover:!bg-blue-50 hover:!text-blue-600 dark:hover:!bg-blue-900/20 dark:hover:!text-blue-400"
-          >
-            <Pencil className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onDelete(task)}
-            className={
-              deleteButtonClassName ||
-              '!p-2 hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20 dark:hover:!text-red-400'
-            }
-            aria-label={deleteAriaLabel || deleteLabel}
-          >
-            {deleteIcon || <Trash2 className="w-4 h-4" />}
-          </Button>
-        </div>
+          <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onEdit(task)}
+              className="!p-2 min-h-[44px] min-w-[44px] hover:!bg-blue-50 hover:!text-blue-600 dark:hover:!bg-blue-900/20 dark:hover:!text-blue-400"
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          </motion.div>
+          <motion.div whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onDelete(task)}
+              className={
+                deleteButtonClassName ||
+                '!p-2 min-h-[44px] min-w-[44px] hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20 dark:hover:!text-red-400'
+              }
+              aria-label={deleteAriaLabel || deleteLabel}
+            >
+              {deleteIcon || <Trash2 className="w-4 h-4" />}
+            </Button>
+          </motion.div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Task, TaskStatus, UpdateTaskInput } from '@/types/growth-system';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
@@ -122,17 +123,45 @@ export function TaskKanbanBoard({
     setOpenMenuStatus(null);
   };
 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1] as const,
+      },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.95,
+      transition: {
+        duration: 0.2,
+      },
+    },
+  };
+
   return (
     <div className="h-[calc(100vh-200px)] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 px-6 py-6 overflow-x-auto overflow-y-hidden">
-      <div className="flex gap-4 h-full min-w-max">
-        {STATUSES.map((status) => {
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex gap-4 h-full min-w-max"
+      >
+        {STATUSES.map((status, columnIndex) => {
           const statusTasks = getTasksByStatus(status);
           const totalEffort = getTotalEffort(status);
           const isDragOver = dragOverColumn === status;
 
           return (
-            <div
+            <motion.div
               key={status}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: columnIndex * 0.1, duration: 0.3 }}
               className="flex-shrink-0 w-80 flex flex-col"
               role="region"
               aria-label={`${TASK_STATUS_LABELS[status]} column`}
@@ -146,21 +175,25 @@ export function TaskKanbanBoard({
                     {TASK_STATUS_LABELS[status]}
                   </h3>
                   <div className="flex items-center gap-1">
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      whileHover={{ scale: 1.1 }}
                       onClick={() => onTaskCreate(status)}
-                      className="p-1.5 hover:bg-white/20 rounded transition-colors"
+                      className="p-1.5 min-h-[44px] min-w-[44px] hover:bg-white/20 rounded transition-colors flex items-center justify-center"
                       title="Add task"
                     >
                       <Plus className="w-4 h-4" />
-                    </button>
+                    </motion.button>
                     <div className="relative">
-                      <button
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        whileHover={{ scale: 1.1 }}
                         onClick={(e) => toggleMenu(status, e)}
-                        className="p-1.5 hover:bg-white/20 rounded transition-colors"
+                        className="p-1.5 min-h-[44px] min-w-[44px] hover:bg-white/20 rounded transition-colors flex items-center justify-center"
                         title="Column options"
                       >
                         <MoreVertical className="w-4 h-4" />
-                      </button>
+                      </motion.button>
 
                       {openMenuStatus === status && (
                         <div
@@ -256,95 +289,108 @@ export function TaskKanbanBoard({
                     </div>
                   </div>
                 ) : (
-                  statusTasks.map((task) => (
-                    // Task card: draggable and optionally clickable for viewing details
-                    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, task)}
-                      onDragEnd={handleDragEnd}
-                      onClick={(e) => {
-                        // Don't trigger click if clicking the edit button or dragging
-                        if (
-                          (e.target as HTMLElement).closest('button') ||
-                          draggedTask?.id === task.id
-                        ) {
-                          return;
-                        }
-                        onTaskClick?.(task);
-                      }}
-                      onKeyDown={(e) => {
-                        // Support keyboard navigation (Enter or Space)
-                        if (onTaskClick && (e.key === 'Enter' || e.key === ' ')) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onTaskClick(task);
-                        }
-                      }}
-                      role={onTaskClick ? 'button' : 'listitem'}
-                      tabIndex={onTaskClick ? 0 : undefined}
-                      aria-label={
-                        onTaskClick ? `View task details: ${task.title}` : `Task: ${task.title}`
-                      }
-                      className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 transition-all group ${
-                        draggedTask?.id === task.id
-                          ? 'opacity-40 rotate-2 scale-95'
-                          : onTaskClick
-                            ? 'cursor-pointer hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                            : 'cursor-grab active:cursor-grabbing hover:shadow-md'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2.5">
-                        <div className="flex items-start gap-2 flex-1 min-w-0">
-                          <PriorityIndicator priority={task.priority} size="sm" />
-                          <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 leading-snug">
-                            {task.title}
-                          </h4>
-                        </div>
-                        <button
-                          onClick={(e) => {
+                  <AnimatePresence mode="popLayout">
+                    {statusTasks.map((task, taskIndex) => (
+                      <motion.div
+                        key={task.id}
+                        layoutId={`kanban-task-${task.id}`}
+                        variants={cardVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        whileHover={{ y: -4, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        draggable
+                        onDragStart={(e) => {
+                          const dragEvent = e as unknown as React.DragEvent;
+                          handleDragStart(dragEvent, task);
+                        }}
+                        onDragEnd={handleDragEnd}
+                        onClick={(e) => {
+                          // Don't trigger click if clicking the edit button or dragging
+                          if (
+                            (e.target as HTMLElement).closest('button') ||
+                            draggedTask?.id === task.id
+                          ) {
+                            return;
+                          }
+                          onTaskClick?.(task);
+                        }}
+                        onKeyDown={(e) => {
+                          // Support keyboard navigation (Enter or Space)
+                          if (onTaskClick && (e.key === 'Enter' || e.key === ' ')) {
+                            e.preventDefault();
                             e.stopPropagation();
-                            onTaskEdit(task);
-                          }}
-                          className="flex-shrink-0 p-1.5 opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                          title="Edit task"
-                          aria-label={`Edit task: ${task.title}`}
-                        >
-                          <Pencil className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                        </button>
-                      </div>
+                            onTaskClick(task);
+                          }
+                        }}
+                        role={onTaskClick ? 'button' : 'listitem'}
+                        tabIndex={onTaskClick ? 0 : undefined}
+                        aria-label={
+                          onTaskClick ? `View task details: ${task.title}` : `Task: ${task.title}`
+                        }
+                        transition={{ delay: taskIndex * 0.05 }}
+                        className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3 transition-all group ${
+                          draggedTask?.id === task.id
+                            ? 'opacity-40 rotate-2 scale-95'
+                            : onTaskClick
+                              ? 'cursor-pointer hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                              : 'cursor-grab active:cursor-grabbing hover:shadow-md'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2.5">
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            <PriorityIndicator priority={task.priority} size="sm" />
+                            <h4 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 leading-snug">
+                              {task.title}
+                            </h4>
+                          </div>
+                          <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            whileHover={{ scale: 1.1 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onTaskEdit(task);
+                            }}
+                            className="flex-shrink-0 p-1.5 min-h-[44px] min-w-[44px] opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 flex items-center justify-center"
+                            title="Edit task"
+                            aria-label={`Edit task: ${task.title}`}
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                          </motion.button>
+                        </div>
 
-                      {task.description && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">
-                          {task.description}
-                        </p>
-                      )}
+                        {task.description && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">
+                            {task.description}
+                          </p>
+                        )}
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        <AreaBadge area={task.area} size="sm" />
-                        {task.size && task.size > 0 && (
-                          <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-medium">
-                            {task.size} pts
-                          </span>
-                        )}
-                        {task.dueDate && (
-                          <span className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded font-medium">
-                            {new Date(task.dueDate).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                        <div className="flex flex-wrap items-center gap-2">
+                          <AreaBadge area={task.area} size="sm" />
+                          {task.size && task.size > 0 && (
+                            <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-medium">
+                              {task.size} pts
+                            </span>
+                          )}
+                          {task.dueDate && (
+                            <span className="text-xs px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded font-medium">
+                              {new Date(task.dueDate).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 )}
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
     </div>
   );
 }
