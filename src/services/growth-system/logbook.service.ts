@@ -148,7 +148,9 @@ export const logbookService = {
 
   async update(id: string, input: UpdateLogbookEntryInput): Promise<ApiResponse<LogbookEntry>> {
     // Transform energy to energyLevel for the API request
+    // Include date if provided to fix timezone-shifted dates
     const requestBody: Record<string, unknown> = {};
+    if (input.date !== undefined) requestBody.date = input.date;
     if (input.title !== undefined) requestBody.title = input.title;
     if (input.notes !== undefined) requestBody.notes = input.notes;
     if (input.mood !== undefined) requestBody.mood = input.mood;
