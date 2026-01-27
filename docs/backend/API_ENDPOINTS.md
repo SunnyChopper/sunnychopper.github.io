@@ -414,6 +414,141 @@ Response includes:
 }
 ```
 
+### GET `/habits/{habitId}/logs` Request
+
+**Path Parameters:**
+
+- `habitId` (string, required): The unique identifier of the habit
+
+**Query Parameters:**
+
+- `startDate` (string, optional): Filter logs from this date (ISO 8601 format: `YYYY-MM-DD`). Defaults to no lower bound.
+- `endDate` (string, optional): Filter logs up to this date (ISO 8601 format: `YYYY-MM-DD`). Defaults to no upper bound.
+- `page` (number, optional): Page number for pagination (1-indexed). Default: `1`
+- `pageSize` (number, optional): Number of logs per page. Default: `50`, Max: `100`
+- `sortBy` (string, optional): Field to sort by. Options: `completedAt` (default), `createdAt`
+- `sortOrder` (string, optional): Sort direction. Options: `desc` (default), `asc`
+
+**Example Request:**
+
+```
+GET /habits/habit-abc123/logs?startDate=2026-01-01&endDate=2026-01-31&page=1&pageSize=50&sortBy=completedAt&sortOrder=desc
+```
+
+**Authentication:**
+
+- Requires JWT token in `Authorization` header: `Bearer <token>`
+- User must own the habit (habit.userId must match authenticated user)
+
+### GET `/habits/{habitId}/logs` Response
+
+**Success Response (200 OK):**
+
+```json
+{
+  "data": [
+    {
+      "id": "log-xyz789",
+      "habitId": "habit-abc123",
+      "completedAt": "2026-01-15T08:30:00Z",
+      "amount": 1,
+      "notes": "Felt very focused today",
+      "userId": "user-123",
+      "createdAt": "2026-01-15T08:30:15Z"
+    },
+    {
+      "id": "log-xyz788",
+      "habitId": "habit-abc123",
+      "completedAt": "2026-01-14T08:25:00Z",
+      "amount": 1,
+      "notes": null,
+      "userId": "user-123",
+      "createdAt": "2026-01-14T08:25:10Z"
+    }
+  ],
+  "total": 45,
+  "page": 1,
+  "pageSize": 50,
+  "hasMore": false
+}
+```
+
+**Response Schema:**
+
+| Field      | Type         | Description                                                  |
+| ---------- | ------------ | ------------------------------------------------------------ |
+| `data`     | `HabitLog[]` | Array of habit log entries                                   |
+| `total`    | `number`     | Total number of logs matching the filters (across all pages) |
+| `page`     | `number`     | Current page number (1-indexed)                              |
+| `pageSize` | `number`     | Number of items per page                                     |
+| `hasMore`  | `boolean`    | Whether there are more pages available                       |
+
+**HabitLog Schema:**
+
+| Field         | Type             | Description                                                                 |
+| ------------- | ---------------- | --------------------------------------------------------------------------- |
+| `id`          | `string`         | Unique log identifier                                                       |
+| `habitId`     | `string`         | Parent habit ID                                                             |
+| `completedAt` | `string`         | ISO 8601 timestamp when habit was completed                                 |
+| `amount`      | `number \| null` | Optional quantity/amount (e.g., for habits like "drink 8 glasses of water") |
+| `notes`       | `string \| null` | Optional notes about the completion                                         |
+| `userId`      | `string`         | User who created the log                                                    |
+| `createdAt`   | `string`         | ISO 8601 timestamp when log was created                                     |
+
+**Error Responses:**
+
+- `400 Bad Request`: Invalid query parameters (e.g., invalid date format, invalid sortBy value)
+
+  ```json
+  {
+    "error": {
+      "message": "Invalid date format. Expected YYYY-MM-DD",
+      "code": "VALIDATION_ERROR"
+    }
+  }
+  ```
+
+- `401 Unauthorized`: Missing or invalid JWT token
+
+  ```json
+  {
+    "error": {
+      "message": "Authentication required",
+      "code": "UNAUTHORIZED"
+    }
+  }
+  ```
+
+- `403 Forbidden`: User does not have access to this habit
+
+  ```json
+  {
+    "error": {
+      "message": "Access denied",
+      "code": "FORBIDDEN"
+    }
+  }
+  ```
+
+- `404 Not Found`: Habit does not exist
+  ```json
+  {
+    "error": {
+      "message": "Habit not found",
+      "code": "NOT_FOUND"
+    }
+  }
+  ```
+
+**Notes:**
+
+- If no logs exist for the habit, returns empty array with `total: 0`
+- Date filters are inclusive (logs on `startDate` and `endDate` are included)
+- If `startDate` > `endDate`, returns empty array
+- Default sorting is by `completedAt` descending (most recent first)
+- The `amount` field is optional and may be `null` for simple completion tracking
+- All timestamps are in ISO 8601 format (UTC)
+
 ---
 
 ## Projects (`/projects`)
