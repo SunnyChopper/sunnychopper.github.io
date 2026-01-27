@@ -289,7 +289,7 @@ function CommandPaletteContent({ onClose }: CommandPaletteContentProps) {
       });
     });
 
-    entries.forEach((entry: LogbookEntry) => {
+    entries?.forEach((entry: LogbookEntry) => {
       commands.push({
         id: `entry-${entry.id}`,
         title: entry.title || 'Untitled Entry',

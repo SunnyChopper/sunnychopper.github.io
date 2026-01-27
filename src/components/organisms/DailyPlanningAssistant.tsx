@@ -37,7 +37,10 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
   const { habits, isLoading: habitsLoading, isError: habitsError } = useHabits();
   const { metrics, isLoading: metricsLoading, isError: metricsError } = useMetrics();
 
-  const hasNetworkError = tasksError || habitsError || metricsError;
+  // Only show error if we have a genuine error AND we're not still loading (initial load)
+  const hasNetworkError =
+    (tasksError || habitsError || metricsError) &&
+    !(tasksLoading || habitsLoading || metricsLoading);
   const isLoading = tasksLoading || habitsLoading || metricsLoading;
 
   // Track previous data signatures to detect actual changes
