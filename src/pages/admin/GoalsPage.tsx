@@ -10,6 +10,7 @@ import {
   Filter,
   X,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type {
   Goal,
   CreateGoalInput,
@@ -58,6 +59,45 @@ const AREA_OPTIONS: Area[] = [...AREAS];
 const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 
 type ViewMode = 'timeHorizon' | 'area' | 'kanban' | 'timeline';
+
+// Animation variants for mobile UI enhancements
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0, filter: 'blur(4px)' },
+  show: {
+    y: 0,
+    opacity: 1,
+    filter: 'blur(0px)',
+  },
+};
+
+const filterPanelVariants = {
+  hidden: {
+    opacity: 0,
+    height: 0,
+    marginBottom: 0,
+  },
+  show: {
+    opacity: 1,
+    height: 'auto',
+    marginBottom: '1rem',
+  },
+  exit: {
+    opacity: 0,
+    height: 0,
+    marginBottom: 0,
+  },
+};
 type QuickFilter =
   | 'at_risk'
   | 'due_this_week'
@@ -614,25 +654,28 @@ export default function GoalsPage() {
 
     return (
       <>
-        <GoalDetailView
-          goal={selectedGoal}
-          tasks={tasks}
-          metrics={metrics}
-          habits={habits}
-          projects={projects}
-          onBack={handleBackToGrid}
-          onEdit={() => setIsEditDialogOpen(true)}
-          onDelete={() => setGoalToDelete(selectedGoal)}
-          onToggleCriterion={handleToggleCriterion}
-          onUpdateCriterion={(criterionId, updates) => {
-            console.log('Update criterion', criterionId, updates);
-          }}
-          onAddTask={() => console.log('Add task')}
-          onLinkMetric={() => console.log('Link metric')}
-          onLinkHabit={() => console.log('Link habit')}
-          onCompleteHabit={(habitId) => console.log('Complete habit', habitId)}
-          onLogMetric={(metricId) => console.log('Log metric', metricId)}
-        />
+        <AnimatePresence mode="wait">
+          <GoalDetailView
+            key={selectedGoal.id}
+            goal={selectedGoal}
+            tasks={tasks}
+            metrics={metrics}
+            habits={habits}
+            projects={projects}
+            onBack={handleBackToGrid}
+            onEdit={() => setIsEditDialogOpen(true)}
+            onDelete={() => setGoalToDelete(selectedGoal)}
+            onToggleCriterion={handleToggleCriterion}
+            onUpdateCriterion={(criterionId, updates) => {
+              console.log('Update criterion', criterionId, updates);
+            }}
+            onAddTask={() => console.log('Add task')}
+            onLinkMetric={() => console.log('Link metric')}
+            onLinkHabit={() => console.log('Link habit')}
+            onCompleteHabit={(habitId) => console.log('Complete habit', habitId)}
+            onLogMetric={(metricId) => console.log('Log metric', metricId)}
+          />
+        </AnimatePresence>
 
         <Dialog
           isOpen={isEditDialogOpen}
@@ -655,30 +698,72 @@ export default function GoalsPage() {
           message={celebration.message}
           onComplete={() => setCelebration({ show: false, type: 'milestone_25' })}
         />
+
+        <Dialog isOpen={!!goalToDelete} onClose={() => setGoalToDelete(null)} title="Delete Goal">
+          <div className="space-y-4">
+            <p className="text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete this goal? This action cannot be undone.
+            </p>
+            {goalToDelete && (
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                <p className="font-semibold text-gray-900 dark:text-white">{goalToDelete.title}</p>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button
+                variant="secondary"
+                onClick={() => setGoalToDelete(null)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleDeleteGoal}
+                disabled={isSubmitting}
+                className="!bg-red-600 hover:!bg-red-700"
+              >
+                {isSubmitting ? 'Deleting...' : 'Delete Goal'}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
       </>
     );
   }
 
   return (
     <div className="h-full">
-      <div className="flex items-center justify-between mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+      >
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Goals Vision Board</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Track your goals and success criteria
           </p>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setParentGoalForSubgoal(null);
-            setIsCreateDialogOpen(true);
-          }}
+        <motion.div
+          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          className="min-h-[44px] min-w-[44px]"
         >
-          <Plus className="w-5 h-5 mr-2" />
-          New Goal
-        </Button>
-      </div>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setParentGoalForSubgoal(null);
+              setIsCreateDialogOpen(true);
+            }}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            New Goal
+          </Button>
+        </motion.div>
+      </motion.div>
 
       {/* Quick Filters */}
       <div className="mb-4">
@@ -691,216 +776,287 @@ export default function GoalsPage() {
       </div>
 
       {/* Search and View Mode Switcher */}
-      <div className="mb-4 flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[300px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="mb-4 flex items-center gap-3 flex-wrap"
+      >
+        <div className="relative flex-1 min-w-[200px] sm:min-w-[300px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search goals..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2.5 min-h-[44px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
         </div>
 
-        <Button
-          variant="secondary"
-          onClick={() => setShowFilters(!showFilters)}
-          className="relative"
+        <motion.div
+          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          className="min-h-[44px] min-w-[44px]"
         >
-          <Filter className="w-4 h-4 mr-2" />
-          Filters
-          {activeFilterCount > 0 && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">
-              {activeFilterCount}
-            </span>
-          )}
-        </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setShowFilters(!showFilters)}
+            className="relative w-full sm:w-auto"
+          >
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+            {activeFilterCount > 0 && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full"
+              >
+                {activeFilterCount}
+              </motion.span>
+            )}
+          </Button>
+        </motion.div>
 
         <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
-          <button
-            onClick={() => setViewMode('timeHorizon')}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              viewMode === 'timeHorizon'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="Time view"
-          >
-            <Layers className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Time</span>
-          </button>
-          <button
-            onClick={() => setViewMode('area')}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              viewMode === 'area'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="Area view"
-          >
-            <LayoutGrid className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Area</span>
-          </button>
-          <button
-            onClick={() => setViewMode('kanban')}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              viewMode === 'kanban'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="Kanban board"
-          >
-            <Kanban className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Board</span>
-          </button>
-          <button
-            onClick={() => setViewMode('timeline')}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              viewMode === 'timeline'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="Timeline view"
-          >
-            <Calendar className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Timeline</span>
-          </button>
+          {(['timeHorizon', 'area', 'kanban', 'timeline'] as ViewMode[]).map((mode, index) => {
+            const icons = {
+              timeHorizon: Layers,
+              area: LayoutGrid,
+              kanban: Kanban,
+              timeline: Calendar,
+            };
+            const labels = {
+              timeHorizon: 'Time',
+              area: 'Area',
+              kanban: 'Board',
+              timeline: 'Timeline',
+            };
+            const titles = {
+              timeHorizon: 'Time view',
+              area: 'Area view',
+              kanban: 'Kanban board',
+              timeline: 'Timeline view',
+            };
+            const Icon = icons[mode];
+            const isActive = viewMode === mode;
+
+            return (
+              <motion.button
+                key={mode}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setViewMode(mode)}
+                className={`flex items-center gap-2 px-3 py-2 rounded min-h-[44px] transition-colors ${
+                  isActive
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                title={titles[mode]}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium hidden sm:inline">{labels[mode]}</span>
+              </motion.button>
+            );
+          })}
         </div>
-      </div>
+      </motion.div>
 
       {/* Inline Collapsible Filters */}
-      {showFilters && (
-        <div className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
-            <div className="flex items-center gap-2">
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={handleClearFilters}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+      <AnimatePresence mode="wait">
+        {showFilters && (
+          <motion.div
+            variants={filterPanelVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 overflow-hidden"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
+              <div className="flex items-center gap-2">
+                {activeFilterCount > 0 && (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleClearFilters}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline min-h-[44px] px-2"
+                  >
+                    Clear all
+                  </motion.button>
+                )}
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowFilters(false)}
+                  className="p-2 min-h-[44px] min-w-[44px] hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center justify-center"
                 >
-                  Clear all
-                </button>
-              )}
-              <button
-                onClick={() => setShowFilters(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Area
-              </label>
-              <select
-                value={filters.area || ''}
-                onChange={(e) =>
-                  setFilters({ ...filters, area: (e.target.value as Area) || undefined })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Areas</option>
-                {AREA_OPTIONS.map((area) => (
-                  <option key={area} value={area}>
-                    {AREA_LABELS[area]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
-              </label>
-              <select
-                value={filters.status || ''}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Statuses</option>
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Priority
-              </label>
-              <select
-                value={filters.priority || ''}
-                onChange={(e) =>
-                  setFilters({ ...filters, priority: (e.target.value as Priority) || undefined })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Priorities</option>
-                {PRIORITY_OPTIONS.map((priority) => (
-                  <option key={priority} value={priority}>
-                    {priority}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Activity Level
-              </label>
-              <select
-                value={filters.momentum || ''}
-                onChange={(e) => setFilters({ ...filters, momentum: e.target.value || undefined })}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All</option>
-                <option value="active">Active</option>
-                <option value="dormant">Dormant</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Has Linked...
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!filters.hasLinkedTasks}
-                    onChange={(e) =>
-                      setFilters({ ...filters, hasLinkedTasks: e.target.checked || undefined })
-                    }
-                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Tasks</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!filters.hasLinkedMetrics}
-                    onChange={(e) =>
-                      setFilters({ ...filters, hasLinkedMetrics: e.target.checked || undefined })
-                    }
-                    className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Metrics</span>
-                </label>
+                  <X className="w-4 h-4" />
+                </motion.button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Area
+                </label>
+                <select
+                  value={filters.area || ''}
+                  onChange={(e) =>
+                    setFilters({ ...filters, area: (e.target.value as Area) || undefined })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Areas</option>
+                  {AREA_OPTIONS.map((area) => (
+                    <option key={area} value={area}>
+                      {AREA_LABELS[area]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={filters.status || ''}
+                  onChange={(e) => setFilters({ ...filters, status: e.target.value || undefined })}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Statuses</option>
+                  {STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Priority
+                </label>
+                <select
+                  value={filters.priority || ''}
+                  onChange={(e) =>
+                    setFilters({ ...filters, priority: (e.target.value as Priority) || undefined })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Priorities</option>
+                  {PRIORITY_OPTIONS.map((priority) => (
+                    <option key={priority} value={priority}>
+                      {priority}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Activity Level
+                </label>
+                <select
+                  value={filters.momentum || ''}
+                  onChange={(e) =>
+                    setFilters({ ...filters, momentum: e.target.value || undefined })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All</option>
+                  <option value="active">Active</option>
+                  <option value="dormant">Dormant</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Has Linked...
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!filters.hasLinkedTasks}
+                      onChange={(e) =>
+                        setFilters({ ...filters, hasLinkedTasks: e.target.checked || undefined })
+                      }
+                      className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Tasks</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!filters.hasLinkedMetrics}
+                      onChange={(e) =>
+                        setFilters({ ...filters, hasLinkedMetrics: e.target.checked || undefined })
+                      }
+                      className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Metrics</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading goals...</p>
-          </div>
-        </div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+          {[1, 2, 3].map((areaIndex) => (
+            <div key={areaIndex}>
+              {/* Area header skeleton */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+              {/* Goal cards skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2].map((cardIndex) => (
+                  <motion.div
+                    key={cardIndex}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (areaIndex - 1) * 0.1 + cardIndex * 0.05 }}
+                    className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 min-h-[280px]"
+                  >
+                    <div className="space-y-4">
+                      {/* Header skeleton */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="space-y-2 flex-1">
+                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                            <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          </div>
+                        </div>
+                        <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                      </div>
+                      {/* Title skeleton */}
+                      <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      {/* Description skeleton */}
+                      <div className="space-y-2">
+                        <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      </div>
+                      {/* Tags skeleton */}
+                      <div className="flex gap-2">
+                        <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                        <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                      </div>
+                      {/* Footer skeleton */}
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </motion.div>
       ) : filteredGoals.length === 0 ? (
         <EmptyState
           icon={Target}
@@ -971,32 +1127,57 @@ export default function GoalsPage() {
           }}
         />
       ) : (
-        <div className="space-y-8">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          transition={{ staggerChildren: 0.08, delayChildren: 0.05 }}
+          className="space-y-8"
+        >
           {Object.entries(groupedByArea).map(([area, areaGoals]) => (
-            <div key={area}>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <motion.div key={area} variants={itemVariants} transition={{ duration: 0.3 }}>
+              <motion.h2
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
+              >
                 <AreaBadge area={area as Goal['area']} />
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   ({areaGoals.length} {areaGoals.length === 1 ? 'goal' : 'goals'})
                 </span>
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              </motion.h2>
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="show"
+                transition={{ staggerChildren: 0.08, delayChildren: 0.05 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              >
                 {areaGoals.map((goal) => (
-                  <GoalCard
+                  <motion.div
                     key={goal.id}
-                    goal={goal}
-                    onClick={handleGoalClick}
-                    progress={goalsProgress.get(goal.id)}
-                    linkedCounts={goalsLinkedCounts.get(goal.id)}
-                    healthStatus={goalsHealth.get(goal.id)?.status}
-                    daysRemaining={goalsHealth.get(goal.id)?.daysRemaining}
-                    momentum={goalsHealth.get(goal.id)?.momentum}
-                  />
+                    variants={itemVariants}
+                    layoutId={`goal-card-${goal.id}`}
+                    whileHover={{ y: -4 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <GoalCard
+                      goal={goal}
+                      onClick={handleGoalClick}
+                      progress={goalsProgress.get(goal.id)}
+                      linkedCounts={goalsLinkedCounts.get(goal.id)}
+                      healthStatus={goalsHealth.get(goal.id)?.status}
+                      daysRemaining={goalsHealth.get(goal.id)?.daysRemaining}
+                      momentum={goalsHealth.get(goal.id)?.momentum}
+                    />
+                  </motion.div>
                 ))}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Bulk Actions Bar */}

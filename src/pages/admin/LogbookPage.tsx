@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import type {
   LogbookEntry,
   CreateLogbookEntryInput,
@@ -13,7 +14,7 @@ import { LogbookDetailView } from '@/components/organisms/LogbookDetailView';
 import { LogbookListView } from '@/components/organisms/LogbookListView';
 import { LogbookEditor } from '@/components/organisms/LogbookEditor';
 import { DeleteEntryDialog } from '@/components/molecules/DeleteEntryDialog';
-import Dialog from '@/components/molecules/Dialog';
+import BottomSheet from '@/components/molecules/BottomSheet';
 import { filterLogbookEntries, sortLogbookEntriesByDate } from '@/utils/logbook-filters';
 import { formatApiError } from '@/utils/api-error-formatter';
 
@@ -44,7 +45,7 @@ export default function LogbookPage() {
 
   // Filter and sort entries
   const filteredAndSortedEntries = useMemo(() => {
-    const filtered = filterLogbookEntries(allEntries, searchQuery);
+    const filtered = filterLogbookEntries(allEntries || [], searchQuery);
     return sortLogbookEntriesByDate(filtered);
   }, [allEntries, searchQuery]);
 
@@ -173,79 +174,64 @@ export default function LogbookPage() {
     setSelectedEntry(null);
   };
 
-  // Show detail view if entry is selected
-  if (selectedEntry) {
-    return (
-      <>
-        <LogbookDetailView
-          entry={selectedEntry}
-          allEntries={allEntries}
-          onBack={handleBackToList}
-          onEdit={() => setIsEditDialogOpen(true)}
-          onDelete={() => setEntryToDelete(selectedEntry)}
-          showAIAssist={showAIAssist}
-          aiMode={aiMode}
-          onToggleAIAssist={() => setShowAIAssist(!showAIAssist)}
-          onAIModeChange={setAIMode}
-        />
-
-        <Dialog
-          isOpen={isEditDialogOpen}
-          onClose={() => setIsEditDialogOpen(false)}
-          title="Edit Entry"
-          className="max-w-2xl"
-        >
-          <LogbookEditor
-            entry={selectedEntry}
-            onSubmit={(input) => handleUpdateEntry(input as UpdateLogbookEntryInput)}
-            onCancel={() => setIsEditDialogOpen(false)}
-            isLoading={isSubmitting}
-          />
-        </Dialog>
-
-        <DeleteEntryDialog
-          entry={entryToDelete}
-          isOpen={!!entryToDelete}
-          onClose={() => setEntryToDelete(null)}
-          onConfirm={handleDeleteEntry}
-          isDeleting={isSubmitting}
-        />
-
-        <ToastContainer />
-      </>
-    );
-  }
-
-  // Show list view
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <LogbookHeader onNewEntry={() => setIsCreateDialogOpen(true)} />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-safe pb-safe">
+      <AnimatePresence mode="wait">
+        {selectedEntry ? (
+          <LogbookDetailView
+            key={`detail-${selectedEntry.id}`}
+            entry={selectedEntry}
+            allEntries={allEntries || []}
+            onBack={handleBackToList}
+            onEdit={() => setIsEditDialogOpen(true)}
+            onDelete={() => setEntryToDelete(selectedEntry)}
+            showAIAssist={showAIAssist}
+            aiMode={aiMode}
+            onToggleAIAssist={() => setShowAIAssist(!showAIAssist)}
+            onAIModeChange={setAIMode}
+          />
+        ) : (
+          <motion.div
+            key="list-view"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="min-h-screen"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+              <LogbookHeader onNewEntry={() => setIsCreateDialogOpen(true)} />
 
-        <div className="mb-6 flex items-center gap-4">
-          <LogbookSearchBar value={searchQuery} onChange={setSearchQuery} />
-          <LogbookViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-        </div>
+              <div className="mb-4 md:mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                <div className="flex-1">
+                  <LogbookSearchBar value={searchQuery} onChange={setSearchQuery} />
+                </div>
+                <LogbookViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+              </div>
 
-        <LogbookListView
-          entries={filteredAndSortedEntries}
-          viewMode={viewMode}
-          searchQuery={searchQuery}
-          isLoading={isLoading}
-          onEntryClick={handleEntryClick}
-          onDateClick={handleDateClick}
-          onCreateEntry={() => setIsCreateDialogOpen(true)}
-        />
-      </div>
+              <LogbookListView
+                entries={filteredAndSortedEntries}
+                viewMode={viewMode}
+                searchQuery={searchQuery}
+                isLoading={isLoading}
+                onEntryClick={handleEntryClick}
+                onDateClick={handleDateClick}
+                onCreateEntry={() => setIsCreateDialogOpen(true)}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <Dialog
+      {/* Mobile: Use BottomSheet, Desktop: Use Dialog */}
+      <BottomSheet
         isOpen={isCreateDialogOpen}
         onClose={() => {
           setIsCreateDialogOpen(false);
           setSelectedDateForCreate(undefined);
         }}
         title="New Logbook Entry"
-        className="max-w-2xl"
+        maxHeight="90vh"
       >
         <LogbookEditor
           defaultDate={selectedDateForCreate}
@@ -256,7 +242,23 @@ export default function LogbookPage() {
           }}
           isLoading={isSubmitting}
         />
-      </Dialog>
+      </BottomSheet>
+
+      <BottomSheet
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        title="Edit Entry"
+        maxHeight="90vh"
+      >
+        {selectedEntry && (
+          <LogbookEditor
+            entry={selectedEntry || undefined}
+            onSubmit={(input) => handleUpdateEntry(input as UpdateLogbookEntryInput)}
+            onCancel={() => setIsEditDialogOpen(false)}
+            isLoading={isSubmitting}
+          />
+        )}
+      </BottomSheet>
 
       <DeleteEntryDialog
         entry={entryToDelete}

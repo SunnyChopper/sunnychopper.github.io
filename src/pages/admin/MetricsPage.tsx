@@ -17,7 +17,19 @@ import {
   Grid3x3,
   Filter,
   X,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Calendar,
+  Smartphone,
+  Hand,
+  Watch,
+  Database,
+  BarChart3,
+  Award,
+  Clock,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type {
   Metric,
   MetricLog,
@@ -28,7 +40,6 @@ import type {
   Goal,
   Area,
 } from '@/types/growth-system';
-import { metricsService } from '@/services/growth-system/metrics.service';
 import { useGoals, useMetrics } from '@/hooks/useGrowthSystem';
 import Button from '@/components/atoms/Button';
 import { MetricCard } from '@/components/molecules/MetricCard';
@@ -45,6 +56,7 @@ import { MetricCoaching } from '@/components/molecules/MetricCoaching';
 import { MetricEmptyStates } from '@/components/molecules/MetricEmptyStates';
 import { MetricProgressRing } from '@/components/molecules/MetricProgressRing';
 import { calculateProgress, getTrendData, getPeriodComparison } from '@/utils/metric-analytics';
+import { SUBCATEGORY_LABELS, AREAS, AREA_LABELS } from '@/constants/growth-system';
 import { MetricCreateForm } from '@/components/organisms/MetricCreateForm';
 import { MetricEditForm } from '@/components/organisms/MetricEditForm';
 import Dialog from '@/components/molecules/Dialog';
@@ -52,7 +64,6 @@ import { EmptyState } from '@/components/molecules/EmptyState';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { llmConfig } from '@/lib/llm';
-import { SUBCATEGORY_LABELS, AREAS, AREA_LABELS } from '@/constants/growth-system';
 import {
   groupByArea,
   groupByStatus,
@@ -67,14 +78,20 @@ type ViewMode = 'grid' | 'list' | 'area' | 'status' | 'momentum' | 'priority';
 
 export default function MetricsPage() {
   // Get cached metrics and goals from React Query
-  const { metrics: cachedMetrics } = useMetrics();
+  const {
+    metrics: cachedMetrics,
+    isLoading: metricsLoading,
+    createMetric,
+    updateMetric,
+    deleteMetric,
+    logValue,
+  } = useMetrics();
   const { goals: cachedGoals } = useGoals();
 
-  const [metrics, setMetrics] = useState<Metric[]>([]);
-  const [metricLogs, setMetricLogs] = useState<Map<string, MetricLog[]>>(new Map());
+  // Use metrics from cache (they now include logs)
+  const metrics = cachedMetrics;
   const [goals, setGoals] = useState<Goal[]>([]);
   const [goalMetrics, setGoalMetrics] = useState<Map<string, string[]>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({});
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -93,34 +110,6 @@ export default function MetricsPage() {
     'overview' | 'trends' | 'patterns' | 'correlations' | 'predictions' | 'goals' | 'history'
   >('overview');
   const isAIConfigured = llmConfig.isConfigured();
-
-  const loadMetrics = async () => {
-    setIsLoading(true);
-    try {
-      const response = await metricsService.getAll();
-      if (response.success && response.data) {
-        setMetrics(response.data);
-        response.data.forEach((metric) => {
-          loadMetricLogs(metric.id);
-        });
-      }
-    } catch (error) {
-      console.error('Failed to load metrics:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadMetricLogs = async (metricId: string) => {
-    try {
-      const response = await metricsService.getHistory(metricId);
-      if (response.success && response.data) {
-        setMetricLogs((prev) => new Map(prev).set(metricId, response.data!));
-      }
-    } catch (error) {
-      console.error('Failed to load metric logs:', error);
-    }
-  };
 
   const loadGoals = useCallback(() => {
     // Use cached goals
@@ -143,24 +132,27 @@ export default function MetricsPage() {
   }, [cachedGoals, cachedMetrics]);
 
   useEffect(() => {
-    loadMetrics();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     if (cachedGoals.length > 0 && cachedMetrics.length > 0) {
       loadGoals();
     }
   }, [cachedGoals, cachedMetrics, loadGoals]);
 
+  // Update selectedMetric when metrics change (to get updated logs)
+  useEffect(() => {
+    if (selectedMetric) {
+      const updatedMetric = metrics.find((m) => m.id === selectedMetric.id);
+      if (updatedMetric && updatedMetric !== selectedMetric) {
+        setSelectedMetric(updatedMetric);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metrics]);
+
   const handleCreateMetric = async (input: CreateMetricInput) => {
     setIsSubmitting(true);
     try {
-      const response = await metricsService.create(input);
-      if (response.success && response.data) {
-        setMetrics([response.data, ...metrics]);
-        setIsCreateDialogOpen(false);
-      }
+      await createMetric(input);
+      setIsCreateDialogOpen(false);
     } catch (error) {
       console.error('Failed to create metric:', error);
     } finally {
@@ -171,10 +163,8 @@ export default function MetricsPage() {
   const handleUpdateMetric = async (id: string, input: UpdateMetricInput) => {
     setIsSubmitting(true);
     try {
-      const response = await metricsService.update(id, input);
+      const response = await updateMetric({ id, input });
       if (response.success && response.data) {
-        const updatedMetrics = metrics.map((m) => (m.id === id ? response.data! : m));
-        setMetrics(updatedMetrics);
         if (selectedMetric && selectedMetric.id === id) {
           setSelectedMetric(response.data);
         }
@@ -192,15 +182,11 @@ export default function MetricsPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await metricsService.delete(metricToDelete.id);
-      if (response.success) {
-        const updatedMetrics = metrics.filter((m) => m.id !== metricToDelete.id);
-        setMetrics(updatedMetrics);
-        if (selectedMetric && selectedMetric.id === metricToDelete.id) {
-          setSelectedMetric(null);
-        }
-        setMetricToDelete(null);
+      await deleteMetric(metricToDelete.id);
+      if (selectedMetric && selectedMetric.id === metricToDelete.id) {
+        setSelectedMetric(null);
       }
+      setMetricToDelete(null);
     } catch (error) {
       console.error('Failed to delete metric:', error);
     } finally {
@@ -211,11 +197,17 @@ export default function MetricsPage() {
   const handleLogValue = async (input: CreateMetricLogInput) => {
     setIsSubmitting(true);
     try {
-      const response = await metricsService.logValue(input);
-      if (response.success && response.data) {
-        loadMetricLogs(input.metricId);
-        setIsLogDialogOpen(false);
-        setMetricToLog(null);
+      await logValue(input);
+      setIsLogDialogOpen(false);
+      setMetricToLog(null);
+      // Update selected metric if it's the one being logged
+      if (selectedMetric && selectedMetric.id === input.metricId) {
+        // The cache will be updated automatically, but we need to refresh the selected metric
+        // Find the updated metric from the cache
+        const updatedMetric = metrics.find((m) => m.id === input.metricId);
+        if (updatedMetric) {
+          setSelectedMetric(updatedMetric);
+        }
       }
     } catch (error) {
       console.error('Failed to log value:', error);
@@ -237,8 +229,19 @@ export default function MetricsPage() {
     setIsLogDialogOpen(true);
   };
 
+  // Create a Map of logs for the filterMetrics utility (it expects a Map)
+  const metricLogsMap = useMemo(() => {
+    const map = new Map<string, MetricLog[]>();
+    metrics.forEach((metric) => {
+      if (metric.logs && metric.logs.length > 0) {
+        map.set(metric.id, metric.logs);
+      }
+    });
+    return map;
+  }, [metrics]);
+
   const filteredMetrics = useMemo(() => {
-    return filterMetrics(metrics, metricLogs, {
+    return filterMetrics(metrics, metricLogsMap, {
       area: filters.area,
       status: filters.status,
       momentum: filters.momentum,
@@ -246,7 +249,7 @@ export default function MetricsPage() {
       loggingFrequency: filters.loggingFrequency,
       searchQuery,
     });
-  }, [metrics, metricLogs, filters, searchQuery]);
+  }, [metrics, metricLogsMap, filters, searchQuery]);
 
   const activeFilterCount = [
     filters.area,
@@ -265,20 +268,20 @@ export default function MetricsPage() {
       case 'area':
         return groupByArea(filteredMetrics);
       case 'status':
-        return groupByStatus(filteredMetrics, metricLogs);
+        return groupByStatus(filteredMetrics, metricLogsMap);
       case 'momentum':
-        return groupByMomentum(filteredMetrics, metricLogs);
+        return groupByMomentum(filteredMetrics, metricLogsMap);
       case 'priority':
         return {
-          Priority: sortByPriority(filteredMetrics, metricLogs, goals, goalMetrics),
+          Priority: sortByPriority(filteredMetrics, metricLogsMap, goals, goalMetrics),
         };
       default:
         return { All: filteredMetrics };
     }
-  }, [filteredMetrics, viewMode, metricLogs, goals, goalMetrics]);
+  }, [filteredMetrics, viewMode, metricLogsMap, goals, goalMetrics]);
 
   if (selectedMetric) {
-    const logs = metricLogs.get(selectedMetric.id) || [];
+    const logs = selectedMetric.logs || [];
     const latestLog = logs.length > 0 ? logs[0] : null;
     const currentValue = latestLog?.value || 0;
     const progress = calculateProgress(
@@ -485,7 +488,7 @@ export default function MetricsPage() {
                   primaryMetric={selectedMetric}
                   primaryLogs={logs}
                   allMetrics={metrics}
-                  allLogs={metricLogs}
+                  allLogs={metricLogsMap}
                   onMetricSelect={handleMetricClick}
                 />
               )}
@@ -556,6 +559,40 @@ export default function MetricsPage() {
             isLoading={isSubmitting}
           />
         </Dialog>
+
+        <Dialog
+          isOpen={!!metricToDelete}
+          onClose={() => setMetricToDelete(null)}
+          title="Delete Metric"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-700 dark:text-gray-300">
+              Are you sure you want to delete this metric? This action cannot be undone.
+            </p>
+            {metricToDelete && (
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                <p className="font-semibold text-gray-900 dark:text-white">{metricToDelete.name}</p>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button
+                variant="secondary"
+                onClick={() => setMetricToDelete(null)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleDeleteMetric}
+                disabled={isSubmitting}
+                className="!bg-red-600 hover:!bg-red-700"
+              >
+                {isSubmitting ? 'Deleting...' : 'Delete Metric'}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
       </div>
     );
   }
@@ -585,7 +622,8 @@ export default function MetricsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search metrics..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autoFocus
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-150"
             />
           </div>
 
@@ -594,88 +632,60 @@ export default function MetricsPage() {
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">View:</span>
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                    viewMode === 'grid'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  Grid
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                    viewMode === 'list'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <List className="w-4 h-4" />
-                  List
-                </button>
-                <button
-                  onClick={() => setViewMode('area')}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                    viewMode === 'area'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Layers className="w-4 h-4" />
-                  Area
-                </button>
-                <button
-                  onClick={() => setViewMode('status')}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                    viewMode === 'status'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Target className="w-4 h-4" />
-                  Status
-                </button>
-                <button
-                  onClick={() => setViewMode('momentum')}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                    viewMode === 'momentum'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Activity className="w-4 h-4" />
-                  Momentum
-                </button>
-                <button
-                  onClick={() => setViewMode('priority')}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 ${
-                    viewMode === 'priority'
-                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Grid3x3 className="w-4 h-4" />
-                  Priority
-                </button>
+                {(
+                  [
+                    { mode: 'grid' as const, icon: LayoutGrid, label: 'Grid' },
+                    { mode: 'list' as const, icon: List, label: 'List' },
+                    { mode: 'area' as const, icon: Layers, label: 'Area' },
+                    { mode: 'status' as const, icon: Target, label: 'Status' },
+                    { mode: 'momentum' as const, icon: Activity, label: 'Momentum' },
+                    { mode: 'priority' as const, icon: Grid3x3, label: 'Priority' },
+                  ] as const
+                ).map(({ mode, icon: Icon, label }) => (
+                  <motion.button
+                    key={mode}
+                    onClick={() => setViewMode(mode)}
+                    className={`relative px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+                      viewMode === mode
+                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                    whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    title={label}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{label}</span>
+                  </motion.button>
+                ))}
               </div>
             </div>
 
-            <Button
-              variant="secondary"
-              onClick={() => setShowFilters(!showFilters)}
-              className="relative"
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.15 }}
             >
-              <Filter className="w-4 h-4 mr-2" />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setShowFilters(!showFilters)}
+                className="relative"
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <motion.span
+                    className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  >
+                    {activeFilterCount}
+                  </motion.span>
+                )}
+              </Button>
+            </motion.div>
           </div>
         </div>
 
@@ -742,7 +752,7 @@ export default function MetricsPage() {
         )}
 
         <div>
-          {isLoading ? (
+          {metricsLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -768,70 +778,315 @@ export default function MetricsPage() {
               />
             )
           ) : (
-            <div>
-              {viewMode === 'list' ? (
-                <div className="space-y-3">
-                  {filteredMetrics.map((metric) => {
-                    const logs = metricLogs.get(metric.id) || [];
-                    return (
-                      <div
-                        key={metric.id}
-                        onClick={() => handleMetricClick(metric)}
-                        className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md cursor-pointer transition-all"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                              {metric.name}
-                            </h3>
-                            <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                              <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {logs[0]?.value.toFixed(metric.unit === 'dollars' ? 0 : 1) || '0'}
-                              </span>
-                              <span>
-                                {metric.unit === 'custom' ? metric.customUnit : metric.unit}
-                              </span>
-                              {logs[0] && (
-                                <span className="text-xs">
-                                  {new Date(logs[0].loggedAt).toLocaleDateString()}
-                                </span>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={viewMode}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {viewMode === 'list' ? (
+                  <div className="space-y-3">
+                    {filteredMetrics.map((metric, index) => {
+                      const logs = metric.logs || [];
+                      const latestLog = logs.length > 0 ? logs[0] : null;
+                      const currentValue = latestLog?.value ?? 0;
+                      const progress = calculateProgress(
+                        currentValue,
+                        metric.targetValue,
+                        metric.direction
+                      );
+                      const unit = metric.unit === 'custom' ? metric.customUnit || '' : metric.unit;
+
+                      // Get status
+                      const getStatus = () => {
+                        if (!metric.targetValue) return 'No Target';
+                        if (progress.isOnTrack) return 'On Track';
+                        if (progress.percentage >= 50) return 'At Risk';
+                        return 'Stalled';
+                      };
+                      const status = getStatus();
+                      const statusColors = {
+                        'On Track':
+                          'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+                        'At Risk':
+                          'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
+                        Stalled: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+                        'No Target':
+                          'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
+                      };
+
+                      // Source icon mapping
+                      const sourceIcons = {
+                        App: Smartphone,
+                        Manual: Hand,
+                        Device: Watch,
+                        API: Database,
+                      };
+                      const SourceIcon =
+                        sourceIcons[metric.source as keyof typeof sourceIcons] || Database;
+
+                      // Direction icon
+                      const DirectionIcon =
+                        metric.direction === 'Higher'
+                          ? ArrowUp
+                          : metric.direction === 'Lower'
+                            ? ArrowDown
+                            : Minus;
+
+                      // Tracking frequency icon (if available from API response)
+                      const trackingFrequency = metric.trackingFrequency;
+                      const frequencyIcons = {
+                        Daily: Calendar,
+                        Weekly: BarChart3,
+                        Monthly: Clock,
+                      };
+                      const FrequencyIcon =
+                        trackingFrequency &&
+                        frequencyIcons[trackingFrequency as keyof typeof frequencyIcons]
+                          ? frequencyIcons[trackingFrequency as keyof typeof frequencyIcons]
+                          : Clock;
+
+                      return (
+                        <motion.div
+                          key={metric.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.2, delay: index * 0.02 }}
+                          onClick={() => handleMetricClick(metric)}
+                          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                          whileHover={{
+                            scale: 1.005,
+                            borderColor: 'rgb(59, 130, 246)',
+                            boxShadow:
+                              '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            transition: { duration: 0.15 },
+                          }}
+                          whileTap={{ scale: 0.998, transition: { duration: 0.15 } }}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleMetricClick(metric);
+                            }
+                          }}
+                        >
+                          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                            {/* Left Section: Main Info */}
+                            <div className="flex-1 min-w-0 space-y-3">
+                              {/* Header Row */}
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+                                      {metric.name}
+                                    </h3>
+                                    <AreaBadge area={metric.area} size="sm" />
+                                  </div>
+                                  {metric.description && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-1">
+                                      {metric.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div
+                                  className={`px-2.5 py-1 text-xs font-medium rounded-full flex-shrink-0 ${statusColors[status as keyof typeof statusColors]}`}
+                                >
+                                  {status}
+                                </div>
+                              </div>
+
+                              {/* Value and Progress Section */}
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                {/* Current Value */}
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                                    {currentValue.toFixed(metric.unit === 'dollars' ? 0 : 1)}
+                                  </span>
+                                  <span className="text-base text-gray-600 dark:text-gray-400">
+                                    {unit}
+                                  </span>
+                                  <DirectionIcon
+                                    className={`w-4 h-4 ${
+                                      metric.direction === 'Higher'
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : metric.direction === 'Lower'
+                                          ? 'text-red-600 dark:text-red-400'
+                                          : 'text-gray-500 dark:text-gray-400'
+                                    }`}
+                                  />
+                                </div>
+
+                                {/* Progress Bar */}
+                                {metric.targetValue && (
+                                  <div className="flex-1 min-w-0 space-y-1">
+                                    <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                                      <span>
+                                        {progress.percentage.toFixed(0)}% of{' '}
+                                        {metric.targetValue.toFixed(
+                                          metric.unit === 'dollars' ? 0 : 1
+                                        )}{' '}
+                                        {unit}
+                                      </span>
+                                      {progress.remaining !== null && (
+                                        <span className="text-gray-500 dark:text-gray-500">
+                                          {progress.remaining > 0
+                                            ? `${progress.remaining.toFixed(1)} ${unit} to go`
+                                            : 'Target reached!'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                      <motion.div
+                                        className={`h-full ${
+                                          progress.isOnTrack
+                                            ? 'bg-green-500 dark:bg-green-400'
+                                            : progress.percentage >= 50
+                                              ? 'bg-yellow-500 dark:bg-yellow-400'
+                                              : 'bg-red-500 dark:bg-red-400'
+                                        }`}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${progress.percentage}%` }}
+                                        transition={{ duration: 0.5, delay: index * 0.05 }}
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Metadata Row */}
+                              <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                                {/* Baseline Comparison */}
+                                {metric.baselineValue !== null &&
+                                  metric.baselineValue !== undefined && (
+                                    <div className="flex items-center gap-1">
+                                      <BarChart3 className="w-3.5 h-3.5" />
+                                      <span>
+                                        Baseline:{' '}
+                                        {metric.baselineValue.toFixed(
+                                          metric.unit === 'dollars' ? 0 : 1
+                                        )}{' '}
+                                        {unit}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                {/* Tracking Frequency */}
+                                {trackingFrequency && (
+                                  <div className="flex items-center gap-1">
+                                    <FrequencyIcon className="w-3.5 h-3.5" />
+                                    <span>{trackingFrequency}</span>
+                                  </div>
+                                )}
+
+                                {/* Source */}
+                                <div className="flex items-center gap-1">
+                                  <SourceIcon className="w-3.5 h-3.5" />
+                                  <span>{metric.source}</span>
+                                </div>
+
+                                {/* Log Count */}
+                                {logs.length > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <Database className="w-3.5 h-3.5" />
+                                    <span>
+                                      {logs.length} log{logs.length !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Milestone Count */}
+                                {metric.milestoneCount !== undefined &&
+                                  metric.milestoneCount > 0 && (
+                                    <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                      <Award className="w-3.5 h-3.5" />
+                                      <span>
+                                        {metric.milestoneCount} milestone
+                                        {metric.milestoneCount !== 1 ? 's' : ''}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                {/* Last Log Date */}
+                                {latestLog && (
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>
+                                      Last: {new Date(latestLog.loggedAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Right Section: Status Badge and Quick Actions */}
+                            <div className="flex lg:flex-col items-center lg:items-end gap-3 flex-shrink-0">
+                              <StatusBadge status={metric.status} size="sm" />
+                              {metric.status === 'Active' && (
+                                <motion.button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleQuickLog(metric);
+                                  }}
+                                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 flex items-center gap-1.5"
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  transition={{ duration: 0.15 }}
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  Log
+                                </motion.button>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <AreaBadge area={metric.area} />
-                            <StatusBadge status={metric.status} size="sm" />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                Object.entries(groupedMetrics).map(([groupName, groupMetrics]) => (
-                  <div key={groupName} className="mb-8">
-                    {viewMode !== 'grid' && (
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        {groupName} ({groupMetrics.length})
-                      </h2>
-                    )}
-                    <div
-                      className={`grid grid-cols-1 ${viewMode === 'grid' ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}
-                    >
-                      {groupMetrics.map((metric) => (
-                        <MetricCard
-                          key={metric.id}
-                          metric={metric}
-                          logs={metricLogs.get(metric.id) || []}
-                          onClick={handleMetricClick}
-                          onQuickLog={handleQuickLog}
-                        />
-                      ))}
-                    </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
-                ))
-              )}
-            </div>
+                ) : (
+                  Object.entries(groupedMetrics).map(([groupName, groupMetrics]) => (
+                    <motion.div
+                      key={groupName}
+                      className="mb-8"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {viewMode !== 'grid' && (
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                          {groupName} ({groupMetrics.length})
+                        </h2>
+                      )}
+                      <div
+                        className="grid gap-6 items-stretch"
+                        style={{
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+                        }}
+                      >
+                        {groupMetrics.map((metric, index) => (
+                          <motion.div
+                            key={metric.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, delay: index * 0.03 }}
+                            className="min-w-0"
+                          >
+                            <MetricCard
+                              metric={metric}
+                              logs={metric.logs || []}
+                              onClick={handleMetricClick}
+                              onQuickLog={handleQuickLog}
+                            />
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
       </div>
@@ -861,7 +1116,7 @@ export default function MetricsPage() {
         {metricToLog && (
           <MetricLogForm
             metric={metricToLog}
-            logs={metricLogs.get(metricToLog.id) || []}
+            logs={metricToLog.logs || []}
             onSubmit={handleLogValue}
             onCancel={() => {
               setIsLogDialogOpen(false);

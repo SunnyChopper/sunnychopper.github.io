@@ -32,9 +32,14 @@ import type {
 } from '@/types/growth-system';
 import { useProjects, useGoals, useTasks } from '@/hooks/useGrowthSystem';
 import { useProjectHealthMap } from '@/hooks/useProjectHealthMap';
-import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import { tasksService } from '@/services/growth-system/tasks.service';
 import { projectsService } from '@/services/growth-system/projects.service';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  addTaskDependencyToCache,
+  removeTaskDependencyFromCache,
+} from '@/lib/react-query/growth-system-cache';
+import { queryKeys } from '@/lib/react-query/query-keys';
 import { getTasksByProject } from '@/utils/growth-system-filters';
 import Button from '@/components/atoms/Button';
 import { ProjectCard } from '@/components/molecules/ProjectCard';
@@ -72,6 +77,7 @@ const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 type ViewMode = 'grid' | 'list' | 'timeline';
 
 export default function ProjectsPage() {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -96,38 +102,21 @@ export default function ProjectsPage() {
   const isAIConfigured = llmConfig.isConfigured();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskEditOpen, setIsTaskEditOpen] = useState(false);
-  const [localTasks, setLocalTasks] = useState<Task[]>([]);
   const [isTaskPickerOpen, setIsTaskPickerOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
-  // Use dashboard hook for initial data loading (single API call)
+  // Use individual hooks to fetch data from their respective endpoints
   const {
-    projects: dashboardProjects,
-    goals: dashboardGoals,
-    tasks: dashboardTasks,
-    isLoading: dashboardLoading,
-  } = useGrowthSystemDashboard();
+    projects,
+    isLoading: projectsLoading,
+    createProject,
+    updateProject,
+    deleteProject,
+  } = useProjects();
+  const { goals, isLoading: goalsLoading } = useGoals();
+  const { tasks, isLoading: tasksLoading, updateTask } = useTasks();
 
-  // Use individual hooks for mutations (they read from cache populated by dashboard hook)
-  const { createProject, updateProject, deleteProject } = useProjects();
-  const { goals: _goals } = useGoals();
-  const { updateTask } = useTasks();
-
-  // Use dashboard data for initial render (individual hooks will read from cache if dashboard loaded)
-  const projects = useMemo(
-    () => (dashboardProjects.length > 0 ? dashboardProjects : []),
-    [dashboardProjects]
-  );
-  const goals = useMemo(
-    () => (dashboardGoals.length > 0 ? dashboardGoals : _goals),
-    [dashboardGoals, _goals]
-  );
-  useEffect(() => {
-    setLocalTasks(dashboardTasks || []);
-  }, [dashboardTasks]);
-
-  const tasks = useMemo(() => localTasks, [localTasks]);
-  const isLoading = dashboardLoading;
+  const isLoading = projectsLoading || goalsLoading || tasksLoading;
 
   // Convert goals to EntitySummary format
   const allGoals = useMemo<EntitySummary[]>(
@@ -176,35 +165,6 @@ export default function ProjectsPage() {
       })),
     [tasks]
   );
-
-  const updateLocalTaskLinks = useCallback(
-    (taskId: string, projectId: string, isLinked: boolean) => {
-      setLocalTasks((prev) =>
-        prev.map((task) => {
-          if (task.id !== taskId) return task;
-          const projectIds = task.projectIds || [];
-          const nextProjectIds = isLinked
-            ? Array.from(new Set([...projectIds, projectId]))
-            : projectIds.filter((id) => id !== projectId);
-          return { ...task, projectIds: nextProjectIds };
-        })
-      );
-    },
-    []
-  );
-
-  const updateLocalTaskGoals = useCallback((taskId: string, goalId: string, isLinked: boolean) => {
-    setLocalTasks((prev) =>
-      prev.map((task) => {
-        if (task.id !== taskId) return task;
-        const goalIds = task.goalIds || [];
-        const nextGoalIds = isLinked
-          ? Array.from(new Set([...goalIds, goalId]))
-          : goalIds.filter((id) => id !== goalId);
-        return { ...task, goalIds: nextGoalIds };
-      })
-    );
-  }, []);
 
   // Filter projects based on search and filters
   const filteredProjects = useMemo(() => {
@@ -461,12 +421,14 @@ export default function ProjectsPage() {
 
   const handleLinkTaskToProject = async (taskId: string, projectId: string) => {
     await tasksService.linkToProject(taskId, projectId);
-    updateLocalTaskLinks(taskId, projectId, true);
+    // Invalidate tasks query to refresh data
+    queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
   };
 
   const handleUnlinkTaskFromProject = async (taskId: string, projectId: string) => {
     await tasksService.unlinkFromProject(taskId, projectId);
-    updateLocalTaskLinks(taskId, projectId, false);
+    // Invalidate tasks query to refresh data
+    queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
   };
 
   const handleEditTask = (task: Task) => {
@@ -477,10 +439,8 @@ export default function ProjectsPage() {
   const handleUpdateTask = async (id: string, input: UpdateTaskInput) => {
     setIsTaskSubmitting(true);
     try {
-      const response = await updateTask({ id, input });
-      if (response.success && response.data) {
-        setLocalTasks((prev) => prev.map((task) => (task.id === id ? response.data! : task)));
-      }
+      await updateTask({ id, input });
+      // Cache is automatically updated by the mutation
     } finally {
       setIsTaskSubmitting(false);
     }
@@ -966,26 +926,34 @@ export default function ProjectsPage() {
             linkedProjects={getLinkedProjectsForTask(selectedTask)}
             linkedGoals={getLinkedGoalsForTask(selectedTask)}
             onDependencyAdd={async (taskId, dependsOnId) => {
-              await tasksService.addDependency(taskId, dependsOnId);
+              const response = await tasksService.addDependency(taskId, dependsOnId);
+              if (response.success && response.data) {
+                addTaskDependencyToCache(queryClient, response.data);
+              }
             }}
             onDependencyRemove={async (taskId, dependsOnId) => {
               await tasksService.removeDependency(taskId, dependsOnId);
+              removeTaskDependencyFromCache(queryClient, taskId, dependsOnId);
             }}
             onProjectLink={async (taskId, projectId) => {
               await tasksService.linkToProject(taskId, projectId);
-              updateLocalTaskLinks(taskId, projectId, true);
+              // Invalidate tasks query to refresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
             }}
             onProjectUnlink={async (taskId, projectId) => {
               await tasksService.unlinkFromProject(taskId, projectId);
-              updateLocalTaskLinks(taskId, projectId, false);
+              // Invalidate tasks query to refresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
             }}
             onGoalLink={async (taskId, goalId) => {
               await tasksService.linkToGoal(taskId, goalId);
-              updateLocalTaskGoals(taskId, goalId, true);
+              // Invalidate tasks query to refresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
             }}
             onGoalUnlink={async (taskId, goalId) => {
               await tasksService.unlinkFromGoal(taskId, goalId);
-              updateLocalTaskGoals(taskId, goalId, false);
+              // Invalidate tasks query to refresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
             }}
           />
         )}

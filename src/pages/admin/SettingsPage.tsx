@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Monitor, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
 import { AISettingsPanel } from '@/components/settings/AISettingsPanel';
+import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -9,6 +10,8 @@ export default function SettingsPage() {
     const stored = localStorage.getItem('theme') as Theme;
     return stored || 'system';
   });
+
+  const { enabled: soundEnabled, setEnabled: setSoundEnabled, play } = useSoundEffects();
 
   const applyTheme = (selectedTheme: Theme) => {
     let effectiveTheme = selectedTheme;
@@ -102,6 +105,57 @@ export default function SettingsPage() {
               )}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Sound Effects</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+          Enable satisfying sound effects for button clicks and actions
+        </p>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-lg ${
+                soundEnabled
+                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                  : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+              }`}
+            >
+              {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            </div>
+            <div>
+              <div className="font-medium text-gray-900 dark:text-gray-100">
+                {soundEnabled ? 'Sound Effects On' : 'Sound Effects Off'}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {soundEnabled
+                  ? 'Enjoy satisfying sounds when you interact'
+                  : 'Silent mode - no sound effects'}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const newValue = !soundEnabled;
+              setSoundEnabled(newValue);
+              // Play a test sound when enabling
+              if (newValue) {
+                setTimeout(() => play('pop'), 100);
+              }
+            }}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              soundEnabled ? 'bg-blue-600 dark:bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+            aria-label={soundEnabled ? 'Disable sound effects' : 'Enable sound effects'}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                soundEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
       </div>
 
