@@ -1,6 +1,14 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import type { ApiResponse, DashboardSummaryResponse } from '@/types/api-contracts';
-import type { Goal, Habit, LogbookEntry, Metric, Project, Task } from '@/types/growth-system';
+import type {
+  Goal,
+  Habit,
+  LogbookEntry,
+  Metric,
+  Project,
+  Task,
+  TaskDependency,
+} from '@/types/growth-system';
 import type {
   Reward,
   RewardRedemption,
@@ -87,6 +95,185 @@ export const upsertTaskCache = (queryClient: QueryClient, task: Task): void => {
   updateDetailCache(queryClient, queryKeys.growthSystem.tasks.detail, task);
 };
 
+/**
+ * Helper to find all dependency queries in the cache
+ */
+const findDependencyQueries = (queryClient: QueryClient) => {
+  return queryClient.getQueriesData<{
+    dependencyMap: Map<string, TaskDependency[]>;
+    allDependencies: TaskDependency[];
+  }>({
+    predicate: (query) => {
+      const key = query.queryKey;
+      // Match dependency query keys: ['growth-system', 'tasks', 'dependencies', 'task1,task2,...']
+      return (
+        Array.isArray(key) &&
+        key.length >= 4 &&
+        key[0] === 'growth-system' &&
+        key[1] === 'tasks' &&
+        key[2] === 'dependencies'
+      );
+    },
+  });
+};
+
+/**
+ * Adds a new dependency to the cache for all relevant dependency queries.
+ * Updates queries that include the taskId in their taskIds list.
+ */
+export const addTaskDependencyToCache = (
+  queryClient: QueryClient,
+  dependency: TaskDependency
+): void => {
+  const dependencyQueries = findDependencyQueries(queryClient);
+
+  dependencyQueries.forEach(([key, data]) => {
+    if (!data) return;
+
+    // Extract taskIds from query key (last element is the comma-separated string)
+    const taskIdsString = key[key.length - 1] as string;
+    if (typeof taskIdsString !== 'string') return;
+
+    const taskIds = taskIdsString.split(',').filter(Boolean);
+    const includesTaskId = taskIds.includes(dependency.taskId);
+
+    // Only update queries that include the taskId
+    if (!includesTaskId) return;
+
+    // Check if dependency already exists
+    const exists = data.allDependencies.some(
+      (dep) =>
+        dep.taskId === dependency.taskId && dep.dependsOnTaskId === dependency.dependsOnTaskId
+    );
+
+    if (exists) return; // Already in cache
+
+    // Add to allDependencies
+    const updatedAllDependencies = [...data.allDependencies, dependency];
+
+    // Update dependency map
+    const updatedDependencyMap = new Map(data.dependencyMap);
+    const existingDeps = updatedDependencyMap.get(dependency.taskId) || [];
+    updatedDependencyMap.set(dependency.taskId, [...existingDeps, dependency]);
+
+    const updatedData = {
+      dependencyMap: updatedDependencyMap,
+      allDependencies: updatedAllDependencies,
+    };
+
+    // Update the query cache
+    queryClient.setQueryData(key, updatedData);
+  });
+};
+
+/**
+ * Removes a single dependency from the cache for all relevant dependency queries.
+ * Updates queries that include the taskId in their taskIds list.
+ */
+export const removeTaskDependencyFromCache = (
+  queryClient: QueryClient,
+  taskId: string,
+  dependsOnTaskId: string
+): void => {
+  const dependencyQueries = findDependencyQueries(queryClient);
+
+  dependencyQueries.forEach(([key, data]) => {
+    if (!data) return;
+
+    // Extract taskIds from query key (last element is the comma-separated string)
+    const taskIdsString = key[key.length - 1] as string;
+    if (typeof taskIdsString !== 'string') return;
+
+    const taskIds = taskIdsString.split(',').filter(Boolean);
+    const includesTaskId = taskIds.includes(taskId);
+
+    // Only update queries that include the taskId
+    if (!includesTaskId) return;
+
+    // Remove from allDependencies
+    const updatedAllDependencies = data.allDependencies.filter(
+      (dep) => !(dep.taskId === taskId && dep.dependsOnTaskId === dependsOnTaskId)
+    );
+
+    // Update dependency map
+    const updatedDependencyMap = new Map(data.dependencyMap);
+    const existingDeps = updatedDependencyMap.get(taskId) || [];
+    const filteredDeps = existingDeps.filter((dep) => dep.dependsOnTaskId !== dependsOnTaskId);
+    if (filteredDeps.length > 0) {
+      updatedDependencyMap.set(taskId, filteredDeps);
+    } else {
+      updatedDependencyMap.delete(taskId);
+    }
+
+    const updatedData = {
+      dependencyMap: updatedDependencyMap,
+      allDependencies: updatedAllDependencies,
+    };
+
+    // Update the query cache
+    queryClient.setQueryData(key, updatedData);
+  });
+};
+
+/**
+ * Updates dependencies cache to remove dependencies related to a deleted task.
+ * Removes dependencies where the deleted task is either the dependent task or the dependency.
+ * Also pre-populates the cache for the new query key (with deleted taskId removed from taskIds).
+ */
+const removeTaskDependenciesFromCache = (queryClient: QueryClient, deletedTaskId: string): void => {
+  // Find all dependency queries and update them
+  const dependencyQueries = findDependencyQueries(queryClient);
+
+  dependencyQueries.forEach(([key, data]) => {
+    if (!data) return;
+
+    // Extract taskIds from query key (last element is the comma-separated string)
+    const taskIdsString = key[key.length - 1] as string;
+    if (typeof taskIdsString !== 'string') return;
+
+    const taskIds = taskIdsString.split(',').filter(Boolean);
+    const hasDeletedTask = taskIds.includes(deletedTaskId);
+
+    // Remove dependencies where deleted task is involved
+    const updatedAllDependencies = data.allDependencies.filter(
+      (dep) => dep.taskId !== deletedTaskId && dep.dependsOnTaskId !== deletedTaskId
+    );
+
+    // Update dependency map - remove entries for deleted task and filter out deleted dependencies
+    const updatedDependencyMap = new Map<string, TaskDependency[]>();
+    data.dependencyMap.forEach((deps, taskId) => {
+      if (taskId !== deletedTaskId) {
+        const filteredDeps = deps.filter((dep) => dep.dependsOnTaskId !== deletedTaskId);
+        if (filteredDeps.length > 0) {
+          updatedDependencyMap.set(taskId, filteredDeps);
+        }
+      }
+    });
+
+    const updatedData = {
+      dependencyMap: updatedDependencyMap,
+      allDependencies: updatedAllDependencies,
+    };
+
+    // Update the existing query cache
+    queryClient.setQueryData(key, updatedData);
+
+    // If this query included the deleted task, pre-populate the cache for the new query key
+    // (without the deleted taskId) so React Query doesn't refetch
+    if (hasDeletedTask) {
+      const newTaskIds = taskIds.filter((id) => id !== deletedTaskId).sort();
+      if (newTaskIds.length > 0) {
+        const newKey = [
+          ...queryKeys.growthSystem.tasks.all(),
+          'dependencies',
+          newTaskIds.join(','),
+        ] as const;
+        queryClient.setQueryData(newKey, updatedData);
+      }
+    }
+  });
+};
+
 export const removeTaskCache = (queryClient: QueryClient, taskId: string): void => {
   updateListQueries<Task>(queryClient, queryKeys.growthSystem.tasks.lists(), (items) =>
     removeById(items, taskId)
@@ -95,6 +282,8 @@ export const removeTaskCache = (queryClient: QueryClient, taskId: string): void 
     ...data,
     tasks: removeById(data.tasks, taskId),
   }));
+  // Remove dependencies related to the deleted task
+  removeTaskDependenciesFromCache(queryClient, taskId);
 };
 
 export const upsertGoalCache = (queryClient: QueryClient, goal: Goal): void => {
@@ -179,6 +368,117 @@ export const removeMetricCache = (queryClient: QueryClient, metricId: string): v
     ...data,
     metrics: removeById(data.metrics, metricId),
   }));
+};
+
+/**
+ * Add a log to a metric's logs array in the cache
+ */
+export const addMetricLogToCache = (
+  queryClient: QueryClient,
+  metricId: string,
+  log: import('@/types/growth-system').MetricLog
+): void => {
+  // Find the metric to get userId if log doesn't have it
+  const findMetric = (items: Metric[]): Metric | undefined => items.find((m) => m.id === metricId);
+
+  const queries = queryClient.getQueriesData<ListCache<Metric>>({
+    queryKey: queryKeys.growthSystem.metrics.lists(),
+  });
+  let metric: Metric | undefined;
+  for (const [, data] of queries) {
+    const items = extractListData(data);
+    metric = findMetric(items);
+    if (metric) break;
+  }
+
+  // Ensure log has userId from metric
+  const logWithUserId: import('@/types/growth-system').MetricLog = {
+    ...log,
+    userId: log.userId || metric?.userId || '',
+  };
+
+  const updateMetricWithLog = (items: Metric[]): Metric[] =>
+    items.map((m) => {
+      if (m.id !== metricId) return m;
+      return {
+        ...m,
+        logs: [...(m.logs || []), logWithUserId].sort(
+          (a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+        ),
+        logCount: (m.logCount || 0) + 1,
+      };
+    });
+
+  updateListQueries<Metric>(
+    queryClient,
+    queryKeys.growthSystem.metrics.lists(),
+    updateMetricWithLog
+  );
+  updateDashboardQueries(queryClient, (data) => ({
+    ...data,
+    metrics: updateMetricWithLog(data.metrics),
+  }));
+
+  // Update detail cache if it exists
+  const detailKey = queryKeys.growthSystem.metrics.detail(metricId);
+  const detailData = queryClient.getQueryData<{ success: boolean; data: Metric }>(detailKey);
+  if (detailData?.data) {
+    queryClient.setQueryData(detailKey, {
+      ...detailData,
+      data: {
+        ...detailData.data,
+        logs: [...(detailData.data.logs || []), logWithUserId].sort(
+          (a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+        ),
+        logCount: (detailData.data.logCount || 0) + 1,
+      },
+    });
+  }
+};
+
+/**
+ * Remove a log from a metric's logs array in the cache
+ */
+export const removeMetricLogFromCache = (
+  queryClient: QueryClient,
+  metricId: string,
+  logId: string
+): void => {
+  const updateMetricWithoutLog = (items: Metric[]): Metric[] =>
+    items.map((metric) => {
+      if (metric.id !== metricId) return metric;
+      const updatedLogs = (metric.logs || []).filter((log) => log.id !== logId);
+      return {
+        ...metric,
+        logs: updatedLogs,
+        logCount: Math.max(0, (metric.logCount || 0) - 1),
+      };
+    });
+
+  updateListQueries<Metric>(
+    queryClient,
+    queryKeys.growthSystem.metrics.lists(),
+    updateMetricWithoutLog
+  );
+  updateDashboardQueries(queryClient, (data) => ({
+    ...data,
+    metrics: updateMetricWithoutLog(data.metrics),
+  }));
+
+  // Update detail cache if it exists
+  const detailKey = queryKeys.growthSystem.metrics.detail(metricId);
+  const detailData = queryClient.getQueryData<{ success: boolean; data: Metric }>(detailKey);
+  if (detailData?.data) {
+    const updatedLogs = (detailData.data.logs || []).filter((log) => log.id !== logId);
+    queryClient.setQueryData(detailKey, {
+      ...detailData,
+      data: {
+        ...detailData.data,
+        logs: updatedLogs,
+        logCount: Math.max(0, (detailData.data.logCount || 0) - 1),
+      },
+    });
+  }
 };
 
 export const upsertLogbookEntryCache = (queryClient: QueryClient, entry: LogbookEntry): void => {
