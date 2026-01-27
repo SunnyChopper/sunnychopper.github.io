@@ -183,3 +183,45 @@ export function formatCompletionDate(date: Date | string): string {
     year: dateObj.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
   });
 }
+
+/**
+ * Convert a Date or ISO string to a local datetime-local format string (YYYY-MM-DDTHH:mm)
+ * This is used for datetime-local input fields which expect local time, not UTC
+ */
+export function toLocalDateTimeString(date: Date | string | null | undefined): string {
+  if (!date) return '';
+
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(dateObj.getTime())) return '';
+
+  // Get local date components
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const hours = String(dateObj.getHours()).padStart(2, '0');
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+/**
+ * Convert a datetime-local string (YYYY-MM-DDTHH:mm) to an ISO string
+ * The datetime-local value is interpreted as local time, so we need to convert it properly
+ */
+export function fromLocalDateTimeString(localDateTimeString: string): string {
+  if (!localDateTimeString) {
+    return new Date().toISOString();
+  }
+
+  // Parse the local datetime string (YYYY-MM-DDTHH:mm)
+  // Create a Date object treating it as local time
+  const [datePart, timePart] = localDateTimeString.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+
+  // Create date in local timezone
+  const localDate = new Date(year, month - 1, day, hours, minutes);
+
+  // Return as ISO string (this will be the correct UTC representation)
+  return localDate.toISOString();
+}
