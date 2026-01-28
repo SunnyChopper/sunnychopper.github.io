@@ -1189,7 +1189,7 @@ export default function ProjectsPage() {
             onAction={() => setIsCreateDialogOpen(true)}
           />
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
             {filteredProjects.map((project) => {
               const stats = getProjectStats(project.id);
               return (
@@ -1197,13 +1197,14 @@ export default function ProjectsPage() {
                   key={project.id}
                   project={project}
                   onClick={handleProjectClick}
+                  viewMode="grid"
                   {...stats}
                 />
               );
             })}
           </div>
         ) : viewMode === 'list' ? (
-          <div className="space-y-3">
+          <div className="space-y-2 w-full">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Showing {filteredProjects.length}{' '}
               {filteredProjects.length === 1 ? 'project' : 'projects'}

@@ -1,13 +1,14 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Calendar, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import type { Project } from '@/types/growth-system';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { AreaBadge } from '@/components/atoms/AreaBadge';
+import { ProgressRing } from '@/components/atoms/ProgressRing';
 import Button from '@/components/atoms/Button';
-import {
-  ProjectDueRow,
-  ProjectMetaRow,
-  ProjectProgressRow,
-} from '@/components/molecules/ProjectSummaryBlocks';
+import { formatDateString } from '@/utils/date-formatters';
+import { getDateUrgency } from '@/utils/project-summary';
+import { cn } from '@/lib/utils';
 
 interface ProjectListItemProps {
   project: Project;
@@ -28,15 +29,25 @@ export function ProjectListItem({
   taskCount = 0,
   completedTaskCount = 0,
   hasHealthData = false,
-  isHealthLoading = false,
+  isHealthLoading: _isHealthLoading = false,
 }: ProjectListItemProps) {
   const handleClick = () => {
     onClick(project);
   };
 
+  const progress = taskCount > 0 ? Math.round(((completedTaskCount || 0) / taskCount) * 100) : 0;
+  const dateUrgency = getDateUrgency(project.targetEndDate);
+  const startDate = project.startDate ? formatDateString(project.startDate) : null;
+  const endDate = project.targetEndDate ? formatDateString(project.targetEndDate) : null;
+  const dateLabel =
+    startDate && endDate ? `${startDate} - ${endDate}` : startDate || endDate || 'No date';
+
   return (
-    <div
-      className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       onClick={(e) => {
         // Don't trigger click if clicking on action buttons
         if ((e.target as HTMLElement).closest('button')) {
@@ -53,69 +64,87 @@ export function ProjectListItem({
       role="button"
       tabIndex={0}
       aria-label={`View project details: ${project.name}`}
+      whileHover={{ x: 2 }}
+      whileTap={{ scale: 0.99 }}
     >
-      <div className="flex flex-col lg:flex-row lg:items-stretch lg:justify-between gap-4">
-        <div className="grid grid-cols-1 gap-3 flex-1 min-w-0 lg:grid-cols-12 lg:grid-rows-2 lg:gap-x-4 lg:gap-y-2">
-          <div className="min-w-0 lg:col-span-5 lg:row-span-2">
-            <div className="flex items-center gap-2 mb-2">
-              <PriorityIndicator priority={project.priority} size="sm" variant="badge" />
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate text-base">
-                {project.name}
-              </h3>
+      <div className="flex items-center gap-4 w-full">
+        {/* Left: Priority + Title + Status + Area */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <PriorityIndicator priority={project.priority} size="sm" variant="badge" />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-base text-gray-900 dark:text-white truncate mb-1">
+              {project.name}
+            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
               <StatusBadge status={project.status} size="sm" />
+              <AreaBadge area={project.area} size="sm" />
             </div>
-            {project.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                {project.description}
-              </p>
-            )}
-          </div>
-          <div className="lg:col-span-3">
-            <ProjectDueRow project={project} />
-          </div>
-          <div className="lg:col-span-3">
-            <ProjectProgressRow
-              project={project}
-              taskCount={taskCount}
-              completedTaskCount={completedTaskCount}
-              hasHealthData={hasHealthData}
-              isHealthLoading={isHealthLoading}
-              showProgressBar
-              showProgressLabel
-            />
-          </div>
-          <div className="lg:col-span-6 lg:col-start-6 lg:row-start-2">
-            <ProjectMetaRow project={project} className="lg:justify-end" />
           </div>
         </div>
 
-        <div
-          className="flex items-center gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-          role="group"
-          aria-label="Project actions"
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onEdit(project)}
-            className="!p-2 hover:!bg-blue-50 hover:!text-blue-600 dark:hover:!bg-blue-900/20 dark:hover:!text-blue-400"
-            aria-label={`Edit project: ${project.name}`}
+        {/* Center: Progress */}
+        <div className="hidden md:flex items-center gap-3 shrink-0">
+          {hasHealthData && taskCount > 0 ? (
+            <>
+              <ProgressRing progress={progress} size="sm" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white w-10 text-right">
+                {progress}%
+              </span>
+            </>
+          ) : (
+            <span className="text-sm text-gray-500 dark:text-gray-400">--</span>
+          )}
+        </div>
+
+        {/* Center-Right: Date */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0 min-w-[140px]">
+          <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+          <div className="flex flex-col">
+            <span className="text-sm text-gray-600 dark:text-gray-400">{dateLabel}</span>
+            {dateUrgency && dateUrgency.text && (
+              <span
+                className={cn(
+                  'text-xs font-medium mt-0.5 px-2 py-0.5 rounded-full inline-block w-fit',
+                  dateUrgency.color
+                )}
+              >
+                {dateUrgency.text}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Actions + Chevron */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div
+            className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="group"
+            aria-label="Project actions"
           >
-            <Pencil className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onDelete(project)}
-            className="!p-2 hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20 dark:hover:!text-red-400"
-            aria-label={`Delete project: ${project.name}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(project)}
+              className="!p-2 hover:!bg-blue-50 hover:!text-blue-600 dark:hover:!bg-blue-900/20 dark:hover:!text-blue-400"
+              aria-label={`Edit project: ${project.name}`}
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(project)}
+              className="!p-2 hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20 dark:hover:!text-red-400"
+              aria-label={`Delete project: ${project.name}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors shrink-0" />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
