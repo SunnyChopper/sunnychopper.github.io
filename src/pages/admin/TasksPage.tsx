@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -11,6 +11,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type {
   Task,
   CreateTaskInput,
@@ -22,8 +23,13 @@ import type {
   TaskDependency,
 } from '@/types/growth-system';
 import { useTasks, useProjects, useGoals, useTaskDependencies } from '@/hooks/useGrowthSystem';
-import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
-import { tasksService } from '@/services/growth-system/tasks.service';
+import { tasksService, goalsService, projectsService } from '@/services/growth-system';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/react-query/query-keys';
+import {
+  addTaskDependencyToCache,
+  removeTaskDependencyFromCache,
+} from '@/lib/react-query/growth-system-cache';
 import Button from '@/components/atoms/Button';
 import { TaskListItem } from '@/components/molecules/TaskListItem';
 import { TaskCreateForm } from '@/components/organisms/TaskCreateForm';
@@ -50,8 +56,52 @@ const AREA_OPTIONS: Area[] = [...AREAS];
 const STATUS_OPTIONS: TaskStatus[] = [...TASK_STATUSES];
 const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 
+// Animation variants for mobile UI enhancements
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.03,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0, filter: 'blur(4px)' },
+  show: {
+    y: 0,
+    opacity: 1,
+    filter: 'blur(0px)',
+    transition: {
+      duration: 0.3,
+      ease: [0.4, 0, 0.2, 1] as const,
+    },
+  },
+};
+
+const filterPanelVariants = {
+  hidden: {
+    opacity: 0,
+    height: 0,
+    marginBottom: 0,
+  },
+  show: {
+    opacity: 1,
+    height: 'auto',
+    marginBottom: '1rem',
+  },
+  exit: {
+    opacity: 0,
+    height: 0,
+    marginBottom: 0,
+  },
+};
+
 export default function TasksPage() {
   const { showToast, ToastContainer } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArea, setSelectedArea] = useState<Area | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | undefined>();
@@ -70,30 +120,44 @@ export default function TasksPage() {
   const [taskToView, setTaskToView] = useState<Task | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
-  // Use dashboard hook for initial data loading (single API call)
-  const {
-    tasks: dashboardTasks,
-    projects: dashboardProjects,
-    goals: dashboardGoals,
-    isLoading: dashboardLoading,
-  } = useGrowthSystemDashboard();
+  // Use individual hooks for data fetching and mutations
+  const { tasks, isLoading: tasksLoading, createTask, updateTask, deleteTask } = useTasks();
+  const { projects } = useProjects();
+  const { goals } = useGoals();
 
-  // Use individual hooks for mutations (they read from cache populated by dashboard hook)
-  const { createTask, updateTask, deleteTask } = useTasks();
-  const { projects: _projects } = useProjects();
-  const { goals: _goals } = useGoals();
+  // Prefetch goals and projects if they haven't been loaded yet (tasks depend on them)
+  useEffect(() => {
+    const goalsQueryKey = queryKeys.growthSystem.goals.lists();
+    const projectsQueryKey = queryKeys.growthSystem.projects.lists();
 
-  // Use dashboard data for initial render (individual hooks will read from cache if dashboard loaded)
-  const tasks = useMemo(() => (dashboardTasks.length > 0 ? dashboardTasks : []), [dashboardTasks]);
-  const projects = useMemo(
-    () => (dashboardProjects.length > 0 ? dashboardProjects : _projects),
-    [dashboardProjects, _projects]
-  );
-  const goals = useMemo(
-    () => (dashboardGoals.length > 0 ? dashboardGoals : _goals),
-    [dashboardGoals, _goals]
-  );
-  const tasksLoading = dashboardLoading;
+    // Check if data is already in cache
+    const goalsData = queryClient.getQueryData(goalsQueryKey);
+    const projectsData = queryClient.getQueryData(projectsQueryKey);
+
+    // Prefetch goals if not in cache
+    if (!goalsData) {
+      queryClient.prefetchQuery({
+        queryKey: goalsQueryKey,
+        queryFn: async () => {
+          const result = await goalsService.getAll();
+          return result;
+        },
+        staleTime: 10 * 60 * 1000, // 10 minutes
+      });
+    }
+
+    // Prefetch projects if not in cache
+    if (!projectsData) {
+      queryClient.prefetchQuery({
+        queryKey: projectsQueryKey,
+        queryFn: async () => {
+          const result = await projectsService.getAll();
+          return result;
+        },
+        staleTime: 10 * 60 * 1000, // 10 minutes
+      });
+    }
+  }, [queryClient]);
 
   // Convert projects and goals to EntitySummary format
   const allProjects = useMemo<EntitySummary[]>(
@@ -264,65 +328,37 @@ export default function TasksPage() {
   };
 
   const handleDependencyAdd = async (taskId: string, dependsOnId: string) => {
-    try {
-      await tasksService.addDependency(taskId, dependsOnId);
-      // React Query will refetch dependencies automatically on next render
-      // or we could invalidate the query here if needed
-    } catch (error) {
-      console.error('Failed to add dependency:', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to add dependency',
-        message: error instanceof Error ? error.message : 'An error occurred',
-      });
+    const response = await tasksService.addDependency(taskId, dependsOnId);
+    if (response.success && response.data) {
+      // Update the cache optimistically
+      addTaskDependencyToCache(queryClient, response.data);
     }
   };
 
   const handleDependencyRemove = async (taskId: string, dependsOnId: string) => {
-    try {
-      await tasksService.removeDependency(taskId, dependsOnId);
-      // React Query will refetch dependencies automatically on next render
-      // or we could invalidate the query here if needed
-    } catch (error) {
-      console.error('Failed to remove dependency:', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to remove dependency',
-        message: error instanceof Error ? error.message : 'An error occurred',
-      });
-    }
+    await tasksService.removeDependency(taskId, dependsOnId);
+    // Update the cache optimistically
+    removeTaskDependencyFromCache(queryClient, taskId, dependsOnId);
   };
 
   const handleProjectLink = async (taskId: string, projectId: string) => {
-    try {
-      await tasksService.linkToProject(taskId, projectId);
-    } catch (error) {
-      console.error('Failed to link project:', error);
-    }
+    await tasksService.linkToProject(taskId, projectId);
+    // Notify ProjectsPage to refresh its task list
+    window.dispatchEvent(new CustomEvent('task-project-link-changed', { detail: { projectId } }));
   };
 
   const handleProjectUnlink = async (taskId: string, projectId: string) => {
-    try {
-      await tasksService.unlinkFromProject(taskId, projectId);
-    } catch (error) {
-      console.error('Failed to unlink project:', error);
-    }
+    await tasksService.unlinkFromProject(taskId, projectId);
+    // Notify ProjectsPage to refresh its task list
+    window.dispatchEvent(new CustomEvent('task-project-link-changed', { detail: { projectId } }));
   };
 
   const handleGoalLink = async (taskId: string, goalId: string) => {
-    try {
-      await tasksService.linkToGoal(taskId, goalId);
-    } catch (error) {
-      console.error('Failed to link goal:', error);
-    }
+    await tasksService.linkToGoal(taskId, goalId);
   };
 
   const handleGoalUnlink = async (taskId: string, goalId: string) => {
-    try {
-      await tasksService.unlinkFromGoal(taskId, goalId);
-    } catch (error) {
-      console.error('Failed to unlink goal:', error);
-    }
+    await tasksService.unlinkFromGoal(taskId, goalId);
   };
 
   const getTaskDependencies = (taskId: string): Task[] => {
@@ -351,251 +387,336 @@ export default function TasksPage() {
 
   return (
     <div className="h-full">
-      <div className="flex items-center justify-between mb-6">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+      >
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Tasks</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Manage your tasks and track progress
           </p>
         </div>
-        <Button variant="primary" onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="w-5 h-5 mr-2" />
-          New Task
-        </Button>
-      </div>
+        <motion.div
+          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          className="min-h-[44px] min-w-[44px]"
+        >
+          <Button
+            variant="primary"
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            New Task
+          </Button>
+        </motion.div>
+      </motion.div>
 
-      <div className="mb-4 flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[300px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        className="mb-4 flex items-center gap-3 flex-wrap"
+      >
+        <div className="relative flex-1 min-w-[200px] sm:min-w-[300px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tasks..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2.5 min-h-[44px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
         </div>
 
         {viewMode === 'list' && (
-          <Button
-            variant="secondary"
-            onClick={() => setShowFilters(!showFilters)}
-            className="relative"
+          <motion.div
+            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.02 }}
+            className="min-h-[44px] min-w-[44px]"
           >
-            <Filter className="w-4 h-4 mr-2" />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full">
-                {activeFilterCount}
-              </span>
-            )}
-          </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setShowFilters(!showFilters)}
+              className="relative w-full sm:w-auto"
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Filters
+              {activeFilterCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full"
+                >
+                  {activeFilterCount}
+                </motion.span>
+              )}
+            </Button>
+          </motion.div>
         )}
 
         <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
-          <button
-            onClick={() => setViewMode('list')}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              viewMode === 'list'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="List view"
-          >
-            <List className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">List</span>
-          </button>
-          <button
-            onClick={() => setViewMode('kanban')}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              viewMode === 'kanban'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="Kanban board"
-          >
-            <Kanban className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Board</span>
-          </button>
-          <button
-            onClick={() => setViewMode('calendar')}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              viewMode === 'calendar'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="Calendar view"
-          >
-            <CalendarIcon className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Calendar</span>
-          </button>
-          <button
-            onClick={() => setViewMode('graph')}
-            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
-              viewMode === 'graph'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            title="Dependency graph"
-          >
-            <Network className="w-4 h-4" />
-            <span className="text-sm font-medium hidden sm:inline">Graph</span>
-          </button>
-        </div>
-      </div>
+          {(['list', 'kanban', 'calendar', 'graph'] as ViewMode[]).map((mode, index) => {
+            const icons = {
+              list: List,
+              kanban: Kanban,
+              calendar: CalendarIcon,
+              graph: Network,
+            };
+            const labels = {
+              list: 'List',
+              kanban: 'Board',
+              calendar: 'Calendar',
+              graph: 'Graph',
+            };
+            const titles = {
+              list: 'List view',
+              kanban: 'Kanban board',
+              calendar: 'Calendar view',
+              graph: 'Dependency graph',
+            };
+            const Icon = icons[mode];
+            const isActive = viewMode === mode;
 
-      {viewMode === 'list' && showFilters && (
-        <div className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
-            <div className="flex items-center gap-2">
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={handleClearFilters}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Clear all
-                </button>
-              )}
-              <button
-                onClick={() => setShowFilters(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+            return (
+              <motion.button
+                key={mode}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.05 }}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
+                onClick={() => setViewMode(mode)}
+                className={`flex items-center gap-2 px-3 py-2 rounded min-h-[44px] transition-colors ${
+                  isActive
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                title={titles[mode]}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Area
-              </label>
-              <select
-                value={selectedArea || ''}
-                onChange={(e) => setSelectedArea((e.target.value as Area) || undefined)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Areas</option>
-                {AREA_OPTIONS.map((area) => (
-                  <option key={area} value={area}>
-                    {AREA_LABELS[area]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
-              </label>
-              <select
-                value={selectedStatus || ''}
-                onChange={(e) => setSelectedStatus((e.target.value as TaskStatus) || undefined)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Statuses</option>
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>
-                    {TASK_STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Priority
-              </label>
-              <select
-                value={selectedPriority || ''}
-                onChange={(e) => setSelectedPriority((e.target.value as Priority) || undefined)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Priorities</option>
-                {PRIORITY_OPTIONS.map((priority) => (
-                  <option key={priority} value={priority}>
-                    {priority}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium hidden sm:inline">{labels[mode]}</span>
+              </motion.button>
+            );
+          })}
         </div>
-      )}
+      </motion.div>
+
+      <AnimatePresence mode="wait">
+        {viewMode === 'list' && showFilters && (
+          <motion.div
+            variants={filterPanelVariants}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+            transition={{ duration: 0.3 }}
+            className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 overflow-hidden"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
+              <div className="flex items-center gap-2">
+                {activeFilterCount > 0 && (
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleClearFilters}
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline min-h-[44px] px-2"
+                  >
+                    Clear all
+                  </motion.button>
+                )}
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowFilters(false)}
+                  className="p-2 min-h-[44px] min-w-[44px] hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </motion.button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Area
+                </label>
+                <select
+                  value={selectedArea || ''}
+                  onChange={(e) => setSelectedArea((e.target.value as Area) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Areas</option>
+                  {AREA_OPTIONS.map((area) => (
+                    <option key={area} value={area}>
+                      {AREA_LABELS[area]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Status
+                </label>
+                <select
+                  value={selectedStatus || ''}
+                  onChange={(e) => setSelectedStatus((e.target.value as TaskStatus) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Statuses</option>
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {TASK_STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Priority
+                </label>
+                <select
+                  value={selectedPriority || ''}
+                  onChange={(e) => setSelectedPriority((e.target.value as Priority) || undefined)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Priorities</option>
+                  {PRIORITY_OPTIONS.map((priority) => (
+                    <option key={priority} value={priority}>
+                      {priority}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AISuggestionBanner entityType="task" />
 
       {viewMode === 'list' && (
         <div>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center justify-center py-12"
+            >
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  className="rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
+                />
                 <p className="text-gray-600 dark:text-gray-400">Loading tasks...</p>
               </div>
-            </div>
+            </motion.div>
           ) : filteredTasks.length === 0 ? (
-            <EmptyState
-              title="No tasks found"
-              description={
-                searchQuery || selectedArea || selectedStatus || selectedPriority
-                  ? 'Try adjusting your filters or search query'
-                  : 'Get started by creating your first task'
-              }
-              actionLabel="Create Task"
-              onAction={() => setIsCreateDialogOpen(true)}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <EmptyState
+                title="No tasks found"
+                description={
+                  searchQuery || selectedArea || selectedStatus || selectedPriority
+                    ? 'Try adjusting your filters or search query'
+                    : 'Get started by creating your first task'
+                }
+                actionLabel="Create Task"
+                onAction={() => setIsCreateDialogOpen(true)}
+              />
+            </motion.div>
           ) : (
-            <div className="space-y-3">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="space-y-3"
+            >
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-gray-600 dark:text-gray-400 mb-4"
+              >
                 Showing {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
-              </div>
+              </motion.div>
               {filteredTasks.map((task) => (
-                <TaskListItem
-                  key={task.id}
-                  task={task}
-                  onEdit={handleEditTask}
-                  onDelete={handleDeleteTask}
-                  onClick={handleViewTask}
-                  dependencyCount={taskDependencies.get(task.id)?.length || 0}
-                  blockedByCount={taskBlockedBy.get(task.id)?.length || 0}
-                  blockedByTasks={getTaskBlockedBy(task.id)}
-                  projectCount={0}
-                  goalCount={0}
-                />
+                <motion.div key={task.id} variants={itemVariants} layoutId={`task-${task.id}`}>
+                  <TaskListItem
+                    task={task}
+                    onEdit={handleEditTask}
+                    onDelete={handleDeleteTask}
+                    onClick={handleViewTask}
+                    dependencyCount={taskDependencies.get(task.id)?.length || 0}
+                    blockedByCount={taskBlockedBy.get(task.id)?.length || 0}
+                    blockedByTasks={getTaskBlockedBy(task.id)}
+                    projectCount={0}
+                    goalCount={0}
+                  />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
       )}
 
-      {viewMode === 'kanban' && (
-        <div className="-mx-12 -mb-12 -mt-4">
-          <TaskKanbanBoard
-            tasks={filteredTasks}
-            onTaskUpdate={handleUpdateTask}
-            onTaskEdit={handleEditTask}
-            onTaskClick={handleViewTask}
-            onTaskCreate={(status) => {
-              setCreateStatus(status);
-              setIsCreateDialogOpen(true);
-            }}
-          />
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {viewMode === 'kanban' && (
+          <motion.div
+            key="kanban"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="-mx-12 -mb-12 -mt-4"
+          >
+            <TaskKanbanBoard
+              tasks={filteredTasks}
+              onTaskUpdate={handleUpdateTask}
+              onTaskEdit={handleEditTask}
+              onTaskClick={handleViewTask}
+              onTaskCreate={(status) => {
+                setCreateStatus(status);
+                setIsCreateDialogOpen(true);
+              }}
+            />
+          </motion.div>
+        )}
 
-      {viewMode === 'calendar' && (
-        <TaskCalendarView tasks={filteredTasks} onTaskClick={handleEditTask} />
-      )}
+        {viewMode === 'calendar' && (
+          <motion.div
+            key="calendar"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <TaskCalendarView tasks={filteredTasks} onTaskClick={handleEditTask} />
+          </motion.div>
+        )}
 
-      {viewMode === 'graph' && (
-        <DependencyGraph
-          tasks={filteredTasks}
-          dependencies={allDependencies}
-          onTaskClick={(taskId) => {
-            const task = filteredTasks.find((t) => t.id === taskId);
-            if (task) handleEditTask(task);
-          }}
-        />
-      )}
+        {viewMode === 'graph' && (
+          <motion.div
+            key="graph"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <DependencyGraph
+              tasks={filteredTasks}
+              dependencies={allDependencies}
+              onTaskClick={(taskId) => {
+                const task = filteredTasks.find((t) => t.id === taskId);
+                if (task) handleEditTask(task);
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Dialog
         isOpen={isCreateDialogOpen}

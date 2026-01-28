@@ -18,13 +18,16 @@
   - Example: `src/types/api/projects.dto.ts`
 - **Domain models (frontend shapes)**: `src/types/`
   - Example: `src/types/growth-system.ts`
-- **Adapters/normalizers**: `src/services/normalization/`
-  - Example: `normalizeProject(dto)` or `normalizeDashboardSummary(dto)`
+- **Adapters/normalizers**: co-located inside service modules (current pattern)
+  - Example: `normalizeGoal()` in `src/services/growth-system/goals.service.ts`
+  - Example: `normalizeMetric()` in `src/services/growth-system/metrics.service.ts`
+  - Example: `normalizeLogbookEntry()` in `src/services/growth-system/logbook.service.ts`
+  - Optional future: extract shared normalizers into `src/services/normalization/` if reuse grows
 
 ### Checklist for new endpoints
 
 1. Define a DTO in `src/types/api/` matching the backend response.
-2. Add/extend a normalizer in `src/services/normalization/` (primarily for legacy snake_case → camelCase key mapping).
+2. Add/extend a normalizer in the relevant service module (primarily for legacy snake_case → camelCase key mapping).
 3. Update the service to call `apiClient` with the DTO type and return the domain model.
 4. Add a lightweight test that covers key normalization (if needed).
 5. Ensure React Query caches only store normalized domain models.

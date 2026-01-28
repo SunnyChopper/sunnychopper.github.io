@@ -1,6 +1,4 @@
-import { getFeatureConfig } from '@/lib/llm/config/feature-config-store';
-import { getApiKey, hasApiKey } from '@/lib/llm/config/api-key-store';
-import { createProvider } from '@/lib/llm/providers/provider-factory';
+import { apiClient } from '@/lib/api-client';
 import { vaultItemsService } from './vault-items.service';
 import { generateId } from '@/mocks/storage';
 import type { ApiResponse, Flashcard } from '@/types/knowledge-vault';
@@ -18,50 +16,33 @@ interface FlashcardData {
   back: string;
 }
 
+interface AIResponse<T> {
+  result: T;
+  confidence: number;
+  reasoning?: string;
+  provider?: string;
+  model?: string;
+  cached?: boolean;
+}
+
 export const aiFlashcardGeneratorService = {
   async generateFromLesson(input: GenerateFlashcardsInput): Promise<ApiResponse<Flashcard[]>> {
     try {
-      const featureConfig = await getFeatureConfig('goalRefinement');
-      if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+      const response = await apiClient.post<{ data: AIResponse<FlashcardData[]> }>(
+        '/ai/flashcards/from-lesson',
+        {
+          lessonId: input.lessonId,
+          lessonTitle: input.lessonTitle,
+          lessonContent: input.lessonContent,
+          count: input.count,
+        }
+      );
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || 'Failed to generate flashcards');
       }
 
-      const apiKey = await getApiKey(featureConfig.provider);
-      if (!apiKey) {
-        throw new Error('API key not found');
-      }
-
-      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
-
-      const count = input.count || 5;
-      const prompt = `You are an expert educator creating flashcards for spaced repetition learning.
-
-Lesson: ${input.lessonTitle}
-
-Content:
-${input.lessonContent.substring(0, 3000)}
-
-Generate ${count} high-quality flashcards that:
-1. Focus on key concepts and important details
-2. Have clear, specific questions on the front
-3. Have complete, educational answers on the back
-4. Are appropriate for spaced repetition study
-5. Cover different aspects of the lesson
-
-Return ONLY valid JSON in this exact format:
-{
-  "flashcards": [
-    {
-      "front": "Question or concept to recall",
-      "back": "Complete answer with explanation"
-    }
-  ]
-}`;
-
-      const response = await provider.invoke([{ role: 'user', content: prompt }]);
-
-      const parsed = JSON.parse(response);
-      const flashcardsData: FlashcardData[] = parsed.flashcards || [];
+      const flashcardsData = response.data.data.result || [];
 
       const flashcards: Flashcard[] = [];
       const now = new Date().toISOString();
@@ -124,45 +105,27 @@ Return ONLY valid JSON in this exact format:
     count: number = 5
   ): Promise<ApiResponse<FlashcardData[]>> {
     try {
-      const featureConfig = await getFeatureConfig('goalRefinement');
-      if (!featureConfig || !hasApiKey(featureConfig.provider)) {
-        throw new Error('LLM not configured. Please configure in Settings.');
+      const response = await apiClient.post<{ data: AIResponse<FlashcardData[]> }>(
+        '/ai/flashcards/from-text',
+        {
+          title,
+          content,
+          count,
+        }
+      );
+
+      if (response.success && response.data) {
+        return {
+          data: response.data.data.result || [],
+          error: null,
+          success: true,
+        };
       }
-
-      const apiKey = await getApiKey(featureConfig.provider);
-      if (!apiKey) {
-        throw new Error('API key not found');
-      }
-
-      const provider = createProvider(featureConfig.provider, apiKey, featureConfig.model);
-
-      const prompt = `You are an expert educator creating flashcards for spaced repetition learning.
-
-Topic: ${title}
-
-Content:
-${content.substring(0, 3000)}
-
-Generate ${count} high-quality flashcards that test understanding of this content.
-
-Return ONLY valid JSON in this exact format:
-{
-  "flashcards": [
-    {
-      "front": "Question or concept to recall",
-      "back": "Complete answer with explanation"
-    }
-  ]
-}`;
-
-      const response = await provider.invoke([{ role: 'user', content: prompt }]);
-
-      const parsed = JSON.parse(response);
 
       return {
-        data: parsed.flashcards || [],
-        error: null,
-        success: true,
+        data: null,
+        error: response.error?.message || 'Failed to generate flashcards',
+        success: false,
       };
     } catch (error) {
       console.error('Error generating flashcards:', error);

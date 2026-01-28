@@ -1,5 +1,5 @@
 import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
-import { AlignmentSchema } from '@/lib/llm/schemas/course-ai-schemas';
+import { AlignmentSchema, type AlignmentOutput } from '@/lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
 
 /**
@@ -58,24 +58,43 @@ Analyze the course structure and identify:
 Provide alignment scores and specific recommendations.`;
 
     const messages = this.buildPrompt(systemMessage, userMessage);
-    const result = await this.invokeStructured(AlignmentSchema, messages);
+    const result = (await this.invokeStructured(
+      AlignmentSchema,
+      messages
+    )) as unknown as AlignmentOutput;
 
     // Convert to state format
-    const issues = result.issues.map((issue) => ({
-      type: issue.type as 'gap' | 'redundancy' | 'prerequisite_missing' | 'difficulty_jump',
-      severity: issue.severity as 'low' | 'medium' | 'high',
-      description: issue.description,
-      affectedLessons: issue.affectedLessons,
-    }));
+    const issues = result.issues.map(
+      (issue: {
+        type: string;
+        severity: string;
+        description: string;
+        affectedLessons: string[];
+      }) => ({
+        type: issue.type as 'gap' | 'redundancy' | 'prerequisite_missing' | 'difficulty_jump',
+        severity: issue.severity as 'low' | 'medium' | 'high',
+        description: issue.description,
+        affectedLessons: issue.affectedLessons,
+      })
+    );
 
-    const transitions = result.lessonTransitions.map((trans) => ({
-      from: trans.from,
-      to: trans.to,
-      flowScore: trans.flowScore,
-      gaps: trans.gaps,
-      redundancies: trans.redundancies,
-      recommendations: trans.recommendations,
-    }));
+    const transitions = result.lessonTransitions.map(
+      (trans: {
+        from: string;
+        to: string;
+        flowScore: number;
+        gaps: string[];
+        redundancies: string[];
+        recommendations: string[];
+      }) => ({
+        from: trans.from,
+        to: trans.to,
+        flowScore: trans.flowScore,
+        gaps: trans.gaps,
+        redundancies: trans.redundancies,
+        recommendations: trans.recommendations,
+      })
+    );
 
     return {
       alignment: {

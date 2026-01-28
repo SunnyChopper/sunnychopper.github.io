@@ -10,6 +10,51 @@ export function parseDateInput(dateString: string): Date {
   return new Date(dateString);
 }
 
+/**
+ * Extract date-only string (YYYY-MM-DD) from a date string, handling both ISO format and plain date strings.
+ * This prevents timezone conversion issues when the backend returns ISO strings.
+ * IMPORTANT: Never create Date objects that could cause timezone shifts - always extract the string directly.
+ */
+export function extractDateOnly(dateString: string | null | undefined): string {
+  if (!dateString) return '';
+
+  // If already in YYYY-MM-DD format, return as-is (most common case)
+  if (DATE_ONLY_PATTERN.test(dateString)) {
+    return dateString;
+  }
+
+  // If it's an ISO string (contains 'T'), extract just the date part before 'T'
+  // This is safe because we're extracting the string directly, not parsing as a Date
+  if (dateString.includes('T')) {
+    const datePart = dateString.split('T')[0];
+    // Verify it's a valid YYYY-MM-DD format
+    if (DATE_ONLY_PATTERN.test(datePart)) {
+      return datePart;
+    }
+  }
+
+  // Try to extract YYYY-MM-DD from the beginning of the string
+  // This handles cases like "2026-01-25T00:00:00.000Z" or "2026-01-25 00:00:00"
+  const dateMatch = dateString.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (dateMatch && dateMatch[1]) {
+    return dateMatch[1];
+  }
+
+  // If we can't extract a valid date, use parseDateInput as a last resort
+  // This handles edge cases where the date might be in a different format
+  try {
+    const parsedDate = parseDateInput(dateString);
+    // Use local date components to avoid timezone shifts
+    const year = parsedDate.getFullYear();
+    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(parsedDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.warn('Could not extract YYYY-MM-DD from date string:', dateString, error);
+    return '';
+  }
+}
+
 export function formatDateString(
   dateString: string | null,
   options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
@@ -182,4 +227,46 @@ export function formatCompletionDate(date: Date | string): string {
     day: 'numeric',
     year: dateObj.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
   });
+}
+
+/**
+ * Convert a Date or ISO string to a local datetime-local format string (YYYY-MM-DDTHH:mm)
+ * This is used for datetime-local input fields which expect local time, not UTC
+ */
+export function toLocalDateTimeString(date: Date | string | null | undefined): string {
+  if (!date) return '';
+
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(dateObj.getTime())) return '';
+
+  // Get local date components
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const hours = String(dateObj.getHours()).padStart(2, '0');
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+/**
+ * Convert a datetime-local string (YYYY-MM-DDTHH:mm) to an ISO string
+ * The datetime-local value is interpreted as local time, so we need to convert it properly
+ */
+export function fromLocalDateTimeString(localDateTimeString: string): string {
+  if (!localDateTimeString) {
+    return new Date().toISOString();
+  }
+
+  // Parse the local datetime string (YYYY-MM-DDTHH:mm)
+  // Create a Date object treating it as local time
+  const [datePart, timePart] = localDateTimeString.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+
+  // Create date in local timezone
+  const localDate = new Date(year, month - 1, day, hours, minutes);
+
+  // Return as ISO string (this will be the correct UTC representation)
+  return localDate.toISOString();
 }

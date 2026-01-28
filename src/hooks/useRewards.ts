@@ -3,6 +3,13 @@ import { rewardsService } from '@/services/rewards';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
+import {
+  applyRewardRedemption,
+  applyWalletRedemption,
+  coerceRewardWithRedemptionsFromCache,
+  removeRewardCache,
+  upsertRewardCache,
+} from '@/lib/react-query/growth-system-cache';
 import type { CreateRewardInput, UpdateRewardInput, RewardCategory } from '@/types/rewards';
 
 /**
@@ -58,37 +65,44 @@ export function useRewardMutations() {
 
   const createMutation = useMutation({
     mutationFn: (input: CreateRewardInput) => rewardsService.create(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.rewards.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertRewardCache(
+          queryClient,
+          coerceRewardWithRedemptionsFromCache(queryClient, response.data)
+        );
+      }
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateRewardInput }) =>
       rewardsService.update(id, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.rewards.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertRewardCache(
+          queryClient,
+          coerceRewardWithRedemptionsFromCache(queryClient, response.data)
+        );
+      }
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => rewardsService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.rewards.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (_response, rewardId) => {
+      removeRewardCache(queryClient, rewardId);
     },
   });
 
   const redeemMutation = useMutation({
     mutationFn: ({ rewardId, notes }: { rewardId: string; notes?: string }) =>
       rewardsService.redeem({ rewardId, notes }),
-    onSuccess: () => {
-      // Invalidate both rewards and wallet queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.rewards.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        applyRewardRedemption(queryClient, response.data);
+        applyWalletRedemption(queryClient, response.data);
+      }
     },
   });
 

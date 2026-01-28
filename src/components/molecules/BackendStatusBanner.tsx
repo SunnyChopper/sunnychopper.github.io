@@ -9,8 +9,17 @@ export function BackendStatusBanner({ className }: { className?: string }) {
   const [isRetrying, setIsRetrying] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
-  // Don't show if online or dismissed
-  if (status.isOnline || isDismissed) {
+  // Don't show if:
+  // - Online
+  // - Dismissed
+  // - Still checking (initial load) and no error yet
+  // - No error has occurred
+  if (
+    status.isOnline ||
+    isDismissed ||
+    (status.isChecking && !status.lastError) ||
+    !status.lastError
+  ) {
     return null;
   }
 

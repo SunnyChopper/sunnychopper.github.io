@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Task, TaskDependency } from '@/types/growth-system';
 import { cn } from '@/lib/utils';
 
@@ -168,27 +169,47 @@ export default function DependencyGraph({
 
   if (tasks.length === 0) {
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className={cn(
           'flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800 rounded-lg',
           className
         )}
       >
         <p className="text-gray-500 dark:text-gray-400">No tasks to display</p>
-      </div>
+      </motion.div>
     );
   }
 
   if (dependencies.length === 0) {
     return (
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className={cn(
           'flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800 rounded-lg',
           className
         )}
       >
         <p className="text-gray-500 dark:text-gray-400">No dependencies to visualize</p>
-      </div>
+      </motion.div>
+    );
+  }
+
+  // Safety check for empty nodes
+  if (nodes.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className={cn(
+          'flex items-center justify-center h-96 bg-gray-50 dark:bg-gray-800 rounded-lg',
+          className
+        )}
+      >
+        <p className="text-gray-500 dark:text-gray-400">Calculating graph layout...</p>
+      </motion.div>
     );
   }
 
@@ -196,7 +217,10 @@ export default function DependencyGraph({
   const viewBoxHeight = Math.max(...nodes.map((n) => n.y + NODE_HEIGHT)) + 50;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
       className={cn(
         'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-auto',
         className
@@ -205,8 +229,7 @@ export default function DependencyGraph({
       <svg
         ref={svgRef}
         viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
-        className="w-full h-full min-h-96"
-        style={{ maxHeight: '600px' }}
+        className="w-full h-full min-h-96 max-h-[600px]"
       >
         <defs>
           <marker
@@ -220,96 +243,138 @@ export default function DependencyGraph({
           >
             <polygon points="0 0, 10 3, 0 6" />
           </marker>
+          <style>
+            {`
+              @keyframes fadeInNode {
+                from {
+                  opacity: 0;
+                }
+                to {
+                  opacity: 1;
+                }
+              }
+              @keyframes fadeInEdge {
+                from {
+                  opacity: 0;
+                }
+                to {
+                  opacity: 1;
+                }
+              }
+            `}
+          </style>
         </defs>
 
-        {edges.map((edge, index) => {
-          const fromX = edge.fromNode.x + NODE_WIDTH / 2;
-          const fromY = edge.fromNode.y;
-          const toX = edge.toNode.x + NODE_WIDTH / 2;
-          const toY = edge.toNode.y + NODE_HEIGHT;
+        {/* Edges - using regular line elements with CSS animation */}
+        <g>
+          {edges.map((edge, index) => {
+            const fromX = edge.fromNode.x + NODE_WIDTH / 2;
+            const fromY = edge.fromNode.y;
+            const toX = edge.toNode.x + NODE_WIDTH / 2;
+            const toY = edge.toNode.y + NODE_HEIGHT;
 
-          const isHighlighted = selectedNode === edge.from || selectedNode === edge.to;
+            const isHighlighted = selectedNode === edge.from || selectedNode === edge.to;
 
-          return (
-            <line
-              key={`edge-${index}`}
-              x1={fromX}
-              y1={fromY}
-              x2={toX}
-              y2={toY}
-              className={cn(
-                'stroke-2 transition-all',
-                isHighlighted
-                  ? 'stroke-blue-500 dark:stroke-blue-400 stroke-[3]'
-                  : 'stroke-gray-300 dark:stroke-gray-600'
-              )}
-              markerEnd="url(#arrowhead)"
-            />
-          );
-        })}
-
-        {nodes.map((node) => {
-          const isSelected = selectedNode === node.id;
-          const isHovered = hoveredNode === node.id;
-
-          return (
-            <g
-              key={node.id}
-              transform={`translate(${node.x}, ${node.y})`}
-              onClick={() => handleNodeClick(node.id)}
-              onMouseEnter={() => setHoveredNode(node.id)}
-              onMouseLeave={() => setHoveredNode(null)}
-              className="cursor-pointer"
-            >
-              <rect
-                width={NODE_WIDTH}
-                height={NODE_HEIGHT}
-                rx="8"
+            return (
+              <line
+                key={`edge-${edge.from}-${edge.to}`}
+                x1={fromX}
+                y1={fromY}
+                x2={toX}
+                y2={toY}
                 className={cn(
-                  'transition-all',
-                  getStatusColor(node.task.status),
-                  getStatusStroke(node.task.status),
-                  'stroke-2',
-                  isSelected && 'stroke-[4]',
-                  isHovered && 'filter brightness-110'
+                  'stroke-2 transition-all',
+                  isHighlighted
+                    ? 'stroke-blue-500 dark:stroke-blue-400 stroke-[3]'
+                    : 'stroke-gray-300 dark:stroke-gray-600'
                 )}
-                opacity={isSelected || isHovered ? 1 : 0.9}
+                markerEnd="url(#arrowhead)"
+                style={{
+                  opacity: 0,
+                  animation: `fadeInEdge 0.3s ease-out ${index * 0.05}s forwards`,
+                }}
               />
+            );
+          })}
+        </g>
 
-              <text
-                x={NODE_WIDTH / 2}
-                y={NODE_HEIGHT / 2 - 5}
-                textAnchor="middle"
-                className="fill-white text-sm font-semibold pointer-events-none"
-                style={{ fontSize: '14px' }}
-              >
-                {node.task.title.length > 20
-                  ? `${node.task.title.substring(0, 20)}...`
-                  : node.task.title}
-              </text>
+        {/* Nodes - using regular g elements with SVG transform */}
+        <g>
+          {nodes.map((node, index) => {
+            const isSelected = selectedNode === node.id;
+            const isHovered = hoveredNode === node.id;
 
-              <text
-                x={NODE_WIDTH / 2}
-                y={NODE_HEIGHT / 2 + 12}
-                textAnchor="middle"
-                className="fill-white text-xs pointer-events-none opacity-90"
-                style={{ fontSize: '11px' }}
+            return (
+              <g
+                key={node.id}
+                transform={`translate(${node.x}, ${node.y})`}
+                onClick={() => handleNodeClick(node.id)}
+                onMouseEnter={() => setHoveredNode(node.id)}
+                onMouseLeave={() => setHoveredNode(null)}
+                className="cursor-pointer transition-opacity"
+                style={{
+                  opacity: 0,
+                  animation: `fadeInNode 0.3s ease-out ${index * 0.1}s forwards`,
+                }}
               >
-                {node.task.status} • {node.task.priority}
-              </text>
-            </g>
-          );
-        })}
+                <rect
+                  width={NODE_WIDTH}
+                  height={NODE_HEIGHT}
+                  rx="8"
+                  className={cn(
+                    'transition-all',
+                    getStatusColor(node.task.status),
+                    getStatusStroke(node.task.status),
+                    'stroke-2',
+                    isSelected && 'stroke-[4]',
+                    isHovered && 'filter brightness-110'
+                  )}
+                  opacity={isSelected || isHovered ? 1 : 0.9}
+                />
+
+                <text
+                  x={NODE_WIDTH / 2}
+                  y={NODE_HEIGHT / 2 - 5}
+                  textAnchor="middle"
+                  className="fill-white text-sm font-semibold pointer-events-none"
+                  style={{ fontSize: '14px' }}
+                >
+                  {node.task.title.length > 20
+                    ? `${node.task.title.substring(0, 20)}...`
+                    : node.task.title}
+                </text>
+
+                <text
+                  x={NODE_WIDTH / 2}
+                  y={NODE_HEIGHT / 2 + 12}
+                  textAnchor="middle"
+                  className="fill-white text-xs pointer-events-none opacity-90"
+                  style={{ fontSize: '11px' }}
+                >
+                  {node.task.status} • {node.task.priority}
+                </text>
+              </g>
+            );
+          })}
+        </g>
       </svg>
 
-      {selectedNode && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-          <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Selected Task</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {nodes.find((n) => n.id === selectedNode)?.task.title}
-          </p>
-        </div>
-      )}
-    </div>
+      <AnimatePresence>
+        {selectedNode && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+          >
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Selected Task</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {nodes.find((n) => n.id === selectedNode)?.task.title}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

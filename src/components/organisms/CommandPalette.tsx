@@ -26,6 +26,7 @@ import {
 import { useMarkdownFiles } from '@/hooks/useMarkdownFiles';
 import type { Goal, Metric, LogbookEntry } from '@/types/growth-system';
 import { ROUTES } from '@/routes';
+import { parseDateInput } from '@/utils/date-formatters';
 
 interface CommandItem {
   id: string;
@@ -89,6 +90,21 @@ function CommandPaletteContent({ onClose }: CommandPaletteContentProps) {
 
   const allCommands = useMemo((): CommandItem[] => {
     const commands: CommandItem[] = [
+      ...(import.meta.env.DEV
+        ? [
+            {
+              id: 'action-debug-inspector',
+              title: 'Toggle Debug Inspector',
+              subtitle: 'Open the dev-only debug overlay',
+              icon: <Command size={18} />,
+              type: 'action' as const,
+              action: () => {
+                window.dispatchEvent(new Event('toggleDebugInspector'));
+              },
+              keywords: ['debug', 'inspector', 'devtools'],
+            },
+          ]
+        : []),
       {
         id: 'nav-dashboard',
         title: 'Dashboard',
@@ -274,11 +290,11 @@ function CommandPaletteContent({ onClose }: CommandPaletteContentProps) {
       });
     });
 
-    entries.forEach((entry: LogbookEntry) => {
+    entries?.forEach((entry: LogbookEntry) => {
       commands.push({
         id: `entry-${entry.id}`,
         title: entry.title || 'Untitled Entry',
-        subtitle: `Logbook • ${new Date(entry.date).toLocaleDateString()}`,
+        subtitle: `Logbook • ${parseDateInput(entry.date).toLocaleDateString()}`,
         icon: <BookOpen size={18} />,
         type: 'entity',
         action: () => {

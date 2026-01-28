@@ -11,7 +11,6 @@ import type {
 import { authService } from '@/lib/auth/auth.service';
 import { ROUTES } from '@/routes';
 import type { z } from 'zod';
-import type { LLMProvider } from '@/lib/llm/config/provider-types';
 import type { AIFeature, FeatureProviderConfig } from '@/lib/llm/config/feature-types';
 import type {
   ChatThread,
@@ -562,19 +561,6 @@ class ApiClient {
         error: this.handleError(error),
       };
     }
-  }
-
-  // API Keys (stored as secrets)
-  async getApiKeys(): Promise<ApiResponse<Record<LLMProvider, string>>> {
-    return this.get<Record<LLMProvider, string>>('/api-keys');
-  }
-
-  async setApiKey(provider: LLMProvider, key: string): Promise<ApiResponse<void>> {
-    return this.post<void>(`/api-keys/${provider}`, { key });
-  }
-
-  async deleteApiKey(provider: LLMProvider): Promise<ApiResponse<void>> {
-    return this.delete<void>(`/api-keys/${provider}`);
   }
 
   // Chatbot

@@ -42,9 +42,9 @@ export function ProjectTimelineView({
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1000);
 
-  // Filter projects to only those with dates (either startDate or endDate)
+  // Filter projects to only those with dates (either startDate or targetEndDate)
   const projectsWithDates = useMemo(() => {
-    return projects.filter((p) => p.startDate || p.endDate);
+    return projects.filter((p) => p.startDate || p.targetEndDate);
   }, [projects]);
 
   // Update container width on resize
@@ -69,7 +69,7 @@ export function ProjectTimelineView({
     const allDates: Date[] = [];
     projectsWithDates.forEach((project) => {
       if (project.startDate) allDates.push(new Date(project.startDate));
-      if (project.endDate) allDates.push(new Date(project.endDate));
+      if (project.targetEndDate) allDates.push(new Date(project.targetEndDate));
     });
 
     let minDate = new Date(Math.min(...allDates.map((d) => d.getTime())));
@@ -97,7 +97,7 @@ export function ProjectTimelineView({
     // Calculate positions and assign lanes to avoid overlap
     const projectsInRange = projectsWithDates.filter((project) => {
       const start = project.startDate ? new Date(project.startDate) : minDate;
-      const end = project.endDate ? new Date(project.endDate) : maxDate;
+      const end = project.targetEndDate ? new Date(project.targetEndDate) : maxDate;
       // Project is in range if it overlaps with the visible range
       return end >= minDate && start <= maxDate;
     });
@@ -127,8 +127,8 @@ export function ProjectTimelineView({
           ? minDate
           : new Date(project.createdAt);
       // Use endDate if available, otherwise use maxDate or startDate + 30 days
-      const endDate = project.endDate
-        ? new Date(project.endDate)
+      const endDate = project.targetEndDate
+        ? new Date(project.targetEndDate)
         : new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 
       const startPos = ((startDate.getTime() - minDate.getTime()) / totalRange) * 100;

@@ -1,5 +1,6 @@
 import type { AIFeature, FeatureProviderConfig } from './feature-types';
 import type { LLMProvider } from './provider-types';
+import { PROVIDER_DISPLAY_NAMES } from './provider-types';
 import { DEFAULT_FEATURE_PROVIDERS } from './feature-types';
 import { getDefaultModel } from './model-catalog';
 import { apiClient } from '@/lib/api-client';
@@ -139,6 +140,12 @@ export async function resetAllFeatureConfigs(): Promise<void> {
   ];
 
   await Promise.all(features.map((feature) => resetFeatureConfig(feature)));
+}
+
+export async function getConfiguredProviders(): Promise<LLMProvider[]> {
+  // Backend now manages API keys, so we can't detect configured keys client-side.
+  // Expose all supported providers to allow selection.
+  return Object.keys(PROVIDER_DISPLAY_NAMES) as LLMProvider[];
 }
 
 export async function setAllFeaturesToProvider(provider: LLMProvider): Promise<void> {

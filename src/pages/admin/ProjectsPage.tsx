@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -15,11 +15,14 @@ import {
   Calendar as CalendarIcon,
   Filter,
   X,
+  Star,
+  Link2Off,
 } from 'lucide-react';
 import type {
   Project,
   CreateProjectInput,
   UpdateProjectInput,
+  UpdateTaskInput,
   ProjectStatus,
   Task,
   EntitySummary,
@@ -27,16 +30,24 @@ import type {
   Area,
   Priority,
 } from '@/types/growth-system';
-import { useProjects, useGoals } from '@/hooks/useGrowthSystem';
+import { useProjects, useGoals, useTasks } from '@/hooks/useGrowthSystem';
 import { useProjectHealthMap } from '@/hooks/useProjectHealthMap';
-import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import { tasksService } from '@/services/growth-system/tasks.service';
+import { projectsService } from '@/services/growth-system/projects.service';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  addTaskDependencyToCache,
+  removeTaskDependencyFromCache,
+} from '@/lib/react-query/growth-system-cache';
+import { queryKeys } from '@/lib/react-query/query-keys';
+import { getTasksByProject } from '@/utils/growth-system-filters';
 import Button from '@/components/atoms/Button';
 import { ProjectCard } from '@/components/molecules/ProjectCard';
 import { ProjectListItem } from '@/components/molecules/ProjectListItem';
 import { ProjectTimelineView } from '@/components/organisms/ProjectTimelineView';
 import { ProjectCreateForm } from '@/components/organisms/ProjectCreateForm';
 import { ProjectEditForm } from '@/components/organisms/ProjectEditForm';
+import { TaskEditPanel } from '@/components/organisms/TaskEditPanel';
 import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
@@ -52,12 +63,12 @@ import {
   PRIORITIES,
 } from '@/constants/growth-system';
 import { TaskListItem } from '@/components/molecules/TaskListItem';
-import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
 import { RelationshipPicker } from '@/components/organisms/RelationshipPicker';
 import { AIProjectAssistPanel } from '@/components/molecules/AIProjectAssistPanel';
 import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
 import { llmConfig } from '@/lib/llm';
 import { formatDateString } from '@/utils/date-formatters';
+import { cn } from '@/lib/utils';
 
 const STATUSES: ProjectStatus[] = [...PROJECT_STATUSES];
 const AREA_OPTIONS: Area[] = [...AREAS];
@@ -66,6 +77,7 @@ const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 type ViewMode = 'grid' | 'list' | 'timeline';
 
 export default function ProjectsPage() {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -75,38 +87,36 @@ export default function ProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTaskSubmitting, setIsTaskSubmitting] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
-  const [projectTasks, setProjectTasks] = useState<Map<string, Task[]>>(new Map());
-  const [projectGoals] = useState<Map<string, EntitySummary[]>>(new Map());
+  const [projectGoals, setProjectGoals] = useState<Map<string, EntitySummary[]>>(new Map());
   const [isGoalPickerOpen, setIsGoalPickerOpen] = useState(false);
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
+  const [isGoalSaving, setIsGoalSaving] = useState(false);
+  const [goalSaveError, setGoalSaveError] = useState<string | null>(null);
+  const [goalActionError, setGoalActionError] = useState<string | null>(null);
 
   const [showAIAssist, setShowAIAssist] = useState(false);
   const [aiMode, setAIMode] = useState<'health' | 'generate' | 'risks'>('health');
   const isAIConfigured = llmConfig.isConfigured();
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskEditOpen, setIsTaskEditOpen] = useState(false);
+  const [isTaskPickerOpen, setIsTaskPickerOpen] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
 
-  // Use dashboard hook for initial data loading (single API call)
+  // Use individual hooks to fetch data from their respective endpoints
   const {
-    projects: dashboardProjects,
-    goals: dashboardGoals,
-    isLoading: dashboardLoading,
-  } = useGrowthSystemDashboard();
+    projects,
+    isLoading: projectsLoading,
+    createProject,
+    updateProject,
+    deleteProject,
+  } = useProjects();
+  const { goals, isLoading: goalsLoading } = useGoals();
+  const { tasks, isLoading: tasksLoading, updateTask } = useTasks();
 
-  // Use individual hooks for mutations (they read from cache populated by dashboard hook)
-  const { createProject, updateProject, deleteProject } = useProjects();
-  const { goals: _goals } = useGoals();
-
-  // Use dashboard data for initial render (individual hooks will read from cache if dashboard loaded)
-  const projects = useMemo(
-    () => (dashboardProjects.length > 0 ? dashboardProjects : []),
-    [dashboardProjects]
-  );
-  const goals = useMemo(
-    () => (dashboardGoals.length > 0 ? dashboardGoals : _goals),
-    [dashboardGoals, _goals]
-  );
-  const isLoading = dashboardLoading;
+  const isLoading = projectsLoading || goalsLoading || tasksLoading;
 
   // Convert goals to EntitySummary format
   const allGoals = useMemo<EntitySummary[]>(
@@ -121,22 +131,40 @@ export default function ProjectsPage() {
     [goals]
   );
 
-  // Load project tasks when a project is selected
-  useEffect(() => {
-    if (selectedProject && !projectTasks.has(selectedProject.id)) {
-      const loadProjectTasks = async (projectId: string) => {
-        try {
-          const response = await tasksService.getByProject(projectId);
-          if (response.success && response.data) {
-            setProjectTasks((prev) => new Map(prev).set(projectId, response.data!));
-          }
-        } catch (error) {
-          console.error('Failed to load project tasks:', error);
-        }
-      };
-      loadProjectTasks(selectedProject.id);
-    }
-  }, [selectedProject, projectTasks]);
+  const goalsById = useMemo(() => new Map(allGoals.map((goal) => [goal.id, goal])), [allGoals]);
+
+  const allProjects = useMemo<EntitySummary[]>(
+    () =>
+      projects.map((project) => ({
+        id: project.id,
+        title: project.name,
+        type: 'project' as const,
+        area: project.area,
+        status: project.status,
+      })),
+    [projects]
+  );
+
+  // Get tasks for a specific project from dashboard data
+  const getProjectTasks = useCallback(
+    (projectId: string): Task[] => {
+      return getTasksByProject(tasks, projectId);
+    },
+    [tasks]
+  );
+
+  // Convert tasks to EntitySummary format for picker
+  const allTasksForPicker = useMemo<EntitySummary[]>(
+    () =>
+      tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        type: 'task' as const,
+        area: t.area,
+        status: t.status,
+      })),
+    [tasks]
+  );
 
   // Filter projects based on search and filters
   const filteredProjects = useMemo(() => {
@@ -219,36 +247,160 @@ export default function ProjectsPage() {
     return [filters.area, filters.status, filters.priority].filter(Boolean).length;
   }, [filters]);
 
+  const updateProjectGoals = useCallback(
+    (projectId: string, updater: (goals: EntitySummary[]) => EntitySummary[]) => {
+      setProjectGoals((prev) => {
+        const next = new Map(prev);
+        const current = next.get(projectId) || [];
+        next.set(projectId, updater(current));
+        return next;
+      });
+    },
+    []
+  );
+
+  // Parse linked goals from project data when a project is selected
+  useEffect(() => {
+    if (!selectedProject) return;
+
+    // First, try to parse goalIds directly from the project
+    if (selectedProject.goalIds && selectedProject.goalIds.length > 0) {
+      const linkedGoalSummaries: EntitySummary[] = selectedProject.goalIds
+        .map((goalId) => allGoals.find((g) => g.id === goalId))
+        .filter((goal): goal is (typeof allGoals)[0] => goal !== undefined)
+        .map((goal) => ({
+          id: goal.id,
+          title: goal.title,
+          type: 'goal' as const,
+          area: goal.area,
+          status: goal.status,
+        }));
+
+      updateProjectGoals(selectedProject.id, () => linkedGoalSummaries);
+      return;
+    }
+
+    // Fall back to deriving from tasks if goalIds is not available
+    const projectTasks = getProjectTasks(selectedProject.id);
+    const goalIdsFromTasks = new Set<string>();
+
+    projectTasks.forEach((task) => {
+      if (task.goalIds && task.goalIds.length > 0) {
+        task.goalIds.forEach((goalId) => goalIdsFromTasks.add(goalId));
+      }
+    });
+
+    const derivedGoals = allGoals.filter((goal) => goalIdsFromTasks.has(goal.id));
+    updateProjectGoals(selectedProject.id, () => derivedGoals);
+  }, [selectedProject, allGoals, getProjectTasks, updateProjectGoals]);
+
   const handleGoalLink = async (projectId: string, goalId: string) => {
-    // TODO: Implement linkToGoal in projectsService
-    void projectId;
-    void goalId;
-    console.log('Goal linking not yet implemented');
+    const response = await projectsService.linkToGoal(projectId, goalId);
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to link goal');
+    }
+    // After linking, manually add the goal to the displayed goals
+    const goal = goalsById.get(goalId);
+    if (goal) {
+      updateProjectGoals(projectId, (currentGoals) => {
+        // Only add if not already present
+        if (!currentGoals.some((g) => g.id === goalId)) {
+          return [...currentGoals, goal];
+        }
+        return currentGoals;
+      });
+    }
   };
 
   const handleGoalUnlink = async (projectId: string, goalId: string) => {
-    // TODO: Implement unlinkFromGoal in projectsService
-    void projectId;
-    void goalId;
-    console.log('Goal unlinking not yet implemented');
+    const response = await projectsService.unlinkFromGoal(projectId, goalId);
+    if (!response.success) {
+      throw new Error(response.error?.message || 'Failed to unlink goal');
+    }
+    // After unlinking, manually remove the goal from displayed goals
+    updateProjectGoals(projectId, (currentGoals) => currentGoals.filter((g) => g.id !== goalId));
   };
 
-  const handleGoalSave = () => {
+  const handleGoalSave = async () => {
     if (!selectedProject) return;
-    const currentIds = new Set(projectGoals.get(selectedProject.id)?.map((g) => g.id) || []);
-    const newIds = new Set(selectedGoalIds);
 
-    currentIds.forEach((id) => {
-      if (!newIds.has(id)) {
-        handleGoalUnlink(selectedProject.id, id);
-      }
-    });
+    setIsGoalSaving(true);
+    setGoalSaveError(null);
 
-    newIds.forEach((id) => {
-      if (!currentIds.has(id)) {
-        handleGoalLink(selectedProject.id, id);
+    try {
+      const currentGoals = projectGoals.get(selectedProject.id) || [];
+      const currentIds = new Set(currentGoals.map((g) => g.id));
+      const newIds = new Set(selectedGoalIds);
+
+      const linkIds = selectedGoalIds.filter((id) => !currentIds.has(id));
+      const unlinkIds = currentGoals.map((g) => g.id).filter((id) => !newIds.has(id));
+
+      const linkResults = await Promise.allSettled(
+        linkIds.map((id) => handleGoalLink(selectedProject.id, id))
+      );
+      const unlinkResults = await Promise.allSettled(
+        unlinkIds.map((id) => handleGoalUnlink(selectedProject.id, id))
+      );
+
+      const failedLinks = linkResults.filter((result) => result.status === 'rejected');
+      const failedUnlinks = unlinkResults.filter((result) => result.status === 'rejected');
+
+      if (unlinkIds.length > 0) {
+        const successfulUnlinks = unlinkIds.filter(
+          (_id, index) => unlinkResults[index]?.status === 'fulfilled'
+        );
+        if (successfulUnlinks.length > 0) {
+          updateProjectGoals(selectedProject.id, (goals) =>
+            goals.filter((goal) => !successfulUnlinks.includes(goal.id))
+          );
+        }
       }
-    });
+
+      if (linkIds.length > 0) {
+        const successfulLinks = linkIds.filter(
+          (_id, index) => linkResults[index]?.status === 'fulfilled'
+        );
+        if (successfulLinks.length > 0) {
+          updateProjectGoals(selectedProject.id, (goals) => {
+            const next = [...goals];
+            successfulLinks.forEach((id) => {
+              const goal = goalsById.get(id);
+              if (goal && !next.some((existing) => existing.id === id)) {
+                next.push(goal);
+              }
+            });
+            return next;
+          });
+        }
+      }
+
+      if (failedLinks.length > 0 || failedUnlinks.length > 0) {
+        setGoalSaveError(
+          `Failed to update ${failedLinks.length + failedUnlinks.length} goal link${
+            failedLinks.length + failedUnlinks.length === 1 ? '' : 's'
+          }. Please try again.`
+        );
+        throw new Error('Goal link updates failed');
+      }
+
+      // Note: Local state is already updated above. The project's goalIds will be
+      // refreshed from the backend on the next data fetch, and the useEffect will
+      // automatically parse and display them.
+    } finally {
+      setIsGoalSaving(false);
+    }
+  };
+
+  const handleGoalChipRemove = async (goalId: string) => {
+    if (!selectedProject) return;
+    setGoalActionError(null);
+    try {
+      await handleGoalUnlink(selectedProject.id, goalId);
+      updateProjectGoals(selectedProject.id, (goals) => goals.filter((goal) => goal.id !== goalId));
+      setSelectedGoalIds((prev) => prev.filter((id) => id !== goalId));
+    } catch (error) {
+      setGoalActionError(error instanceof Error ? error.message : 'Failed to unlink goal');
+    }
   };
 
   const handleCreateTasksFromAI = async (
@@ -260,45 +412,112 @@ export default function ProjectsPage() {
       const taskInput = {
         ...task,
         area: selectedProject.area,
+        projectIds: [selectedProject.id],
       };
       await tasksService.create(taskInput);
     }
-    // Reload project tasks after creating new tasks
-    if (selectedProject) {
-      const response = await tasksService.getByProject(selectedProject.id);
-      if (response.success && response.data) {
-        setProjectTasks((prev) => new Map(prev).set(selectedProject.id, response.data!));
-      }
+    // Note: Tasks will be automatically updated when dashboard data refreshes
+  };
+
+  const handleLinkTaskToProject = async (taskId: string, projectId: string) => {
+    await tasksService.linkToProject(taskId, projectId);
+    // Invalidate tasks query to refresh data
+    queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
+  };
+
+  const handleUnlinkTaskFromProject = async (taskId: string, projectId: string) => {
+    await tasksService.unlinkFromProject(taskId, projectId);
+    // Invalidate tasks query to refresh data
+    queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
+  };
+
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskEditOpen(true);
+  };
+
+  const handleUpdateTask = async (id: string, input: UpdateTaskInput) => {
+    setIsTaskSubmitting(true);
+    try {
+      await updateTask({ id, input });
+      // Cache is automatically updated by the mutation
+    } finally {
+      setIsTaskSubmitting(false);
     }
   };
 
+  const handleTaskLink = async (projectId: string, taskId: string) => {
+    await handleLinkTaskToProject(taskId, projectId);
+  };
+
+  const handleTaskUnlink = async (projectId: string, taskId: string) => {
+    await handleUnlinkTaskFromProject(taskId, projectId);
+  };
+
+  const handleTaskSave = () => {
+    if (!selectedProject) return;
+    const projectTasks = getProjectTasks(selectedProject.id);
+    const currentIds = new Set(projectTasks.map((t) => t.id));
+    const newIds = new Set(selectedTaskIds);
+
+    currentIds.forEach((id) => {
+      if (!newIds.has(id)) {
+        handleTaskUnlink(selectedProject.id, id);
+      }
+    });
+
+    newIds.forEach((id) => {
+      if (!currentIds.has(id)) {
+        handleTaskLink(selectedProject.id, id);
+      }
+    });
+  };
+
   const getProjectStats = (projectId: string) => {
+    const projectTasks = getProjectTasks(projectId);
+    const completedTasks = projectTasks.filter((t) => t.status === 'Done').length;
+    const hasLocalTasks = projectTasks.length > 0;
+
+    // Always prefer local task data when available, as it's more reliable than the health endpoint
+    if (hasLocalTasks) {
+      return {
+        taskCount: projectTasks.length,
+        completedTaskCount: completedTasks,
+        hasHealthData: true,
+        isHealthLoading: false,
+      };
+    }
+
+    // Fall back to health data only when no local tasks are available
     const health = projectHealthMap.get(projectId);
-    if (health) {
+    if (health && health.taskCount > 0) {
       return {
         taskCount: health.taskCount,
         completedTaskCount: health.completedTaskCount,
         hasHealthData: true,
+        isHealthLoading,
       };
     }
 
-    const tasks = projectTasks.get(projectId) || [];
-    const completedTasks = tasks.filter((t) => t.status === 'Done').length;
-    const hasLocalTasks = tasks.length > 0;
-
+    // No data available
     return {
-      taskCount: tasks.length,
-      completedTaskCount: completedTasks,
-      hasHealthData: hasLocalTasks,
+      taskCount: 0,
+      completedTaskCount: 0,
+      hasHealthData: health !== undefined,
       isHealthLoading,
     };
   };
 
   if (selectedProject) {
-    const tasks = projectTasks.get(selectedProject.id) || [];
-    const completedTasks = tasks.filter((t) => t.status === 'Done').length;
-    const progress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
-    const goals = projectGoals.get(selectedProject.id) || [];
+    const projectTasks = getProjectTasks(selectedProject.id);
+    const completedTasks = projectTasks.filter((t) => t.status === 'Done').length;
+    const progress =
+      projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
+    const linkedGoals = projectGoals.get(selectedProject.id) || [];
+    const getLinkedProjectsForTask = (task: Task) =>
+      allProjects.filter((project) => task.projectIds?.includes(project.id));
+    const getLinkedGoalsForTask = (task: Task) =>
+      allGoals.filter((goal) => task.goalIds?.includes(goal.id));
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -360,8 +579,41 @@ export default function ProjectsPage() {
               {selectedProject.impact > 0 && (
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Impact Score</div>
-                  <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {selectedProject.impact}/10
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((starValue) => (
+                        <Star
+                          key={starValue}
+                          className={cn(
+                            'w-5 h-5',
+                            starValue <= selectedProject.impact
+                              ? 'fill-yellow-500 text-yellow-500 dark:fill-yellow-400 dark:text-yellow-400'
+                              : 'fill-none text-gray-300 dark:text-gray-600'
+                          )}
+                        />
+                      ))}
+                      <span className="ml-2 text-2xl font-bold text-gray-900 dark:text-white">
+                        {selectedProject.impact}/5
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedProject.impact === 5
+                          ? 'Very High Impact'
+                          : selectedProject.impact === 4
+                            ? 'High Impact'
+                            : selectedProject.impact === 3
+                              ? 'Medium Impact'
+                              : selectedProject.impact === 2
+                                ? 'Low Impact'
+                                : 'Very Low Impact'}
+                      </span>
+                      {selectedProject.impact === 5 && (
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          Max Impact
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -373,11 +625,11 @@ export default function ProjectsPage() {
                   </div>
                 </div>
               )}
-              {selectedProject.endDate && (
+              {selectedProject.targetEndDate && (
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Target End</div>
                   <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {formatDateString(selectedProject.endDate) || '—'}
+                    {formatDateString(selectedProject.targetEndDate) || '—'}
                   </div>
                 </div>
               )}
@@ -441,7 +693,7 @@ export default function ProjectsPage() {
                     <AIProjectAssistPanel
                       mode={aiMode}
                       project={selectedProject}
-                      tasks={tasks}
+                      tasks={projectTasks}
                       onClose={() => setShowAIAssist(false)}
                       onCreateTasks={handleCreateTasksFromAI}
                     />
@@ -456,18 +708,39 @@ export default function ProjectsPage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <CheckSquare className="w-5 h-5" />
-                  Tasks ({tasks.length})
+                  Tasks ({projectTasks.length})
                 </h2>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedTaskIds(projectTasks.map((t) => t.id));
+                    setIsTaskPickerOpen(true);
+                  }}
+                >
+                  Link Tasks
+                </Button>
               </div>
-              {tasks.length === 0 ? (
+              {projectTasks.length === 0 ? (
                 <EmptyState
-                  title="No tasks yet"
-                  description="Add tasks to this project from the Tasks page"
+                  title="No tasks linked"
+                  description="Link tasks to this project to track progress"
+                  actionLabel="Link Tasks"
+                  onAction={() => setIsTaskPickerOpen(true)}
                 />
               ) : (
                 <div className="space-y-3">
-                  {tasks.map((task) => (
-                    <TaskListItem key={task.id} task={task} onEdit={() => {}} onDelete={() => {}} />
+                  {projectTasks.map((task) => (
+                    <TaskListItem
+                      key={task.id}
+                      task={task}
+                      onEdit={handleEditTask}
+                      onDelete={() => handleUnlinkTaskFromProject(task.id, selectedProject.id)}
+                      deleteLabel="Unlink task"
+                      deleteAriaLabel={`Unlink ${task.title} from ${selectedProject.name}`}
+                      deleteIcon={<Link2Off className="w-4 h-4" />}
+                      deleteButtonClassName="!p-2 hover:!bg-amber-50 hover:!text-amber-600 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-400"
+                    />
                   ))}
                 </div>
               )}
@@ -477,37 +750,116 @@ export default function ProjectsPage() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Target className="w-5 h-5" />
-                  Goals ({goals.length})
+                  Goals ({linkedGoals.length})
                 </h2>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => {
-                    setSelectedGoalIds(goals.map((g) => g.id));
+                    setSelectedGoalIds(linkedGoals.map((g) => g.id));
+                    setGoalSaveError(null);
+                    setGoalActionError(null);
                     setIsGoalPickerOpen(true);
                   }}
                 >
                   Link Goals
                 </Button>
               </div>
-              {goals.length === 0 ? (
+              {goalActionError && (
+                <div className="mb-3 text-sm text-red-600 dark:text-red-400">{goalActionError}</div>
+              )}
+              {linkedGoals.length === 0 ? (
                 <EmptyState
                   title="No linked goals"
                   description="Link this project to strategic goals"
                   actionLabel="Link Goals"
-                  onAction={() => setIsGoalPickerOpen(true)}
+                  onAction={() => {
+                    setSelectedGoalIds(linkedGoals.map((g) => g.id));
+                    setGoalSaveError(null);
+                    setGoalActionError(null);
+                    setIsGoalPickerOpen(true);
+                  }}
                 />
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {goals.map((goal) => (
-                    <EntityLinkChip
-                      key={goal.id}
-                      id={goal.id}
-                      label={goal.title}
-                      type="goal"
-                      area={goal.area}
-                    />
-                  ))}
+                <div className="space-y-3">
+                  {linkedGoals.map((goalSummary) => {
+                    // Find the full goal object
+                    const fullGoal = goals.find((g) => g.id === goalSummary.id);
+                    if (!fullGoal) return null;
+
+                    // Calculate progress
+                    const criteriaProgress = (() => {
+                      if (Array.isArray(fullGoal.successCriteria)) {
+                        if (typeof fullGoal.successCriteria[0] === 'string') {
+                          const completed = (
+                            fullGoal.successCriteria as unknown as string[]
+                          ).filter((c) => c.includes('✓')).length;
+                          const total = fullGoal.successCriteria.length;
+                          return total > 0 ? Math.round((completed / total) * 100) : 0;
+                        }
+                        const completed = fullGoal.successCriteria.filter(
+                          (c) => c.isCompleted
+                        ).length;
+                        const total = fullGoal.successCriteria.length;
+                        return total > 0 ? Math.round((completed / total) * 100) : 0;
+                      }
+                      return 0;
+                    })();
+
+                    return (
+                      <div
+                        key={fullGoal.id}
+                        className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2.5">
+                              <PriorityIndicator
+                                priority={fullGoal.priority}
+                                size="sm"
+                                variant="badge"
+                              />
+                              <Target className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                              <h3 className="font-semibold text-gray-900 dark:text-white truncate text-base leading-tight">
+                                {fullGoal.title}
+                              </h3>
+                              <StatusBadge status={fullGoal.status} size="sm" />
+                            </div>
+
+                            {fullGoal.description && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">
+                                {fullGoal.description}
+                              </p>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-2.5 text-sm">
+                              <AreaBadge area={fullGoal.area} size="sm" />
+                              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                {fullGoal.timeHorizon}
+                              </span>
+                              {criteriaProgress > 0 && (
+                                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                                  <span className="text-xs font-medium">{criteriaProgress}%</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 transition-opacity opacity-0 group-hover:opacity-100">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleGoalChipRemove(fullGoal.id)}
+                              className="!p-2 hover:!bg-amber-50 hover:!text-amber-600 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-400"
+                              aria-label={`Unlink ${fullGoal.title} from ${selectedProject.name}`}
+                            >
+                              <Link2Off className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -531,14 +883,80 @@ export default function ProjectsPage() {
 
         <RelationshipPicker
           isOpen={isGoalPickerOpen}
-          onClose={() => setIsGoalPickerOpen(false)}
+          onClose={() => {
+            setIsGoalPickerOpen(false);
+            setGoalSaveError(null);
+          }}
           title="Link to Goals"
           entities={allGoals}
           selectedIds={selectedGoalIds}
           onSelectionChange={setSelectedGoalIds}
           onSave={handleGoalSave}
+          isSaving={isGoalSaving}
+          saveError={goalSaveError}
           entityType="goal"
         />
+
+        <RelationshipPicker
+          isOpen={isTaskPickerOpen}
+          onClose={() => setIsTaskPickerOpen(false)}
+          title="Link Tasks to Project"
+          entities={allTasksForPicker}
+          selectedIds={selectedTaskIds}
+          onSelectionChange={setSelectedTaskIds}
+          onSave={handleTaskSave}
+          entityType="task"
+        />
+
+        {selectedTask && (
+          <TaskEditPanel
+            task={selectedTask}
+            isOpen={isTaskEditOpen}
+            onClose={() => {
+              setIsTaskEditOpen(false);
+              setSelectedTask(null);
+            }}
+            onSave={handleUpdateTask}
+            isLoading={isTaskSubmitting}
+            availableTasks={tasks}
+            availableProjects={allProjects}
+            availableGoals={allGoals}
+            dependencies={[]}
+            blockedBy={[]}
+            linkedProjects={getLinkedProjectsForTask(selectedTask)}
+            linkedGoals={getLinkedGoalsForTask(selectedTask)}
+            onDependencyAdd={async (taskId, dependsOnId) => {
+              const response = await tasksService.addDependency(taskId, dependsOnId);
+              if (response.success && response.data) {
+                addTaskDependencyToCache(queryClient, response.data);
+              }
+            }}
+            onDependencyRemove={async (taskId, dependsOnId) => {
+              await tasksService.removeDependency(taskId, dependsOnId);
+              removeTaskDependencyFromCache(queryClient, taskId, dependsOnId);
+            }}
+            onProjectLink={async (taskId, projectId) => {
+              await tasksService.linkToProject(taskId, projectId);
+              // Invalidate tasks query to refresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
+            }}
+            onProjectUnlink={async (taskId, projectId) => {
+              await tasksService.unlinkFromProject(taskId, projectId);
+              // Invalidate tasks query to refresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
+            }}
+            onGoalLink={async (taskId, goalId) => {
+              await tasksService.linkToGoal(taskId, goalId);
+              // Invalidate tasks query to refresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
+            }}
+            onGoalUnlink={async (taskId, goalId) => {
+              await tasksService.unlinkFromGoal(taskId, goalId);
+              // Invalidate tasks query to refresh data
+              queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
+            }}
+          />
+        )}
 
         <Dialog
           isOpen={!!projectToDelete}
@@ -771,7 +1189,7 @@ export default function ProjectsPage() {
             onAction={() => setIsCreateDialogOpen(true)}
           />
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
             {filteredProjects.map((project) => {
               const stats = getProjectStats(project.id);
               return (
@@ -779,13 +1197,14 @@ export default function ProjectsPage() {
                   key={project.id}
                   project={project}
                   onClick={handleProjectClick}
+                  viewMode="grid"
                   {...stats}
                 />
               );
             })}
           </div>
         ) : viewMode === 'list' ? (
-          <div className="space-y-3">
+          <div className="space-y-2 w-full">
             <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Showing {filteredProjects.length}{' '}
               {filteredProjects.length === 1 ? 'project' : 'projects'}

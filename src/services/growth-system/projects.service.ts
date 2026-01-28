@@ -1,6 +1,13 @@
 import { apiClient } from '@/lib/api-client';
-import type { Project, CreateProjectInput, Task, UpdateProjectInput } from '@/types/growth-system';
-import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
+import type {
+  Project,
+  CreateProjectInput,
+  Task,
+  UpdateProjectInput,
+  Goal,
+} from '@/types/growth-system';
+import type { ApiResponse, ApiListResponse, ApiError } from '@/types/api-contracts';
+import { goalsService } from '@/services/growth-system/goals.service';
 
 interface BackendPaginatedResponse<T> {
   data: T[];
@@ -16,6 +23,9 @@ interface ProjectHealth {
   tasksTotal: number;
   percentComplete: number;
 }
+
+const isMissingEndpointError = (error?: ApiError | null) =>
+  error?.code === 'HTTP_404' || error?.code === 'HTTP_405' || error?.code === 'HTTP_501';
 
 export const projectsService = {
   async getAll(filters?: {
@@ -51,15 +61,15 @@ export const projectsService = {
     // Prepare request body matching backend schema (camelCase)
     const requestBody = {
       name: input.name,
-      description: input.description,
+      description: input.description || undefined,
       area: input.area,
-      subCategory: input.subCategory,
-      priority: input.priority,
+      subCategory: input.subCategory || undefined,
+      priority: input.priority ?? undefined,
       status: input.status,
       impact: input.impact,
-      startDate: input.startDate,
-      endDate: input.endDate,
-      notes: input.notes,
+      startDate: input.startDate || undefined,
+      targetEndDate: input.targetEndDate || undefined,
+      notes: input.notes || undefined,
     };
 
     const response = await apiClient.post<Project>('/projects', requestBody);
@@ -69,16 +79,16 @@ export const projectsService = {
   async update(id: string, input: UpdateProjectInput): Promise<ApiResponse<Project>> {
     const requestBody = {
       name: input.name,
-      description: input.description,
+      description: input.description || undefined,
       area: input.area,
-      subCategory: input.subCategory,
-      priority: input.priority,
+      subCategory: input.subCategory || undefined,
+      priority: input.priority ?? undefined,
       status: input.status,
       impact: input.impact,
-      startDate: input.startDate,
-      targetEndDate: input.targetEndDate,
-      completedDate: input.completedDate,
-      notes: input.notes,
+      startDate: input.startDate || undefined,
+      targetEndDate: input.targetEndDate || undefined,
+      actualEndDate: input.actualEndDate || undefined,
+      notes: input.notes || undefined,
     };
 
     const response = await apiClient.patch<Project>(`/projects/${id}`, requestBody);
@@ -111,6 +121,42 @@ export const projectsService = {
 
   async unlinkTask(projectId: string, taskId: string): Promise<ApiResponse<void>> {
     const response = await apiClient.delete<void>(`/projects/${projectId}/tasks/${taskId}`);
+    return response;
+  },
+
+  async getLinkedGoals(projectId: string): Promise<ApiListResponse<Goal>> {
+    const response = await apiClient.get<BackendPaginatedResponse<Goal>>(
+      `/projects/${projectId}/goals`
+    );
+    if (response.success && response.data) {
+      return {
+        data: response.data.data,
+        total: response.data.total,
+        success: true,
+      };
+    }
+    if (isMissingEndpointError(response.error)) {
+      return {
+        success: false,
+        error: response.error,
+      };
+    }
+    throw new Error(response.error?.message || 'Failed to fetch linked goals');
+  },
+
+  async linkToGoal(projectId: string, goalId: string): Promise<ApiResponse<void>> {
+    const response = await apiClient.post<void>(`/projects/${projectId}/goals`, { goalId });
+    if (!response.success && isMissingEndpointError(response.error)) {
+      return goalsService.linkProject(goalId, projectId);
+    }
+    return response;
+  },
+
+  async unlinkFromGoal(projectId: string, goalId: string): Promise<ApiResponse<void>> {
+    const response = await apiClient.delete<void>(`/projects/${projectId}/goals/${goalId}`);
+    if (!response.success && isMissingEndpointError(response.error)) {
+      return goalsService.unlinkProject(goalId, projectId);
+    }
     return response;
   },
 

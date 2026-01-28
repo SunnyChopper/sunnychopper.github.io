@@ -48,12 +48,12 @@ interface TaskEditPanelProps {
   availableTasks: Task[];
   availableProjects: EntitySummary[];
   availableGoals: EntitySummary[];
-  onDependencyAdd: (taskId: string, dependsOnId: string) => void;
-  onDependencyRemove: (taskId: string, dependsOnId: string) => void;
-  onProjectLink: (taskId: string, projectId: string) => void;
-  onProjectUnlink: (taskId: string, projectId: string) => void;
-  onGoalLink: (taskId: string, goalId: string) => void;
-  onGoalUnlink: (taskId: string, goalId: string) => void;
+  onDependencyAdd: (taskId: string, dependsOnId: string) => Promise<void>;
+  onDependencyRemove: (taskId: string, dependsOnId: string) => Promise<void>;
+  onProjectLink: (taskId: string, projectId: string) => Promise<void>;
+  onProjectUnlink: (taskId: string, projectId: string) => Promise<void>;
+  onGoalLink: (taskId: string, goalId: string) => Promise<void>;
+  onGoalUnlink: (taskId: string, goalId: string) => Promise<void>;
   onCreateSubtasks?: (subtasks: CreateTaskInput[]) => void;
 }
 
@@ -135,6 +135,7 @@ export function TaskEditPanel({
     setIsSaving(true);
 
     try {
+      // First, save the task data
       const input: UpdateTaskInput = {
         ...formData,
         description: formData.description || undefined,
@@ -145,6 +146,52 @@ export function TaskEditPanel({
         size: formData.size || undefined,
       };
       await onSave(task.id, input);
+
+      // Then, apply pending dependency changes
+      const currentDepIds = new Set(dependencies.map((d) => d.id));
+      const newDepIds = new Set(selectedDependencies);
+
+      const dependencyRemovals = Array.from(currentDepIds)
+        .filter((id) => !newDepIds.has(id))
+        .map((id) => onDependencyRemove(task.id, id));
+
+      const dependencyAdditions = Array.from(newDepIds)
+        .filter((id) => !currentDepIds.has(id))
+        .map((id) => onDependencyAdd(task.id, id));
+
+      // Apply pending project link changes
+      const currentProjectIds = new Set(linkedProjects.map((p) => p.id));
+      const newProjectIds = new Set(selectedProjects);
+
+      const projectUnlinks = Array.from(currentProjectIds)
+        .filter((id) => !newProjectIds.has(id))
+        .map((id) => onProjectUnlink(task.id, id));
+
+      const projectLinks = Array.from(newProjectIds)
+        .filter((id) => !currentProjectIds.has(id))
+        .map((id) => onProjectLink(task.id, id));
+
+      // Apply pending goal link changes
+      const currentGoalIds = new Set(linkedGoals.map((g) => g.id));
+      const newGoalIds = new Set(selectedGoals);
+
+      const goalUnlinks = Array.from(currentGoalIds)
+        .filter((id) => !newGoalIds.has(id))
+        .map((id) => onGoalUnlink(task.id, id));
+
+      const goalLinks = Array.from(newGoalIds)
+        .filter((id) => !currentGoalIds.has(id))
+        .map((id) => onGoalLink(task.id, id));
+
+      // Wait for all linking operations to complete
+      await Promise.all([
+        ...dependencyRemovals,
+        ...dependencyAdditions,
+        ...projectUnlinks,
+        ...projectLinks,
+        ...goalUnlinks,
+        ...goalLinks,
+      ]);
 
       // Success: show toast and close modal
       showToast({
@@ -168,57 +215,6 @@ export function TaskEditPanel({
     }
   };
 
-  const handleDependencySave = () => {
-    const currentIds = new Set(dependencies.map((d) => d.id));
-    const newIds = new Set(selectedDependencies);
-
-    currentIds.forEach((id) => {
-      if (!newIds.has(id)) {
-        onDependencyRemove(task.id, id);
-      }
-    });
-
-    newIds.forEach((id) => {
-      if (!currentIds.has(id)) {
-        onDependencyAdd(task.id, id);
-      }
-    });
-  };
-
-  const handleProjectSave = () => {
-    const currentIds = new Set(linkedProjects.map((p) => p.id));
-    const newIds = new Set(selectedProjects);
-
-    currentIds.forEach((id) => {
-      if (!newIds.has(id)) {
-        onProjectUnlink(task.id, id);
-      }
-    });
-
-    newIds.forEach((id) => {
-      if (!currentIds.has(id)) {
-        onProjectLink(task.id, id);
-      }
-    });
-  };
-
-  const handleGoalSave = () => {
-    const currentIds = new Set(linkedGoals.map((g) => g.id));
-    const newIds = new Set(selectedGoals);
-
-    currentIds.forEach((id) => {
-      if (!newIds.has(id)) {
-        onGoalUnlink(task.id, id);
-      }
-    });
-
-    newIds.forEach((id) => {
-      if (!currentIds.has(id)) {
-        onGoalLink(task.id, id);
-      }
-    });
-  };
-
   const handleApplyPriority = (priority: string) => {
     setFormData({ ...formData, priority: priority as Priority });
   };
@@ -231,13 +227,22 @@ export function TaskEditPanel({
     onCreateSubtasks?.(subtasks);
   };
 
-  const handleApplyDependencies = (taskIds: string[]) => {
-    taskIds.forEach((id) => {
-      if (!selectedDependencies.includes(id)) {
-        onDependencyAdd(task.id, id);
-      }
-    });
-    setSelectedDependencies([...new Set([...selectedDependencies, ...taskIds])]);
+  const handleApplyDependencies = async (taskIds: string[]) => {
+    const additions = taskIds
+      .filter((id) => !selectedDependencies.includes(id))
+      .map((id) => onDependencyAdd(task.id, id));
+
+    try {
+      await Promise.all(additions);
+      setSelectedDependencies([...new Set([...selectedDependencies, ...taskIds])]);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add dependencies.';
+      showToast({
+        type: 'error',
+        title: 'Failed to add dependencies',
+        message: errorMessage,
+      });
+    }
   };
 
   const availableSubCategories = SUBCATEGORIES_BY_AREA[formData.area || task.area];
@@ -251,6 +256,26 @@ export function TaskEditPanel({
       area: t.area,
       status: t.status,
     }));
+
+  // Get entities to display based on pending selections
+  const displayDependencies = selectedDependencies
+    .map((id) => availableTasks.find((t) => t.id === id))
+    .filter((t): t is Task => t !== undefined)
+    .map((t) => ({
+      id: t.id,
+      title: t.title,
+      type: 'task' as const,
+      area: t.area,
+      status: t.status,
+    }));
+
+  const displayProjects = selectedProjects
+    .map((id) => availableProjects.find((p) => p.id === id))
+    .filter((p): p is EntitySummary => p !== undefined);
+
+  const displayGoals = selectedGoals
+    .map((id) => availableGoals.find((g) => g.id === id))
+    .filter((g): g is EntitySummary => g !== undefined);
 
   if (!isOpen) return null;
 
@@ -605,7 +630,7 @@ export function TaskEditPanel({
 
                   <div>
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
-                      <span>Depends On ({dependencies.length})</span>
+                      <span>Depends On ({displayDependencies.length})</span>
                       <Button
                         type="button"
                         variant="secondary"
@@ -615,9 +640,9 @@ export function TaskEditPanel({
                         Manage Dependencies
                       </Button>
                     </div>
-                    {dependencies.length > 0 && (
+                    {displayDependencies.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {dependencies.map((dep) => (
+                        {displayDependencies.map((dep) => (
                           <EntityLinkChip
                             key={dep.id}
                             id={dep.id}
@@ -642,7 +667,7 @@ export function TaskEditPanel({
                 <div className="space-y-4">
                   <div>
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
-                      <span>Projects ({linkedProjects.length})</span>
+                      <span>Projects ({displayProjects.length})</span>
                       <Button
                         type="button"
                         variant="secondary"
@@ -652,9 +677,9 @@ export function TaskEditPanel({
                         Link Projects
                       </Button>
                     </div>
-                    {linkedProjects.length > 0 && (
+                    {displayProjects.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {linkedProjects.map((project) => (
+                        {displayProjects.map((project) => (
                           <EntityLinkChip
                             key={project.id}
                             id={project.id}
@@ -670,7 +695,7 @@ export function TaskEditPanel({
 
                   <div>
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
-                      <span>Goals ({linkedGoals.length})</span>
+                      <span>Goals ({displayGoals.length})</span>
                       <Button
                         type="button"
                         variant="secondary"
@@ -680,9 +705,9 @@ export function TaskEditPanel({
                         Link Goals
                       </Button>
                     </div>
-                    {linkedGoals.length > 0 && (
+                    {displayGoals.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {linkedGoals.map((goal) => (
+                        {displayGoals.map((goal) => (
                           <EntityLinkChip
                             key={goal.id}
                             id={goal.id}
@@ -723,7 +748,6 @@ export function TaskEditPanel({
         entities={taskEntities}
         selectedIds={selectedDependencies}
         onSelectionChange={setSelectedDependencies}
-        onSave={handleDependencySave}
         entityType="task"
       />
 
@@ -734,7 +758,6 @@ export function TaskEditPanel({
         entities={availableProjects}
         selectedIds={selectedProjects}
         onSelectionChange={setSelectedProjects}
-        onSave={handleProjectSave}
         entityType="project"
       />
 
@@ -745,7 +768,6 @@ export function TaskEditPanel({
         entities={availableGoals}
         selectedIds={selectedGoals}
         onSelectionChange={setSelectedGoals}
-        onSave={handleGoalSave}
         entityType="goal"
       />
 

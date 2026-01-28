@@ -9,6 +9,7 @@ import AdminLayout from './components/templates/AdminLayout';
 import MainLayout from './components/templates/MainLayout';
 import { KnowledgeVaultProvider } from './contexts/KnowledgeVault';
 import { ModeProvider } from './contexts/Mode';
+import { useAuth } from './contexts/Auth';
 import { usePageTracking } from './hooks/usePageTracking';
 import { useThemeInitializer } from './hooks/useTheme';
 import ChatbotPage from './pages/admin/ChatbotPage';
@@ -133,14 +134,20 @@ function AppContent() {
   );
 }
 
-function App() {
-  const [isLoading, setIsLoading] = useState(true);
+function AppInitializer() {
+  const { loading: authLoading } = useAuth();
+  const [minDisplayTimeElapsed, setMinDisplayTimeElapsed] = useState(false);
 
+  // Ensure loader shows for at least 800ms to be clearly visible
   useEffect(() => {
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const timer = setTimeout(() => {
+      setMinDisplayTimeElapsed(true);
+    }, 800);
+    return () => clearTimeout(timer);
   }, []);
+
+  // Show loader while auth is loading OR until minimum time has passed
+  const isLoading = authLoading || !minDisplayTimeElapsed;
 
   return (
     <>
@@ -154,6 +161,10 @@ function App() {
       </ModeProvider>
     </>
   );
+}
+
+function App() {
+  return <AppInitializer />;
 }
 
 export default App;

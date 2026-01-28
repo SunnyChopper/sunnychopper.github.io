@@ -82,6 +82,8 @@ export interface Task {
   recurrenceRule: RecurrenceRule | null;
   pointValue: number | null;
   pointsAwarded: boolean | null;
+  projectIds: string[];
+  goalIds: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -122,9 +124,10 @@ export interface Project {
   status: ProjectStatus;
   impact: number;
   startDate: string | null;
-  endDate: string | null;
-  completedDate: string | null;
+  targetEndDate: string | null;
+  actualEndDate: string | null;
   notes: string | null;
+  goalIds?: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -139,7 +142,7 @@ export interface ProjectGoal {
 // Enhanced Success Criterion (replaces string[])
 export interface SuccessCriterion {
   id: string;
-  text: string;
+  description: string;
   isCompleted: boolean;
   completedAt: string | null;
   linkedMetricId: string | null; // Auto-track from metric
@@ -232,9 +235,18 @@ export interface Metric {
   thresholdHigh: number | null;
   source: MetricSource;
   status: MetricStatus;
+  goalIds?: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
+  // Optional fields that may be included in API responses
+  currentValue?: number;
+  baselineValue?: number | null;
+  trackingFrequency?: 'Daily' | 'Weekly' | 'Monthly';
+  logCount?: number;
+  milestoneCount?: number;
+  // Logs may be included in API responses (e.g., GET /metrics)
+  logs?: MetricLog[];
 }
 
 export interface MetricLog {
@@ -292,6 +304,7 @@ export interface Habit {
   frictionUp: string | null;
   frictionDown: string | null;
   notes: string | null;
+  goalIds?: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -409,6 +422,8 @@ export interface CreateTaskInput {
   isRecurring?: boolean;
   recurrenceRule?: RecurrenceRule;
   pointValue?: number;
+  projectIds?: string[];
+  goalIds?: string[];
 }
 
 export interface UpdateTaskInput {
@@ -427,6 +442,8 @@ export interface UpdateTaskInput {
   isRecurring?: boolean;
   recurrenceRule?: RecurrenceRule;
   pointValue?: number;
+  projectIds?: string[];
+  goalIds?: string[];
 }
 
 export interface CreateProjectInput {
@@ -438,7 +455,7 @@ export interface CreateProjectInput {
   status?: ProjectStatus;
   impact?: number;
   startDate?: string;
-  endDate?: string;
+  targetEndDate?: string;
   notes?: string;
 }
 
@@ -452,7 +469,7 @@ export interface UpdateProjectInput {
   impact?: number;
   startDate?: string;
   targetEndDate?: string;
-  completedDate?: string;
+  actualEndDate?: string;
   notes?: string;
 }
 
@@ -576,6 +593,7 @@ export interface CreateLogbookEntryInput {
 }
 
 export interface UpdateLogbookEntryInput {
+  date?: string; // Allow date updates to fix timezone-shifted dates
   title?: string;
   notes?: string;
   mood?: LogbookMood;

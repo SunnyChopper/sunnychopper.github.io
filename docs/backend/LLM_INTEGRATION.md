@@ -1,18 +1,18 @@
 # LLM Integration Guide
 
-**Purpose:** Port the frontend LangChain implementation to Python backend  
-**Key Change:** All LLM API calls routed through backend, API keys stored in Secrets Manager
+**Purpose:** Implement the backend LLM layer that powers frontend `/ai/*` requests  
+**Key Change:** Frontend already calls backend; backend owns provider calls and Secrets Manager keys
 
 ---
 
 ## Overview
 
-The frontend currently makes direct LLM calls via `DirectLLMAdapter`. The backend will:
+The frontend already calls the backend via `/ai/*` (see `APILLMAdapter`). The backend should:
 
 1. Store API keys securely in AWS Secrets Manager
 2. Receive LLM requests from frontend via `/ai/*` endpoints
 3. Execute LLM calls using LangChain Python
-4. Return structured outputs to frontend
+4. Return structured outputs to frontend with the expected response shape
 5. Cache expensive AI results in DynamoDB
 
 ---
@@ -875,7 +875,7 @@ async def cache_insight(
 
 ## Frontend Updates
 
-Update `APILLMAdapter` to call backend:
+Frontend reference (current implementation in `src/lib/llm/api-llm-adapter.ts`):
 
 ```typescript
 // src/lib/llm/api-llm-adapter.ts
@@ -883,8 +883,17 @@ import { apiClient } from '../api-client';
 
 export class APILLMAdapter implements ILLMAdapter {
   async parseNaturalLanguageTask(input: ParseTaskInput): Promise<LLMResponse<ParseTaskOutput>> {
-    const response = await apiClient.post('/ai/tasks/parse', { input: input.text });
-    return response;
+    const response = await apiClient.post<{ data: AIResponse<ParseTaskOutput> }>(
+      '/ai/tasks/parse',
+      { input: input.text }
+    );
+
+    if (response.success && response.data) {
+      const aiResponse = response.data.data;
+      return { data: aiResponse.result, error: null, success: true, usage: undefined };
+    }
+
+    return { data: null, error: response.error?.message || 'AI request failed', success: false };
   }
 
   async breakdownTask(input: TaskBreakdownInput): Promise<LLMResponse<TaskBreakdownOutput>> {
@@ -896,18 +905,23 @@ export class APILLMAdapter implements ILLMAdapter {
     return response;
   }
 
-  // ... implement all 33 AI features
+  // ... other AI features map to /ai/* endpoints and unwrap data.result
 }
 ```
 
-Switch to API adapter:
+The adapter expects backend responses shaped like:
 
 ```typescript
 // src/lib/llm/llm-config.ts
-export const llmConfig = {
-  getLLMAdapter(): ILLMAdapter {
-    // Always use API adapter in production
-    return new APILLMAdapter();
-  },
-};
+{
+  "success": true,
+  "data": {
+    "result": { ... },
+    "confidence": 0.92,
+    "reasoning": "Based on the analysis...",
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-20250514",
+    "cached": false
+  }
+}
 ```

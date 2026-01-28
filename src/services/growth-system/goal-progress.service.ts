@@ -27,34 +27,62 @@ const DEFAULT_WEIGHTS = {
 };
 
 export const goalProgressService = {
-  async computeProgress(goalId: string): Promise<GoalProgressBreakdown> {
+  async computeProgress(
+    goal: Goal | string,
+    tasks?: Task[],
+    metrics?: Metric[],
+    habits?: Habit[]
+  ): Promise<GoalProgressBreakdown> {
     await randomDelay();
 
-    const goalResponse = await goalsService.getById(goalId);
-    if (!goalResponse.success || !goalResponse.data) {
-      throw new Error('Goal not found');
+    // Support both goal object and goal ID for backward compatibility
+    let goalObj: Goal;
+    if (typeof goal === 'string') {
+      const goalResponse = await goalsService.getById(goal);
+      if (!goalResponse.success || !goalResponse.data) {
+        throw new Error('Goal not found');
+      }
+      goalObj = goalResponse.data;
+    } else {
+      goalObj = goal;
     }
 
-    const goal = goalResponse.data;
-    const weights = goal.progressConfig || DEFAULT_WEIGHTS;
+    const weights = goalObj.progressConfig || DEFAULT_WEIGHTS;
 
     // Calculate criteria progress
-    const criteriaProgress = this.calculateCriteriaProgress(goal.successCriteria);
+    const criteriaProgress = this.calculateCriteriaProgress(goalObj.successCriteria);
 
-    // Calculate tasks progress
-    const tasksResponse = await goalsService.getLinkedTasks(goalId);
-    const tasks = tasksResponse.success ? tasksResponse.data || [] : [];
-    const tasksProgress = this.calculateTasksProgress(tasks);
+    // Calculate tasks progress - use provided tasks or fetch from API
+    let tasksForProgress: Task[];
+    if (tasks !== undefined) {
+      tasksForProgress = tasks;
+    } else {
+      const tasksResponse = await goalsService.getLinkedTasks(goalObj.id);
+      tasksForProgress = tasksResponse.success ? tasksResponse.data || [] : [];
+    }
+    const tasksProgress = this.calculateTasksProgress(tasksForProgress);
 
-    // Calculate metrics progress
-    const metricsResponse = await goalsService.getLinkedMetrics(goalId);
-    const metricLinks = metricsResponse.success ? metricsResponse.data || [] : [];
-    const metricsProgress = await this.calculateMetricsProgress(metricLinks.map((m) => m.id));
+    // Calculate metrics progress - use provided metrics or fetch from API
+    let metricsForProgress: Metric[];
+    if (metrics !== undefined) {
+      metricsForProgress = metrics;
+    } else {
+      const metricsResponse = await goalsService.getLinkedMetrics(goalObj.id);
+      metricsForProgress = metricsResponse.success ? metricsResponse.data || [] : [];
+    }
+    const metricsProgress = await this.calculateMetricsProgress(
+      metricsForProgress.map((m) => m.id)
+    );
 
-    // Calculate habits progress
-    const habitsResponse = await goalsService.getLinkedHabits(goalId);
-    const habits = habitsResponse.success ? habitsResponse.data || [] : [];
-    const habitsProgress = await this.calculateHabitsProgress(habits);
+    // Calculate habits progress - use provided habits or fetch from API
+    let habitsForProgress: Habit[];
+    if (habits !== undefined) {
+      habitsForProgress = habits;
+    } else {
+      const habitsResponse = await goalsService.getLinkedHabits(goalObj.id);
+      habitsForProgress = habitsResponse.success ? habitsResponse.data || [] : [];
+    }
+    const habitsProgress = await this.calculateHabitsProgress(habitsForProgress);
 
     // Calculate weighted overall progress
     let overall = 0;

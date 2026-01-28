@@ -66,7 +66,10 @@ export default function DashboardPage() {
   } = useGrowthSystemDashboard();
 
   // Check if any data source has a network error
-  const hasNetworkError = dashboardError || !backendStatus.isOnline;
+  // Only show error if we have a genuine error (not just during initial load)
+  const hasNetworkError =
+    dashboardError ||
+    (!backendStatus.isOnline && backendStatus.lastError && !backendStatus.isChecking);
 
   const activeTasks = tasks.filter((t) => t.status !== 'Done' && t.status !== 'Cancelled');
   const activeHabits = habits.filter((h) => h.frequency === 'Daily');

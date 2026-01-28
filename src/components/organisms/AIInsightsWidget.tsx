@@ -33,14 +33,18 @@ export function AIInsightsWidget() {
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
 
-  const { tasks, isError: tasksError } = useTasks();
-  const { habits, isError: habitsError } = useHabits();
-  const { metrics, isError: metricsError } = useMetrics();
-  const { goals, isError: goalsError } = useGoals();
-  const { projects, isError: projectsError } = useProjects();
+  const { tasks, isError: tasksError, isLoading: tasksLoading } = useTasks();
+  const { habits, isError: habitsError, isLoading: habitsLoading } = useHabits();
+  const { metrics, isError: metricsError, isLoading: metricsLoading } = useMetrics();
+  const { goals, isError: goalsError, isLoading: goalsLoading } = useGoals();
+  const { projects, isError: projectsError, isLoading: projectsLoading } = useProjects();
 
   const isAIConfigured = llmConfig.isConfigured();
-  const hasNetworkError = tasksError || habitsError || metricsError || goalsError || projectsError;
+  // Only show error if we have a genuine error AND we're not still loading (initial load)
+  const isAnyLoading =
+    tasksLoading || habitsLoading || metricsLoading || goalsLoading || projectsLoading;
+  const hasNetworkError =
+    (tasksError || habitsError || metricsError || goalsError || projectsError) && !isAnyLoading;
 
   // Use refs to track previous values and only regenerate when data actually changes
   const prevDataRef = useRef<{

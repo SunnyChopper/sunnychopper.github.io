@@ -1,5 +1,5 @@
 import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
-import { RefinementSchema } from '@/lib/llm/schemas/course-ai-schemas';
+import { RefinementSchema, type RefinementOutput } from '@/lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
 import { generateId } from '@/mocks/storage';
 
@@ -192,7 +192,10 @@ Based on the alignment analysis, provide refinements:
 Focus on fixing the identified issues while maintaining the overall course structure.`;
 
     const messages = this.buildPrompt(systemMessage, userMessage);
-    const result = await this.invokeStructured(RefinementSchema, messages);
+    const result = (await this.invokeStructured(
+      RefinementSchema,
+      messages
+    )) as unknown as RefinementOutput;
 
     // Apply refinements to state
     const updatedModules = [...state.modules];

@@ -3,6 +3,7 @@ import type {
   LogbookEntry,
   CreateLogbookEntryInput,
   UpdateLogbookEntryInput,
+  LogbookMood,
 } from '@/types/growth-system';
 import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 
@@ -12,6 +13,51 @@ interface BackendPaginatedResponse<T> {
   page: number;
   pageSize: number;
   hasMore: boolean;
+}
+
+// Backend returns energyLevel, but frontend expects energy
+interface BackendLogbookEntry {
+  id: string;
+  date: string;
+  title: string | null;
+  notes: string | null;
+  mood: LogbookMood | null;
+  energyLevel?: number | null;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Helper to extract YYYY-MM-DD from date string, preventing timezone conversion issues
+function normalizeDate(dateString: string): string {
+  // If already in YYYY-MM-DD format, return as-is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  // If it's an ISO string, extract just the date part before 'T'
+  if (dateString.includes('T')) {
+    const datePart = dateString.split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      return datePart;
+    }
+  }
+  // Try to extract YYYY-MM-DD from the beginning of the string
+  const dateMatch = dateString.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (dateMatch && dateMatch[1]) {
+    return dateMatch[1];
+  }
+  // If we can't extract it, return as-is (shouldn't happen in normal cases)
+  return dateString;
+}
+
+// Normalize backend response to frontend format
+function normalizeLogbookEntry(entry: BackendLogbookEntry): LogbookEntry {
+  const { energyLevel, ...rest } = entry;
+  return {
+    ...rest,
+    date: normalizeDate(entry.date), // Normalize date to YYYY-MM-DD format
+    energy: energyLevel ?? null,
+  };
 }
 
 export const logbookService = {
@@ -28,11 +74,11 @@ export const logbookService = {
     if (filters?.pageSize) queryParams.append('pageSize', String(filters.pageSize));
 
     const endpoint = `/logbook${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    const response = await apiClient.get<BackendPaginatedResponse<LogbookEntry>>(endpoint);
+    const response = await apiClient.get<BackendPaginatedResponse<BackendLogbookEntry>>(endpoint);
 
     if (response.success && response.data) {
       return {
-        data: response.data.data,
+        data: response.data.data.map(normalizeLogbookEntry),
         total: response.data.total,
         success: true,
       };
@@ -42,23 +88,86 @@ export const logbookService = {
   },
 
   async getById(id: string): Promise<ApiResponse<LogbookEntry>> {
-    const response = await apiClient.get<LogbookEntry>(`/logbook/${id}`);
-    return response;
+    const response = await apiClient.get<BackendLogbookEntry>(`/logbook/${id}`);
+    if (response.success && response.data) {
+      return {
+        ...response,
+        data: normalizeLogbookEntry(response.data),
+      };
+    }
+    return {
+      success: false,
+      error: response.error,
+      data: undefined,
+    };
   },
 
   async getByDate(date: string): Promise<ApiResponse<LogbookEntry>> {
-    const response = await apiClient.get<LogbookEntry>(`/logbook/${date}`);
-    return response;
+    const response = await apiClient.get<BackendLogbookEntry>(`/logbook/${date}`);
+    if (response.success && response.data) {
+      return {
+        ...response,
+        data: normalizeLogbookEntry(response.data),
+      };
+    }
+    return {
+      success: false,
+      error: response.error,
+      data: undefined,
+    };
   },
 
   async create(input: CreateLogbookEntryInput): Promise<ApiResponse<LogbookEntry>> {
-    const response = await apiClient.post<LogbookEntry>('/logbook', input);
-    return response;
+    // Transform energy to energyLevel for the API request to match backend format
+    const requestBody: {
+      date: string;
+      title?: string;
+      notes?: string;
+      mood?: LogbookMood;
+      energyLevel?: number;
+    } = {
+      date: input.date,
+    };
+    if (input.title !== undefined) requestBody.title = input.title;
+    if (input.notes !== undefined) requestBody.notes = input.notes;
+    if (input.mood !== undefined) requestBody.mood = input.mood;
+    if (input.energy !== undefined) requestBody.energyLevel = input.energy;
+    const response = await apiClient.post<BackendLogbookEntry>('/logbook', requestBody);
+    if (response.success && response.data) {
+      return {
+        ...response,
+        data: normalizeLogbookEntry(response.data),
+      };
+    }
+    return {
+      success: false,
+      error: response.error,
+      data: undefined,
+    };
   },
 
   async update(id: string, input: UpdateLogbookEntryInput): Promise<ApiResponse<LogbookEntry>> {
-    const response = await apiClient.patch<LogbookEntry>(`/logbook/${id}`, input);
-    return response;
+    // Transform energy to energyLevel for the API request
+    // Include date if provided to fix timezone-shifted dates
+    const requestBody: Record<string, unknown> = {};
+    if (input.date !== undefined) requestBody.date = input.date;
+    if (input.title !== undefined) requestBody.title = input.title;
+    if (input.notes !== undefined) requestBody.notes = input.notes;
+    if (input.mood !== undefined) requestBody.mood = input.mood;
+    if (input.energy !== undefined) requestBody.energyLevel = input.energy;
+    const response = await apiClient.patch<BackendLogbookEntry>(`/logbook/${id}`, requestBody);
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: normalizeLogbookEntry(response.data),
+        error: undefined,
+      };
+    }
+    return {
+      success: false,
+      error: response.error,
+      data: undefined,
+    } as ApiResponse<LogbookEntry>;
   },
 
   async delete(id: string): Promise<ApiResponse<void>> {

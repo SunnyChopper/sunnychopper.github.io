@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CommandPalette } from '@/components/organisms/CommandPalette';
+import { DebugInspector } from '@/components/organisms/DebugInspector';
 import LeisureModeToggle from '@/components/atoms/LeisureModeToggle';
 import { WalletWidget } from '@/components/molecules/WalletWidget';
 import { BackendStatusBanner } from '@/components/molecules/BackendStatusBanner';
@@ -243,6 +244,7 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      <DebugInspector />
 
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>

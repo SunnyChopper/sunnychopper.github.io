@@ -3,7 +3,14 @@ import { chatbotService } from '@/services/chatbot.service';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
+import {
+  removeChatThreadCache,
+  replaceChatThreadMessages,
+  upsertChatMessageCache,
+  upsertChatThreadCache,
+} from '@/lib/react-query/chatbot-cache';
 import type {
+  ChatMessage,
   CreateThreadRequest,
   CreateMessageRequest,
   UpdateThreadRequest,
@@ -129,23 +136,22 @@ export function useChatThreadMutations() {
 
   const createThread = useMutation({
     mutationFn: (request: CreateThreadRequest) => chatbotService.createThread(request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.threads.all() });
+    onSuccess: (thread) => {
+      upsertChatThreadCache(queryClient, thread);
     },
   });
 
   const updateThread = useMutation({
     mutationFn: (request: UpdateThreadRequest) => chatbotService.updateThread(request),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.threads.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.threads.detail(data.id) });
+    onSuccess: (thread) => {
+      upsertChatThreadCache(queryClient, thread);
     },
   });
 
   const deleteThread = useMutation({
     mutationFn: (id: string) => chatbotService.deleteThread(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.threads.all() });
+    onSuccess: (_response, threadId) => {
+      removeChatThreadCache(queryClient, threadId);
     },
   });
 
@@ -167,28 +173,31 @@ export function useChatMessageMutations() {
 
   const createMessage = useMutation({
     mutationFn: (request: CreateMessageRequest) => chatbotService.createMessage(request),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.chatbot.messages.list(variables.thread_id),
-      });
+    onSuccess: (message) => {
+      upsertChatMessageCache(queryClient, message);
     },
   });
 
   const updateMessage = useMutation({
     mutationFn: ({ id, content }: { id: string; content: string }) =>
       chatbotService.updateMessage(id, content),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.messages.all() });
+    onSuccess: (message) => {
+      upsertChatMessageCache(queryClient, message);
     },
   });
 
   const deleteMessagesAfter = useMutation({
     mutationFn: ({ messageId, threadId }: { messageId: string; threadId: string }) =>
       chatbotService.deleteMessagesAfter(messageId, threadId),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.chatbot.messages.list(variables.threadId),
-      });
+    onSuccess: (_response, variables) => {
+      const current = queryClient.getQueryData<ChatMessage[]>(
+        queryKeys.chatbot.messages.list(variables.threadId)
+      );
+      if (current) {
+        const index = current.findIndex((message) => message.id === variables.messageId);
+        const next = index >= 0 ? current.slice(0, index + 1) : current;
+        replaceChatThreadMessages(queryClient, variables.threadId, next);
+      }
     },
   });
 

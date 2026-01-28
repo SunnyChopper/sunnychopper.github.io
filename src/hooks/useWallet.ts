@@ -3,6 +3,7 @@ import { walletService } from '@/services/rewards';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
+import { applyWalletUpdate } from '@/lib/react-query/growth-system-cache';
 import type { WalletTransaction } from '@/types/rewards';
 
 /**
@@ -117,10 +118,10 @@ export function useWalletMutations() {
     }) => {
       return walletService.addPoints(amount, source, description, sourceEntityType, sourceEntityId);
     },
-    onSuccess: () => {
-      // Invalidate wallet queries to refetch balance and transactions
-      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        applyWalletUpdate(queryClient, response.data);
+      }
     },
   });
 
@@ -146,10 +147,10 @@ export function useWalletMutations() {
         sourceEntityId
       );
     },
-    onSuccess: () => {
-      // Invalidate wallet queries to refetch balance and transactions
-      queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.all });
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        applyWalletUpdate(queryClient, response.data);
+      }
     },
   });
 

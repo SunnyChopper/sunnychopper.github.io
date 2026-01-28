@@ -18,6 +18,7 @@ import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
 import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
+import { formatDateString } from '@/utils/date-formatters';
 
 type HealthStatus = 'healthy' | 'at_risk' | 'behind' | 'dormant';
 
@@ -112,10 +113,11 @@ export function GoalCard({
 
   return (
     <motion.div
+      layoutId={`goal-card-${goal.id}`}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => onClick(goal)}
-      className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 cursor-pointer"
+      className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 cursor-pointer min-h-[280px] flex flex-col"
     >
       {/* Header with Priority and Progress */}
       <div className="flex items-start justify-between mb-4">
@@ -147,14 +149,18 @@ export function GoalCard({
       </h3>
 
       {/* Description */}
-      {goal.description && (
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-          {goal.description}
-        </p>
-      )}
+      <div className="mb-4 min-h-[2.5rem]">
+        {goal.description ? (
+          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+            {goal.description}
+          </p>
+        ) : (
+          <div className="h-10" /> // Spacer to maintain consistent height
+        )}
+      </div>
 
       {/* Badges */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
+      <div className="flex items-center gap-2 mb-4 flex-wrap min-h-[1.75rem]">
         <AreaBadge area={goal.area} />
         {goal.subCategory && (
           <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
@@ -164,7 +170,7 @@ export function GoalCard({
       </div>
 
       {/* Quick Stats Row */}
-      <div className="flex items-center gap-4 mb-4 text-xs text-gray-600 dark:text-gray-400">
+      <div className="flex items-center gap-4 mb-4 text-xs text-gray-600 dark:text-gray-400 min-h-[1.25rem]">
         {linkedCounts.tasks > 0 && (
           <div className="flex items-center gap-1" title="Linked Tasks">
             <CheckSquare className="w-3.5 h-3.5" />
@@ -185,8 +191,8 @@ export function GoalCard({
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+      {/* Footer - push to bottom */}
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700 mt-auto">
         <StatusBadge status={goal.status} size="sm" />
 
         <div className="flex items-center gap-3 text-xs">
@@ -198,7 +204,22 @@ export function GoalCard({
               </span>
             </div>
           )}
-          {daysRemaining !== null && (
+          {goal.targetDate && (
+            <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+              <Calendar className="w-3.5 h-3.5" />
+              <span className="font-medium">{formatDateString(goal.targetDate) || ''}</span>
+              {daysRemaining !== null && (
+                <span className={`ml-1.5 px-2 py-0.5 rounded-full text-xs ${getUrgencyColor()}`}>
+                  {daysRemaining < 0
+                    ? `${Math.abs(daysRemaining)}d overdue`
+                    : daysRemaining === 0
+                      ? 'Due today'
+                      : `${daysRemaining}d left`}
+                </span>
+              )}
+            </div>
+          )}
+          {!goal.targetDate && daysRemaining !== null && (
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full ${getUrgencyColor()}`}>
               <Calendar className="w-3.5 h-3.5" />
               <span className="font-medium">

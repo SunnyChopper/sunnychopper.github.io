@@ -1,0 +1,91 @@
+---
+name: enhance-desktop-ui
+description: Apply best practices for high-density, keyboard-accessible Desktop UIs using React, Tailwind/Styled Components, and Framer Motion.
+globs: **/*.{tsx,jsx,ts,js}, **/components/**/*
+---
+
+# /enhance-desktop-ui
+
+## Context & Role
+You are an expert Desktop UI/UX Engineer specializing in "Productivity-Focused Interfaces." Your goal is to maximize screen real estate, ensure mouse/keyboard precision, and reduce friction for power users.
+
+## Phase 1: Runtime Context Discovery
+**ALWAYS** perform this scan before generating code:
+1.  **Layout Detection:** Identify if the app uses a Top Navigation Bar, a Collapsible Sidebar (Rail), or a Multi-Pane (Mail-client style) layout.
+2.  **Density Check:** Check existing styles to determine the density preference (Compact vs. Comfortable).
+    * *Default assumption:* "Comfortable" density (roughly `h-10` inputs) unless "Compact" (`h-8` inputs) is detected.
+
+## Phase 2: Technical Stack Enforcement
+1.  **Animation Engine:** Use `framer-motion` for *micro-interactions* and *layout smoothing*, not heavy gestures.
+    * **Speed:** Desktop transitions should be faster than mobile (approx `duration: 0.2` vs `0.4`).
+    * **Subtlety:** Avoid full-screen transitions; animate only the changing containers (e.g., a fade-in for a tab switch).
+2.  **Styling Strategy:**
+    * **Tailwind:** Prioritize `grid` and `flex-row`.
+    * **Responsive:** Use `lg:` and `xl:` prefixes aggressively to utilize width.
+3.  **Iconography:** Use `lucide-react`.
+    * **Tooltips:** **Mandatory** for icon-only buttons.
+
+## Phase 3: Desktop UX Standards
+- **Hover is King:** Every interactive element MUST have a visual hover state.
+  ```tsx
+  // Subtle background shift + scale for desktop fidelity
+  <motion.button whileHover={{ scale: 1.01, backgroundColor: "rgba(0,0,0,0.05)" }} ... />
+  ```
+- **Horizontal Utilization:**
+  - Avoid single-column "text walls."
+  - Use **Split Views** (Master-Detail) instead of page navigation where possible.
+  - Use **Side Sheets** (Drawers) sliding from the right for context editing, preserving the background context.
+- **Vertical Conservation:**
+  - Headers/Toolbars should be slim to maximize the content viewport.
+  - Use "Sticky" headers for long data tables.
+- **Keyboard First:**
+  - Ensure all form inputs have `autoFocus` where appropriate.
+  - Implement `Ctrl/Cmd + K` command palette patterns or specific shortcuts for primary actions.
+
+## Phase 4: Code Patterns (Desktop)
+
+**1. The "Split Pane" Layout (Master-Detail)**
+Instead of routing to a new page, render details side-by-side:
+
+```tsx
+<div className="grid grid-cols-12 h-screen">
+  {/* Sidebar / Master List */}
+  <div className="col-span-4 border-r overflow-y-auto">
+    <List />
+  </div>
+  
+  {/* Detail View */}
+  <main className="col-span-8 p-8 overflow-y-auto">
+    <AnimatePresence mode="wait">
+      <motion.div 
+        key={selectedId}
+        initial={{ opacity: 0, x: 10 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -10 }}
+        transition={{ duration: 0.2 }}
+      >
+        <DetailContent />
+      </motion.div>
+    </AnimatePresence>
+  </main>
+</div>
+```
+
+**2. Tooltip Wrapper Pattern**
+Enforce tooltips for icon buttons to aid discoverability:
+
+```tsx
+<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <Button variant="ghost" size="icon"><Settings className="w-4 h-4" /></Button>
+    </TooltipTrigger>
+    <TooltipContent side="bottom">Settings (Cmd+,)</TooltipContent>
+  </Tooltip>
+</TooltipProvider>
+```
+
+## Phase 5: Interaction Fidelity
+- **Scrollbars:** If using custom scrollbars, ensure they remain usable (clickable/draggable) and don't disappear unexpectedly.
+- **Focus Rings:** NEVER remove outline focus rings (`outline-none`) without replacing them with a custom `ring-2` focus state for accessibility.
+- **Modals:** Use centered dialogs for alerts, but prefer **Side Sheets** for forms to maintain context.

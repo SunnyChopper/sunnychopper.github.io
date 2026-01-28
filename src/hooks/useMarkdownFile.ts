@@ -59,12 +59,14 @@ export function useMarkdownFile(filePath: string | undefined) {
         const fileId = fileNode?.metadata?.id;
 
         // DEBUG: Log file metadata from tree
-        console.log('[useMarkdownFile] Loading file:', {
-          filePath,
-          fileId,
-          hasFileNode: !!fileNode,
-          fileNodeMetadata: fileNode?.metadata,
-        });
+        if (import.meta.env.DEV) {
+          console.log('[useMarkdownFile] Loading file:', {
+            filePath,
+            fileId,
+            hasFileNode: !!fileNode,
+            fileNodeMetadata: fileNode?.metadata,
+          });
+        }
 
         // Check if fileId looks valid (not a path)
         const fileIdLooksValid =
@@ -78,10 +80,12 @@ export function useMarkdownFile(filePath: string | undefined) {
             const res = await markdownFilesService.getFileContent(fileId);
             if (res.success && res.data && fileNode.metadata) {
               recordSuccess();
-              console.log(
-                '[useMarkdownFile] Loaded from getFileContent with metadata:',
-                fileNode.metadata
-              );
+              if (import.meta.env.DEV) {
+                console.log(
+                  '[useMarkdownFile] Loaded from getFileContent with metadata:',
+                  fileNode.metadata
+                );
+              }
               return {
                 success: true as const,
                 data: { ...fileNode.metadata, content: res.data.content || '' },
@@ -103,11 +107,13 @@ export function useMarkdownFile(filePath: string | undefined) {
         if (result.success && result.data) {
           recordSuccess();
           if (result.data.content === undefined) result.data.content = '';
-          console.log('[useMarkdownFile] Loaded from getFile:', {
-            id: result.data.id,
-            path: result.data.path,
-            name: result.data.name,
-          });
+          if (import.meta.env.DEV) {
+            console.log('[useMarkdownFile] Loaded from getFile:', {
+              id: result.data.id,
+              path: result.data.path,
+              name: result.data.name,
+            });
+          }
 
           // CRITICAL FIX: Update the tree cache with the correct file metadata
           // This ensures the file ID is correct for subsequent update operations
@@ -136,10 +142,12 @@ export function useMarkdownFile(filePath: string | undefined) {
               success: true,
               data: updatedTree,
             });
-            console.log(
-              '[useMarkdownFile] Updated tree cache with correct file ID:',
-              result.data.id
-            );
+            if (import.meta.env.DEV) {
+              console.log(
+                '[useMarkdownFile] Updated tree cache with correct file ID:',
+                result.data.id
+              );
+            }
           }
         } else if (result.error && isBackendUnavailable(result.error)) {
           const localFile = getLocalFile(filePath);
@@ -190,12 +198,14 @@ export function useMarkdownFile(filePath: string | undefined) {
       const fileId = fileNode?.metadata?.id;
 
       // DEBUG: Log the file ID being used
-      console.log('[useMarkdownFile] Update attempt:', {
-        filePath,
-        fileId,
-        fileNode: fileNode?.metadata,
-        hasMetadata: !!fileNode?.metadata,
-      });
+      if (import.meta.env.DEV) {
+        console.log('[useMarkdownFile] Update attempt:', {
+          filePath,
+          fileId,
+          fileNode: fileNode?.metadata,
+          hasMetadata: !!fileNode?.metadata,
+        });
+      }
 
       if (!fileId || fileId.startsWith('local-'))
         throw new Error(
@@ -240,11 +250,6 @@ export function useMarkdownFile(filePath: string | undefined) {
           data: result.data,
         });
       }
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.markdownFiles.detail(variables.filePath),
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.markdownFiles.tree() });
     },
   });
 

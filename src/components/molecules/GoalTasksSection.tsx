@@ -33,7 +33,7 @@ export function GoalTasksSection({
 
   if (tasks.length === 0 && showEmpty) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <CheckSquare className="w-5 h-5" />
@@ -52,7 +52,7 @@ export function GoalTasksSection({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -88,46 +88,48 @@ export function GoalTasksSection({
       </div>
 
       {/* Task List */}
-      {filteredTasks.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
-          No {statusFilter === 'all' ? '' : statusFilter} tasks
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {filteredTasks.map((task, index) => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              onClick={() => onTaskClick?.(task)}
-              className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer group"
-            >
-              <div className="flex items-start gap-3">
-                <PriorityIndicator priority={task.priority} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {task.title}
-                  </h4>
-                  {task.description && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">
-                      {task.description}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <StatusBadge status={task.status} size="sm" />
-                    {task.dueDate && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        Due: {new Date(task.dueDate).toLocaleDateString()}
-                      </span>
+      <div className="flex-1">
+        {filteredTasks.length === 0 ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-6">
+            No {statusFilter === 'all' ? '' : statusFilter} tasks
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {filteredTasks.map((task, index) => (
+              <motion.div
+                key={task.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => onTaskClick?.(task)}
+                className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer group"
+              >
+                <div className="flex items-start gap-3">
+                  <PriorityIndicator priority={task.priority} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {task.title}
+                    </h4>
+                    {task.description && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-1">
+                        {task.description}
+                      </p>
                     )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <StatusBadge status={task.status} size="sm" />
+                      {task.dueDate && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Due: {new Date(task.dueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

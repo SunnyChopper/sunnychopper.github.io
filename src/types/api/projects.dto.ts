@@ -20,6 +20,7 @@ export interface ProjectDto {
   completedTaskCount?: number | null;
   healthScore?: number | null;
   tags?: string[] | null;
+  goalIds?: string[] | null;
   // Legacy snake_case keys for backwards compatibility during migration
   start_date?: string | null;
   target_end_date?: string | null;
