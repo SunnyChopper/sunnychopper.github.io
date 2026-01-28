@@ -10,6 +10,51 @@ export function parseDateInput(dateString: string): Date {
   return new Date(dateString);
 }
 
+/**
+ * Extract date-only string (YYYY-MM-DD) from a date string, handling both ISO format and plain date strings.
+ * This prevents timezone conversion issues when the backend returns ISO strings.
+ * IMPORTANT: Never create Date objects that could cause timezone shifts - always extract the string directly.
+ */
+export function extractDateOnly(dateString: string | null | undefined): string {
+  if (!dateString) return '';
+
+  // If already in YYYY-MM-DD format, return as-is (most common case)
+  if (DATE_ONLY_PATTERN.test(dateString)) {
+    return dateString;
+  }
+
+  // If it's an ISO string (contains 'T'), extract just the date part before 'T'
+  // This is safe because we're extracting the string directly, not parsing as a Date
+  if (dateString.includes('T')) {
+    const datePart = dateString.split('T')[0];
+    // Verify it's a valid YYYY-MM-DD format
+    if (DATE_ONLY_PATTERN.test(datePart)) {
+      return datePart;
+    }
+  }
+
+  // Try to extract YYYY-MM-DD from the beginning of the string
+  // This handles cases like "2026-01-25T00:00:00.000Z" or "2026-01-25 00:00:00"
+  const dateMatch = dateString.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (dateMatch && dateMatch[1]) {
+    return dateMatch[1];
+  }
+
+  // If we can't extract a valid date, use parseDateInput as a last resort
+  // This handles edge cases where the date might be in a different format
+  try {
+    const parsedDate = parseDateInput(dateString);
+    // Use local date components to avoid timezone shifts
+    const year = parsedDate.getFullYear();
+    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(parsedDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.warn('Could not extract YYYY-MM-DD from date string:', dateString, error);
+    return '';
+  }
+}
+
 export function formatDateString(
   dateString: string | null,
   options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }
