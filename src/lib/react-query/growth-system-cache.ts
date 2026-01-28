@@ -1,5 +1,5 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
-import type { ApiResponse, DashboardSummaryResponse } from '@/types/api-contracts';
+import type { ApiResponse, ApiListResponse, DashboardSummaryResponse } from '@/types/api-contracts';
 import type {
   Goal,
   Habit,
@@ -19,20 +19,26 @@ import type {
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { _canRedeemReward } from '@/services/rewards/rewards.service';
 
-type ListCache<T> = { data?: T[] } | T[];
+type ListCache<T> = ApiListResponse<T> | { data?: T[] } | T[];
 
 const extractListData = <T>(value: ListCache<T> | undefined): T[] => {
   if (Array.isArray(value)) return value;
-  if (value && Array.isArray(value.data)) return value.data;
+  if (value && typeof value === 'object' && 'data' in value && Array.isArray(value.data)) {
+    return value.data;
+  }
   return [];
 };
 
 const mergeListData = <T>(value: ListCache<T> | undefined, data: T[]): ListCache<T> => {
   if (Array.isArray(value)) return data;
   if (value && typeof value === 'object') {
+    // Preserve ApiListResponse structure
+    if ('success' in value || 'total' in value) {
+      return { ...value, data, success: true } as ApiListResponse<T>;
+    }
     return { ...value, data };
   }
-  return { data };
+  return { data, success: true } as ApiListResponse<T>;
 };
 
 const updateListQueries = <T>(
@@ -42,7 +48,8 @@ const updateListQueries = <T>(
 ): void => {
   const queries = queryClient.getQueriesData<ListCache<T>>({ queryKey: queryKeyBase });
   queries.forEach(([key, data]) => {
-    const next = updater(extractListData<T>(data));
+    const currentItems = extractListData<T>(data);
+    const next = updater(currentItems);
     queryClient.setQueryData(key, mergeListData<T>(data, next));
   });
 };

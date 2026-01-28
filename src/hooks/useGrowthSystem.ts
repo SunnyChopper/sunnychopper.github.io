@@ -522,12 +522,9 @@ export const useLogbook = () => {
   const apiError = error ? extractApiError(error) : null;
   const isNetworkErr = apiError ? isNetworkError(apiError) : false;
 
-  // React Query automatically uses cached data even if query is disabled
-  // But we also check cached data explicitly as a fallback
-  const entriesData =
-    isError && isNetworkErr
-      ? []
-      : data?.data || (hasCachedLogbookData ? logbookCacheData.data : []);
+  // Always read from the query result, which React Query updates when we call setQueryData
+  // This ensures cache updates are reflected immediately
+  const entriesData = isError && isNetworkErr ? [] : (data?.data ?? []);
 
   // Only show loading if we don't have cached data and query is actually loading
   const isActuallyLoading = !hasCachedLogbookData && isLoading && !isError;
