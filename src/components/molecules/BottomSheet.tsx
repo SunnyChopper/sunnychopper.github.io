@@ -128,14 +128,16 @@ export default function BottomSheet({
           </div>
 
           {/* Desktop: Use regular centered modal */}
+          {/* Backdrop - Desktop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="hidden md:block fixed inset-0 bg-black/50 z-[60]"
+          />
+          {/* Modal Container - Desktop */}
           <div className="hidden md:flex fixed inset-0 items-center justify-center p-4 z-[70] pointer-events-none overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={onClose}
-              className="fixed inset-0 bg-black/50 z-[60]"
-            />
             <motion.div
               role="dialog"
               aria-modal="true"
@@ -145,7 +147,7 @@ export default function BottomSheet({
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', duration: 0.3 }}
               className={cn(
-                'bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl pointer-events-auto relative flex flex-col max-h-[calc(100vh-4rem)]',
+                'bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl pointer-events-auto relative z-[70] flex flex-col max-h-[calc(100vh-4rem)]',
                 className
               )}
             >
