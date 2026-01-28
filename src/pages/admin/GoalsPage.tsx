@@ -29,7 +29,9 @@ import type {
 import type { ApiError } from '@/types/api-contracts';
 import { goalsService } from '@/services/growth-system/goals.service';
 import { goalProgressService } from '@/services/growth-system/goal-progress.service';
-import { useTasks, useProjects, useMetrics, useHabits } from '@/hooks/useGrowthSystem';
+import { useTasks, useProjects, useMetrics, useHabits, useGoals } from '@/hooks/useGrowthSystem';
+import { useQueryClient } from '@tanstack/react-query';
+import { upsertGoalCache } from '@/lib/react-query/growth-system-cache';
 import {
   getTasksByGoal,
   getProjectsByGoal,
@@ -106,8 +108,6 @@ type QuickFilter =
   | 'dormant';
 
 export default function GoalsPage() {
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({});
   const [viewMode, setViewMode] = useState<ViewMode>('timeHorizon');
@@ -115,7 +115,9 @@ export default function GoalsPage() {
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Get cached tasks, projects, metrics, and habits from React Query
+  // Get cached data from React Query hooks
+  const queryClient = useQueryClient();
+  const { goals, isLoading, createGoal, updateGoal, deleteGoal } = useGoals();
   const { tasks: allTasks } = useTasks();
   const { projects: allProjects } = useProjects();
   const { metrics: allMetrics } = useMetrics();
@@ -161,7 +163,6 @@ export default function GoalsPage() {
     type: CelebrationType;
     message?: string;
   }>({ show: false, type: 'milestone_25' });
-  const hasLoadedGoalsRef = useRef(false);
 
   // Track which goals are currently loading to prevent duplicate loads
   const loadingGoalsRef = useRef<Set<string>>(new Set());
@@ -307,48 +308,15 @@ export default function GoalsPage() {
     // No dependencies - we use refs to access latest values to prevent infinite loops
   }, []);
 
-  const loadGoals = async () => {
-    setIsLoading(true);
-    try {
-      const response = await goalsService.getAll();
-      if (response.success && response.data) {
-        let loadedGoals = response.data;
-
-        // Migrate goals if needed
-        const needsMigrationCheck = loadedGoals.some(needsMigration);
-        if (needsMigrationCheck) {
-          loadedGoals = migrateGoals(loadedGoals);
-        }
-
-        setGoals(loadedGoals);
-
-        // Batch load goal data with controlled concurrency to avoid request avalanche
-        // Process goals in batches of 5 to limit concurrent requests
-        const shouldPreloadGoalData = false;
-        if (shouldPreloadGoalData) {
-          const batchSize = 5;
-          for (let i = 0; i < loadedGoals.length; i += batchSize) {
-            const batch = loadedGoals.slice(i, i + batchSize);
-            // Load each goal's data in parallel within the batch
-            await Promise.all(batch.map((goal) => loadGoalData(goal.id, goal)));
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load goals:', error);
-    } finally {
-      setIsLoading(false);
+  // Migrate goals if needed when they're loaded from React Query
+  const migratedGoals = useMemo(() => {
+    if (!goals || goals.length === 0) return [];
+    const needsMigrationCheck = goals.some(needsMigration);
+    if (needsMigrationCheck) {
+      return migrateGoals(goals);
     }
-  };
-
-  useEffect(() => {
-    if (hasLoadedGoalsRef.current) {
-      return;
-    }
-    hasLoadedGoalsRef.current = true;
-    loadGoals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return goals;
+  }, [goals]);
 
   // Track the last loaded goal ID to prevent unnecessary reloads
   const lastLoadedGoalIdRef = useRef<string | null>(null);
@@ -388,9 +356,9 @@ export default function GoalsPage() {
     setIsSubmitting(true);
     setCreateError(null);
     try {
-      const response = await goalsService.create(input);
+      const response = await createGoal(input);
       if (response.success && response.data) {
-        setGoals([response.data, ...goals]);
+        // React Query mutation automatically updates the cache via upsertGoalCache
         setIsCreateDialogOpen(false);
         setParentGoalForSubgoal(null); // Reset parent goal after creation
         setCreateError(null);
@@ -409,10 +377,9 @@ export default function GoalsPage() {
   const handleUpdateGoal = async (id: string, input: UpdateGoalInput) => {
     setIsSubmitting(true);
     try {
-      const response = await goalsService.update(id, input);
+      const response = await updateGoal({ id, input });
       if (response.success && response.data) {
-        const updatedGoals = goals.map((g) => (g.id === id ? response.data! : g));
-        setGoals(updatedGoals);
+        // React Query mutation automatically updates the cache via upsertGoalCache
         if (selectedGoal && selectedGoal.id === id) {
           // Reset the ref so the useEffect will reload the goal data
           lastLoadedGoalIdRef.current = null;
@@ -433,10 +400,9 @@ export default function GoalsPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await goalsService.delete(goalToDelete.id);
+      const response = await deleteGoal(goalToDelete.id);
       if (response.success) {
-        const updatedGoals = goals.filter((g) => g.id !== goalToDelete.id);
-        setGoals(updatedGoals);
+        // React Query mutation automatically updates the cache via removeGoalCache
         if (selectedGoal && selectedGoal.id === goalToDelete.id) {
           setSelectedGoal(null);
         }
@@ -467,8 +433,12 @@ export default function GoalsPage() {
       });
 
       if (response.success && response.data) {
-        setSelectedGoal(response.data);
-        setGoals(goals.map((g) => (g.id === response.data!.id ? response.data! : g)));
+        // Normalize the response to ensure success criteria are properly formatted
+        const normalizedGoal = response.data;
+        setSelectedGoal(normalizedGoal);
+
+        // Update React Query cache manually since updateCriterion doesn't use a mutation hook
+        upsertGoalCache(queryClient, normalizedGoal);
 
         // Log activity
         await goalsService.logActivity(selectedGoal.id, {
@@ -506,27 +476,27 @@ export default function GoalsPage() {
 
   const handleBulkStatusChange = async (status: GoalStatus) => {
     for (const goalId of selectedGoalIds) {
-      await goalsService.update(goalId, { status });
+      await updateGoal({ id: goalId, input: { status } });
     }
     setSelectedGoalIds([]);
-    loadGoals();
+    // React Query mutations automatically update the cache
   };
 
   const handleBulkPriorityChange = async (priority: Goal['priority']) => {
     for (const goalId of selectedGoalIds) {
-      await goalsService.update(goalId, { priority });
+      await updateGoal({ id: goalId, input: { priority } });
     }
     setSelectedGoalIds([]);
-    loadGoals();
+    // React Query mutations automatically update the cache
   };
 
   const handleBulkDelete = async () => {
     if (confirm(`Delete ${selectedGoalIds.length} goals? This cannot be undone.`)) {
       for (const goalId of selectedGoalIds) {
-        await goalsService.delete(goalId);
+        await deleteGoal(goalId);
       }
       setSelectedGoalIds([]);
-      loadGoals();
+      // React Query mutations automatically update the cache
     }
   };
 
@@ -550,7 +520,9 @@ export default function GoalsPage() {
   ].filter(Boolean).length;
 
   const filteredGoals = useMemo(() => {
-    return goals.filter((goal) => {
+    // Note: Area layout shows all goals regardless of parentGoalId (parent/child relationships)
+    // Only apply filters that are explicitly set by the user
+    return migratedGoals.filter((goal) => {
       const matchesSearch =
         !searchQuery ||
         goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -558,6 +530,8 @@ export default function GoalsPage() {
       const matchesArea = !filters.area || goal.area === filters.area;
       const matchesStatus = !filters.status || goal.status === filters.status;
       const matchesPriority = !filters.priority || goal.priority === filters.priority;
+      // Momentum filter: if not set, include all goals; if set, only include goals that match
+      // If goal health data isn't loaded yet, default to including it (don't filter out)
       const matchesMomentum =
         !filters.momentum ||
         (filters.momentum === 'active'
@@ -617,16 +591,39 @@ export default function GoalsPage() {
         matchesHasLinkedMetrics
       );
     });
-  }, [goals, searchQuery, filters, quickFilters, goalsHealth, goalsLinkedCounts]);
+  }, [migratedGoals, searchQuery, filters, quickFilters, goalsHealth, goalsLinkedCounts]);
 
-  const groupedByArea = filteredGoals.reduce(
-    (acc, goal) => {
-      if (!acc[goal.area]) acc[goal.area] = [];
-      acc[goal.area].push(goal);
-      return acc;
-    },
-    {} as Record<string, Goal[]>
-  );
+  const groupedByArea = useMemo(() => {
+    const grouped = filteredGoals.reduce(
+      (acc, goal) => {
+        // Ensure all goals are grouped by area, regardless of parentGoalId
+        if (!goal.area) {
+          console.warn(`[GoalsPage] Goal "${goal.title}" (${goal.id}) is missing area field`);
+          return acc;
+        }
+        if (!acc[goal.area]) acc[goal.area] = [];
+        acc[goal.area].push(goal);
+        return acc;
+      },
+      {} as Record<string, Goal[]>
+    );
+    // Debug: Log grouped goals to help identify rendering issues
+    if (process.env.NODE_ENV === 'development') {
+      Object.entries(grouped).forEach(([area, goals]) => {
+        console.log(
+          `[GoalsPage] Area "${area}": ${goals.length} goals`,
+          goals.map((g) => ({ id: g.id, title: g.title, parentGoalId: g.parentGoalId }))
+        );
+        // Warn if count doesn't match what's being rendered
+        if (goals.length !== filteredGoals.filter((g) => g.area === area).length) {
+          console.warn(
+            `[GoalsPage] Mismatch: Area "${area}" has ${goals.length} goals in groupedByArea but ${filteredGoals.filter((g) => g.area === area).length} in filteredGoals`
+          );
+        }
+      });
+    }
+    return grouped;
+  }, [filteredGoals]);
 
   // Memoize goal detail data to prevent unnecessary re-renders
   const goalDetailData = useMemo(() => {
@@ -688,7 +685,7 @@ export default function GoalsPage() {
             onSubmit={handleUpdateGoal}
             onCancel={() => setIsEditDialogOpen(false)}
             isLoading={isSubmitting}
-            allGoals={goals}
+            allGoals={migratedGoals}
           />
         </Dialog>
 
@@ -1075,9 +1072,9 @@ export default function GoalsPage() {
             setParentGoalForSubgoal(null);
             setIsCreateDialogOpen(true);
           }}
-          variant={goals.length === 0 ? 'onboarding' : 'default'}
+          variant={migratedGoals.length === 0 ? 'onboarding' : 'default'}
           onboardingSteps={
-            goals.length === 0
+            migratedGoals.length === 0
               ? [
                   'Start with a yearly goal that represents your big vision',
                   'Break it down into quarterly and monthly milestones',
@@ -1087,7 +1084,7 @@ export default function GoalsPage() {
               : []
           }
           proTips={
-            goals.length === 0
+            migratedGoals.length === 0
               ? [
                   'Use SMART criteria: Specific, Measurable, Achievable, Relevant, Time-bound',
                   'Start with 1-3 goals per area to avoid overwhelm',
@@ -1105,7 +1102,7 @@ export default function GoalsPage() {
           onGoalClick={handleGoalClick}
           onGoalUpdate={async (goalId, updates) => {
             await handleUpdateGoal(goalId, updates as UpdateGoalInput);
-            await loadGoals(); // Reload to reflect changes
+            // React Query mutations automatically update the cache
           }}
           onCreateGoal={() => {
             setParentGoalForSubgoal(null);
@@ -1128,6 +1125,7 @@ export default function GoalsPage() {
         />
       ) : (
         <motion.div
+          key={`area-layout-${viewMode}`}
           variants={containerVariants}
           initial="hidden"
           animate="show"
@@ -1148,32 +1146,38 @@ export default function GoalsPage() {
                 </span>
               </motion.h2>
               <motion.div
+                key={`area-${area}-goals`}
                 variants={containerVariants}
                 initial="hidden"
                 animate="show"
                 transition={{ staggerChildren: 0.08, delayChildren: 0.05 }}
                 className="grid grid-cols-1 md:grid-cols-2 gap-6"
               >
-                {areaGoals.map((goal) => (
-                  <motion.div
-                    key={goal.id}
-                    variants={itemVariants}
-                    layoutId={`goal-card-${goal.id}`}
-                    whileHover={{ y: -4 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <GoalCard
-                      goal={goal}
-                      onClick={handleGoalClick}
-                      progress={goalsProgress.get(goal.id)}
-                      linkedCounts={goalsLinkedCounts.get(goal.id)}
-                      healthStatus={goalsHealth.get(goal.id)?.status}
-                      daysRemaining={goalsHealth.get(goal.id)?.daysRemaining}
-                      momentum={goalsHealth.get(goal.id)?.momentum}
-                    />
-                  </motion.div>
-                ))}
+                {areaGoals.map((goal) => {
+                  // Ensure all goals are rendered - no filtering by parentGoalId in Area layout
+                  // Use a unique key that includes the view mode to prevent Framer Motion layoutId conflicts
+                  return (
+                    <motion.div
+                      key={`area-goal-${goal.id}`}
+                      variants={itemVariants}
+                      // Remove layoutId for Area layout to prevent rendering issues on navigation
+                      // layoutId is only needed for shared layout animations (e.g., detail view transitions)
+                      whileHover={{ y: -4 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <GoalCard
+                        goal={goal}
+                        onClick={handleGoalClick}
+                        progress={goalsProgress.get(goal.id)}
+                        linkedCounts={goalsLinkedCounts.get(goal.id)}
+                        healthStatus={goalsHealth.get(goal.id)?.status}
+                        daysRemaining={goalsHealth.get(goal.id)?.daysRemaining}
+                        momentum={goalsHealth.get(goal.id)?.momentum}
+                      />
+                    </motion.div>
+                  );
+                })}
               </motion.div>
             </motion.div>
           ))}
@@ -1220,7 +1224,7 @@ export default function GoalsPage() {
           isLoading={isSubmitting}
           parentGoal={parentGoalForSubgoal}
           error={createError}
-          allGoals={goals}
+          allGoals={migratedGoals}
         />
       </Dialog>
 
