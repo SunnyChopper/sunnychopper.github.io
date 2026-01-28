@@ -20,10 +20,9 @@ interface BackendPaginatedResponse<T> {
   hasMore: boolean;
 }
 
-// Backend success criterion schema (different from frontend)
 interface BackendSuccessCriterion {
   id: string;
-  description: string; // Backend uses 'description', frontend uses 'text'
+  description: string;
   targetValue?: number | null;
   unit?: string | null;
   isCompleted: boolean;
@@ -38,7 +37,7 @@ function normalizeGoal(backendGoal: any): Goal {
       ? backendGoal.successCriteria.map(
           (criterion: BackendSuccessCriterion): SuccessCriterion => ({
             id: criterion.id,
-            text: criterion.description, // Map 'description' to 'text'
+            description: criterion.description,
             isCompleted: criterion.isCompleted,
             completedAt: criterion.completedAt,
             linkedMetricId: null,
@@ -109,7 +108,7 @@ export const goalsService = {
       Array.isArray(input.successCriteria) &&
       input.successCriteria.length > 0
     ) {
-      // Check if it's already in backend format (has 'description' field) or frontend format (has 'text' field)
+      // Check if it's a string array or SuccessCriterion array
       const firstCriterion = input.successCriteria[0];
       if (typeof firstCriterion === 'string') {
         // Convert string[] to BackendSuccessCriterion[]
@@ -118,12 +117,12 @@ export const goalsService = {
           isCompleted: false,
           completedAt: null,
         }));
-      } else if ('text' in firstCriterion) {
-        // Convert SuccessCriterion[] (frontend) to BackendSuccessCriterion[]
+      } else {
+        // SuccessCriterion[] already uses 'description' field, so it matches backend format
         requestBody.successCriteria = (input.successCriteria as SuccessCriterion[]).map(
           (criterion) => {
             const backendCriterion: any = {
-              description: criterion.text, // Map 'text' to 'description'
+              description: criterion.description,
               isCompleted: criterion.isCompleted,
               completedAt: criterion.completedAt,
             };
@@ -135,7 +134,6 @@ export const goalsService = {
           }
         );
       }
-      // If it already has 'description', assume it's already in backend format
     }
 
     const response = await apiClient.patch<any>(`/goals/${id}`, requestBody);

@@ -142,7 +142,7 @@ export interface ProjectGoal {
 // Enhanced Success Criterion (replaces string[])
 export interface SuccessCriterion {
   id: string;
-  text: string;
+  description: string;
   isCompleted: boolean;
   completedAt: string | null;
   linkedMetricId: string | null; // Auto-track from metric

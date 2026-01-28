@@ -36,7 +36,7 @@ function addDays(date: Date, days: number): Date {
 function createSuccessCriteria(texts: string[]): SuccessCriterion[] {
   return texts.map((text, index) => ({
     id: generateId(),
-    text: text.replace(/^✓\s*/, ''),
+    description: text.replace(/^✓\s*/, ''),
     isCompleted: text.includes('✓'),
     completedAt: text.includes('✓') ? new Date().toISOString() : null,
     linkedMetricId: null,

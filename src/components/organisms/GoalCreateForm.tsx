@@ -209,7 +209,7 @@ export function GoalCreateForm({
       const currentCriteria = Array.isArray(formData.successCriteria)
         ? typeof formData.successCriteria[0] === 'string'
           ? (formData.successCriteria as string[])
-          : (formData.successCriteria as SuccessCriterion[]).map((c) => c.text)
+          : (formData.successCriteria as SuccessCriterion[]).map((c) => c.description)
         : [];
       setFormData({
         ...formData,
@@ -223,7 +223,7 @@ export function GoalCreateForm({
     const currentCriteria = Array.isArray(formData.successCriteria)
       ? typeof formData.successCriteria[0] === 'string'
         ? (formData.successCriteria as string[])
-        : (formData.successCriteria as SuccessCriterion[]).map((c) => c.text)
+        : (formData.successCriteria as SuccessCriterion[]).map((c) => c.description)
       : [];
     setFormData({
       ...formData,
@@ -610,7 +610,7 @@ export function GoalCreateForm({
                   className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg"
                 >
                   <span className="text-sm text-gray-900 dark:text-white">
-                    {typeof criterion === 'string' ? criterion : criterion.text}
+                    {typeof criterion === 'string' ? criterion : criterion.description}
                   </span>
                   <button
                     type="button"

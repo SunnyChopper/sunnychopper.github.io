@@ -33,12 +33,12 @@ export function SuccessCriteriaList({
   const handleStartEdit = (criterion: SuccessCriterion) => {
     if (!editable) return;
     setEditingId(criterion.id);
-    setEditText(criterion.text);
+    setEditText(criterion.description);
   };
 
   const handleSaveEdit = (criterionId: string) => {
     if (editText.trim()) {
-      onUpdateCriterion?.(criterionId, { text: editText.trim() });
+      onUpdateCriterion?.(criterionId, { description: editText.trim() });
     }
     setEditingId(null);
     setEditText('');
@@ -126,7 +126,7 @@ export function SuccessCriteriaList({
                     : 'text-gray-900 dark:text-white'
                 } ${editable ? 'cursor-text' : 'cursor-default'}`}
               >
-                {criterion.text}
+                {criterion.description}
               </button>
             )}
 

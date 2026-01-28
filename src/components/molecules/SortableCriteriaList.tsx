@@ -56,12 +56,12 @@ function SortableCriterionItem({
   const handleStartEdit = () => {
     if (!editable) return;
     setEditingId(criterion.id);
-    setEditText(criterion.text);
+    setEditText(criterion.description);
   };
 
   const handleSaveEdit = () => {
     if (editText.trim()) {
-      onUpdateCriterion?.(criterion.id, { text: editText.trim() });
+      onUpdateCriterion?.(criterion.id, { description: editText.trim() });
     }
     setEditingId(null);
     setEditText('');
@@ -133,7 +133,7 @@ function SortableCriterionItem({
               } cursor-text`}
               aria-label="Edit criterion"
             >
-              {criterion.text}
+              {criterion.description}
             </button>
           ) : (
             <div
@@ -143,7 +143,7 @@ function SortableCriterionItem({
                   : 'text-gray-900 dark:text-white'
               }`}
             >
-              {criterion.text}
+              {criterion.description}
             </div>
           )}
 
