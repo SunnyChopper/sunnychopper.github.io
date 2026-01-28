@@ -18,6 +18,7 @@ import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
 import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
+import { formatDateString } from '@/utils/date-formatters';
 
 type HealthStatus = 'healthy' | 'at_risk' | 'behind' | 'dormant';
 
@@ -206,7 +207,7 @@ export function GoalCard({
           {goal.targetDate && (
             <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
               <Calendar className="w-3.5 h-3.5" />
-              <span className="font-medium">{new Date(goal.targetDate).toLocaleDateString()}</span>
+              <span className="font-medium">{formatDateString(goal.targetDate) || ''}</span>
               {daysRemaining !== null && (
                 <span className={`ml-1.5 px-2 py-0.5 rounded-full text-xs ${getUrgencyColor()}`}>
                   {daysRemaining < 0

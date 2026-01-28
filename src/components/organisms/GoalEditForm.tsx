@@ -22,6 +22,7 @@ import {
   SUBCATEGORY_LABELS,
 } from '@/constants/growth-system';
 import { getValidParentGoals } from '@/utils/growth-system-filters';
+import { extractDateOnly } from '@/utils/date-formatters';
 
 interface GoalEditFormProps {
   goal: Goal;
@@ -38,21 +39,6 @@ export function GoalEditForm({
   isLoading,
   allGoals = [],
 }: GoalEditFormProps) {
-  // Helper function to convert date to YYYY-MM-DD format for date input
-  const formatDateForInput = (date: string | Date | null | undefined): string => {
-    if (!date) return '';
-    try {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      if (isNaN(dateObj.getTime())) return '';
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    } catch {
-      return '';
-    }
-  };
-
   const [formData, setFormData] = useState<UpdateGoalInput>({
     title: goal.title,
     description: goal.description || '',
@@ -61,12 +47,12 @@ export function GoalEditForm({
     timeHorizon: goal.timeHorizon,
     priority: goal.priority,
     status: goal.status,
-    targetDate: formatDateForInput(goal.targetDate),
+    targetDate: goal.targetDate ? extractDateOnly(goal.targetDate) : '',
     successCriteria:
       goal.successCriteria && goal.successCriteria.length > 0
         ? typeof goal.successCriteria[0] === 'string'
           ? (goal.successCriteria as unknown as string[])
-          : (goal.successCriteria as SuccessCriterion[]).map((c) => c.text)
+          : (goal.successCriteria as SuccessCriterion[]).map((c) => c.description)
         : [],
     notes: goal.notes || '',
     parentGoalId: goal.parentGoalId || undefined,
@@ -102,7 +88,7 @@ export function GoalEditForm({
     if (!formData.successCriteria || formData.successCriteria.length === 0) return [];
     return typeof formData.successCriteria[0] === 'string'
       ? (formData.successCriteria as string[])
-      : (formData.successCriteria as SuccessCriterion[]).map((c) => c.text);
+      : (formData.successCriteria as SuccessCriterion[]).map((c) => c.description);
   }, [formData.successCriteria]);
 
   // Map original criteria to preserve IDs when updating
@@ -112,7 +98,7 @@ export function GoalEditForm({
     const map = new Map<string, SuccessCriterion>();
     goal.successCriteria.forEach((criterion) => {
       if (typeof criterion !== 'string') {
-        map.set(criterion.text, criterion);
+        map.set(criterion.description, criterion);
       }
     });
     return map;
@@ -132,7 +118,7 @@ export function GoalEditForm({
         // Create new criterion without ID (backend will assign ID)
         return {
           id: '', // Empty ID for new criteria, backend will assign
-          text,
+          description: text,
           isCompleted: false,
           completedAt: null,
           linkedMetricId: null,

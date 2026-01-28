@@ -26,6 +26,7 @@ import {
 import { useMarkdownFiles } from '@/hooks/useMarkdownFiles';
 import type { Goal, Metric, LogbookEntry } from '@/types/growth-system';
 import { ROUTES } from '@/routes';
+import { parseDateInput } from '@/utils/date-formatters';
 
 interface CommandItem {
   id: string;
@@ -293,7 +294,7 @@ function CommandPaletteContent({ onClose }: CommandPaletteContentProps) {
       commands.push({
         id: `entry-${entry.id}`,
         title: entry.title || 'Untitled Entry',
-        subtitle: `Logbook • ${new Date(entry.date).toLocaleDateString()}`,
+        subtitle: `Logbook • ${parseDateInput(entry.date).toLocaleDateString()}`,
         icon: <BookOpen size={18} />,
         type: 'entity',
         action: () => {

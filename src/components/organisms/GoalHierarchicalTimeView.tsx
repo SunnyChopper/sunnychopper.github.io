@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
 import { GoalCard } from '@/components/molecules/GoalCard';
+import { formatDateString } from '@/utils/date-formatters';
 
 interface GoalHierarchicalTimeViewProps {
   goals: Goal[];
@@ -293,7 +294,7 @@ export function GoalHierarchicalTimeView({
                         <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         <span className="text-gray-600 dark:text-gray-400">Due:</span>
                         <span className="font-medium text-gray-900 dark:text-white">
-                          {new Date(goal.targetDate).toLocaleDateString()}
+                          {formatDateString(goal.targetDate) || ''}
                         </span>
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 import { Calendar, Smile, Meh, Frown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { LogbookEntry, LogbookMood } from '@/types/growth-system';
+import { parseDateInput } from '@/utils/date-formatters';
 
 interface LogbookEntryCardProps {
   entry: LogbookEntry;
@@ -55,7 +56,7 @@ export function LogbookEntryCard({ entry, onClick }: LogbookEntryCardProps) {
           <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400 flex-shrink-0" />
           <div className="flex items-center gap-2">
             <span className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
-              {new Date(entry.date).toLocaleDateString('en-US', {
+              {parseDateInput(entry.date).toLocaleDateString('en-US', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',

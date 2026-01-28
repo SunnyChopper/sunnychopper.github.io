@@ -1,6 +1,7 @@
 import Dialog from '@/components/molecules/Dialog';
 import Button from '@/components/atoms/Button';
 import type { LogbookEntry } from '@/types/growth-system';
+import { parseDateInput } from '@/utils/date-formatters';
 
 interface DeleteEntryDialogProps {
   entry: LogbookEntry | null;
@@ -26,7 +27,7 @@ export function DeleteEntryDialog({
         {entry && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
             <p className="font-semibold text-gray-900 dark:text-white">
-              {new Date(entry.date).toLocaleDateString()}
+              {parseDateInput(entry.date).toLocaleDateString()}
             </p>
             {entry.title && <p className="text-gray-600 dark:text-gray-400 mt-1">{entry.title}</p>}
           </div>

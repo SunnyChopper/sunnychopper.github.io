@@ -21,6 +21,7 @@ import { GoalHabitsSection } from '@/components/molecules/GoalHabitsSection';
 import { SuccessCriteriaList } from '@/components/molecules/SuccessCriteriaList';
 import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
 import { goalProgressService } from '@/services/growth-system/goal-progress.service';
+import { formatDateString } from '@/utils/date-formatters';
 
 interface MetricWithLogs {
   metric: Metric;
@@ -320,7 +321,7 @@ export function GoalDetailView({
                       Target Date
                     </div>
                     <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                      {new Date(goal.targetDate).toLocaleDateString('en-US', {
+                      {formatDateString(goal.targetDate, {
                         month: 'long',
                         day: 'numeric',
                         year: 'numeric',
@@ -366,7 +367,7 @@ export function GoalDetailView({
                     Target Date
                   </div>
                   <div className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                    {new Date(goal.targetDate).toLocaleDateString('en-US', {
+                    {formatDateString(goal.targetDate, {
                       month: 'long',
                       day: 'numeric',
                       year: 'numeric',

@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 import { motion } from 'framer-motion';
 import type { LogbookEntry } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
+import { parseDateInput } from '@/utils/date-formatters';
 
 interface LogbookCalendarViewProps {
   entries: LogbookEntry[];
@@ -57,12 +58,9 @@ export function LogbookCalendarView({
 
   const getEntriesForDate = (date: Date) => {
     return entries.filter((entry) => {
-      // Parse entry date
-      // If string is YYYY-MM-DD, new Date() treats it as UTC
-      // If string is ISO, new Date() treats it as ISO
-      // We want to display it based on how the browser interprets it locally,
-      // to match the Detail View which uses new Date(entry.date).toLocaleDateString()
-      const entryDate = new Date(entry.date);
+      // Use parseDateInput to avoid timezone issues when parsing YYYY-MM-DD strings
+      // parseDateInput creates a Date object in local time, not UTC
+      const entryDate = parseDateInput(entry.date);
 
       return (
         entryDate.getDate() === date.getDate() &&

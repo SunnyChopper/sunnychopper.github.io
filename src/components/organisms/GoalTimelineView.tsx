@@ -5,6 +5,7 @@ import type { Goal } from '@/types/growth-system';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import { formatDateString } from '@/utils/date-formatters';
 
 interface GoalTimelineViewProps {
   goals: Goal[];
@@ -338,7 +339,7 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
                       <div className="flex items-center justify-between">
                         <span className="text-gray-600 dark:text-gray-400">Target:</span>
                         <span className="text-gray-900 dark:text-white font-medium">
-                          {new Date(goal.targetDate!).toLocaleDateString()}
+                          {formatDateString(goal.targetDate!) || ''}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
