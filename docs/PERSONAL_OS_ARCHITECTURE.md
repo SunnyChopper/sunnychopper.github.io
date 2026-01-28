@@ -1,5 +1,7 @@
 # Personal OS - Architecture Overview
 
+**Status Note (2026-01):** This document is partially outdated. For current system entrypoints and architecture, start with `CLAUDE.md`.
+
 **Analysis Date:** January 10, 2026  
 **System Version:** Portfolio Site with Growth System (Personal OS)  
 **Status:** Production-Ready with 15 Completed Implementation Runs
@@ -26,11 +28,11 @@
 
 **Personal OS** is a comprehensive AI-powered personal growth and productivity system built as a React single-page application. It functions as a "second brain" that helps users manage tasks, track habits, set goals, monitor metrics, maintain a reflective logbook, and organize knowledge—all enhanced by 33 AI-powered features distributed across all entity types.
 
-The system was built incrementally over 15 "strafing runs" (documented in [`GROWTH_SYSTEM_PLAN.md`](./GROWTH_SYSTEM_PLAN.md)), each adding foundational types, UI components, service layers, and AI enhancements. The result is a production-grade system that runs entirely in the browser with localStorage persistence (and a plugin-ready API adapter for future backend integration).
+The system was built incrementally over 15 "strafing runs" (documented in [`GROWTH_SYSTEM_PLAN.md`](./GROWTH_SYSTEM_PLAN.md)), each adding foundational types, UI components, service layers, and AI enhancements. The result is a production-grade system with backend-backed auth and AI, and a frontend architecture that is ready for API-driven persistence.
 
 ### Key Characteristics
 
-- **No Backend Required**: Fully functional with mock services and localStorage
+- **Backend for Auth + AI**: Cognito-backed auth and `/ai/*` endpoints power LLM features
 - **AI-First Design**: 33 LLM-powered features integrated into every workflow
 - **Atomic Design**: Organized component hierarchy (atoms → molecules → organisms → templates → pages)
 - **TypeScript-Strict**: Complete type safety with Zod schemas for AI interactions
@@ -107,12 +109,8 @@ graph TB
 
         subgraph LLM [AI/LLM Layer]
             LLMConfig[LLM Config]
-            DirectAdapter[Direct LLM Adapter]
-            ProviderFactory[Provider Factory]
-            Anthropic[Anthropic]
-            OpenAI[OpenAI]
-            Gemini[Gemini]
-            Others[Groq/Grok/DeepSeek/Cerebras]
+            APILLMAdapter[API LLM Adapter]
+            BackendAI[BackendAIEndpoints]
         end
 
         subgraph State [State Management]
@@ -141,18 +139,9 @@ graph TB
     LocalAdapter --> LocalStorage
 
     AISvc --> LLMConfig
-    LLMConfig --> DirectAdapter
-    DirectAdapter --> ProviderFactory
-
-    ProviderFactory --> Anthropic
-    ProviderFactory --> OpenAI
-    ProviderFactory --> Gemini
-    ProviderFactory --> Others
-
-    Anthropic --> ExternalAPIs
-    OpenAI --> ExternalAPIs
-    Gemini --> ExternalAPIs
-    Others --> ExternalAPIs
+    LLMConfig --> APILLMAdapter
+    APILLMAdapter --> BackendAI
+    BackendAI --> ExternalAPIs
 
     UI --> Contexts
     Services --> Contexts
@@ -590,30 +579,24 @@ Personal OS includes **33 AI-powered features** distributed across all entity ty
 
 ### AI Architecture
 
-Located in [`src/lib/llm/`](../src/lib/llm/):
+Frontend uses an API-first LLM adapter and delegates provider calls to the backend `/ai/*` endpoints. The frontend side lives in [`src/lib/llm/`](../src/lib/llm/) and focuses on schemas, config selection, and API wiring.
 
 ```
 src/lib/llm/
+├── llm-config.ts             # API-only adapter selection
+├── api-llm-adapter.ts        # Calls /ai/* endpoints
 ├── config/
 │   ├── feature-types.ts      # 33 AIFeature types
 │   ├── feature-config-store.ts  # Per-feature provider assignments
-│   ├── api-key-store.ts      # Encrypted key storage
-│   └── provider-types.ts     # 7 provider definitions
-├── providers/
-│   ├── provider-factory.ts   # Creates provider instances
-│   ├── anthropic-provider.ts
-│   ├── openai-provider.ts
-│   ├── gemini-provider.ts
-│   └── groq-provider.ts, grok-provider.ts, deepseek-provider.ts, cerebras-provider.ts
+│   ├── provider-types.ts     # Provider list + labels
+│   └── model-catalog.ts      # Provider model catalog
 ├── schemas/
 │   ├── task-schemas.ts       # Zod schemas for task AI outputs
 │   ├── goal-ai-schemas.ts    # Goal AI structured outputs
 │   ├── project-schemas.ts
 │   ├── metric-schemas.ts
 │   └── habit-schemas.ts
-├── direct-llm-adapter.ts     # Main adapter using LangChain
-├── api-llm-adapter.ts        # Backend proxy adapter (future)
-└── llm-prompts.ts            # Prompt templates
+└── llm-prompts.ts            # Prompt templates (frontend helpers)
 ```
 
 ### Supported Providers
@@ -686,9 +669,9 @@ AI features are categorized by entity type:
 
 ### Feature Configuration
 
-Users configure AI features in Settings:
+Users configure AI features in Settings via backend-backed endpoints:
 
-1. **Add Provider API Key**: Encrypted storage in localStorage
+1. **Provider keys** are stored in backend infrastructure (Secrets Manager)
 2. **Assign Provider to Feature**: Each of 33 features can use different providers
 3. **Cost-Optimized Mix**: Preset configuration using cheaper models for simple tasks
 
@@ -743,13 +726,9 @@ The LLM adapter uses LangChain's `.withStructuredOutput(schema)` to enforce JSON
 5. AI returns 5 measurable criteria with 92% confidence
 6. User clicks "Accept" → criteria added to goal
 
-### Fallback & Mock Mode
+### Fallback Behavior
 
-If no API keys configured:
-
-- AI features return mock/placeholder data
-- System remains fully functional for testing
-- UI clearly indicates "Mock AI Mode"
+If no API keys are configured in the backend, `/ai/*` endpoints return `LLM_NOT_CONFIGURED` errors (see `docs/backend/API_ENDPOINTS.md`).
 
 ---
 
@@ -757,12 +736,12 @@ If no API keys configured:
 
 ### 1. Authentication & Authorization
 
-**Mock Auth System** ([`AuthContext.tsx`](../src/contexts/AuthContext.tsx)):
+**Cognito Auth System** ([`auth.service.ts`](../src/lib/auth/auth.service.ts), [`cognito-config.ts`](../src/lib/auth/cognito-config.ts)):
 
-- Email/password login (no real validation, accepts any credentials)
-- User stored in localStorage (`gs_auth_user`)
+- Email/password login via AWS Amplify (Cognito)
+- Tokens stored in localStorage (`gs_auth_tokens`), user cached in `gs_auth_user`
 - Protected routes via `<ProtectedRoute>` wrapper
-- Mock data seeded on first login via `initializeMockData()`
+- `apiClient` attaches `Authorization: Bearer` and refreshes on 401
 
 ### 2. Theming & Dark Mode
 
