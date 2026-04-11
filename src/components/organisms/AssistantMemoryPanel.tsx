@@ -61,8 +61,9 @@ export function AssistantMemoryPanel() {
     queryKey: ['assistant-memory-file-content', selectedFile?.id],
     enabled: !!selectedFile?.id,
     queryFn: async () => {
-      if (selectedFile?.id === currentMemoryQuery.data?.file.id) {
-        return currentMemoryQuery.data.content;
+      const memory = currentMemoryQuery.data;
+      if (memory && selectedFile?.id === memory.file.id) {
+        return memory.content;
       }
       return assistantMemoryService.getShortTermContent(selectedFile!.id);
     },

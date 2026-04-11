@@ -280,7 +280,7 @@ export class AssistantWsClient {
         break;
       case 'threadUpdated': {
         // Backend uses camelCase aliases; tolerate snake_case if a proxy rewrites payloads.
-        const p = parsed.payload as Record<string, unknown>;
+        const p = parsed.payload as unknown as Record<string, unknown>;
         const threadId = String(p.threadId ?? p.thread_id ?? '');
         const title = String(p.title ?? '');
         const updatedAt = String(p.updatedAt ?? p.updated_at ?? '');

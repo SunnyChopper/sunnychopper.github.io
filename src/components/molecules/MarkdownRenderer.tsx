@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
+import type { PluggableList } from 'unified';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
@@ -87,8 +88,8 @@ export default function MarkdownRenderer({
   }, [prismLoaded, Prism, content]);
 
   // Build plugins array dynamically (chat: GFM + remark-breaks so single newlines become <br>)
-  const remarkPlugins = useMemo(() => {
-    const plugins: unknown[] = [remarkGfm];
+  const remarkPlugins = useMemo((): PluggableList => {
+    const plugins: PluggableList = [remarkGfm];
     if (variant === 'chat') {
       plugins.push(remarkBreaks);
     }
@@ -99,8 +100,8 @@ export default function MarkdownRenderer({
     return plugins;
   }, [mathLoaded, variant]);
 
-  const rehypePlugins = useMemo(() => {
-    const plugins = [rehypeRaw];
+  const rehypePlugins = useMemo((): PluggableList => {
+    const plugins: PluggableList = [rehypeRaw];
     const rehypeKatex = getRehypeKatex();
     if (mathLoaded && rehypeKatex) {
       plugins.push(rehypeKatex);

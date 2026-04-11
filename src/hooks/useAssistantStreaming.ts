@@ -30,11 +30,14 @@ import {
   type AssistantStreamingRunState,
 } from '@/lib/websocket/thinking-delta-cache';
 
+/** WS statusUpdate stages plus client-only HITL stage (not sent as statusUpdate). */
+type StreamingStatusStage = NonNullable<WsStatusUpdatePayload['stage']> | 'awaitingApproval';
+
 type RunState = AssistantStreamingRunState & {
   runId: string;
   /** Thread this run belongs to (from server runStarted); used to scope UI when one WS serves many threads */
   threadId: string;
-  statusStage?: WsStatusUpdatePayload['stage'];
+  statusStage?: StreamingStatusStage;
   statusMessage?: string;
   statusHistory: StatusEntry[];
   runStartedAt: number;
@@ -88,18 +91,23 @@ type PendingRunDelta = {
 const WS_BASE_URL = import.meta.env.VITE_WS_URL;
 
 const scheduleDeltaFlush = (callback: FrameRequestCallback): number => {
-  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-    return window.requestAnimationFrame(callback);
+  if (typeof window !== 'undefined') {
+    if (typeof window.requestAnimationFrame === 'function') {
+      return window.requestAnimationFrame(callback);
+    }
+    return window.setTimeout(() => callback(Date.now()), 16);
   }
-  return globalThis.setTimeout(() => callback(Date.now()), 16);
+  return 0;
 };
 
 const cancelScheduledDeltaFlush = (handle: number): void => {
-  if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
-    window.cancelAnimationFrame(handle);
-    return;
+  if (typeof window !== 'undefined') {
+    if (typeof window.cancelAnimationFrame === 'function') {
+      window.cancelAnimationFrame(handle);
+      return;
+    }
+    window.clearTimeout(handle);
   }
-  globalThis.clearTimeout(handle);
 };
 
 const buildPlaceholderMessage = (

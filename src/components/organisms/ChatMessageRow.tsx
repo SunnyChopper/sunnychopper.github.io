@@ -14,12 +14,17 @@ import type { AssistantStreamingRunState } from '@/lib/websocket/thinking-delta-
 import type {
   ChatMessage,
   StatusEntry,
+  WsStatusUpdatePayload,
   WsToolApprovalRequiredPayload,
   WsToolCallCompletePayload,
 } from '@/types/chatbot';
 
+type StreamingRunStatusStage = NonNullable<WsStatusUpdatePayload['stage']> | 'awaitingApproval';
+
 export type ChatMessageStreamingRun = AssistantStreamingRunState & {
   runId?: string;
+  statusStage?: StreamingRunStatusStage;
+  statusMessage?: string;
   statusHistory?: StatusEntry[];
   toolCallDetails?: WsToolCallCompletePayload[];
   pendingToolApprovals?: Record<string, WsToolApprovalRequiredPayload>;

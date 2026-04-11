@@ -75,7 +75,9 @@ export const upsertChatThreadCache = (queryClient: QueryClient, thread: ChatThre
   // Always patch the canonical list key used by useChatThreads so updates apply even if
   // findAll(filters) misses (e.g. timing with persistence / strict mode).
   const listKey = queryKeys.chatbot.threads.lists();
-  queryClient.setQueryData(listKey, (old) => mergeListData(old, merge(extractListData(old))));
+  queryClient.setQueryData(listKey, (old: ListCache<ChatThread> | undefined) =>
+    mergeListData(old, merge(extractListData(old)))
+  );
   queryClient.setQueryData(queryKeys.chatbot.threads.detail(thread.id), thread);
 };
 

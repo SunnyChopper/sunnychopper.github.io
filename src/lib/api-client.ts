@@ -577,7 +577,10 @@ class ApiClient {
     return this.post<ChatThread>('/assistant/threads', data);
   }
 
-  async updateChatThread(id: string, data: UpdateThreadRequest): Promise<ApiResponse<ChatThread>> {
+  async updateChatThread(
+    id: string,
+    data: Omit<UpdateThreadRequest, 'id'>
+  ): Promise<ApiResponse<ChatThread>> {
     return this.patch<ChatThread>(`/assistant/threads/${id}`, data);
   }
 
