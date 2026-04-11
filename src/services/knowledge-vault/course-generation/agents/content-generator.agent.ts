@@ -48,12 +48,16 @@ export class ContentGeneratorAgent extends BaseAgent {
           await this._generateLessonContent(state, lesson);
           processedLessons++;
         } catch (lessonError) {
-          llmLogger.error(`ContentGeneratorAgent: Error generating content for lesson ${lesson.id}`, {
-            error: lessonError,
-            errorMessage: lessonError instanceof Error ? lessonError.message : String(lessonError),
-            lessonId: lesson.id,
-            lessonTitle: lesson.title,
-          });
+          llmLogger.error(
+            `ContentGeneratorAgent: Error generating content for lesson ${lesson.id}`,
+            {
+              error: lessonError,
+              errorMessage:
+                lessonError instanceof Error ? lessonError.message : String(lessonError),
+              lessonId: lesson.id,
+              lessonTitle: lesson.title,
+            }
+          );
           errorCount++;
         }
       }

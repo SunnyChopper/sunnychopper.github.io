@@ -84,8 +84,7 @@ export function useChatMessageMutations() {
       }
 
       const optimisticId =
-        request.clientMessageId ||
-        `client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        request.clientMessageId || `client-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
       const optimisticMessage: ChatMessage = {
         id: optimisticId,
@@ -124,14 +123,18 @@ export function useChatMessageMutations() {
       if (context?.isOptimistic && context.clientMessageId) {
         const apiError = extractApiError(error);
         const errorMessage =
-          apiError?.message ||
-          (error instanceof Error ? error.message : 'Message failed to send');
+          apiError?.message || (error instanceof Error ? error.message : 'Message failed to send');
 
-        patchChatMessageCache(queryClient, context.threadId, context.clientMessageId, (message) => ({
-          ...message,
-          clientStatus: 'failed',
-          clientError: errorMessage,
-        }));
+        patchChatMessageCache(
+          queryClient,
+          context.threadId,
+          context.clientMessageId,
+          (message) => ({
+            ...message,
+            clientStatus: 'failed',
+            clientError: errorMessage,
+          })
+        );
       }
     },
   });

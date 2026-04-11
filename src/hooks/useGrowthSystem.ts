@@ -544,10 +544,7 @@ export const useLogbook = () => {
  * Hook to fetch task dependencies for multiple tasks in a batched manner
  * This is more efficient than calling getDependencies for each task individually
  */
-export const useTaskDependencies = (
-  taskIds: string[],
-  options?: { enabled?: boolean }
-) => {
+export const useTaskDependencies = (taskIds: string[], options?: { enabled?: boolean }) => {
   const { recordError, recordSuccess } = useBackendStatus();
   const depsEnabled = (options?.enabled ?? true) && taskIds.length > 0;
 

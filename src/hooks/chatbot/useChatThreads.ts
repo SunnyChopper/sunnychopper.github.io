@@ -4,7 +4,10 @@ import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
 import { isLocalAssistantThreadId } from '@/lib/chat/local-thread-id';
-import { assistantChatQueryDefaults, normalizeChatThreadsQueryData } from '@/hooks/chatbot/chatbot-query-shared';
+import {
+  assistantChatQueryDefaults,
+  normalizeChatThreadsQueryData,
+} from '@/hooks/chatbot/chatbot-query-shared';
 
 export function useChatThreads() {
   const { recordError, recordSuccess } = useBackendStatus();

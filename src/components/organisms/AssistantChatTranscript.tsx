@@ -3,7 +3,10 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Loader2 } from 'lucide-react';
 import { extractErrorMessage } from '@/lib/react-query/error-utils';
 import { ChatStarterSuggestions } from '@/components/molecules/ChatStarterSuggestions';
-import { ChatMessageRow, type ChatMessageStreamingRun } from '@/components/organisms/ChatMessageRow';
+import {
+  ChatMessageRow,
+  type ChatMessageStreamingRun,
+} from '@/components/organisms/ChatMessageRow';
 import { cn } from '@/lib/utils';
 import type { ChatMessage } from '@/types/chatbot';
 
@@ -152,10 +155,7 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
       )}
 
       {!isTreeLoading && !isTreeError && transcript.length > 0 && (
-        <div
-          className="relative w-full"
-          style={{ height: `${virtualizer.getTotalSize()}px` }}
-        >
+        <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
           {virtualizer.getVirtualItems().map((virtualRow) => {
             const message = transcript[virtualRow.index];
             const run =
@@ -177,9 +177,7 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
                   transcriptLength={transcript.length}
                   run={run}
                   streamingRunForThisUserMessage={
-                    message.role === 'user'
-                      ? streamingRunByUserMessageId[message.id]
-                      : undefined
+                    message.role === 'user' ? streamingRunByUserMessageId[message.id] : undefined
                   }
                   getSiblings={getSiblings}
                   latestUserMessageId={latestUserMessageId}
@@ -189,9 +187,7 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
                   awaitingWsFollowUp={awaitingWsFollowUp}
                   thinkingPanelExpanded={Boolean(thinkingExpanded[message.id])}
                   onToggleThinking={onToggleThinking}
-                  executionTracePanelExpanded={Boolean(
-                    executionTraceExpanded[message.id] ?? run
-                  )}
+                  executionTracePanelExpanded={Boolean(executionTraceExpanded[message.id] ?? run)}
                   onToggleExecutionTrace={onToggleExecutionTrace}
                   editingMessageId={editingMessageId}
                   onSetEditingMessageId={onSetEditingMessageId}

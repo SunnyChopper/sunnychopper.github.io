@@ -36,7 +36,10 @@ test.describe('Assistant flow', () => {
         await page.goto(ADMIN_ASSISTANT_URL);
         await page.waitForLoadState('networkidle');
       } else {
-        test.skip(true, 'Auth required: set E2E_TEST_EMAIL and E2E_TEST_PASSWORD to run with login');
+        test.skip(
+          true,
+          'Auth required: set E2E_TEST_EMAIL and E2E_TEST_PASSWORD to run with login'
+        );
       }
     }
   });
@@ -51,7 +54,9 @@ test.describe('Assistant flow', () => {
   test('2. Send read prompt and verify tool-backed retrieval', async ({ page }) => {
     // Ensure we have a thread (create or use existing)
     const newChatBtn = page.getByRole('button', { name: /new/i });
-    const hasThreads = await page.getByText(/Start a conversation|Ask about your tasks/).isVisible();
+    const hasThreads = await page
+      .getByText(/Start a conversation|Ask about your tasks/)
+      .isVisible();
     if (!hasThreads) {
       // We may already have a thread; input should be visible
     }

@@ -241,10 +241,7 @@ export function AssistantMemoryPanel() {
       ) : (
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
           <div className="max-w-md relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={search}

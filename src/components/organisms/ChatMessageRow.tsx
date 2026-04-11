@@ -1,10 +1,5 @@
 import { memo, useMemo } from 'react';
-import {
-  AlertTriangle,
-  Loader2,
-  Search,
-  Sparkles,
-} from 'lucide-react';
+import { AlertTriangle, Loader2, Search, Sparkles } from 'lucide-react';
 import MarkdownRenderer from '@/components/molecules/MarkdownRenderer';
 import { AssistantExecutionTracePanel } from '@/components/molecules/AssistantExecutionTracePanel';
 import { AssistantThinkingPanel } from '@/components/molecules/AssistantThinkingPanel';
@@ -113,12 +108,9 @@ export const ChatMessageRow = memo(function ChatMessageRow({
     !hasBufferedThinking &&
     message.clientStatus !== 'failed';
   const isLastMessage = index === transcriptLength - 1;
-  const isLatestUserRow =
-    message.role === 'user' && message.id === latestUserMessageId;
+  const isLatestUserRow = message.role === 'user' && message.id === latestUserMessageId;
   const assistantKickoffInProgress =
-    isAwaitingRunStart ||
-    awaitingWsFollowUp ||
-    (isLoading && message.id === latestUserMessageId);
+    isAwaitingRunStart || awaitingWsFollowUp || (isLoading && message.id === latestUserMessageId);
   /** Single strip: "Sending…" then kickoff progress (latest user only). Hidden once runStarted so the assistant row owns planning UI. */
   const showAssistantPendingStrip =
     isLatestUserRow &&
@@ -147,8 +139,7 @@ export const ChatMessageRow = memo(function ChatMessageRow({
     ? Object.keys(run.pendingToolApprovals).length
     : 0;
   const showExecutionTrace =
-    message.role === 'assistant' &&
-    (executionTraceHistory.length > 0 || pendingApprovalCount > 0);
+    message.role === 'assistant' && (executionTraceHistory.length > 0 || pendingApprovalCount > 0);
 
   /** Thinking stream duplicates the execution trace during HITL; hide it until the reply has body text. */
   const hitlSuppressesThinking =
@@ -176,14 +167,19 @@ export const ChatMessageRow = memo(function ChatMessageRow({
       }
       onSendFollowUp(message.id);
     },
-    [message.clientStatus, message.content, message.clientMessageId, message.id, onRetryUserMessage, onSendFollowUp]
+    [
+      message.clientStatus,
+      message.content,
+      message.clientMessageId,
+      message.id,
+      onRetryUserMessage,
+      onSendFollowUp,
+    ]
   );
 
   return (
     <div className="group">
-      <div
-        className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-      >
+      <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
         {message.role === 'assistant' && (
           <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
             <Sparkles size={16} className="text-blue-600 dark:text-blue-400" />
@@ -330,9 +326,7 @@ export const ChatMessageRow = memo(function ChatMessageRow({
           )}
         </div>
       </div>
-      {showAssistantPendingStrip && (
-        <ChatAssistantPendingRow phase={assistantPendingPhase} />
-      )}
+      {showAssistantPendingStrip && <ChatAssistantPendingRow phase={assistantPendingPhase} />}
     </div>
   );
 });

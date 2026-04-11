@@ -1,11 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { WsRunErrorPayload } from '@/types/chatbot';
 
-type ShowToast = (options: {
-  type: 'error';
-  title: string;
-  message: string;
-}) => string;
+type ShowToast = (options: { type: 'error'; title: string; message: string }) => string;
 
 export function useAssistantStreamingToasts(
   showToast: ShowToast,

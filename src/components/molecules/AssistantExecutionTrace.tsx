@@ -108,16 +108,15 @@ function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: Tra
   const Icon = config.icon;
   const toolName = parseToolName(entry.message);
   /** HITL resolution is done as soon as the user approves; do not spin while the tool executes. */
-  const isCompleted =
-    !isActive || !isLast || entry.stage === 'approvalResolved';
+  const isCompleted = !isActive || !isLast || entry.stage === 'approvalResolved';
   const durationMs = isCompleted
     ? nextStartedAt != null
       ? nextStartedAt - entry.startedAt
-      : toolDetails?.durationMs ?? null
-    : toolDetails?.durationMs ?? null;
+      : (toolDetails?.durationMs ?? null)
+    : (toolDetails?.durationMs ?? null);
   const canExpand = Boolean(toolDetails && toolName);
   const displayDurationMs =
-    durationMs !== null && durationMs > 0 ? durationMs : toolDetails?.durationMs ?? null;
+    durationMs !== null && durationMs > 0 ? durationMs : (toolDetails?.durationMs ?? null);
 
   return (
     <motion.div
@@ -130,22 +129,20 @@ function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: Tra
       <div className="relative flex flex-col items-center">
         <div
           className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full ${
-            isCompleted
-              ? 'bg-gray-100 dark:bg-gray-700'
-              : 'bg-gray-50 dark:bg-gray-800'
+            isCompleted ? 'bg-gray-100 dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800'
           }`}
         >
           {isCompleted ? (
-            <CheckCircle2
-              size={14}
-              className="text-gray-400 dark:text-gray-500"
-            />
+            <CheckCircle2 size={14} className="text-gray-400 dark:text-gray-500" />
           ) : (
             <Loader2 size={12} className={`animate-spin ${config.color}`} />
           )}
         </div>
         {!isLast && (
-          <div className="mt-1 h-full w-px bg-gray-200 dark:bg-gray-700" style={{ minHeight: '12px' }} />
+          <div
+            className="mt-1 h-full w-px bg-gray-200 dark:bg-gray-700"
+            style={{ minHeight: '12px' }}
+          />
         )}
       </div>
 
@@ -164,7 +161,10 @@ function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: Tra
               ) : (
                 <ChevronRight size={14} className="shrink-0 text-gray-500" />
               )}
-              <Icon size={12} className={`mt-0.5 shrink-0 ${isCompleted ? 'text-gray-400 dark:text-gray-500' : config.color}`} />
+              <Icon
+                size={12}
+                className={`mt-0.5 shrink-0 ${isCompleted ? 'text-gray-400 dark:text-gray-500' : config.color}`}
+              />
               <span className="truncate text-xs text-gray-500 dark:text-gray-400">Tool:</span>
               <code
                 className={`min-w-0 truncate rounded px-1 py-0.5 font-mono text-[10px] ${
@@ -176,18 +176,27 @@ function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: Tra
             </button>
           ) : (
             <>
-              <Icon size={12} className={`mt-0.5 shrink-0 ${isCompleted ? 'text-gray-400 dark:text-gray-500' : config.color}`} />
+              <Icon
+                size={12}
+                className={`mt-0.5 shrink-0 ${isCompleted ? 'text-gray-400 dark:text-gray-500' : config.color}`}
+              />
               <span
                 className={`truncate text-xs ${
-                  isCompleted ? 'text-gray-500 dark:text-gray-400' : 'font-medium text-gray-700 dark:text-gray-200'
+                  isCompleted
+                    ? 'text-gray-500 dark:text-gray-400'
+                    : 'font-medium text-gray-700 dark:text-gray-200'
                 }`}
               >
                 {toolName ? (
                   <>
-                    <span className={isCompleted ? undefined : 'text-gray-500 dark:text-gray-400'}>Tool: </span>
+                    <span className={isCompleted ? undefined : 'text-gray-500 dark:text-gray-400'}>
+                      Tool:{' '}
+                    </span>
                     <code
                       className={`rounded px-1 py-0.5 font-mono text-[10px] ${
-                        isCompleted ? 'bg-gray-100 dark:bg-gray-700' : 'bg-amber-50 dark:bg-amber-900/20'
+                        isCompleted
+                          ? 'bg-gray-100 dark:bg-gray-700'
+                          : 'bg-amber-50 dark:bg-amber-900/20'
                       }`}
                     >
                       {toolName}
@@ -200,13 +209,16 @@ function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: Tra
             </>
           )}
 
-          {(displayDurationMs !== null && displayDurationMs > 0) && (
+          {displayDurationMs !== null && displayDurationMs > 0 && (
             <span className="ml-auto shrink-0 tabular-nums text-[10px] text-gray-400 dark:text-gray-500">
               {formatDurationMs(displayDurationMs)}
             </span>
           )}
           {!isCompleted && !canExpand && (
-            <Circle size={6} className="ml-auto shrink-0 animate-pulse text-gray-300 dark:text-gray-600" />
+            <Circle
+              size={6}
+              className="ml-auto shrink-0 animate-pulse text-gray-300 dark:text-gray-600"
+            />
           )}
         </div>
 
@@ -272,9 +284,8 @@ export function AssistantExecutionTrace({
   }
 
   const toolIndexFor = (i: number) =>
-    visibleEntries
-      .slice(0, i)
-      .filter((e) => e.stage === 'runningTools' && parseToolName(e.message)).length;
+    visibleEntries.slice(0, i).filter((e) => e.stage === 'runningTools' && parseToolName(e.message))
+      .length;
 
   return (
     <div
@@ -292,9 +303,7 @@ export function AssistantExecutionTrace({
           if (entry.stage === 'awaitingApproval') {
             const cfg = STAGE_CONFIG.awaitingApproval;
             const Icon = cfg.icon;
-            const pending = entry.approvalId
-              ? pendingToolApprovals?.[entry.approvalId]
-              : undefined;
+            const pending = entry.approvalId ? pendingToolApprovals?.[entry.approvalId] : undefined;
             return (
               <motion.div
                 key={`awaitingApproval-${entry.startedAt}-${index}`}
@@ -354,21 +363,30 @@ export function AssistantExecutionTrace({
       {isActive &&
         visibleEntries.length > 0 &&
         visibleEntries[visibleEntries.length - 1]?.stage !== 'approvalResolved' && (
-        <motion.div
-          initial={shouldReduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex items-center gap-2 pt-0.5"
-        >
-          <div className="flex h-5 w-5 items-center justify-center">
-            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-300 dark:bg-gray-600" />
-          </div>
-          <div className="flex gap-1">
-            <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-300 dark:bg-gray-600" style={{ animationDelay: '0ms' }} />
-            <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-300 dark:bg-gray-600" style={{ animationDelay: '150ms' }} />
-            <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-300 dark:bg-gray-600" style={{ animationDelay: '300ms' }} />
-          </div>
-        </motion.div>
-      )}
+          <motion.div
+            initial={shouldReduceMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 pt-0.5"
+          >
+            <div className="flex h-5 w-5 items-center justify-center">
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-300 dark:bg-gray-600" />
+            </div>
+            <div className="flex gap-1">
+              <div
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-300 dark:bg-gray-600"
+                style={{ animationDelay: '0ms' }}
+              />
+              <div
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-300 dark:bg-gray-600"
+                style={{ animationDelay: '150ms' }}
+              />
+              <div
+                className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-300 dark:bg-gray-600"
+                style={{ animationDelay: '300ms' }}
+              />
+            </div>
+          </motion.div>
+        )}
     </div>
   );
 }

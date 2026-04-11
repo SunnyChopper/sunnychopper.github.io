@@ -3,11 +3,7 @@ import type { NavigateFunction } from 'react-router-dom';
 import { isLocalAssistantThreadId } from '@/lib/chat/local-thread-id';
 import type { ChatThread } from '@/types/chatbot';
 
-type ShowToast = (options: {
-  type: 'error';
-  title: string;
-  message: string;
-}) => void;
+type ShowToast = (options: { type: 'error'; title: string; message: string }) => void;
 
 export function useChatbotThreadRoute({
   routeThreadId,

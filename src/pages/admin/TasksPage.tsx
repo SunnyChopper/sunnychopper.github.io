@@ -233,8 +233,7 @@ export default function TasksPage() {
     return { taskDependencies: depMap, taskBlockedBy: blockedMap };
   }, [dependencyMap, tasks]);
 
-  const isLoading =
-    tasksLoading || (viewMode === 'graph' && dependenciesLoading);
+  const isLoading = tasksLoading || (viewMode === 'graph' && dependenciesLoading);
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     setIsSubmitting(true);

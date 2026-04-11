@@ -1,8 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import {
-  AssistantExecutionTrace,
-} from '@/components/molecules/AssistantExecutionTrace';
+import { AssistantExecutionTrace } from '@/components/molecules/AssistantExecutionTrace';
 import { getVisibleExecutionTraceEntries } from '@/lib/chat/assistant-execution-trace-entries';
 import type {
   StatusEntry,

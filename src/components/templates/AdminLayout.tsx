@@ -309,7 +309,10 @@ function AdminLayoutContent() {
 
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate" title={user?.email}>
+            <p
+              className="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate"
+              title={user?.email}
+            >
               {user?.email?.includes('@') ? user.email : user ? 'Signed in' : ''}
             </p>
             <div className="mt-3 flex justify-center">
@@ -373,7 +376,7 @@ function AdminLayoutContent() {
                               <Link
                                 key={child.name}
                                 to={child.href}
-                            onClick={closeMainNav}
+                                onClick={closeMainNav}
                                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
                                   isChildActive
                                     ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'

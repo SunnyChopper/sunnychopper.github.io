@@ -1,4 +1,12 @@
-import { forwardRef, memo, useCallback, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Loader2, Send, StopCircle } from 'lucide-react';
 import type { AssistantWsConnectionState } from '@/lib/websocket/assistant-ws-client';
 

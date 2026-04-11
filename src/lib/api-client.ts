@@ -672,9 +672,7 @@ class ApiClient {
     return this.delete<void>(`/preferences/feature-configs/${feature}`);
   }
 
-  async getAssistantToolApprovalConfig(): Promise<
-    ApiResponse<AssistantToolApprovalConfig>
-  > {
+  async getAssistantToolApprovalConfig(): Promise<ApiResponse<AssistantToolApprovalConfig>> {
     return this.get<AssistantToolApprovalConfig>('/preferences/assistant-tools');
   }
 

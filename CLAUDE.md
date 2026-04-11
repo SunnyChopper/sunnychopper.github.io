@@ -18,6 +18,7 @@ If you are new to the codebase or debugging app behavior, start here for the fas
 - **Build quirks**: `vite.config.ts` (Node polyfills, `async_hooks` polyfill, CNAME copy).
 
 Quick mapping:
+
 - Auth/login/redirect issues → `src/lib/auth/auth.service.ts`, then `src/lib/api-client.ts`
 - Routes/layout/rendering issues → `src/App.tsx`, then `src/routes.ts`
 - Backend calls/401/headers → `src/lib/api-client.ts`

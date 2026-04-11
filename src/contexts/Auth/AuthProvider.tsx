@@ -154,7 +154,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Check if we have stored tokens
       const tokens = authService.getStoredTokens();
-      authLogger.debug('checkUser token lookup complete', { hasAccessToken: !!tokens?.accessToken });
+      authLogger.debug('checkUser token lookup complete', {
+        hasAccessToken: !!tokens?.accessToken,
+      });
 
       if (tokens?.accessToken) {
         // Check if tokens are expired and attempt refresh if needed

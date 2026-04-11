@@ -11,7 +11,9 @@ import type {
 export const assistantMemoryService = {
   async getShortTerm(date?: string): Promise<ShortTermMemoryResponse> {
     const query = date ? `?date=${encodeURIComponent(date)}` : '';
-    const response = await apiClient.get<ShortTermMemoryResponse>(`/assistant/memory/short-term${query}`);
+    const response = await apiClient.get<ShortTermMemoryResponse>(
+      `/assistant/memory/short-term${query}`
+    );
     if (response.success && response.data) {
       return response.data;
     }
@@ -49,9 +51,12 @@ export const assistantMemoryService = {
   },
 
   async consolidate(date?: string): Promise<ConsolidateMemoryResponse> {
-    const response = await apiClient.post<ConsolidateMemoryResponse>('/assistant/memory/consolidate', {
-      date,
-    });
+    const response = await apiClient.post<ConsolidateMemoryResponse>(
+      '/assistant/memory/consolidate',
+      {
+        date,
+      }
+    );
     if (response.success && response.data) {
       return response.data;
     }

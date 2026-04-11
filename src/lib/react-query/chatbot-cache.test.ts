@@ -128,9 +128,7 @@ describe('mergeFetchedMessageTreeWithCache', () => {
       content: 'ab',
       executionSteps: [],
     });
-    const tree = qc.getQueryData<MessageTreeResponse>(
-      queryKeys.chatbot.messages.tree(threadId)
-    );
+    const tree = qc.getQueryData<MessageTreeResponse>(queryKeys.chatbot.messages.tree(threadId));
     expect(tree?.nodes.find((n) => n.id === 'a1')?.executionSteps).toEqual(steps);
     expect(tree?.nodes.find((n) => n.id === 'a1')?.content).toBe('ab');
   });

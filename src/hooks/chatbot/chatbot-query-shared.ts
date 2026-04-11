@@ -12,20 +12,13 @@ export function normalizeChatThreadsQueryData(data: unknown): ChatThread[] {
   if (Array.isArray(data)) {
     return data;
   }
-  if (
-    data &&
-    typeof data === 'object' &&
-    Array.isArray((data as { data?: unknown }).data)
-  ) {
+  if (data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)) {
     return (data as { data: ChatThread[] }).data;
   }
   return [];
 }
 
-export const reportMutationError = (
-  error: unknown,
-  recordError: (error: ApiError) => void
-) => {
+export const reportMutationError = (error: unknown, recordError: (error: ApiError) => void) => {
   const apiError = extractApiError(error);
   if (apiError && isNetworkError(apiError)) {
     recordError(apiError);

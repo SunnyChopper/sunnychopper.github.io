@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom';
 import type { Components } from 'react-markdown';
 import { cn } from '@/lib/utils';
 
-const headingBase = '!mt-4 !mb-2 first:!mt-0 font-semibold font-sans tracking-tight text-gray-900 dark:text-gray-100';
+const headingBase =
+  '!mt-4 !mb-2 first:!mt-0 font-semibold font-sans tracking-tight text-gray-900 dark:text-gray-100';
 
 /**
  * Stable markdown component map for assistant chat bubbles (avoids new object identity each render).
@@ -37,9 +38,7 @@ export const chatMessageMarkdownComponents: Partial<Components> = {
       {children}
     </strong>
   ),
-  em: ({ children, className }) => (
-    <em className={cn('italic', className)}>{children}</em>
-  ),
+  em: ({ children, className }) => <em className={cn('italic', className)}>{children}</em>,
   ul: ({ children }) => (
     <ul
       className={cn(

@@ -13,11 +13,7 @@ import type { AssistantWsConnectionState } from '@/lib/websocket/assistant-ws-cl
 import { wsLogger } from '@/lib/logger';
 import type { ChatThread, MessageTreeResponse } from '@/types/chatbot';
 
-type ShowToast = (options: {
-  type: 'error';
-  title: string;
-  message: string;
-}) => void;
+type ShowToast = (options: { type: 'error'; title: string; message: string }) => void;
 
 type CreateThreadFn = (input: { title: string }) => Promise<ChatThread>;
 type CreateMessageFn = (input: {
@@ -254,8 +250,7 @@ export function useChatbotSendHandlers({
     } catch (error) {
       wsLogger.error('Error sending message', error);
       const apiError = extractApiError(error);
-      const message =
-        apiError?.message || extractErrorMessage(error, 'Message failed to send');
+      const message = apiError?.message || extractErrorMessage(error, 'Message failed to send');
       if (isDraft) {
         if (draftPendingMessageId) {
           const existingDraftTree = queryClient.getQueryData<MessageTreeResponse>(

@@ -75,7 +75,9 @@ describe('useAssistantStreaming', () => {
       queryClient
     );
 
-    const tree = queryClient.getQueryData<MessageTreeResponse>(queryKeys.chatbot.messages.tree(threadId));
+    const tree = queryClient.getQueryData<MessageTreeResponse>(
+      queryKeys.chatbot.messages.tree(threadId)
+    );
     const assistant = tree?.nodes.find((node) => node.id === assistantMessageId);
     expect(nextRuns['run-1']?.thinkingBuffer).toBe('Let me reason through this.');
     expect(assistant?.thinking).toBe('Let me reason through this.');
@@ -127,7 +129,9 @@ describe('useAssistantStreaming', () => {
       queryClient
     );
 
-    const next = queryClient.getQueryData<MessageTreeResponse>(queryKeys.chatbot.messages.tree(threadId));
+    const next = queryClient.getQueryData<MessageTreeResponse>(
+      queryKeys.chatbot.messages.tree(threadId)
+    );
     const assistant = next?.nodes.find((node) => node.id === assistantMessageId);
     expect(assistant?.executionSteps).toEqual(executionSteps);
     expect(assistant?.thinking).toBe('more thinking');

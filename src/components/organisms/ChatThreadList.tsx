@@ -1,12 +1,4 @@
-import {
-  Check,
-  Edit2,
-  Loader2,
-  MessageCircle,
-  Plus,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { Check, Edit2, Loader2, MessageCircle, Plus, Trash2, X } from 'lucide-react';
 import { extractErrorMessage } from '@/lib/react-query/error-utils';
 import { isLocalAssistantThreadId } from '@/lib/chat/local-thread-id';
 import type { ChatThread } from '@/types/chatbot';

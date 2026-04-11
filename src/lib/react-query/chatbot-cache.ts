@@ -75,9 +75,7 @@ export const upsertChatThreadCache = (queryClient: QueryClient, thread: ChatThre
   // Always patch the canonical list key used by useChatThreads so updates apply even if
   // findAll(filters) misses (e.g. timing with persistence / strict mode).
   const listKey = queryKeys.chatbot.threads.lists();
-  queryClient.setQueryData(listKey, (old) =>
-    mergeListData(old, merge(extractListData(old)))
-  );
+  queryClient.setQueryData(listKey, (old) => mergeListData(old, merge(extractListData(old))));
   queryClient.setQueryData(queryKeys.chatbot.threads.detail(thread.id), thread);
 };
 
@@ -142,13 +140,8 @@ export const patchChatMessageCache = (
   messageId: string,
   updater: (message: ChatMessage) => ChatMessage
 ): void => {
-  updateListQueries<ChatMessage>(
-    queryClient,
-    queryKeys.chatbot.messages.list(threadId),
-    (items) =>
-      sortMessages(
-        items.map((message) => (message.id === messageId ? updater(message) : message))
-      )
+  updateListQueries<ChatMessage>(queryClient, queryKeys.chatbot.messages.list(threadId), (items) =>
+    sortMessages(items.map((message) => (message.id === messageId ? updater(message) : message)))
   );
 };
 
@@ -157,10 +150,8 @@ export const removeChatMessageCache = (
   threadId: string,
   messageId: string
 ): void => {
-  updateListQueries<ChatMessage>(
-    queryClient,
-    queryKeys.chatbot.messages.list(threadId),
-    (items) => sortMessages(removeById(items, messageId))
+  updateListQueries<ChatMessage>(queryClient, queryKeys.chatbot.messages.list(threadId), (items) =>
+    sortMessages(removeById(items, messageId))
   );
 };
 
@@ -271,7 +262,9 @@ export const upsertMessageTreeNodeCache = (
   message: ChatMessage
 ): void => {
   const ROOT_KEY = 'ROOT';
-  const existing = queryClient.getQueryData<MessageTreeResponse>(queryKeys.chatbot.messages.tree(threadId));
+  const existing = queryClient.getQueryData<MessageTreeResponse>(
+    queryKeys.chatbot.messages.tree(threadId)
+  );
 
   // Bootstrap a minimal empty tree if none exists yet (e.g. first message in a new thread).
   const tree: MessageTreeResponse = existing ?? {

@@ -65,9 +65,7 @@ export function useAssistantChatPage({
   });
 
   const serverThreadQueryId =
-    resolvedThreadId && !isLocalAssistantThreadId(resolvedThreadId)
-      ? resolvedThreadId
-      : undefined;
+    resolvedThreadId && !isLocalAssistantThreadId(resolvedThreadId) ? resolvedThreadId : undefined;
   const streamingThreadId = streamingThreadOverrideId ?? serverThreadQueryId;
   const { thread: serverThread } = useChatThread(serverThreadQueryId);
   const {
@@ -112,18 +110,13 @@ export function useAssistantChatPage({
       runs,
     });
 
-  const {
-    selectedLeafId,
-    transcript,
-    setSelectedLeafId,
-    getSiblings,
-    selectSibling,
-  } = useBranchSelection({
-    threadId: resolvedThreadId || undefined,
-    tree: treeForBranch,
-    nodeById: nodeByIdForBranch,
-    activeLeafMessageId: activeThread?.activeLeafMessageId,
-  });
+  const { selectedLeafId, transcript, setSelectedLeafId, getSiblings, selectSibling } =
+    useBranchSelection({
+      threadId: resolvedThreadId || undefined,
+      tree: treeForBranch,
+      nodeById: nodeByIdForBranch,
+      activeLeafMessageId: activeThread?.activeLeafMessageId,
+    });
 
   const sendFollowUp = useCallback(
     (userMessageId: string) => {
@@ -179,15 +172,12 @@ export function useAssistantChatPage({
     isLoading ||
     awaitingWsFollowUp ||
     isAwaitingRunStart ||
-    (!isLocalDraft &&
-      (connectionState === 'failed' || connectionState === 'disconnected'));
+    (!isLocalDraft && (connectionState === 'failed' || connectionState === 'disconnected'));
 
   const showDisconnectedBanner =
     !isLocalDraft && connectionState === 'disconnected' && Boolean(streamingError);
   const showReconnectingBanner =
-    !isLocalDraft &&
-    connectionState === 'reconnecting' &&
-    (isStreaming || isAwaitingRunStart);
+    !isLocalDraft && connectionState === 'reconnecting' && (isStreaming || isAwaitingRunStart);
 
   const handleCreateThread = useCallback(() => {
     navigate(`/admin/assistant/${createLocalAssistantThreadId()}`);

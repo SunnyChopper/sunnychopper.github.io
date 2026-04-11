@@ -40,7 +40,7 @@ export function useBranchSelection({
     return latestId;
   }, [nodeById, tree]);
 
-  const rawSelectedLeafId = threadId ? selectedLeafByThreadId[threadId] ?? null : null;
+  const rawSelectedLeafId = threadId ? (selectedLeafByThreadId[threadId] ?? null) : null;
   const selectedLeafId = useMemo(() => {
     if (!tree) {
       return null;
@@ -74,7 +74,10 @@ export function useBranchSelection({
     [nodeById, tree]
   );
 
-  const transcript = useMemo(() => buildTranscript(selectedLeafId), [buildTranscript, selectedLeafId]);
+  const transcript = useMemo(
+    () => buildTranscript(selectedLeafId),
+    [buildTranscript, selectedLeafId]
+  );
 
   const getSiblings = useCallback(
     (messageId: string): string[] => {

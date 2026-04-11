@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
-import type {
-  AssistantToolApprovalMode,
-  AssistantToolRegistryEntry,
-} from '@/types/api-contracts';
+import type { AssistantToolApprovalMode, AssistantToolRegistryEntry } from '@/types/api-contracts';
 
 const MODE_OPTIONS: { value: AssistantToolApprovalMode; label: string; hint: string }[] = [
   {
@@ -105,7 +102,9 @@ export function AssistantToolApprovalSettings() {
 
   if (loading) {
     return (
-      <div className="text-sm text-gray-600 dark:text-gray-400">Loading assistant safety settings…</div>
+      <div className="text-sm text-gray-600 dark:text-gray-400">
+        Loading assistant safety settings…
+      </div>
     );
   }
 
@@ -193,7 +192,9 @@ export function AssistantToolApprovalSettings() {
                         <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">
                           {t.name}
                         </code>
-                        <span className="text-gray-600 dark:text-gray-400 ml-2">{t.description}</span>
+                        <span className="text-gray-600 dark:text-gray-400 ml-2">
+                          {t.description}
+                        </span>
                       </span>
                     </label>
                   </li>

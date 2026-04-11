@@ -10,8 +10,8 @@ export function ChatStarterSuggestions({ onPickPrompt }: ChatStarterSuggestionsP
       <Sparkles className="text-blue-600 dark:text-blue-400 mb-4" size={48} />
       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Start a conversation</h3>
       <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md">
-        Ask me about your tasks, goals, metrics, or habits. I can help you create items, track progress,
-        and understand how everything connects.
+        Ask me about your tasks, goals, metrics, or habits. I can help you create items, track
+        progress, and understand how everything connects.
       </p>
       <div className="grid grid-cols-3 gap-3 max-w-2xl">
         <button

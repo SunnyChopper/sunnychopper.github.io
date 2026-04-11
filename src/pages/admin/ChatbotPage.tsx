@@ -57,8 +57,7 @@ export default function ChatbotPage() {
   });
 
   const assistantHeaderTitle =
-    activeThread?.title?.trim() &&
-    activeThread.title.trim().toLowerCase() !== 'new chat'
+    activeThread?.title?.trim() && activeThread.title.trim().toLowerCase() !== 'new chat'
       ? activeThread.title.trim()
       : 'Personal OS Assistant';
 
@@ -114,7 +113,9 @@ export default function ChatbotPage() {
             >
               {assistantHeaderTitle}
             </h2>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Connected to your Personal OS</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Connected to your Personal OS
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <button

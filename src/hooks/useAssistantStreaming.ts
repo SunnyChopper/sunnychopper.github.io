@@ -407,7 +407,9 @@ export function useAssistantStreaming(threadId: string | undefined) {
           const existingTree = queryClient.getQueryData<MessageTreeResponse>(
             queryKeys.chatbot.messages.tree(payload.threadId)
           );
-          const existingMessage = existingTree?.nodes.find((node) => node.id === payload.message.id);
+          const existingMessage = existingTree?.nodes.find(
+            (node) => node.id === payload.message.id
+          );
           const isCompletionForFailedPlaceholder = shouldPreserveFailedPlaceholderOnMessageComplete(
             existingMessage,
             payload.message
@@ -423,16 +425,15 @@ export function useAssistantStreaming(threadId: string | undefined) {
             if (
               run &&
               messageToStore.role === 'assistant' &&
-              (!messageToStore.executionSteps?.length) &&
+              !messageToStore.executionSteps?.length &&
               (run.statusHistory?.length ?? 0) > 0
             ) {
               messageToStore = {
                 ...messageToStore,
                 executionSteps: run.statusHistory,
-                toolCallDetails:
-                  messageToStore.toolCallDetails?.length
-                    ? messageToStore.toolCallDetails
-                    : run.toolCallDetails,
+                toolCallDetails: messageToStore.toolCallDetails?.length
+                  ? messageToStore.toolCallDetails
+                  : run.toolCallDetails,
               };
             }
             upsertMessageTreeNodeCache(queryClient, payload.threadId, messageToStore);
@@ -457,8 +458,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
         setRuns((current) => {
           const run = current[payload.runId];
           if (run) {
-            const mergedBuffer =
-              streamedSnapshot.length > 0 ? streamedSnapshot : run.buffer;
+            const mergedBuffer = streamedSnapshot.length > 0 ? streamedSnapshot : run.buffer;
             const hadStreamedAssistant = Boolean(mergedBuffer.trim());
             if (hadStreamedAssistant) {
               setError(null);
@@ -589,9 +589,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
       );
       if (tree) {
         const assistantChildIds = tree.nodes
-          .filter(
-            (node) => node.role === 'assistant' && node.parentId === userMessageId
-          )
+          .filter((node) => node.role === 'assistant' && node.parentId === userMessageId)
           .map((node) => node.id);
         if (assistantChildIds.length > 0) {
           const nextTree = assistantChildIds.reduce(
@@ -648,8 +646,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
             return current;
           }
           const { [approvalId]: _removed, ...restPending } = run.pendingToolApprovals ?? {};
-          const nextPending =
-            Object.keys(restPending).length > 0 ? restPending : undefined;
+          const nextPending = Object.keys(restPending).length > 0 ? restPending : undefined;
           const resolvedLabel =
             decision === 'approve' ? 'Approved — running tool' : 'Rejected — skipped';
           const updatedHistory = run.statusHistory.map((entry) =>
@@ -722,10 +719,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
           (currentTree, nodeId) => removeNodeFromTree(currentTree, nodeId),
           tree
         );
-        queryClient.setQueryData(
-          queryKeys.chatbot.messages.tree(threadId),
-          nextTree
-        );
+        queryClient.setQueryData(queryKeys.chatbot.messages.tree(threadId), nextTree);
       }
 
       setError(null);
