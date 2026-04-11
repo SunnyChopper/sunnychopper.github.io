@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import type { QueryClient } from '@tanstack/react-query';
 import { extractApiError, extractErrorMessage } from '@/lib/react-query/error-utils';
@@ -120,7 +120,28 @@ export function useChatbotSendHandlers({
     showToast,
     queryClient,
   });
-  stateRef.current = {
+
+  useLayoutEffect(() => {
+    stateRef.current = {
+      activeThread,
+      selectedLeafId,
+      setSelectedLeafId,
+      createThread,
+      createMessage,
+      sendFollowUp,
+      connectionState,
+      streamingThreadId,
+      setStreamingThreadOverrideId,
+      isAwaitingRunStart,
+      isLocalDraft,
+      onRestoreInput,
+      isLoading,
+      awaitingWsFollowUp,
+      navigate,
+      showToast,
+      queryClient,
+    };
+  }, [
     activeThread,
     selectedLeafId,
     setSelectedLeafId,
@@ -138,7 +159,7 @@ export function useChatbotSendHandlers({
     navigate,
     showToast,
     queryClient,
-  };
+  ]);
 
   const handleSendMessage = useCallback(async (content: string, clientMessageId?: string) => {
     const {

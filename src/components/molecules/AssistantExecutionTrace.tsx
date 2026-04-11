@@ -13,6 +13,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { ToolApprovalCard } from '@/components/molecules/ToolApprovalCard';
+import { getVisibleExecutionTraceEntries } from '@/lib/chat/assistant-execution-trace-entries';
 import type {
   StatusEntry,
   WsToolApprovalRequiredPayload,
@@ -91,17 +92,6 @@ function formatLabel(entry: StatusEntry): string {
   if (toolName) return toolName;
   if (entry.message) return entry.message;
   return STAGE_CONFIG[entry.stage].defaultLabel;
-}
-
-function isGenericRunningToolsEntry(entry: StatusEntry): boolean {
-  if (entry.stage !== 'runningTools') return false;
-  const msg = (entry.message ?? '').toLowerCase().trim();
-  return msg === 'running tools' || msg === '';
-}
-
-/** Same filter as the rendered trace (excludes generic “running tools” placeholders). */
-export function getVisibleExecutionTraceEntries(statusHistory: StatusEntry[]): StatusEntry[] {
-  return statusHistory.filter((e) => !isGenericRunningToolsEntry(e));
 }
 
 interface TraceEntryProps {

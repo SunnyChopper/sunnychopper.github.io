@@ -1,3 +1,5 @@
+/* Context modules conventionally export a hook alongside the provider. */
+/* eslint-disable react-refresh/only-export-components -- provider + useAdminShell */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
