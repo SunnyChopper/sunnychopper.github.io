@@ -5,36 +5,31 @@
 When implementing mutations (create, update, delete) in React applications using TanStack Query, it's critical to ensure that:
 
 1. **Mutations update the local cache** so the UI reflects changes immediately without requiring a refetch
-2. **Response data is normalized** to match frontend types (especially when backend APIs use different field names)
+2. **Response data stays aligned** with the canonical backend contract shape
 3. **All related query keys are updated** (list queries, detail queries, dashboard queries)
+
+Important: this repo's policy is to fix backend/frontend contract drift at the source. Do not add frontend normalization layers just to paper over mismatched API field names.
 
 ## Common Issues
 
-### Issue 1: Mutation Response Not Normalized
+### Issue 1: Mutation Response Drifts From The Contract
 
 **Symptom**: Data appears in the UI but fields are missing or incorrectly named (e.g., `description` instead of `text`).
 
-**Root Cause**: Backend API responses may use different field names than frontend types. If the mutation response isn't normalized, the cache will contain incorrectly formatted data.
+**Root Cause**: The backend response shape and frontend type drifted apart. Hiding this with frontend normalization keeps multiple shapes alive in the cache and masks the real contract bug.
 
 **Example**:
 
 ```typescript
-// ❌ BAD: Response not normalized
+// ❌ BAD: Hide contract drift in the frontend
 async create(input: CreateGoalInput): Promise<ApiResponse<Goal>> {
   const response = await apiClient.post<Goal>('/goals', requestBody);
   return response; // Backend returns { description: "..." } but frontend expects { text: "..." }
 }
 
-// ✅ GOOD: Response normalized
+// ✅ GOOD: Fix the backend contract, then consume it directly
 async create(input: CreateGoalInput): Promise<ApiResponse<Goal>> {
-  const response = await apiClient.post<any>('/goals', requestBody);
-  if (response.success && response.data) {
-    return {
-      ...response,
-      data: normalizeGoal(response.data), // Maps 'description' → 'text'
-    };
-  }
-  return response;
+  return apiClient.post<Goal>('/goals', requestBody);
 }
 ```
 
@@ -103,40 +98,21 @@ const createMutation = useMutation({
 
 ## Solution Pattern
 
-### Step 1: Ensure Service Methods Normalize Responses
+### Step 1: Ensure Service Methods Consume The Canonical Contract
 
-All service methods that return data should normalize the response to match frontend types:
+All service methods that return data should consume the canonical backend contract directly. If the shape is wrong, fix the backend contract and shared types instead of adding a mapper:
 
 ```typescript
-// In goals.service.ts
-function normalizeGoal(backendGoal: any): Goal {
-  return {
-    ...backendGoal,
-    successCriteria: Array.isArray(backendGoal.successCriteria)
-      ? backendGoal.successCriteria.map(
-          (criterion: BackendSuccessCriterion): SuccessCriterion => ({
-            id: criterion.id,
-            text: criterion.description, // Map backend field to frontend field
-            isCompleted: criterion.isCompleted,
-            completedAt: criterion.completedAt,
-            // ... other mappings
-          })
-        )
-      : [],
-  };
-}
-
 async create(input: CreateGoalInput): Promise<ApiResponse<Goal>> {
-  const response = await apiClient.post<any>('/goals', requestBody);
-  if (response.success && response.data) {
-    return {
-      ...response,
-      data: normalizeGoal(response.data), // ✅ Always normalize
-    };
-  }
-  return response;
+  return apiClient.post<Goal>('/goals', requestBody);
 }
 ```
+
+If the API returns the wrong fields:
+
+- fix the backend response shape
+- update `docs/backend/API_ENDPOINTS.md` if the canonical contract changed
+- update frontend DTOs and cache code in the same change
 
 ### Step 2: Use React Query Hooks in Components
 
@@ -251,12 +227,12 @@ export const upsertGoalCache = (queryClient: QueryClient, goal: Goal): void => {
 
 When implementing a new mutation or fixing an existing one, verify:
 
-- [ ] **Service method normalizes the response** (maps backend fields to frontend types)
+- [ ] **Service method consumes the canonical response directly** (no frontend contract patch layer)
 - [ ] **Component uses React Query hook** (not local state)
 - [ ] **Mutation's `onSuccess` updates the cache** (calls `upsertXCache` or `removeXCache`)
 - [ ] **All relevant query keys are updated** (list, detail, dashboard)
 - [ ] **Non-mutation operations manually update cache** (if not using mutation hooks)
-- [ ] **Response data structure matches frontend types** (after normalization)
+- [ ] **Response data structure matches frontend types** because the contract is aligned end-to-end
 
 ## Testing
 
@@ -277,10 +253,10 @@ If mutations aren't updating the UI:
    - Verify the query key exists and contains data
    - Check if the mutation's `onSuccess` is being called
 
-2. **Verify normalization**:
+2. **Verify contract alignment**:
    - Check the network response in DevTools
    - Compare backend field names with frontend type definitions
-   - Ensure the service method calls the normalization function
+   - If they differ, fix the backend contract or shared types instead of adding a mapper
 
 3. **Verify cache update**:
    - Check if `upsertXCache` or `removeXCache` is being called
@@ -296,18 +272,14 @@ If mutations aren't updating the UI:
 
 - `src/lib/react-query/growth-system-cache.ts` - Cache update functions
 - `src/hooks/useGrowthSystem.ts` - React Query hooks with mutations
-- `src/services/growth-system/*.service.ts` - Service methods with normalization
+- `src/services/growth-system/*.service.ts` - Service methods that should consume canonical contract shapes
 
 ## Example: Complete Implementation
 
 ```typescript
-// 1. Service with normalization
+// 1. Service that consumes the canonical contract directly
 async create(input: CreateGoalInput): Promise<ApiResponse<Goal>> {
-  const response = await apiClient.post<any>('/goals', requestBody);
-  if (response.success && response.data) {
-    return { ...response, data: normalizeGoal(response.data) };
-  }
-  return response;
+  return apiClient.post<Goal>('/goals', requestBody);
 }
 
 // 2. Hook with mutation

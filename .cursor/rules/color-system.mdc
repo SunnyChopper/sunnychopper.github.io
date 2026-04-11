@@ -1,6 +1,6 @@
 ---
-description: "USE WHEN applying colors, creating color schemes, and maintaining visual consistency."
-globs: ""
+description: 'USE WHEN applying colors, creating color schemes, and maintaining visual consistency.'
+globs: ''
 alwaysApply: false
 ---
 
@@ -12,14 +12,14 @@ Consistent color usage for visual harmony and accessibility.
 
 ```tsx
 // Light mode backgrounds
-bg-white              // Cards, surfaces
-bg-gray-50            // Page background, subtle sections
-bg-gray-100           // Hover states, dividers
+bg - white; // Cards, surfaces
+bg - gray - 50; // Page background, subtle sections
+bg - gray - 100; // Hover states, dividers
 
 // Dark mode backgrounds
-dark:bg-gray-900      // Page background
-dark:bg-gray-800      // Cards, surfaces
-dark:bg-gray-700      // Elevated surfaces, hover states
+dark: bg - gray - 900; // Page background
+dark: bg - gray - 800; // Cards, surfaces
+dark: bg - gray - 700; // Elevated surfaces, hover states
 ```
 
 ## Area Colors (Growth System)
