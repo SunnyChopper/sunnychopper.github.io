@@ -37,6 +37,12 @@ export const ROUTES = {
   },
 } as const;
 
+/** Normalize trailing slashes so route checks match `/admin/login` and `/admin/login/`. */
+export function isAdminLoginPath(pathname: string): boolean {
+  const p = pathname.replace(/\/+$/, '') || '/';
+  return p === ROUTES.admin.login;
+}
+
 export const ADMIN_CHILD_ROUTES = {
   dashboard: 'dashboard' as const,
   zenDashboard: 'zen-dashboard' as const,

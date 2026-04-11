@@ -111,7 +111,7 @@ Would you like to:
   },
   {
     keywords: ['help', 'what can you do', 'capabilities'],
-    response: `I'm your Personal OS Assistant! I have access to all your Growth System data and can help you:
+    response: `I'm your Personal OS Assistant! I have access to your Personal OS data and can help you:
 
 📋 **[Tasks](/admin/tasks)**: Create, update, or review your tasks
 🎯 **[Goals](/admin/goals)**: Track progress and align actions
@@ -122,7 +122,7 @@ Would you like to:
 
 I can create items, provide insights, search the web for information, and help you understand how everything connects. What would you like to work on?`,
     thinking: `The user is asking about my capabilities. I should provide a clear overview of:
-1. All available Growth System modules
+1. All available Personal OS modules
 2. My ability to create and manage items
 3. Web search capabilities for external information
 4. Cross-module insights and connections
@@ -130,7 +130,7 @@ I can create items, provide insights, search the web for information, and help y
   },
   {
     keywords: ['integration', 'layers', 'how it works', 'connect'],
-    response: `The Growth System uses a four-layer architecture where everything connects:
+    response: `Personal OS Core uses a four-layer architecture where everything connects:
 
 **Strategic Layer** ([Goals](/admin/goals) & [Projects](/admin/projects)) → defines what you want to achieve
 ↓
@@ -149,7 +149,7 @@ This creates a continuous improvement cycle where each layer reinforces the othe
   },
   {
     keywords: ['prioritize', 'what should i do', 'next', 'focus'],
-    response: `Let me help you prioritize! Based on your Growth System data, I can suggest:
+    response: `Let me help you prioritize! Based on your Personal OS data, I can suggest:
 
 1. **Urgent [Tasks](/admin/tasks)** with approaching deadlines
 2. **High-Impact Activities** aligned with your top [goals](/admin/goals)
@@ -201,7 +201,7 @@ What would you like me to search for?`,
   },
 ];
 
-export const defaultResponse = `I'm your Personal OS Assistant! I have access to all your Growth System data and can help you:
+export const defaultResponse = `I'm your Personal OS Assistant! I have access to your Personal OS data and can help you:
 
 📋 **[Tasks](/admin/tasks)**: Create, update, or review your tasks
 🎯 **[Goals](/admin/goals)**: Track progress and align actions

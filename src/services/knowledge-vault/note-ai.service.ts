@@ -1,5 +1,6 @@
 import type { ApiResponse } from '@/types/api-contracts';
 import { apiClient } from '@/lib/api-client';
+import { llmLogger } from '@/lib/logger';
 import type { Area } from '@/types/growth-system';
 import type {
   ExpandContentOutput,
@@ -54,7 +55,7 @@ export const noteAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error expanding content:', error);
+      llmLogger.error('Error expanding content', error);
       return {
         data: undefined,
         error: {
@@ -92,7 +93,7 @@ export const noteAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error summarizing content:', error);
+      llmLogger.error('Error summarizing content', error);
       return {
         data: undefined,
         error: {
@@ -130,7 +131,7 @@ export const noteAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error improving clarity:', error);
+      llmLogger.error('Error improving clarity', error);
       return {
         data: undefined,
         error: {
@@ -176,7 +177,7 @@ export const noteAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error suggesting tags:', error);
+      llmLogger.error('Error suggesting tags', error);
       return {
         data: undefined,
         error: {
@@ -214,7 +215,7 @@ export const noteAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error suggesting area:', error);
+      llmLogger.error('Error suggesting area', error);
       return {
         data: undefined,
         error: {
@@ -252,7 +253,7 @@ export const noteAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error generating content:', error);
+      llmLogger.error('Error generating content', error);
       return {
         data: undefined,
         error: {
@@ -293,7 +294,7 @@ export const noteAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error analyzing content:', error);
+      llmLogger.error('Error analyzing content', error);
       return {
         data: undefined,
         error: {

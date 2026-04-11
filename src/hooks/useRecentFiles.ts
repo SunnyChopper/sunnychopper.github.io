@@ -2,6 +2,8 @@
  * Hook to manage recently viewed markdown files in localStorage
  */
 
+import { logger } from '@/lib/logger';
+
 const RECENT_FILES_KEY = 'markdown-viewer-recent-files';
 const MAX_RECENT_FILES = 20;
 
@@ -46,7 +48,7 @@ export function addRecentFile(filePath: string, fileName: string): void {
 
     localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(updated));
   } catch (error) {
-    console.error('Failed to save recent file:', error);
+    logger.error('Failed to save recent file', error);
   }
 }
 
@@ -57,7 +59,7 @@ export function clearRecentFiles(): void {
   try {
     localStorage.removeItem(RECENT_FILES_KEY);
   } catch (error) {
-    console.error('Failed to clear recent files:', error);
+    logger.error('Failed to clear recent files', error);
   }
 }
 
@@ -70,6 +72,6 @@ export function removeRecentFile(filePath: string): void {
     const filtered = files.filter((f) => f.path !== filePath);
     localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(filtered));
   } catch (error) {
-    console.error('Failed to remove recent file:', error);
+    logger.error('Failed to remove recent file', error);
   }
 }

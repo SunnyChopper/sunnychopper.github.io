@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { logger } from '@/lib/logger';
 
 interface CollapseState {
   collapsedHeadings: Set<string>;
@@ -46,7 +47,7 @@ export function useMarkdownCollapseState(filePath?: string) {
       }
     } catch (error) {
       // [Constraint] Fail gracefully if corrupted state or JSON error
-      console.warn('Failed to load collapse state:', error);
+      logger.warn('Failed to load collapse state', error);
     }
 
     // [Purpose] Default state: all headings/code expanded
@@ -78,7 +79,7 @@ export function useMarkdownCollapseState(filePath?: string) {
             })
           );
         } catch (error) {
-          console.warn('Failed to save collapse state to localStorage:', error);
+          logger.warn('Failed to save collapse state to localStorage', error);
         }
       }, 100);
     },
@@ -147,7 +148,7 @@ export function useMarkdownCollapseState(filePath?: string) {
       try {
         localStorage.removeItem(storageKey);
       } catch (error) {
-        console.warn('Failed to clear collapse state from localStorage:', error);
+        logger.warn('Failed to clear collapse state from localStorage', error);
       }
     }
   }, [storageKey]);

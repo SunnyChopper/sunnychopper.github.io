@@ -16,7 +16,7 @@ When fixing the issue where success criteria weren't displaying after creating a
 
 2. **Didn't question existing code**: Found a `BackendSuccessCriterion` interface that used `description` and a `SuccessCriterion` interface that used `text`, and assumed the mapping was intentional and necessary.
 
-3. **Didn't verify normalization purpose**: The normalization documentation (`docs/reference/normalization-and-dtos.md`) states normalization is for **key naming conventions** (snake_case → camelCase during migration), not for field name differences like `description` vs `text`.
+3. **Didn't verify contract policy**: The frontend must not add normalization for backend drift; backend contracts should be corrected at the source.
 
 4. **Didn't consider simpler solution**: Jumped to adding normalization instead of asking "Should the frontend type match the backend?"
 
@@ -49,16 +49,16 @@ When fixing the issue where success criteria weren't displaying after creating a
 When encountering a frontend/backend type mismatch:
 
 1. **Is it a key naming convention?** (snake_case vs camelCase)
-   - ✅ If yes → Normalization may be appropriate during migration
-   - ❌ If no → Update frontend type
+   - ❌ Do NOT normalize in frontend
+   - ✅ Fix backend contract to canonical camelCase
 
 2. **Is it a field name difference?** (e.g., `description` vs `text`)
-   - ❌ Update frontend type to match backend
+   - ✅ Update frontend type to match stable backend contract
    - ❌ Do NOT create mapping function
 
 3. **Is backend contract stable?**
    - ✅ If yes → Update frontend type
-   - ⚠️ If no (migration in progress) → Temporary normalization may be acceptable, but plan to remove it
+   - ❌ If no → stabilize backend contract first; do not add temporary frontend normalization
 
 ## Files Affected
 

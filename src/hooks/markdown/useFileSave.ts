@@ -10,6 +10,7 @@ import {
 import { isBackendUnavailable, markdownFilesService } from '@/services/markdown-files.service';
 import { isLocalFileResult } from '@/lib/markdown/file-utils';
 import { invalidateAfterFileOperation } from '@/lib/markdown/query-invalidation';
+import { logger } from '@/lib/logger';
 
 export interface SaveFileResult {
   success: boolean;
@@ -67,10 +68,10 @@ export function useFileSave() {
               localFile.category || ''
             );
           } else {
-            console.warn('Failed to save metadata: Invalid file ID after creation');
+            logger.warn('Failed to save metadata: invalid file ID after creation');
           }
         } catch (error) {
-          console.warn('Failed to save metadata:', error);
+          logger.warn('Failed to save metadata', error);
         }
       }
 
@@ -89,7 +90,7 @@ export function useFileSave() {
     const fileNode = findNodeByPath(filePath);
     const fileId = fileNode?.metadata?.id;
 
-    console.log('[useFileSave] saveRegularFile:', {
+    logger.debug('saveRegularFile called', {
       filePath,
       fileId,
       hasFileNode: !!fileNode,

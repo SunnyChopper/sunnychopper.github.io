@@ -3,7 +3,7 @@
 **Status Note (2026-01):** This document is partially outdated. For current system entrypoints and architecture, start with `CLAUDE.md`.
 
 **Analysis Date:** January 10, 2026  
-**System Version:** Portfolio Site with Growth System (Personal OS)  
+**System Version:** Portfolio Site with Personal OS  
 **Status:** Production-Ready with 15 Completed Implementation Runs
 
 ---
@@ -679,9 +679,9 @@ Example configuration:
 
 ```typescript
 {
-  parseTask: { provider: 'anthropic', model: 'claude-3-5-haiku-20241022' },  // Fast, cheap
-  breakdownTask: { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },  // Smart
-  effortEstimation: { provider: 'groq', model: 'llama-3.1-8b-instant' },  // Very fast
+  parseTask: { provider: 'groq', model: 'openai/gpt-oss-120b' },  // Fast, cheap
+  breakdownTask: { provider: 'openai', model: 'gpt-5.2' },  // Smart
+  effortEstimation: { provider: 'groq', model: 'openai/gpt-oss-20b' },  // Very fast
 }
 ```
 

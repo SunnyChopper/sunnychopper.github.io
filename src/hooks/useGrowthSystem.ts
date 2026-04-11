@@ -544,8 +544,9 @@ export const useLogbook = () => {
  * Hook to fetch task dependencies for multiple tasks in a batched manner
  * This is more efficient than calling getDependencies for each task individually
  */
-export const useTaskDependencies = (taskIds: string[]) => {
+export const useTaskDependencies = (taskIds: string[], options?: { enabled?: boolean }) => {
   const { recordError, recordSuccess } = useBackendStatus();
+  const depsEnabled = (options?.enabled ?? true) && taskIds.length > 0;
 
   const { data, isLoading, error, isError } = useQuery({
     queryKey: [...queryKeys.growthSystem.tasks.all(), 'dependencies', taskIds.sort().join(',')],
@@ -585,7 +586,7 @@ export const useTaskDependencies = (taskIds: string[]) => {
         throw err;
       }
     },
-    enabled: taskIds.length > 0,
+    enabled: depsEnabled,
     staleTime: 2 * 60 * 1000, // 2 minutes - dependencies don't change frequently
   });
 
@@ -594,7 +595,7 @@ export const useTaskDependencies = (taskIds: string[]) => {
   return {
     dependencyMap: data?.dependencyMap || new Map(),
     allDependencies: data?.allDependencies || [],
-    isLoading: isLoading && !isError,
+    isLoading: depsEnabled && isLoading && !isError,
     isError,
     error: apiError || error,
   };

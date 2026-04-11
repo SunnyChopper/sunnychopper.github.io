@@ -202,7 +202,7 @@ export default function TasksPage() {
     dependencyMap,
     allDependencies: rawDependencies,
     isLoading: dependenciesLoading,
-  } = useTaskDependencies(taskIds);
+  } = useTaskDependencies(taskIds, { enabled: viewMode === 'graph' });
 
   // Convert raw dependencies to TaskDependency format
   const allDependencies = useMemo<TaskDependency[]>(() => {
@@ -233,7 +233,7 @@ export default function TasksPage() {
     return { taskDependencies: depMap, taskBlockedBy: blockedMap };
   }, [dependencyMap, tasks]);
 
-  const isLoading = tasksLoading || dependenciesLoading;
+  const isLoading = tasksLoading || (viewMode === 'graph' && dependenciesLoading);
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     setIsSubmitting(true);

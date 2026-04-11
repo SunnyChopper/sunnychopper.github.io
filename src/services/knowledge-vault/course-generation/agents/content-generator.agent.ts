@@ -1,4 +1,5 @@
 import { BaseAgent } from '@/lib/llm/langgraph/base-agent';
+import { llmLogger } from '@/lib/logger';
 import { LessonContentSchema } from '@/lib/llm/schemas/course-ai-schemas';
 import type { CourseGenerationState, CourseGenerationStateUpdate } from '../types';
 import { getContentGeneratorContext } from '../context-manager';
@@ -47,12 +48,16 @@ export class ContentGeneratorAgent extends BaseAgent {
           await this._generateLessonContent(state, lesson);
           processedLessons++;
         } catch (lessonError) {
-          console.error(`ContentGeneratorAgent: Error generating content for lesson ${lesson.id}`, {
-            error: lessonError,
-            errorMessage: lessonError instanceof Error ? lessonError.message : String(lessonError),
-            lessonId: lesson.id,
-            lessonTitle: lesson.title,
-          });
+          llmLogger.error(
+            `ContentGeneratorAgent: Error generating content for lesson ${lesson.id}`,
+            {
+              error: lessonError,
+              errorMessage:
+                lessonError instanceof Error ? lessonError.message : String(lessonError),
+              lessonId: lesson.id,
+              lessonTitle: lesson.title,
+            }
+          );
           errorCount++;
         }
       }

@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { cn } from '@/lib/utils';
 import { useMarkdownCollapseState } from '@/hooks/useMarkdownCollapseState';
@@ -14,11 +15,17 @@ import CollapsibleHeading from '@/components/molecules/CollapsibleHeading';
 import MarkdownCodeBlock from '@/components/molecules/MarkdownCodeBlock';
 import { createDefaultMarkdownComponents } from '@/lib/markdown/markdown-components';
 
+export type MarkdownRendererVariant = 'default' | 'chat';
+
 interface MarkdownRendererProps {
   content: string;
   className?: string;
   components?: Partial<Components>;
   filePath?: string;
+  /** Chat bubbles: line breaks, stable subtree key, layout tweaks. Default documents unchanged. */
+  variant?: MarkdownRendererVariant;
+  /** When set, MarkdownSectionProvider keys on this instead of content (avoids remount per streamed token). */
+  contentKey?: string;
 }
 
 export default function MarkdownRenderer({
@@ -26,6 +33,8 @@ export default function MarkdownRenderer({
   className,
   components: customComponents,
   filePath,
+  variant = 'default',
+  contentKey,
 }: MarkdownRendererProps) {
   const codeRefs = useRef<Map<string, HTMLPreElement>>(new Map());
   const { mathLoaded, prismLoaded, Prism } = useMarkdownPlugins(content);
@@ -77,15 +86,18 @@ export default function MarkdownRenderer({
     }
   }, [prismLoaded, Prism, content]);
 
-  // Build plugins array dynamically
+  // Build plugins array dynamically (chat: GFM + remark-breaks so single newlines become <br>)
   const remarkPlugins = useMemo(() => {
-    const plugins = [remarkGfm];
+    const plugins: unknown[] = [remarkGfm];
+    if (variant === 'chat') {
+      plugins.push(remarkBreaks);
+    }
     const remarkMath = getRemarkMath();
     if (mathLoaded && remarkMath) {
       plugins.push(remarkMath);
     }
     return plugins;
-  }, [mathLoaded]);
+  }, [mathLoaded, variant]);
 
   const rehypePlugins = useMemo(() => {
     const plugins = [rehypeRaw];
@@ -284,8 +296,10 @@ export default function MarkdownRenderer({
     [defaultComponents, customComponents, preComponent, divComponent]
   );
 
+  const sectionProviderKey = contentKey ?? content;
+
   return (
-    <MarkdownSectionProvider key={content} collapsedHeadings={collapsedHeadingsSet}>
+    <MarkdownSectionProvider key={sectionProviderKey} collapsedHeadings={collapsedHeadingsSet}>
       <div
         className={cn(
           'prose prose-sm dark:prose-invert max-w-none prose-headings:font-serif',
@@ -299,6 +313,8 @@ export default function MarkdownRenderer({
           'prose-li:my-0.5',
           'prose-blockquote:my-2',
           '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+          variant === 'chat' &&
+            'min-w-0 w-full max-w-full break-words prose-headings:font-sans prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:font-medium prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-pre:!my-2',
           className
         )}
       >

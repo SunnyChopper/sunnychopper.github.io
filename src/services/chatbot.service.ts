@@ -3,6 +3,8 @@ import type {
   ChatMessage,
   CreateThreadRequest,
   CreateMessageRequest,
+  EditMessageRequest,
+  MessageTreeResponse,
   UpdateThreadRequest,
 } from '@/types/chatbot';
 import { apiClient } from '@/lib/api-client';
@@ -12,10 +14,13 @@ export const chatbotService = {
     const response = await apiClient.getChatThreads();
     if (response.success && response.data) {
       return response.data.sort(
-        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
     }
-    throw new Error(response.error?.message || 'Failed to fetch threads');
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to fetch threads');
   },
 
   async getThread(id: string): Promise<ChatThread | null> {
@@ -26,7 +31,10 @@ export const chatbotService = {
     if (response.error?.code === 'NOT_FOUND' || response.error?.code === 'HTTP_404') {
       return null;
     }
-    throw new Error(response.error?.message || 'Failed to fetch thread');
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to fetch thread');
   },
 
   async createThread(request: CreateThreadRequest): Promise<ChatThread> {
@@ -34,21 +42,31 @@ export const chatbotService = {
     if (response.success && response.data) {
       return response.data;
     }
-    throw new Error(response.error?.message || 'Failed to create thread');
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to create thread');
   },
 
   async updateThread(request: UpdateThreadRequest): Promise<ChatThread> {
-    const response = await apiClient.updateChatThread(request.id, request);
+    const { id, ...body } = request;
+    const response = await apiClient.updateChatThread(id, body);
     if (response.success && response.data) {
       return response.data;
     }
-    throw new Error(response.error?.message || 'Failed to update thread');
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to update thread');
   },
 
   async deleteThread(id: string): Promise<void> {
     const response = await apiClient.deleteChatThread(id);
     if (!response.success) {
-      throw new Error(response.error?.message || 'Failed to delete thread');
+      if (response.error) {
+        throw response.error;
+      }
+      throw new Error('Failed to delete thread');
     }
   },
 
@@ -56,10 +74,24 @@ export const chatbotService = {
     const response = await apiClient.getChatMessages(threadId);
     if (response.success && response.data) {
       return response.data.sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
     }
-    throw new Error(response.error?.message || 'Failed to fetch messages');
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to fetch messages');
+  },
+
+  async getMessageTree(threadId: string): Promise<MessageTreeResponse> {
+    const response = await apiClient.getChatMessageTree(threadId);
+    if (response.success && response.data) {
+      return response.data;
+    }
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to fetch message tree');
   },
 
   async createMessage(request: CreateMessageRequest): Promise<ChatMessage> {
@@ -67,21 +99,24 @@ export const chatbotService = {
     if (response.success && response.data) {
       return response.data;
     }
-    throw new Error(response.error?.message || 'Failed to create message');
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to create message');
   },
 
-  async updateMessage(id: string, content: string): Promise<ChatMessage> {
-    const response = await apiClient.updateChatMessage(id, content);
+  async editMessage(
+    threadId: string,
+    messageId: string,
+    data: EditMessageRequest
+  ): Promise<ChatMessage> {
+    const response = await apiClient.editChatMessage(threadId, messageId, data);
     if (response.success && response.data) {
       return response.data;
     }
-    throw new Error(response.error?.message || 'Failed to update message');
-  },
-
-  async deleteMessagesAfter(messageId: string, threadId: string): Promise<void> {
-    const response = await apiClient.deleteMessagesAfter(messageId, threadId);
-    if (!response.success) {
-      throw new Error(response.error?.message || 'Failed to delete messages');
+    if (response.error) {
+      throw response.error;
     }
+    throw new Error('Failed to edit message');
   },
 };

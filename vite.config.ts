@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { copyFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { createFrontendLogWriterPlugin } from './vite-plugin-log-writer';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -18,6 +19,7 @@ export default defineConfig({
       // Polyfill specific modules
       protocolImports: true,
     }),
+    createFrontendLogWriterPlugin(),
     // Plugin to handle async_hooks import
     // This ensures all async_hooks imports (including from node_modules) resolve to our polyfill
     {

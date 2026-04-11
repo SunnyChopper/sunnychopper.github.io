@@ -4,6 +4,7 @@ import { projectsService } from '@/services/growth-system/projects.service';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import { extractApiError } from '@/lib/react-query/error-utils';
+import { logger } from '@/lib/logger';
 import type { ApiError } from '@/types/api-contracts';
 import type { ProjectHealthSummary } from '@/types/project-health';
 
@@ -46,7 +47,7 @@ export const useProjectHealthMap = (projectIds: string[]) => {
               };
             }
           } catch (error) {
-            console.error('Failed to fetch project health', error);
+            logger.error('Failed to fetch project health', { projectId, error });
           }
           return { projectId, health: null };
         });

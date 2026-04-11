@@ -1,11 +1,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { configureAmplify } from './lib/aws-config';
 import { AuthProvider } from './contexts/Auth';
 import { BackendStatusProvider } from './contexts/BackendStatusContext';
-import { WalletProvider } from './contexts/Wallet';
-import { RewardsProvider } from './contexts/Rewards';
+import { logger, queryLogger } from './lib/logger';
+import {
+  CHATBOT_CACHE_BUSTER,
+  chatbotAsyncPersister,
+  shouldPersistChatbotQuery,
+} from './lib/react-query/chatbot-persist';
 import './index.css';
 import App from './App.tsx';
 
@@ -30,7 +35,39 @@ import App from './App.tsx';
 
 configureAmplify();
 
+window.addEventListener('error', (event) => {
+  logger.error('Unhandled window error', {
+    message: event.message,
+    fileName: event.filename,
+    lineNumber: event.lineno,
+    columnNumber: event.colno,
+    error: event.error,
+  });
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  logger.error('Unhandled promise rejection', {
+    reason: event.reason,
+  });
+});
+
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      queryLogger.error('Query failed', {
+        queryKey: query.queryKey,
+        error,
+      });
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) => {
+      queryLogger.error('Mutation failed', {
+        mutationKey: mutation.options.mutationKey,
+        error,
+      });
+    },
+  }),
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
@@ -107,16 +144,22 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: chatbotAsyncPersister,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+        buster: CHATBOT_CACHE_BUSTER,
+        dehydrateOptions: {
+          shouldDehydrateQuery: shouldPersistChatbotQuery,
+        },
+      }}
+    >
       <BackendStatusProvider>
         <AuthProvider>
-          <WalletProvider>
-            <RewardsProvider>
-              <App />
-            </RewardsProvider>
-          </WalletProvider>
+          <App />
         </AuthProvider>
       </BackendStatusProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   </StrictMode>
 );

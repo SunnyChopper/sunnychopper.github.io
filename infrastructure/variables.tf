@@ -37,3 +37,10 @@ variable "api_base_url" {
   type        = string
   default     = "https://api.sunnysingh.tech"
 }
+
+variable "ws_url" {
+  description = "Assistant WebSocket URL (from serverless deploy output; e.g. wss://xxx.execute-api.region.amazonaws.com/dev)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

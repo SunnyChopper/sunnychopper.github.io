@@ -3,19 +3,29 @@
 ## What this repo is
 
 - **Frontend**: React + TypeScript + Vite + Tailwind.
-- **App shape**: Public site + `/admin/*` “Growth System” (auth-gated) with AI-powered features.
+- **App shape**: Public site + `/admin/*` “Personal OS” (auth-gated) with AI-powered, LLM-driven features.
 - **Deploy**: GitHub Pages via GitHub Actions; **build-time** Vite env vars come from **GitHub Secrets**.
 
 ## Open these first (entrypoints)
 
-- **App bootstrap + providers**: `src/main.tsx` (React Query, `AuthProvider`, wallet/rewards; calls `configureAmplify()`).
-- **Routes/layouts**: `src/App.tsx` + `src/routes.ts` (`MainLayout` public, `AdminLayout` behind `ProtectedRoute`).
-- **HTTP + auth header wiring**: `src/lib/api-client.ts` (baseURL + token interceptors).
-- **Auth + token lifecycle**: `src/lib/auth/auth.service.ts` (Cognito sign-in, token storage, refresh flow).
-- **Cognito env usage**: `src/lib/aws-config.ts`, `src/lib/auth/cognito-config.ts`.
-- **Build quirks**: `vite.config.ts` (Node polyfills + `async_hooks` polyfill for LangGraph; copies `public/CNAME` → `dist/CNAME`).
+If you are new to the codebase or debugging app behavior, start here for the fastest context.
 
-## Normalization & DTOs
+- **App bootstrap + providers**: `src/main.tsx` (provider tree, `configureAmplify()`, theme init).
+- **Routes/layouts**: `src/App.tsx` + `src/routes.ts` (routing ownership, layouts, `ProtectedRoute`).
+- **HTTP + auth header wiring**: `src/lib/api-client.ts` (baseURL, auth header, 401 refresh/redirect, response wrapping).
+- **Auth + token lifecycle**: `src/lib/auth/auth.service.ts` (Cognito sign-in/out, token storage, refresh, `apiClient` sync).
+- **Cognito env usage**: `src/lib/aws-config.ts`, `src/lib/auth/cognito-config.ts` (env vars + “is configured” logic).
+- **Build quirks**: `vite.config.ts` (Node polyfills, `async_hooks` polyfill, CNAME copy).
+
+Quick mapping:
+
+- Auth/login/redirect issues → `src/lib/auth/auth.service.ts`, then `src/lib/api-client.ts`
+- Routes/layout/rendering issues → `src/App.tsx`, then `src/routes.ts`
+- Backend calls/401/headers → `src/lib/api-client.ts`
+- Cognito env misconfig → `src/lib/aws-config.ts`, `src/lib/auth/cognito-config.ts`
+- Build/deploy quirks → `vite.config.ts`
+
+## API Contracts & DTOs
 
 - Read and follow: `docs/reference/normalization-and-dtos.md`
 
@@ -24,7 +34,7 @@
 1. Define/extend types in `src/types/api-contracts.ts` and/or `src/types/api/*.dto.ts`.
 2. Implement service calls in `src/services/**` using `apiClient.get/post/patch/delete`.
 3. (Optional, dev-only) Pass Zod schemas into `apiClient.get/post` for response validation.
-4. Ensure React Query caches store normalized domain models (not raw DTOs).
+4. Ensure React Query caches store contract-aligned domain models (not raw DTOs with mismatched shapes).
 
 ## Commands (source of truth: `package.json`)
 
@@ -34,11 +44,19 @@
 - **Tests**: `npm run test` (Vitest), `npm run test:e2e` (Playwright)
 - **Meta**: `npm run validate` (runs repo validation scripts)
 
+## Local logging
+
+- Frontend dev logs are written to `../logs/frontend/app.jsonl`
+- Backend dev logs are in `../logs/backend/app.jsonl` and `../logs/backend/error.jsonl`
+- Use the centralized logger in `src/lib/logger.ts`; do not add raw `console.*` calls in app code
+- Search logs with `rg`; see `../docs/agent-learnings/log-analysis-guide.md`
+
 ## Environment variables (canonical)
 
 ### Runtime usage in code
 
 - **API base URL**: `VITE_API_BASE_URL` (fallback: `'/api'`) in `src/lib/api-client.ts`.
+- **Assistant WebSocket URL**: `VITE_WS_URL` (e.g. `wss://...`) in `src/hooks/useAssistantStreaming.ts`.
 - **AWS Cognito**:
   - `VITE_AWS_REGION` (fallback: `'us-east-1'`)
   - `VITE_AWS_USER_POOL_ID`
@@ -76,6 +94,7 @@ Goal: ensure the GitHub Pages workflow has the required secrets **before** `npm 
 Terraform in `infrastructure/` creates/updates GitHub Actions secrets:
 
 - `VITE_API_BASE_URL`
+- `VITE_WS_URL`
 - `VITE_AWS_REGION`
 - `VITE_AWS_USER_POOL_ID`
 - `VITE_AWS_USER_POOL_WEB_CLIENT_ID`
@@ -117,19 +136,27 @@ From `infrastructure/`:
 
 ## Type Alignment: Frontend Should Match Backend
 
-**Critical Rule**: When frontend types don't match backend API responses, **update the frontend types to match the backend**—do NOT create mapping/normalization functions.
+**Critical Rule**: The backend API must return canonical camelCase contracts. If it does not, treat that as a backend bug and fix the backend contract. Do **not** add frontend mapping/normalization layers to compensate.
 
 **Decision Tree**:
 
-1. **Key naming convention?** (snake_case → camelCase) → Normalization OK during migration only
-2. **Field name difference?** (e.g., `description` vs `text`) → Update frontend type
-3. **Backend contract stable?** → Update frontend type
+1. **Backend response shape differs from contract?** (including snake_case keys) → Fix backend response to contract shape.
+2. **Frontend type differs from stable backend contract?** → Update frontend type to match contract.
+3. **Need temporary frontend transform?** → No. Avoid this; fix the backend/source contract instead.
 
-**Normalization should ONLY be used for**: Key naming conventions during migration, not for field name differences.
+**Normalization/mapping policy**: Do not introduce frontend response normalization for backend casing/field mismatches.
 
 **See**: `docs/post-mortems/2026-01-28-success-criteria-field-mismatch.md` for detailed analysis and decision framework.
 
-**Backend snake_case fields**: See `docs/reference/backend-snake-case-fields.md` for complete list of fields that need to be updated to camelCase in the backend API.
+**Backend snake_case fields**: See `docs/reference/backend-snake-case-fields.md` for backend-side fixes required to enforce camelCase contracts.
+
+## Frontend-specific learnings
+
+- Cross-repo anti-patterns (filter by `[frontend]`): `../docs/agent-learnings/anti-patterns.md`
+- After modifying API types, verify alignment with `../docs/backend/API_ENDPOINTS.md`.
+- After adding or modifying components, verify applicable `.mdc` rules in `.cursor/rules/` were followed.
+- Before declaring done, complete and report the self-assessment protocol from root `../CLAUDE.md`.
+- Treat final completion as blocked until the self-assessment is explicitly included in the final response.
 
 ## Post-Mortems and Learnings
 
@@ -141,3 +168,4 @@ Detailed post-mortems, decision frameworks, and lessons learned are stored in `d
 - Use descriptive, date-prefixed filenames
 - Include full analysis, decision frameworks, affected files, and action items
 - Keep `CLAUDE.md` lean with only actionable takeaways
+- Add a compact entry to `../docs/agent-learnings/anti-patterns.md` that links back to the full post-mortem

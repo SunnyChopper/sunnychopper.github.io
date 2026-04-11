@@ -48,3 +48,9 @@ resource "github_actions_secret" "vite_api_base_url" {
   secret_name     = "VITE_API_BASE_URL"
   plaintext_value = var.api_base_url
 }
+
+resource "github_actions_secret" "vite_ws_url" {
+  repository      = "sunnychopper.github.io"
+  secret_name     = "VITE_WS_URL"
+  plaintext_value = var.ws_url
+}

@@ -1,6 +1,6 @@
 ---
-description: "Global frontend quality bar for this repo: UI polish, accessibility, interaction states, consistency."
-globs: ""
+description: 'Global frontend quality bar for this repo: UI polish, accessibility, interaction states, consistency.'
+globs: ''
 alwaysApply: true
 ---
 
@@ -37,6 +37,14 @@ This rule defines the non-negotiable quality standards for all frontend code in 
 - Components must be self-contained and reusable
 - Props should have sensible defaults
 - TypeScript strict mode compliance required
+- API contracts must be consumed as-is from backend canonical shapes (camelCase)
+
+## API Contract Integrity
+
+- Backend is the source of truth for response shape and casing
+- Do not add frontend normalization/mapping to convert snake_case to camelCase
+- If API casing/fields drift from contract, fix backend response instead of patching frontend
+- Keep service/query caches aligned to one canonical contract shape only
 
 ## Forbidden Patterns
 

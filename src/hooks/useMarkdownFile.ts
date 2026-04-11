@@ -8,6 +8,7 @@ import { getLocalFile, isLocalOnlyFile, updateLocalFile } from '@/hooks/useLocal
 import { useFileTree } from '@/hooks/useFileTree';
 import { useMarkdownBackendStatus } from '@/hooks/useMarkdownBackendStatus';
 import { buildLocalMarkdownFile, buildUpdateFile } from '@/lib/markdown/file-utils';
+import { logger } from '@/lib/logger';
 import type { FileTreeNode } from '@/types/markdown-files';
 
 /**
@@ -60,7 +61,7 @@ export function useMarkdownFile(filePath: string | undefined) {
 
         // DEBUG: Log file metadata from tree
         if (import.meta.env.DEV) {
-          console.log('[useMarkdownFile] Loading file:', {
+          logger.debug('Loading markdown file', {
             filePath,
             fileId,
             hasFileNode: !!fileNode,
@@ -81,10 +82,7 @@ export function useMarkdownFile(filePath: string | undefined) {
             if (res.success && res.data && fileNode.metadata) {
               recordSuccess();
               if (import.meta.env.DEV) {
-                console.log(
-                  '[useMarkdownFile] Loaded from getFileContent with metadata:',
-                  fileNode.metadata
-                );
+                logger.debug('Loaded markdown file via getFileContent', fileNode.metadata);
               }
               return {
                 success: true as const,
@@ -94,13 +92,10 @@ export function useMarkdownFile(filePath: string | undefined) {
           } catch (err) {
             // If getFileContent fails (likely because fileId is actually a path),
             // fall through to getFile below
-            console.warn('[useMarkdownFile] getFileContent failed, falling back to getFile:', err);
+            logger.warn('getFileContent failed, falling back to getFile', err);
           }
         } else if (fileId) {
-          console.warn(
-            '[useMarkdownFile] File ID looks like a path, not a UUID. Skipping getFileContent:',
-            fileId
-          );
+          logger.warn('File ID looks like a path, skipping getFileContent', { fileId });
         }
 
         const result = await markdownFilesService.getFile(filePath);
@@ -108,7 +103,7 @@ export function useMarkdownFile(filePath: string | undefined) {
           recordSuccess();
           if (result.data.content === undefined) result.data.content = '';
           if (import.meta.env.DEV) {
-            console.log('[useMarkdownFile] Loaded from getFile:', {
+            logger.debug('Loaded markdown file via getFile', {
               id: result.data.id,
               path: result.data.path,
               name: result.data.name,
@@ -143,10 +138,7 @@ export function useMarkdownFile(filePath: string | undefined) {
               data: updatedTree,
             });
             if (import.meta.env.DEV) {
-              console.log(
-                '[useMarkdownFile] Updated tree cache with correct file ID:',
-                result.data.id
-              );
+              logger.debug('Updated tree cache with correct file ID', { fileId: result.data.id });
             }
           }
         } else if (result.error && isBackendUnavailable(result.error)) {
@@ -199,7 +191,7 @@ export function useMarkdownFile(filePath: string | undefined) {
 
       // DEBUG: Log the file ID being used
       if (import.meta.env.DEV) {
-        console.log('[useMarkdownFile] Update attempt:', {
+        logger.debug('Markdown file update attempt', {
           filePath,
           fileId,
           fileNode: fileNode?.metadata,
@@ -216,7 +208,7 @@ export function useMarkdownFile(filePath: string | undefined) {
 
       // Check if fileId looks like a path (contains .md extension without a proper UUID)
       if (fileId.endsWith('.md') || fileId.includes('/')) {
-        console.error('[useMarkdownFile] ERROR: File ID appears to be a path, not an ID:', fileId);
+        logger.error('File ID appears to be a path, not an ID', { fileId });
         throw new Error(
           'Invalid file ID: File ID appears to be a file path. Cannot update file. Please check backend file metadata.'
         );

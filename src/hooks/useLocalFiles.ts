@@ -3,6 +3,8 @@
  * Local files are files that haven't been synced to the backend yet
  */
 
+import { logger } from '@/lib/logger';
+
 export interface LocalFile {
   path: string;
   content: string;
@@ -35,7 +37,7 @@ function saveAllLocalFiles(files: LocalFile[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(files));
   } catch (error) {
-    console.error('Failed to save local files to localStorage:', error);
+    logger.error('Failed to save local files to localStorage', error);
     // Handle quota exceeded error
     if (error instanceof DOMException && error.name === 'QuotaExceededError') {
       throw new Error('Local storage quota exceeded. Please save or delete some local files.');

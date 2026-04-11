@@ -1,4 +1,5 @@
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph/web';
+import { llmLogger } from '@/lib/logger';
 import type {
   CourseGenerationState,
   CourseGenerationStateUpdate,
@@ -355,7 +356,7 @@ const CourseGenerationAnnotation = Annotation.Root({
 let globalIterationCounter = 0;
 
 function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_content' {
-  console.log('shouldRefine: Called', {
+  llmLogger.debug('shouldRefine: Called', {
     hasState: !!state,
     stateKeys: state ? Object.keys(state) : [],
     hasAlignment: !!state?.alignment,
@@ -375,7 +376,7 @@ function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_conten
     const effectiveIterations =
       validatedIterations > 0 ? validatedIterations : globalIterationCounter;
 
-    console.log(
+    llmLogger.debug(
       `shouldRefine: raw=${rawIterations}, validated=${validatedIterations}, global=${globalIterationCounter}, effective=${effectiveIterations}`,
       {
         hasAlignment: !!validatedState.alignment,
@@ -387,7 +388,7 @@ function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_conten
     // If alignment doesn't exist or overallScore is undefined, proceed to content generation
     // This handles cases where state was lost during serialization
     if (!validatedState.alignment || typeof validatedState.alignment.overallScore !== 'number') {
-      console.warn(
+      llmLogger.warn(
         'shouldRefine: alignment or overallScore missing, proceeding to content generation',
         {
           hasAlignment: !!validatedState.alignment,
@@ -403,7 +404,7 @@ function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_conten
 
     // If score is good enough, proceed to content generation
     if (score >= 0.8) {
-      console.log('shouldRefine: Score is good enough, proceeding to content generation', {
+      llmLogger.debug('shouldRefine: Score is good enough, proceeding to content generation', {
         score,
         iterations,
       });
@@ -413,7 +414,7 @@ function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_conten
     // Limit iterations to prevent infinite loops
     // After 2 iterations, proceed even if score isn't perfect
     if (iterations >= 2) {
-      console.log(
+      llmLogger.debug(
         `shouldRefine: Max iterations (${iterations}) reached, proceeding to content generation`,
         { score }
       );
@@ -423,25 +424,25 @@ function shouldRefine(state: CourseGenerationState): 'refine' | 'generate_conten
 
     // If score is very low (< 0.3), don't refine more than once
     if (score < 0.3 && iterations >= 1) {
-      console.log(
+      llmLogger.debug(
         `shouldRefine: Low score (${score}) after ${iterations} iterations, proceeding to content generation`
       );
       globalIterationCounter = 0; // Reset for next course generation
       return 'generate_content';
     }
 
-    console.log(`shouldRefine: Proceeding with refinement (iteration ${iterations + 1})`, {
+    llmLogger.debug(`shouldRefine: Proceeding with refinement (iteration ${iterations + 1})`, {
       score,
       iterations,
     });
     return 'refine';
   } catch (error) {
-    console.error('shouldRefine: Error during evaluation', {
+    llmLogger.error('shouldRefine: Error during evaluation', {
       error,
       errorMessage: error instanceof Error ? error.message : String(error),
     });
     // On error, proceed to content generation to avoid blocking
-    console.warn('shouldRefine: Error occurred, proceeding to content generation as fallback');
+    llmLogger.warn('shouldRefine: Error occurred, proceeding to content generation as fallback');
     return 'generate_content';
   }
 }
@@ -568,7 +569,7 @@ async function courseStrategistNode(
 
     return normalizedResult;
   } catch (error) {
-    console.error('courseStrategistNode: Error during execution', {
+    llmLogger.error('courseStrategistNode: Error during execution', {
       error,
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
@@ -588,7 +589,7 @@ async function moduleArchitectNode(
 
   // Defensive check: ensure modules exists and is an array
   if (!validatedState.modules || !Array.isArray(validatedState.modules)) {
-    console.error('moduleArchitectNode: state.modules is missing or not an array!', {
+    llmLogger.error('moduleArchitectNode: state.modules is missing or not an array!', {
       hasModules: !!validatedState.modules,
       modulesType: typeof validatedState.modules,
       modulesValue: validatedState.modules,
@@ -642,7 +643,7 @@ async function conceptMapperNode(
 
   // Defensive check: ensure modules exists and is an array
   if (!validatedState.modules || !Array.isArray(validatedState.modules)) {
-    console.error('conceptMapperNode: state.modules is missing or not an array!', {
+    llmLogger.error('conceptMapperNode: state.modules is missing or not an array!', {
       hasModules: !!validatedState.modules,
       modulesType: typeof validatedState.modules,
       stateKeys: Object.keys(validatedState),
@@ -688,7 +689,7 @@ async function conceptMapperNode(
 async function flowValidatorNode(
   state: CourseGenerationState
 ): Promise<CourseGenerationStateUpdate> {
-  console.log('flowValidatorNode: Starting execution', {
+  llmLogger.debug('flowValidatorNode: Starting execution', {
     hasState: !!state,
     hasModules: !!state?.modules,
     modulesCount: Array.isArray(state?.modules) ? state.modules.length : 'not array',
@@ -697,13 +698,13 @@ async function flowValidatorNode(
 
   // CRITICAL: Detect if state is empty/corrupted (LangGraph serialization issue)
   if (state && Object.keys(state).length === 0) {
-    console.error(
+    llmLogger.error(
       'flowValidatorNode: Received empty state object! Attempting recovery from global cache...'
     );
     // Try to recover from global state cache
     const cachedState = getGlobalStateCache();
     if (cachedState && Object.keys(cachedState).length > 0) {
-      console.log('flowValidatorNode: Recovered state from global cache', {
+      llmLogger.debug('flowValidatorNode: Recovered state from global cache', {
         hasModules: !!cachedState.modules,
         modulesCount: Array.isArray(cachedState.modules) ? cachedState.modules.length : 'not array',
       });
@@ -721,7 +722,7 @@ async function flowValidatorNode(
 
     // Defensive check: ensure modules exists and is an array
     if (!Array.isArray(validatedState.modules)) {
-      console.error('flowValidatorNode: state.modules is missing or not an array!', {
+      llmLogger.error('flowValidatorNode: state.modules is missing or not an array!', {
         hasModules: !!validatedState.modules,
         modulesType: typeof validatedState.modules,
         stateKeys: Object.keys(validatedState),
@@ -737,9 +738,9 @@ async function flowValidatorNode(
     });
 
     const agent = new FlowValidatorAgent();
-    console.log('flowValidatorNode: Calling agent.execute()');
+    llmLogger.debug('flowValidatorNode: Calling agent.execute()');
     const result = await agent.execute(validatedState);
-    console.log('flowValidatorNode: Agent execution completed', {
+    llmLogger.debug('flowValidatorNode: Agent execution completed', {
       hasResult: !!result,
       hasAlignment: !!result?.alignment,
       overallScore: result?.alignment?.overallScore,
@@ -755,7 +756,7 @@ async function flowValidatorNode(
       progress: 60,
     });
 
-    console.log('flowValidatorNode: Returning result', {
+    llmLogger.debug('flowValidatorNode: Returning result', {
       hasAlignment: !!result.alignment,
       overallScore: result.alignment?.overallScore,
     });
@@ -769,7 +770,7 @@ async function flowValidatorNode(
       conceptGraph: validatedState.conceptGraph, // Preserve conceptGraph
     };
   } catch (error) {
-    console.error('flowValidatorNode: Error during execution', {
+    llmLogger.error('flowValidatorNode: Error during execution', {
       error,
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
@@ -784,7 +785,7 @@ async function flowValidatorNode(
 async function refinementAgentNode(
   state: CourseGenerationState
 ): Promise<CourseGenerationStateUpdate> {
-  console.log('refinementAgentNode: Starting execution', {
+  llmLogger.debug('refinementAgentNode: Starting execution', {
     hasState: !!state,
     hasAlignment: !!state?.alignment,
     overallScore: state?.alignment?.overallScore,
@@ -794,13 +795,13 @@ async function refinementAgentNode(
 
   // CRITICAL: Detect if state is empty/corrupted (LangGraph serialization issue)
   if (state && Object.keys(state).length === 0) {
-    console.error(
+    llmLogger.error(
       'refinementAgentNode: Received empty state object! Attempting recovery from global cache...'
     );
     // Try to recover from global state cache
     const cachedState = getGlobalStateCache();
     if (cachedState && Object.keys(cachedState).length > 0) {
-      console.log('refinementAgentNode: Recovered state from global cache', {
+      llmLogger.debug('refinementAgentNode: Recovered state from global cache', {
         hasModules: !!cachedState.modules,
         modulesCount: Array.isArray(cachedState.modules) ? cachedState.modules.length : 'not array',
       });
@@ -818,7 +819,7 @@ async function refinementAgentNode(
 
     // Defensive check: ensure modules exists and is an array
     if (!Array.isArray(validatedState.modules)) {
-      console.error('refinementAgentNode: state.modules is missing or not an array!', {
+      llmLogger.error('refinementAgentNode: state.modules is missing or not an array!', {
         hasModules: !!validatedState.modules,
         modulesType: typeof validatedState.modules,
         stateKeys: Object.keys(validatedState),
@@ -834,9 +835,9 @@ async function refinementAgentNode(
     });
 
     const agent = new RefinementAgent();
-    console.log('refinementAgentNode: Calling agent.execute()');
+    llmLogger.debug('refinementAgentNode: Calling agent.execute()');
     const result = await agent.execute(validatedState);
-    console.log('refinementAgentNode: Agent execution completed', {
+    llmLogger.debug('refinementAgentNode: Agent execution completed', {
       hasResult: !!result,
       hasModules: !!result?.modules,
       modulesCount: Array.isArray(result?.modules) ? result.modules.length : 'not array',
@@ -866,7 +867,7 @@ async function refinementAgentNode(
       },
     };
 
-    console.log(
+    llmLogger.debug(
       `refinementAgentNode: Returning with iterations=${currentIterations}, global=${globalIterationCounter}`,
       {
         hasModules: !!resultWithIterations.modules,
@@ -885,7 +886,7 @@ async function refinementAgentNode(
 
     return resultWithIterations;
   } catch (error) {
-    console.error('refinementAgentNode: Error during execution', {
+    llmLogger.error('refinementAgentNode: Error during execution', {
       error,
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
@@ -981,7 +982,7 @@ async function contentGeneratorNode(
       alignment: validatedState.alignment,
     };
   } catch (error) {
-    console.error('contentGeneratorNode: Error during execution', {
+    llmLogger.error('contentGeneratorNode: Error during execution', {
       error,
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
