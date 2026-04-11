@@ -1,6 +1,6 @@
-# Sunny Singh Portfolio & Personal Growth System
+# Sunny Singh Portfolio & Personal OS
 
-A modern, production-ready React application built with TypeScript, Vite, and Tailwind CSS. This portfolio website includes an AI-powered personal growth system with comprehensive task management, goal tracking, habit formation, metrics tracking, and reflective journaling capabilities.
+A modern, production-ready React application built with TypeScript, Vite, and Tailwind CSS. This portfolio website includes an AI-powered **Personal OS** (my NextGen “life OS”) with comprehensive task management, goal tracking, habit formation, metrics tracking, and reflective journaling capabilities.
 
 ## Tech Stack
 
@@ -46,7 +46,7 @@ src/
 - SEO-friendly with proper meta tags
 - Google Analytics integration
 
-### Personal Growth System (Admin Area)
+### Personal OS (Admin Area)
 
 - **Tasks Management**: Kanban board, list view, calendar view, dependency tracking
 - **Projects**: Project health tracking, task generation, risk assessment
@@ -76,13 +76,13 @@ npm run dev
 
 The app will be available at `http://localhost:5173`
 
-### Accessing the Growth System
+### Accessing Personal OS
 
-The Personal Growth System is located in the admin area. To access it:
+Personal OS is located in the admin area. To access it:
 
 1. Navigate to `/admin/login` in your browser
 2. Use the demo credentials (or configure your own authentication)
-3. You'll be redirected to the Growth System dashboard
+3. You'll be redirected to the Personal OS dashboard
 
 Available admin routes:
 
@@ -113,7 +113,7 @@ npm run preview
 
 ## AI Features Guide
 
-The Growth System includes 33 AI-powered features across all entity types. To use AI features, you must first configure an AI provider in Settings.
+Personal OS includes 33 AI-powered features across all entity types. To use AI features, you must first configure an AI provider in Settings.
 
 ### Configuring AI Providers
 
@@ -201,7 +201,7 @@ When viewing a journal entry, click "AI Logbook Tools" to access:
 
 The chatbot at `/admin/chatbot` provides conversational AI assistance:
 
-- Ask questions about your growth system
+- Ask questions about your Personal OS
 - Get personalized recommendations
 - Analyze patterns across all your data
 - Plan your day, week, or month

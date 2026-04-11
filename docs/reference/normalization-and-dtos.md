@@ -1,44 +1,33 @@
-## Normalization and DTOs
+## API Contract and DTOs
 
 ### Rule of thumb
 
-- Always normalize backend responses at the **service boundary** before they reach React Query caches or UI components.
-- UI, hooks, and components must only consume **domain models** (camelCase keys, spaced enum values).
-- Backend payloads (DTOs) live under `src/types/api/` and are never passed directly to components.
+- Backend responses must match the canonical API contract (camelCase keys, agreed field names, agreed enum values).
+- Frontend should consume that contract directly via typed DTO/domain interfaces.
+- Do not add frontend normalization/mapping for backend casing or field-name drift.
 
 ### Why this exists
 
-- Backend payloads use camelCase keys and human-readable enum values with spaces (e.g. `"Day Job"`, `"On Hold"`, `"Not Started"`).
-- Frontend domain types also use camelCase keys and the same spaced enum values (aligned with backend).
-- Normalization adapts **key naming** (during migration from snake_case → camelCase) but enum **values** pass through unchanged.
+- Frontend normalization hides backend contract regressions and makes bugs harder to detect.
+- React Query cache integrity depends on consistent, canonical shapes.
+- Contract drift should fail fast and be fixed at the source (backend), not patched in UI code.
 
 ### Structure
 
-- **DTOs (API shapes)**: `src/types/api/`
-  - Example: `src/types/api/projects.dto.ts`
-- **Domain models (frontend shapes)**: `src/types/`
-  - Example: `src/types/growth-system.ts`
-- **Adapters/normalizers**: co-located inside service modules (current pattern)
-  - Example: `normalizeGoal()` in `src/services/growth-system/goals.service.ts`
-  - Example: `normalizeMetric()` in `src/services/growth-system/metrics.service.ts`
-  - Example: `normalizeLogbookEntry()` in `src/services/growth-system/logbook.service.ts`
-  - Optional future: extract shared normalizers into `src/services/normalization/` if reuse grows
+- **DTOs/API types**: `src/types/api/`
+- **Domain/frontend types**: `src/types/`
+- **Services**: call `apiClient` and return contract-aligned data without shape transforms.
 
 ### Checklist for new endpoints
 
-1. Define a DTO in `src/types/api/` matching the backend response.
-2. Add/extend a normalizer in the relevant service module (primarily for legacy snake_case → camelCase key mapping).
-3. Update the service to call `apiClient` with the DTO type and return the domain model.
-4. Add a lightweight test that covers key normalization (if needed).
-5. Ensure React Query caches only store normalized domain models.
-
-### Current state (after alignment)
-
-- **Enum values**: Frontend now uses the same spaced enum values as the backend (e.g. `"Day Job"`, `"On Hold"`, `"Not Started"`).
-- **Keys**: During migration from snake_case backend, normalizers map keys (e.g. `start_date` → `startDate`). Once backend is fully camelCase, key normalization can be removed.
+1. Define/update DTOs and frontend types to match the canonical backend contract.
+2. Implement service calls using those types without response mapping.
+3. If backend response does not match contract, open/fix backend issue before adding frontend feature work.
+4. Ensure React Query caches store contract-aligned models only.
+5. Add/update tests around expected contract fields when practical.
 
 ### Common pitfalls
 
-- Writing raw DTOs into caches (`queryClient.setQueryData`) without normalization.
-- Mixing DTO types and domain types in components.
-- Hardcoding old joined enum values (`DayJob`, `OnHold`) instead of using the new spaced values.
+- Adding frontend response adapters to convert snake_case to camelCase.
+- Mapping field names in services to work around backend response bugs.
+- Writing ambiguous type unions that accept both legacy and canonical fields long-term.

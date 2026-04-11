@@ -1,10 +1,12 @@
 # Backend snake_case Fields to Update
 
-This document tracks all backend API fields that still use snake_case and should be updated to camelCase. Once updated, normalization code can be removed from the frontend.
+This document tracks backend API fields that must be fixed to camelCase at the backend layer.
+
+Frontend policy: do not add normalization/mapping logic for snake_case responses. Treat snake_case responses as backend contract bugs and fix them at the source.
 
 ## Projects API (`/projects`)
 
-The following fields should be updated to camelCase. Note: camelCase versions already exist in the DTO for backwards compatibility during migration.
+The following fields should be updated to camelCase.
 
 - `start_date` → `startDate`
 - `target_end_date` → `targetEndDate`
@@ -17,10 +19,10 @@ The following fields should be updated to camelCase. Note: camelCase versions al
 - `completed_task_count` → `completedTaskCount`
 - `health_score` → `healthScore`
 
-**Files to update after backend migration**:
+**Files to verify after backend fix**:
 
-- `src/types/api/projects.dto.ts` - Remove legacy snake_case fields
-- `src/components/organisms/DebugInspector.tsx` - Update `target_end_date` reference
+- `src/types/api/projects.dto.ts` - Keep only canonical camelCase fields
+- `src/components/organisms/DebugInspector.tsx` - Remove any legacy snake_case references
 
 ## Chatbot API (`/chatbot/*`)
 
@@ -46,12 +48,12 @@ The following fields should be updated to camelCase:
 - `thread_id` → `threadId`
 - `parent_id` → `parentId`
 
-**Files to update after backend migration**:
+**Files to verify after backend fix**:
 
-- `src/types/chatbot.ts` - Update all interfaces to camelCase
-- `src/services/chatbot.service.ts` - Update field references (`updated_at` → `updatedAt`, `created_at` → `createdAt`)
-- `src/pages/admin/ChatbotPage.tsx` - Update `created_at` reference
-- `src/lib/react-query/chatbot-cache.ts` - Update sorting field references
+- `src/types/chatbot.ts` - Keep canonical camelCase contracts
+- `src/services/chatbot.service.ts` - Keep direct contract usage without mapping
+- `src/pages/admin/ChatbotPage.tsx` - Keep camelCase field usage only
+- `src/lib/react-query/chatbot-cache.ts` - Keep camelCase sort/access fields only
 
 ## Migration Checklist
 
@@ -59,8 +61,8 @@ After backend is updated:
 
 - [ ] Update backend API to return camelCase fields
 - [ ] Remove snake_case fields from DTOs
-- [ ] Update all service methods to use camelCase
-- [ ] Update all component references
-- [ ] Remove normalization code that maps snake_case → camelCase
+- [ ] Update all service methods to use camelCase directly
+- [ ] Update all component references to camelCase only
+- [ ] Confirm no frontend normalization/mapping was introduced
 - [ ] Verify all tests pass
 - [ ] Update this document to mark fields as migrated
