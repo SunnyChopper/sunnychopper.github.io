@@ -1,4 +1,4 @@
-import { ROUTES } from '@/routes';
+import { isAdminLoginPath, ROUTES } from '@/routes';
 
 /**
  * Knowledge Vault list/courses API is only needed under this prefix.
@@ -17,6 +17,6 @@ const GROWTH_LEAF_ONLY_ROUTES = /^\/admin\/(tasks|habits|metrics|goals|projects)
  */
 export function shouldLoadWalletAndRewards(pathname: string): boolean {
   if (!pathname.startsWith('/admin')) return false;
-  if (pathname === ROUTES.admin.login) return false;
+  if (isAdminLoginPath(pathname)) return false;
   return !GROWTH_LEAF_ONLY_ROUTES.test(pathname);
 }

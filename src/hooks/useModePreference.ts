@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
+import { useAuth } from '@/contexts/Auth';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
 
@@ -10,6 +11,7 @@ type ModePreference = 'work' | 'leisure';
  * Hook to fetch mode preference
  */
 export function useModePreference() {
+  const { user, loading: authLoading } = useAuth();
   const { recordError, recordSuccess } = useBackendStatus();
 
   const { data, isLoading, error, isError } = useQuery({
@@ -29,14 +31,19 @@ export function useModePreference() {
         throw err;
       }
     },
-    enabled: true,
+    // Avoid calling /preferences/mode while logged out (e.g. /admin/login); that 401/refresh
+    // path plus React Router login redirects caused redirect storms.
+    enabled: !authLoading && !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes - mode doesn't change often
   });
 
   const apiError = error ? extractApiError(error) : null;
 
+  // When logged out, ignore cached preference so leisure class does not stick after sign-out.
+  const mode = (user ? (data?.data ?? 'work') : 'work') as ModePreference;
+
   return {
-    mode: (data?.data || 'work') as ModePreference,
+    mode,
     isLoading: isLoading && !isError,
     isError,
     error: apiError || error,

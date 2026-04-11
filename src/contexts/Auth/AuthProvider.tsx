@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { AuthContext, type User } from './types';
-import { authService } from '@/lib/auth/auth.service';
+import { authService, AUTH_STORAGE_CLEARED_EVENT } from '@/lib/auth/auth.service';
 import { apiClient } from '@/lib/api-client';
 import { authLogger } from '@/lib/logger';
 
@@ -15,6 +15,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const onStorageCleared = () => {
+      setUser(null);
+      apiClient.setAuthToken(null);
+    };
+    window.addEventListener(AUTH_STORAGE_CLEARED_EVENT, onStorageCleared);
+    return () => window.removeEventListener(AUTH_STORAGE_CLEARED_EVENT, onStorageCleared);
+  }, []);
 
   useEffect(() => {
     authLogger.debug('AuthProvider mounted, checking user');

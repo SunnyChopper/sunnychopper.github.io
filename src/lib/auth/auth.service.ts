@@ -104,12 +104,22 @@ function getStoredTokens(): AuthTokens | null {
   }
 }
 
+/** Dispatched when local auth tokens + stored user are cleared (see AuthProvider listener). */
+export const AUTH_STORAGE_CLEARED_EVENT = 'personal-os:auth-storage-cleared';
+
+function notifyAuthStorageCleared(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(AUTH_STORAGE_CLEARED_EVENT));
+  }
+}
+
 /**
  * Clear stored tokens
  */
 function clearTokens(): void {
   localStorage.removeItem(TOKEN_STORAGE_KEY);
   localStorage.removeItem(USER_STORAGE_KEY);
+  notifyAuthStorageCleared();
 }
 
 /**

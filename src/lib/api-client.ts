@@ -11,7 +11,7 @@ import type {
   DashboardSummaryRequest,
 } from '@/types/api-contracts';
 import { authService } from '@/lib/auth/auth.service';
-import { ROUTES } from '@/routes';
+import { isAdminLoginPath, ROUTES } from '@/routes';
 import type { z } from 'zod';
 import type { AIFeature, FeatureProviderConfig } from '@/lib/llm/config/feature-types';
 import type {
@@ -133,10 +133,7 @@ class ApiClient {
               this.authToken = null;
 
               // Only redirect if not already on login page to prevent infinite loops
-              if (
-                typeof window !== 'undefined' &&
-                window.location.pathname !== ROUTES.admin.login
-              ) {
+              if (typeof window !== 'undefined' && !isAdminLoginPath(window.location.pathname)) {
                 apiLogger.log('Redirecting to login page');
                 window.location.href = ROUTES.admin.login;
               } else {
@@ -154,7 +151,7 @@ class ApiClient {
             this.authToken = null;
 
             // Only redirect if not already on login page to prevent infinite loops
-            if (typeof window !== 'undefined' && window.location.pathname !== ROUTES.admin.login) {
+            if (typeof window !== 'undefined' && !isAdminLoginPath(window.location.pathname)) {
               apiLogger.log('Redirecting to login page');
               window.location.href = ROUTES.admin.login;
             } else {
