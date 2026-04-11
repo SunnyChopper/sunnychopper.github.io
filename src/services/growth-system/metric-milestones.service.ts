@@ -1,4 +1,5 @@
 import { getStorageAdapter } from '@/lib/storage';
+import { logger } from '@/lib/logger';
 import { generateId, randomDelay } from '@/mocks/storage';
 import type { Metric, MetricLog, MetricMilestone } from '@/types/growth-system';
 import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
@@ -261,7 +262,7 @@ export const metricMilestonesService = {
         success: true,
       };
     } catch (error) {
-      console.error('Failed to award points:', error);
+      logger.error('Failed to award points', error);
       return {
         data: undefined,
         error: {

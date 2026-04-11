@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { llmLogger } from '@/lib/logger';
 import type { Goal, Task, GoalProgressBreakdown } from '@/types/growth-system';
 import type { ApiResponse } from '@/types/api-contracts';
 import type {
@@ -63,7 +64,7 @@ export const goalAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error getting progress coaching:', error);
+      llmLogger.error('Error getting progress coaching', error);
       return {
         data: undefined,
         error: {
@@ -121,7 +122,7 @@ export const goalAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error calculating health score:', error);
+      llmLogger.error('Error calculating health score', error);
       return {
         data: undefined,
         error: {
@@ -164,7 +165,7 @@ export const goalAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error decomposing goal:', error);
+      llmLogger.error('Error decomposing goal', error);
       return {
         data: undefined,
         error: {
@@ -219,7 +220,7 @@ export const goalAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error detecting conflicts:', error);
+      llmLogger.error('Error detecting conflicts', error);
       return {
         data: undefined,
         error: {

@@ -1,4 +1,5 @@
 import { llmConfig } from '@/lib/llm';
+import { llmLogger } from '@/lib/logger';
 import { taskPointsAIService } from '@/services/ai/task-points.service';
 import { apiClient } from '@/lib/api-client';
 import type {
@@ -74,7 +75,7 @@ export const tasksService = {
         });
         pointValue = calculation.pointValue;
       } catch (error) {
-        console.warn('Failed to calculate task points with AI:', error);
+        llmLogger.warn('Failed to calculate task points with AI', error);
       }
     }
 

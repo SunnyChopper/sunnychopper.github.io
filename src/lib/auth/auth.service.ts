@@ -2,11 +2,15 @@ import {
   signIn,
   signUp,
   signOut,
+  resetPassword,
+  confirmResetPassword,
   fetchAuthSession,
   getCurrentUser as amplifyGetCurrentUser,
+  fetchUserAttributes,
 } from 'aws-amplify/auth';
 import type { SignUpOutput, AuthSession } from 'aws-amplify/auth';
 import { apiClient } from '@/lib/api-client';
+import { authLogger } from '@/lib/logger';
 import type { ApiResponse } from '@/types/api-contracts';
 import { isCognitoConfigured } from './cognito-config';
 
@@ -26,6 +30,18 @@ export interface SignUpCredentials {
   email: string;
   password: string;
 }
+
+export interface ConfirmPasswordResetInput {
+  email: string;
+  confirmationCode: string;
+  newPassword: string;
+}
+
+const PASSWORD_RESET_SENT_MESSAGE =
+  'If an account exists for this email, you will receive a code shortly.';
+
+const COGNITO_NOT_CONFIGURED_MESSAGE =
+  'Cognito is not configured. Please check your environment variables.';
 
 export interface AuthTokens {
   accessToken: string;
@@ -59,7 +75,7 @@ function decodeJWT(token: string): { sub: string; email: string; [key: string]: 
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Error decoding JWT:', error);
+    authLogger.error('Error decoding JWT', error);
     return null;
   }
 }
@@ -298,7 +314,7 @@ function validateStoredUser(storedUser: User): boolean {
   // Check if stored user has a valid email (not a UUID/sub ID)
   if (!isValidEmail(storedUser.email)) {
     // Clear invalid stored user
-    console.warn('[authService] Stored user has invalid email (UUID), clearing it');
+    authLogger.warn('Stored user has invalid email (UUID), clearing it');
     localStorage.removeItem(USER_STORAGE_KEY);
     return false;
   }
@@ -379,9 +395,22 @@ async function fetchUserFromCognito(forceRefresh: boolean = false): Promise<User
   // Try to get email from ID token (which typically contains email)
   const cognitoTokens = session.tokens as unknown as CognitoAuthTokens;
   const idToken = cognitoTokens.idToken;
-  const fallbackEmail = cognitoUser.username; // Usually the email when email is used as username
+  const fallbackEmail = cognitoUser.username;
 
-  const email = extractEmailFromTokens(idToken, accessToken, fallbackEmail);
+  let email = extractEmailFromTokens(idToken, accessToken, fallbackEmail);
+
+  // If token/username gave a UUID (Cognito sub), fetch email from user attributes
+  if (!isValidEmail(email)) {
+    try {
+      const attributes = await fetchUserAttributes();
+      const attrEmail = attributes?.email;
+      if (isValidEmail(attrEmail) && attrEmail) {
+        email = attrEmail;
+      }
+    } catch {
+      // Keep existing email (UUID) if fetch fails; UI can hide or mask it
+    }
+  }
 
   return {
     id: decodedAccessToken.sub,
@@ -404,7 +433,7 @@ function handleSignInError(error: unknown): { code: string; message: string } {
   const errorName = error.name || '';
   const errorMsg = error.message || '';
 
-  console.log('[authService] Error details:', {
+  authLogger.warn('Sign-in error details', {
     name: errorName,
     message: errorMsg,
     stack: error.stack,
@@ -482,6 +511,120 @@ function handleSignInError(error: unknown): { code: string; message: string } {
   };
 }
 
+function handlePasswordResetRequestError(error: unknown): { code: string; message: string } {
+  if (!(error instanceof Error)) {
+    return {
+      code: 'PASSWORD_RESET_FAILED',
+      message: 'An unexpected error occurred. Please try again.',
+    };
+  }
+
+  const errorName = error.name || '';
+  const errorMsg = error.message || '';
+
+  if (
+    errorName.includes('TooManyRequestsException') ||
+    errorName.includes('LimitExceededException') ||
+    errorMsg.includes('too many requests') ||
+    errorMsg.includes('Attempt limit exceeded')
+  ) {
+    return {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many reset attempts. Please wait a few minutes and try again.',
+    };
+  }
+
+  if (errorName.includes('InvalidParameterException') || errorMsg.includes('Invalid parameter')) {
+    return {
+      code: 'INVALID_PARAMETER',
+      message: 'Invalid email format. Please enter a valid email address.',
+    };
+  }
+
+  if (
+    errorName.includes('InvalidEmailRoleAccessPolicyException') ||
+    errorName.includes('NotAuthorizedException')
+  ) {
+    return {
+      code: 'PASSWORD_RESET_CONFIG',
+      message: 'Password reset is temporarily unavailable. Please try again later.',
+    };
+  }
+
+  return {
+    code: 'PASSWORD_RESET_FAILED',
+    message: errorMsg || 'Could not send reset code. Please try again.',
+  };
+}
+
+function handlePasswordResetConfirmError(error: unknown): { code: string; message: string } {
+  if (!(error instanceof Error)) {
+    return {
+      code: 'PASSWORD_RESET_CONFIRM_FAILED',
+      message: 'An unexpected error occurred. Please try again.',
+    };
+  }
+
+  const errorName = error.name || '';
+  const errorMsg = error.message || '';
+
+  if (
+    errorName.includes('CodeMismatchException') ||
+    errorMsg.includes('Invalid verification code')
+  ) {
+    return {
+      code: 'INVALID_CODE',
+      message: 'That code is invalid. Check the email and try again.',
+    };
+  }
+
+  if (
+    errorName.includes('ExpiredCodeException') ||
+    errorMsg.includes('expired') ||
+    errorMsg.includes('Expired')
+  ) {
+    return {
+      code: 'EXPIRED_CODE',
+      message: 'This code has expired. Request a new code from the sign-in page.',
+    };
+  }
+
+  if (
+    errorName.includes('InvalidPasswordException') ||
+    errorMsg.includes('Password did not conform')
+  ) {
+    return {
+      code: 'INVALID_PASSWORD',
+      message:
+        'Password does not meet requirements. Use at least 8 characters with uppercase, lowercase, and numbers.',
+    };
+  }
+
+  if (
+    errorName.includes('TooManyRequestsException') ||
+    errorName.includes('LimitExceededException') ||
+    errorMsg.includes('too many requests') ||
+    errorMsg.includes('Attempt limit exceeded')
+  ) {
+    return {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many attempts. Please wait a few minutes and try again.',
+    };
+  }
+
+  if (errorName.includes('InvalidParameterException') || errorMsg.includes('Invalid parameter')) {
+    return {
+      code: 'INVALID_PARAMETER',
+      message: 'Invalid code or password format. Please check your input.',
+    };
+  }
+
+  return {
+    code: 'PASSWORD_RESET_CONFIRM_FAILED',
+    message: errorMsg || 'Could not reset password. Please try again.',
+  };
+}
+
 export const authService = {
   /**
    * Sign up a new user with AWS Cognito
@@ -494,7 +637,7 @@ export const authService = {
         success: false,
         error: {
           code: 'COGNITO_NOT_CONFIGURED',
-          message: 'Cognito is not configured. Please check your environment variables.',
+          message: COGNITO_NOT_CONFIGURED_MESSAGE,
         },
       };
     }
@@ -583,22 +726,22 @@ export const authService = {
         success: false,
         error: {
           code: 'COGNITO_NOT_CONFIGURED',
-          message: 'Cognito is not configured. Please check your environment variables.',
+          message: COGNITO_NOT_CONFIGURED_MESSAGE,
         },
       };
     }
 
     try {
-      console.log('[authService] Attempting Cognito signIn for:', credentials.email);
+      authLogger.info('Attempting Cognito sign-in', { email: credentials.email });
       await signIn({
         username: credentials.email,
         password: credentials.password,
       });
 
       // Fetch the auth session to get tokens
-      console.log('[authService] Fetching auth session...');
+      authLogger.debug('Fetching auth session after sign-in');
       const session: AuthSession = await fetchAuthSession({ forceRefresh: false });
-      console.log('[authService] Auth session:', {
+      authLogger.debug('Fetched auth session', {
         hasTokens: !!session.tokens,
         hasAccessToken: !!session.tokens?.accessToken,
       });
@@ -630,7 +773,7 @@ export const authService = {
         },
       };
     } catch (error) {
-      console.error('[authService] SignIn error:', error);
+      authLogger.error('Sign-in failed', error);
       const { code, message } = handleSignInError(error);
 
       return {
@@ -644,6 +787,79 @@ export const authService = {
   },
 
   /**
+   * Request a Cognito password reset code (email delivery).
+   * Uses a generic success message on success and on UserNotFound to limit email enumeration.
+   */
+  async requestPasswordReset(email: string): Promise<ApiResponse<{ message: string }>> {
+    if (!isCognitoConfigured()) {
+      return {
+        success: false,
+        error: {
+          code: 'COGNITO_NOT_CONFIGURED',
+          message: COGNITO_NOT_CONFIGURED_MESSAGE,
+        },
+      };
+    }
+
+    try {
+      await resetPassword({ username: email.trim() });
+      return {
+        success: true,
+        data: { message: PASSWORD_RESET_SENT_MESSAGE },
+      };
+    } catch (error) {
+      if (error instanceof Error && error.name.includes('UserNotFoundException')) {
+        return {
+          success: true,
+          data: { message: PASSWORD_RESET_SENT_MESSAGE },
+        };
+      }
+      const { code, message } = handlePasswordResetRequestError(error);
+      return {
+        success: false,
+        error: { code, message },
+      };
+    }
+  },
+
+  /**
+   * Complete password reset with code from email and new password.
+   */
+  async confirmPasswordReset(
+    input: ConfirmPasswordResetInput
+  ): Promise<ApiResponse<{ message: string }>> {
+    if (!isCognitoConfigured()) {
+      return {
+        success: false,
+        error: {
+          code: 'COGNITO_NOT_CONFIGURED',
+          message: COGNITO_NOT_CONFIGURED_MESSAGE,
+        },
+      };
+    }
+
+    try {
+      await confirmResetPassword({
+        username: input.email.trim(),
+        confirmationCode: input.confirmationCode.trim(),
+        newPassword: input.newPassword,
+      });
+      return {
+        success: true,
+        data: {
+          message: 'Your password was reset. You can sign in with your new password.',
+        },
+      };
+    } catch (error) {
+      const { code, message } = handlePasswordResetConfirmError(error);
+      return {
+        success: false,
+        error: { code, message },
+      };
+    }
+  },
+
+  /**
    * Sign out the current user from AWS Cognito
    */
   async signOut(): Promise<ApiResponse<void>> {
@@ -651,7 +867,7 @@ export const authService = {
       // Sign out from Cognito
       await signOut();
     } catch (error) {
-      console.warn('Cognito sign out failed:', error);
+      authLogger.warn('Cognito sign out failed', error);
       // Continue with local cleanup even if Cognito sign out fails
     }
 
@@ -671,7 +887,7 @@ export const authService = {
         success: false,
         error: {
           code: 'COGNITO_NOT_CONFIGURED',
-          message: 'Cognito is not configured. Please check your environment variables.',
+          message: COGNITO_NOT_CONFIGURED_MESSAGE,
         },
       };
     }
@@ -712,7 +928,7 @@ export const authService = {
         success: false,
         error: {
           code: 'COGNITO_NOT_CONFIGURED',
-          message: 'Cognito is not configured. Please check your environment variables.',
+          message: COGNITO_NOT_CONFIGURED_MESSAGE,
         },
       };
     }
@@ -730,10 +946,10 @@ export const authService = {
       // If stored user is invalid or token expired, refresh tokens first
       const tokensExpired = areStoredTokensExpired();
       if (tokensExpired) {
-        console.log('[authService] getCurrentUser: Tokens expired, attempting refresh');
+        authLogger.info('Stored tokens expired, attempting refresh');
         const refreshResult = await performTokenRefresh();
         if (!refreshResult.success) {
-          console.warn('[authService] getCurrentUser: Token refresh failed');
+          authLogger.warn('Token refresh failed while loading current user');
           return {
             success: false,
             error: {
@@ -742,7 +958,7 @@ export const authService = {
             },
           };
         }
-        console.log('[authService] getCurrentUser: Token refresh successful');
+        authLogger.info('Token refresh successful while loading current user');
       }
 
       // Get from Cognito (use forceRefresh if tokens were expired to ensure fresh session)
@@ -767,7 +983,7 @@ export const authService = {
       // If Cognito call fails, try to return stored user as fallback (only if valid)
       const storedUser = getStoredUser();
       if (storedUser && validateStoredUser(storedUser)) {
-        console.warn('[authService] getCurrentUser: Cognito call failed, using stored user');
+        authLogger.warn('Cognito call failed, using stored user fallback', error);
         return {
           success: true,
           data: storedUser,
@@ -776,7 +992,7 @@ export const authService = {
 
       // If stored user is invalid, clear it
       if (storedUser && !isValidEmail(storedUser.email)) {
-        console.warn('[authService] getCurrentUser: Stored user has invalid email, clearing it');
+        authLogger.warn('Stored user has invalid email, clearing it');
         localStorage.removeItem(USER_STORAGE_KEY);
       }
 
@@ -832,7 +1048,7 @@ export const authService = {
   clearInvalidStoredUser(): void {
     const storedUser = getStoredUser();
     if (storedUser && !isValidEmail(storedUser.email)) {
-      console.warn('[authService] Clearing stored user with invalid email:', storedUser.email);
+      authLogger.warn('Clearing stored user with invalid email', { email: storedUser.email });
       localStorage.removeItem(USER_STORAGE_KEY);
     }
   },

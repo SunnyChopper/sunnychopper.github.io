@@ -39,6 +39,9 @@ export function BackendStatusProvider({ children }: BackendStatusProviderProps) 
       }
     },
     enabled: true,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
     retry: false, // Don't retry health checks automatically
     // Note: refetchInterval will be set dynamically via queryClient.setQueryData
     // For now, we'll let components trigger manual refetches when needed

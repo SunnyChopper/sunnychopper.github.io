@@ -4,6 +4,7 @@ import { purgeLocalFile } from '@/hooks/useLocalFiles';
 import { useMarkdownFiles } from '@/hooks/useMarkdownFiles';
 import { useFileTree } from '@/hooks/useFileTree';
 import { invalidateAfterFileOperation } from '@/lib/markdown/query-invalidation';
+import { logger } from '@/lib/logger';
 import { ROUTES } from '@/routes';
 
 export interface DeleteFileOptions {
@@ -36,7 +37,7 @@ export function useFileDeletion() {
       try {
         await deleteFile(filePath, fileId);
       } catch (error) {
-        console.warn('Backend deletion failed:', error);
+        logger.warn('Backend deletion failed', error);
         // Continue even if backend deletion fails
       }
     }

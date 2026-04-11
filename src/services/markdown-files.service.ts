@@ -23,6 +23,7 @@ import {
   updateLocalFileMetadata,
   purgeLocalFile,
 } from '@/hooks/useLocalFiles';
+import { logger } from '@/lib/logger';
 
 /**
  * Check if an error indicates backend unavailability
@@ -156,7 +157,7 @@ export const markdownFilesService = {
           };
         } catch (fetchError) {
           // If fetching from S3 fails, return the file without content but log the error
-          console.error('Failed to fetch file content from downloadUrl:', fetchError);
+          logger.error('Failed to fetch file content from downloadUrl', fetchError);
           return {
             success: false,
             error: {
@@ -340,10 +341,7 @@ export const markdownFilesService = {
   async updateFileById(fileId: string, content: string): Promise<ApiResponse<MarkdownFile>> {
     // Validate that fileId is not a URL (common mistake: using downloadUrl instead of id)
     if (fileId.startsWith('http://') || fileId.startsWith('https://')) {
-      console.error(
-        '[MarkdownService] ERROR: Attempted to update file using a URL instead of file ID:',
-        fileId
-      );
+      logger.error('Attempted to update file using a URL instead of a file ID', { fileId });
       return {
         success: false,
         error: {
@@ -355,14 +353,14 @@ export const markdownFilesService = {
     }
 
     if (import.meta.env.DEV) {
-      console.log('[MarkdownService] Updating file by ID:', fileId);
+      logger.debug('Updating file by ID', { fileId });
     }
     const request: UpdateFileRequest = { content };
     const response = await apiClient.put<UpdateFileResponse>(`/markdown-files/${fileId}`, request);
 
     if (response.success && response.data) {
       if (import.meta.env.DEV) {
-        console.log('[MarkdownService] File updated successfully:', fileId);
+        logger.debug('File updated successfully', { fileId });
       }
       return {
         success: true,
@@ -370,7 +368,7 @@ export const markdownFilesService = {
       };
     }
 
-    console.error('[MarkdownService] Failed to update file:', fileId, response.error);
+    logger.error('Failed to update file', { fileId, error: response.error });
     return {
       success: false,
       error: response.error || {
@@ -490,29 +488,27 @@ export const markdownFilesService = {
    * Always attempts to delete from backend, and also purges from localStorage aggressively
    */
   async deleteFile(filePath: string, fileId?: string): Promise<ApiResponse<void>> {
-    console.log(
-      `[MarkdownService] deleteFile called for: ${filePath}`,
-      fileId ? `(ID: ${fileId})` : ''
-    );
+    logger.debug('deleteFile called', { filePath, fileId });
 
     // Always purge from localStorage first - this is aggressive and will remove the file
     // regardless of exact path matching. This ensures complete local deletion.
-    console.log(`[MarkdownService] Purging from localStorage: ${filePath}`);
+    logger.debug('Purging markdown file from local storage', { filePath });
     purgeLocalFile(filePath);
 
     // Try to delete from backend using file ID if available, otherwise fall back to path
     // Backend expects file ID, not path
     const deleteIdentifier = fileId || filePath;
-    console.log(
-      `[MarkdownService] Making DELETE request to: /markdown-files/${deleteIdentifier}`,
-      fileId ? '(using ID)' : '(using path fallback)'
-    );
+    logger.debug('Making delete request for markdown file', {
+      filePath,
+      deleteIdentifier,
+      usedFileId: Boolean(fileId),
+    });
     const response = await apiClient.delete<DeleteFileResponse>(
       `/markdown-files/${deleteIdentifier}`
     );
 
     if (response.success) {
-      console.log(`[MarkdownService] DELETE request successful for: ${filePath}`);
+      logger.debug('Delete request successful for markdown file', { filePath });
       return {
         success: true,
       };
@@ -523,14 +519,14 @@ export const markdownFilesService = {
     // For regular files, the backend error is more important
     if (isBackendUnavailable(response.error)) {
       if (import.meta.env.DEV) {
-        console.log(`[MarkdownService] Backend unavailable, but localStorage purged: ${filePath}`);
+        logger.debug('Backend unavailable, but local markdown file was purged', { filePath });
       }
       return {
         success: true,
       };
     }
 
-    console.error(`[MarkdownService] DELETE request failed for: ${filePath}`, response.error);
+    logger.error('Delete request failed for markdown file', { filePath, error: response.error });
     return {
       success: false,
       error: response.error || {
@@ -646,9 +642,9 @@ export const markdownFilesService = {
 
           if (isCorsError) {
             // CORS error on response - upload may have succeeded, proceed with metadata fetch
-            console.warn(
-              `[MarkdownService] CORS error on S3 upload response for ${file.name}. Assuming upload succeeded and proceeding with metadata fetch.`
-            );
+            logger.warn('CORS error on S3 upload response; proceeding with metadata fetch', {
+              fileName: file.name,
+            });
             uploadSucceeded = true; // Assume success, will verify via metadata fetch
           } else {
             // Actual network/upload error
@@ -670,9 +666,10 @@ export const markdownFilesService = {
 
         while (!fileResponse.success && retries > 0) {
           if (import.meta.env.DEV) {
-            console.log(
-              `[MarkdownService] Metadata fetch failed for ${file.name}, retrying... (${retries} attempts left)`
-            );
+            logger.debug('Metadata fetch failed after upload, retrying', {
+              fileName: file.name,
+              retriesRemaining: retries,
+            });
           }
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
           fileResponse = await this.getFileById(fileId);
@@ -685,8 +682,9 @@ export const markdownFilesService = {
           // create a partial file object. This ensures the upload is considered successful
           // even if metadata isn't immediately available or if we couldn't verify the upload
           // due to CORS issues.
-          console.warn(
-            `[MarkdownService] S3 upload completed for ${file.name}, but metadata fetch failed after retries. Creating partial file object. The file list will refresh to get the full metadata.`
+          logger.warn(
+            'S3 upload completed, but metadata fetch failed after retries; creating partial file object',
+            { fileName: file.name }
           );
 
           // Return a partial file object with the information we have
@@ -726,7 +724,7 @@ export const markdownFilesService = {
       // Metadata fetch failures are handled within the individual upload promise
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload files';
 
-      console.error('[MarkdownService] Upload failed:', errorMessage);
+      logger.error('Upload failed', { errorMessage });
 
       return {
         success: false,

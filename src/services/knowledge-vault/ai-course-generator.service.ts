@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { llmLogger } from '@/lib/logger';
 import { coursesService } from './courses.service';
 import { vaultItemsService } from './vault-items.service';
 import { generateId } from '@/mocks/storage';
@@ -149,7 +150,7 @@ export const aiCourseGeneratorService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error generating pre-assessment:', error);
+      llmLogger.error('Error generating pre-assessment', error);
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Failed to generate assessment',
@@ -342,7 +343,7 @@ export const aiCourseGeneratorService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error generating lesson content:', error);
+      llmLogger.error('Error generating lesson content', error);
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Failed to generate lesson',
@@ -400,7 +401,7 @@ export const aiCourseGeneratorService = {
         success: true,
       };
     } catch (error) {
-      console.error('Error creating course from skeleton:', error);
+      llmLogger.error('Error creating course from skeleton', error);
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Failed to create course',

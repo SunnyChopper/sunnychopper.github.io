@@ -101,12 +101,12 @@ export default function DashboardPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {isLeisureMode ? 'Leisure Dashboard' : 'Growth System Dashboard'}
+          {isLeisureMode ? 'Leisure Dashboard' : 'Personal OS Dashboard'}
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
           {isLeisureMode
             ? 'Relax, recharge, and enjoy your personal time'
-            : 'Track your progress and manage your personal growth journey'}
+            : 'Track your progress and run your Personal OS'}
         </p>
       </div>
 

@@ -1,6 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { vaultItemsService, coursesService } from '@/services/knowledge-vault';
+import { shouldLoadKnowledgeVaultData } from '@/lib/route-data-policy';
+import { queryKeys } from '@/lib/react-query/query-keys';
 import {
   KnowledgeVaultContext,
   type KnowledgeVaultContextType,
@@ -25,80 +29,85 @@ interface KnowledgeVaultProviderProps {
   children: ReactNode;
 }
 
+function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps) => {
-  const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const hasInitialized = useRef(false);
+  const { pathname } = useLocation();
+  const queryClient = useQueryClient();
+  const kvEnabled = shouldLoadKnowledgeVaultData(pathname);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const vaultQuery = useQuery({
+    queryKey: queryKeys.knowledgeVault.vaultItems(),
+    enabled: kvEnabled,
+    queryFn: async (): Promise<VaultItem[]> => {
+      const response = await vaultItemsService.getAll();
+      if (response.success && response.data) {
+        return response.data;
+      }
+      const msg = response.error || '';
+      if (msg.includes('404') || msg.includes('Not Found')) {
+        return [];
+      }
+      throw new Error(typeof msg === 'string' ? msg : 'Failed to load vault items');
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const coursesQuery = useQuery({
+    queryKey: queryKeys.knowledgeVault.courses(),
+    enabled: kvEnabled,
+    queryFn: async (): Promise<Course[]> => {
+      const response = await coursesService.getAll();
+      if (response.success && response.data) {
+        return response.data;
+      }
+      const msg = response.error || '';
+      if (msg.includes('404') || msg.includes('Not Found')) {
+        return [];
+      }
+      throw new Error(typeof msg === 'string' ? msg : 'Failed to load courses');
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const vaultItems = vaultQuery.data ?? [];
+  const courses = coursesQuery.data ?? [];
+
+  const loading = kvEnabled && (vaultQuery.isPending || coursesQuery.isPending);
+
+  const error = useMemo(() => {
+    if (!kvEnabled) return actionError;
+    const qErr =
+      (vaultQuery.isError && vaultQuery.error ? errMsg(vaultQuery.error) : null) ||
+      (coursesQuery.isError && coursesQuery.error ? errMsg(coursesQuery.error) : null);
+    return qErr || actionError;
+  }, [
+    kvEnabled,
+    actionError,
+    vaultQuery.isError,
+    vaultQuery.error,
+    coursesQuery.isError,
+    coursesQuery.error,
+  ]);
+
+  const invalidateKv = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeVault.all });
+  }, [queryClient]);
 
   const refreshVaultItems = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await vaultItemsService.getAll();
-
-      if (response.success && response.data) {
-        setVaultItems(response.data);
-      } else {
-        // Only set error if it's not a 404 (endpoint might not exist yet)
-        const is404 = response.error?.includes('404') || response.error?.includes('Not Found');
-        if (!is404) {
-          setError(response.error);
-        }
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load vault items';
-      // Only set error if it's not a 404
-      const is404 = errorMessage.includes('404') || errorMessage.includes('Not Found');
-      if (!is404) {
-        setError(errorMessage);
-      }
-      console.error('Error loading vault items:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeVault.vaultItems() });
+  }, [queryClient]);
 
   const refreshCourses = useCallback(async () => {
-    try {
-      setError(null);
-
-      const response = await coursesService.getAll();
-
-      if (response.success && response.data) {
-        setCourses(response.data);
-      } else {
-        // Only set error if it's not a 404 (endpoint might not exist yet)
-        const is404 = response.error?.includes('404') || response.error?.includes('Not Found');
-        if (!is404) {
-          setError(response.error);
-        }
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load courses';
-      // Only set error if it's not a 404
-      const is404 = errorMessage.includes('404') || errorMessage.includes('Not Found');
-      if (!is404) {
-        setError(errorMessage);
-      }
-      console.error('Error loading courses:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Only initialize once
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      refreshVaultItems();
-      refreshCourses();
-    }
-  }, [refreshVaultItems, refreshCourses]);
+    await queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeVault.courses() });
+  }, [queryClient]);
 
   const searchItems = useCallback(async (query: string): Promise<VaultItem[]> => {
     try {
-      setError(null);
+      setActionError(null);
       const response = await vaultItemsService.search(query);
 
       if (response.success && response.data) {
@@ -107,7 +116,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
       return [];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Search failed';
-      setError(errorMessage);
+      setActionError(errorMessage);
       return [];
     }
   }, []);
@@ -121,7 +130,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
 
   const filterItems = useCallback(async (filters: VaultItemFilters): Promise<VaultItem[]> => {
     try {
-      setError(null);
+      setActionError(null);
       const response = await vaultItemsService.getAll(filters);
 
       if (response.success && response.data) {
@@ -130,7 +139,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
       return [];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Filter failed';
-      setError(errorMessage);
+      setActionError(errorMessage);
       return [];
     }
   }, []);
@@ -138,133 +147,133 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
   const createNote = useCallback(
     async (input: CreateNoteInput): Promise<Note> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await vaultItemsService.createNote(input);
 
         if (response.success && response.data) {
-          await refreshVaultItems();
+          await invalidateKv();
           return response.data;
         } else {
           throw new Error(response.error || 'Failed to create note');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to create note';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
-    [refreshVaultItems]
+    [invalidateKv]
   );
 
   const updateNote = useCallback(
     async (id: string, input: UpdateNoteInput): Promise<Note> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await vaultItemsService.updateNote(id, input);
 
         if (response.success && response.data) {
-          await refreshVaultItems();
+          await invalidateKv();
           return response.data;
         } else {
           throw new Error(response.error || 'Failed to update note');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to update note';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
-    [refreshVaultItems]
+    [invalidateKv]
   );
 
   const createDocument = useCallback(
     async (input: CreateDocumentInput): Promise<Document> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await vaultItemsService.createDocument(input);
 
         if (response.success && response.data) {
-          await refreshVaultItems();
+          await invalidateKv();
           return response.data;
         } else {
           throw new Error(response.error || 'Failed to create document');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to create document';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
-    [refreshVaultItems]
+    [invalidateKv]
   );
 
   const updateDocument = useCallback(
     async (id: string, input: UpdateDocumentInput): Promise<Document> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await vaultItemsService.updateDocument(id, input);
 
         if (response.success && response.data) {
-          await refreshVaultItems();
+          await invalidateKv();
           return response.data;
         } else {
           throw new Error(response.error || 'Failed to update document');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to update document';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
-    [refreshVaultItems]
+    [invalidateKv]
   );
 
   const createFlashcard = useCallback(
     async (input: CreateFlashcardInput): Promise<Flashcard> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await vaultItemsService.createFlashcard(input);
 
         if (response.success && response.data) {
-          await refreshVaultItems();
+          await invalidateKv();
           return response.data;
         } else {
           throw new Error(response.error || 'Failed to create flashcard');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to create flashcard';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
-    [refreshVaultItems]
+    [invalidateKv]
   );
 
   const updateFlashcard = useCallback(
     async (id: string, input: UpdateFlashcardInput): Promise<Flashcard> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await vaultItemsService.updateFlashcard(id, input);
 
         if (response.success && response.data) {
-          await refreshVaultItems();
+          await invalidateKv();
           return response.data;
         } else {
           throw new Error(response.error || 'Failed to update flashcard');
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to update flashcard';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
-    [refreshVaultItems]
+    [invalidateKv]
   );
 
   const createCourse = useCallback(
     async (input: CreateCourseInput): Promise<Course> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await coursesService.create(input);
 
         if (response.success && response.data) {
@@ -275,7 +284,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to create course';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
@@ -285,7 +294,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
   const updateCourse = useCallback(
     async (id: string, input: UpdateCourseInput): Promise<Course> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await coursesService.update(id, input);
 
         if (response.success && response.data) {
@@ -296,7 +305,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to update course';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
@@ -306,27 +315,27 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
   const deleteItem = useCallback(
     async (id: string): Promise<void> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await vaultItemsService.delete(id);
 
         if (!response.success) {
           throw new Error(response.error || 'Failed to delete item');
         }
 
-        await refreshVaultItems();
+        await invalidateKv();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to delete item';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
-    [refreshVaultItems]
+    [invalidateKv]
   );
 
   const deleteCourse = useCallback(
     async (id: string): Promise<void> => {
       try {
-        setError(null);
+        setActionError(null);
         const response = await coursesService.delete(id);
 
         if (!response.success) {
@@ -334,14 +343,14 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
         }
 
         await refreshCourses();
-        await refreshVaultItems();
+        await invalidateKv();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to delete course';
-        setError(errorMessage);
+        setActionError(errorMessage);
         throw err;
       }
     },
-    [refreshCourses, refreshVaultItems]
+    [refreshCourses, invalidateKv]
   );
 
   const markItemAccessed = useCallback(async (id: string): Promise<void> => {

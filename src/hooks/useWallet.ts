@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { walletService } from '@/services/rewards';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
+import { shouldLoadWalletAndRewards } from '@/lib/route-data-policy';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError, isNetworkError } from '@/lib/react-query/error-utils';
 import { applyWalletUpdate } from '@/lib/react-query/growth-system-cache';
@@ -10,10 +12,13 @@ import type { WalletTransaction } from '@/types/rewards';
  * Hook to fetch wallet balance
  */
 export function useWalletBalance() {
+  const { pathname } = useLocation();
+  const loadWallet = shouldLoadWalletAndRewards(pathname);
   const { recordError, recordSuccess } = useBackendStatus();
 
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.wallet.balance(),
+    enabled: loadWallet,
     queryFn: async () => {
       try {
         const result = await walletService.getBalance();
@@ -47,10 +52,13 @@ export function useWalletBalance() {
  * Hook to fetch wallet transactions
  */
 export function useWalletTransactions(limit: number = 50) {
+  const { pathname } = useLocation();
+  const loadWallet = shouldLoadWalletAndRewards(pathname);
   const { recordError, recordSuccess } = useBackendStatus();
 
   const { data, isLoading, error, isError } = useQuery({
     queryKey: queryKeys.wallet.transactions(limit),
+    enabled: loadWallet,
     queryFn: async () => {
       try {
         const result = await walletService.getTransactions(limit);

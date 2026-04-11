@@ -37,7 +37,7 @@ export default function ComponentsDemoPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Components Demo</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Showcase of all shared UI components in the Growth System
+          Showcase of all shared UI components in Personal OS
         </p>
       </div>
 

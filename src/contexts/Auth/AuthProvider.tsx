@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AuthContext, type User } from './types';
 import { authService } from '@/lib/auth/auth.service';
 import { apiClient } from '@/lib/api-client';
+import { authLogger } from '@/lib/logger';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -16,7 +17,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    console.log('[AuthProvider] Component mounted, calling checkUser');
+    authLogger.debug('AuthProvider mounted, checking user');
     // Clear any invalid stored users (with UUID emails) before checking
     authService.clearInvalidStoredUser();
     checkUser();
@@ -31,20 +32,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Check if token is expired
       if (authService.areStoredTokensExpired()) {
-        console.log('[AuthProvider] Periodic check: Token expired, refreshing');
+        authLogger.info('Periodic auth check found expired token');
         try {
           const refreshResponse = await authService.refreshToken();
           if (refreshResponse.success && refreshResponse.data) {
-            console.log('[AuthProvider] Periodic check: Token refresh successful');
+            authLogger.info('Periodic token refresh successful');
             apiClient.setAuthToken(refreshResponse.data.accessToken);
           } else {
-            console.warn('[AuthProvider] Periodic check: Token refresh failed');
+            authLogger.warn('Periodic token refresh failed');
             authService.clearTokensOnly();
             apiClient.setAuthToken(null);
             setUser(null);
           }
         } catch (err) {
-          console.warn('[AuthProvider] Periodic token refresh exception:', err);
+          authLogger.warn('Periodic token refresh threw', err);
           authService.clearTokensOnly();
           apiClient.setAuthToken(null);
           setUser(null);
@@ -55,25 +56,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Check if token should be refreshed proactively (within 5 minutes of expiration)
       if (authService.shouldRefreshTokenProactively(300)) {
         const timeUntilExpiration = authService.getTimeUntilExpiration(tokens.accessToken);
-        console.log(
-          `[AuthProvider] Periodic check: Token expires in ${timeUntilExpiration}s, refreshing proactively`
-        );
+        authLogger.info('Token nearing expiry, refreshing proactively', {
+          timeUntilExpiration,
+        });
         try {
           const refreshResponse = await authService.refreshToken();
           if (refreshResponse.success && refreshResponse.data) {
-            console.log('[AuthProvider] Periodic check: Proactive token refresh successful');
+            authLogger.info('Proactive token refresh successful');
             apiClient.setAuthToken(refreshResponse.data.accessToken);
           } else {
-            console.warn('[AuthProvider] Periodic check: Proactive token refresh failed');
+            authLogger.warn('Proactive token refresh failed');
           }
         } catch (err) {
-          console.warn('[AuthProvider] Proactive token refresh exception:', err);
+          authLogger.warn('Proactive token refresh threw', err);
         }
       }
     }, 60000); // Check every 60 seconds
 
     return () => {
-      console.log('[AuthProvider] Component unmounting, clearing token check interval');
+      authLogger.debug('AuthProvider unmounting, clearing token check interval');
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
         refreshIntervalRef.current = null;
@@ -83,24 +84,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const handleTokenRefresh = async (): Promise<boolean> => {
-    console.log('[AuthProvider] checkUser: Tokens expired, attempting refresh');
+    authLogger.info('checkUser found expired tokens, attempting refresh');
     try {
       const refreshResponse = await authService.refreshToken();
       if (refreshResponse.success && refreshResponse.data) {
-        console.log('[AuthProvider] checkUser: Token refresh successful');
+        authLogger.info('checkUser token refresh successful');
         apiClient.setAuthToken(refreshResponse.data.accessToken);
         return true;
       }
-      console.warn('[AuthProvider] checkUser: Token refresh failed, clearing auth state');
+      authLogger.warn('checkUser token refresh failed, clearing auth state');
       authService.clearTokensOnly();
       apiClient.setAuthToken(null);
       setUser(null);
       return false;
     } catch (refreshError) {
-      console.warn(
-        '[AuthProvider] checkUser: Token refresh exception, clearing auth state:',
-        refreshError
-      );
+      authLogger.warn('checkUser token refresh threw, clearing auth state', refreshError);
       authService.clearTokensOnly();
       apiClient.setAuthToken(null);
       setUser(null);
@@ -111,25 +109,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const handleGetCurrentUser = async (): Promise<void> => {
     try {
       const response = await authService.getCurrentUser();
-      console.log('[AuthProvider] checkUser: getCurrentUser response:', {
+      authLogger.debug('checkUser getCurrentUser response', {
         success: response.success,
         hasData: !!response.data,
         error: response.error,
       });
       if (response.success && response.data) {
-        console.log('[AuthProvider] checkUser: Setting user:', response.data.email);
+        authLogger.info('checkUser loaded current user', { email: response.data.email });
         setUser(response.data);
       } else {
-        console.warn('[AuthProvider] checkUser: Failed to fetch current user, clearing auth state');
+        authLogger.warn('checkUser failed to fetch current user, clearing auth state');
         authService.clearTokensOnly();
         apiClient.setAuthToken(null);
         setUser(null);
       }
     } catch (err) {
-      console.warn(
-        '[AuthProvider] checkUser: Exception fetching current user, clearing auth state:',
-        err
-      );
+      authLogger.warn('checkUser threw while fetching current user, clearing auth state', err);
       authService.clearTokensOnly();
       apiClient.setAuthToken(null);
       setUser(null);
@@ -139,24 +134,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const checkUser = async () => {
     // Prevent multiple simultaneous checks
     if (isChecking) {
-      console.log('[AuthProvider] checkUser: Already checking, skipping');
+      authLogger.debug('checkUser skipped because a check is already running');
       return;
     }
 
-    console.log('[AuthProvider] checkUser: Starting user check');
+    authLogger.debug('checkUser started');
     try {
       setIsChecking(true);
       setLoading(true);
-      console.log('[AuthProvider] checkUser: Set loading=true, isChecking=true');
 
       // Check if we have stored tokens
       const tokens = authService.getStoredTokens();
-      console.log('[AuthProvider] checkUser: Tokens found?', !!tokens?.accessToken);
+      authLogger.debug('checkUser token lookup complete', { hasAccessToken: !!tokens?.accessToken });
 
       if (tokens?.accessToken) {
         // Check if tokens are expired and attempt refresh if needed
         const tokensExpired = authService.areStoredTokensExpired();
-        console.log('[AuthProvider] checkUser: Tokens expired?', tokensExpired);
+        authLogger.debug('checkUser token expiry evaluated', { tokensExpired });
 
         if (tokensExpired) {
           const refreshSuccess = await handleTokenRefresh();
@@ -165,25 +159,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         } else {
           // Tokens are still valid, set them in API client
-          console.log('[AuthProvider] checkUser: Tokens still valid, setting in API client', {
+          authLogger.debug('checkUser using existing token', {
             tokenLength: tokens.accessToken.length,
             tokenPreview: `${tokens.accessToken.substring(0, 20)}...`,
           });
           apiClient.setAuthToken(tokens.accessToken);
         }
 
-        console.log('[AuthProvider] checkUser: Token set in API client, calling getCurrentUser');
+        authLogger.debug('checkUser calling getCurrentUser after setting token');
         await handleGetCurrentUser();
       } else {
         // No tokens, clear user
-        console.log('[AuthProvider] checkUser: No tokens found, setting user=null');
+        authLogger.debug('checkUser found no tokens, clearing user');
         setUser(null);
       }
     } catch (err) {
-      console.error('[AuthProvider] checkUser: Error in checkUser:', err);
+      authLogger.error('checkUser failed', err);
       setUser(null);
     } finally {
-      console.log('[AuthProvider] checkUser: Setting loading=false, isChecking=false');
       setLoading(false);
       setIsChecking(false);
     }
@@ -194,10 +187,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setError(null);
       setLoading(true);
 
-      console.log('[AuthProvider] Calling authService.signIn');
+      authLogger.info('Calling authService.signIn');
       const response = await authService.signIn({ email, password });
 
-      console.log('[AuthProvider] signIn response:', {
+      authLogger.debug('Sign-in response received', {
         success: response.success,
         hasData: !!response.data,
         hasError: !!response.error,
@@ -205,28 +198,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       if (response.success && response.data) {
-        console.log('[AuthProvider] Sign in successful, setting user:', response.data.user.email);
+        authLogger.info('Sign-in successful', { email: response.data.user.email });
         setUser(response.data.user);
         // Ensure token is set in API client
         if (response.data.tokens?.accessToken) {
-          console.log('[AuthProvider] Setting token in API client after sign-in', {
+          authLogger.debug('Setting API client token after sign-in', {
             tokenLength: response.data.tokens.accessToken.length,
             tokenPreview: `${response.data.tokens.accessToken.substring(0, 20)}...`,
           });
           apiClient.setAuthToken(response.data.tokens.accessToken);
-          console.log('[AuthProvider] Token set in API client after sign-in');
         } else {
-          console.error('[AuthProvider] No access token in sign-in response!', response.data);
+          authLogger.error('No access token in sign-in response', response.data);
         }
       } else {
         const errorMessage = response.error?.message || 'Failed to sign in';
-        console.error('[AuthProvider] Sign in failed:', errorMessage);
+        authLogger.error('Sign-in failed', { errorMessage });
         setError(errorMessage);
         throw new Error(errorMessage);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in';
-      console.error('[AuthProvider] Sign in exception:', err);
+      authLogger.error('Sign-in threw', err);
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -285,7 +277,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Log state changes
   useEffect(() => {
-    console.log('[AuthProvider] State changed:', {
+    authLogger.debug('AuthProvider state changed', {
       hasUser: !!user,
       userEmail: user?.email,
       loading,

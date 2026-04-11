@@ -80,7 +80,7 @@ export default function GrowthSystemPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Growth System</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          A comprehensive framework for personal development and productivity
+          The core productivity system inside Personal OS
         </p>
       </div>
 

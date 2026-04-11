@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { llmLogger } from '@/lib/logger';
 import { vaultItemsService } from './vault-items.service';
 import { generateId } from '@/mocks/storage';
 import type { ApiResponse, Flashcard } from '@/types/knowledge-vault';
@@ -90,7 +91,7 @@ export const aiFlashcardGeneratorService = {
         success: true,
       };
     } catch (error) {
-      console.error('Error generating flashcards:', error);
+      llmLogger.error('Error generating flashcards', error);
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Failed to generate flashcards',
@@ -128,7 +129,7 @@ export const aiFlashcardGeneratorService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error generating flashcards:', error);
+      llmLogger.error('Error generating flashcards from content', error);
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Failed to generate flashcards',
@@ -171,7 +172,7 @@ export const aiFlashcardGeneratorService = {
 
       return updateResponse;
     } catch (error) {
-      console.error('Error reviewing flashcard:', error);
+      llmLogger.error('Error reviewing flashcard', error);
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Failed to review flashcard',

@@ -5,6 +5,8 @@ import type {
   ApiError,
   NoteDraft,
   ModePreference,
+  AssistantToolApprovalConfig,
+  AssistantToolRegistryEntry,
   DashboardSummaryResponse,
   DashboardSummaryRequest,
 } from '@/types/api-contracts';
@@ -17,6 +19,8 @@ import type {
   ChatMessage,
   CreateThreadRequest,
   CreateMessageRequest,
+  EditMessageRequest,
+  MessageTreeResponse,
   UpdateThreadRequest,
 } from '@/types/chatbot';
 import { apiLogger } from '@/lib/logger';
@@ -565,39 +569,43 @@ class ApiClient {
 
   // Chatbot
   async getChatThreads(): Promise<ApiResponse<ChatThread[]>> {
-    return this.get<ChatThread[]>('/chatbot/threads');
+    return this.get<ChatThread[]>('/assistant/threads');
   }
 
   async getChatThread(id: string): Promise<ApiResponse<ChatThread>> {
-    return this.get<ChatThread>(`/chatbot/threads/${id}`);
+    return this.get<ChatThread>(`/assistant/threads/${id}`);
   }
 
   async createChatThread(data: CreateThreadRequest): Promise<ApiResponse<ChatThread>> {
-    return this.post<ChatThread>('/chatbot/threads', data);
+    return this.post<ChatThread>('/assistant/threads', data);
   }
 
   async updateChatThread(id: string, data: UpdateThreadRequest): Promise<ApiResponse<ChatThread>> {
-    return this.patch<ChatThread>(`/chatbot/threads/${id}`, data);
+    return this.patch<ChatThread>(`/assistant/threads/${id}`, data);
   }
 
   async deleteChatThread(id: string): Promise<ApiResponse<void>> {
-    return this.delete<void>(`/chatbot/threads/${id}`);
+    return this.delete<void>(`/assistant/threads/${id}`);
   }
 
   async getChatMessages(threadId: string): Promise<ApiResponse<ChatMessage[]>> {
-    return this.get<ChatMessage[]>(`/chatbot/threads/${threadId}/messages`);
+    return this.get<ChatMessage[]>(`/assistant/threads/${threadId}/messages`);
+  }
+
+  async getChatMessageTree(threadId: string): Promise<ApiResponse<MessageTreeResponse>> {
+    return this.get<MessageTreeResponse>(`/assistant/threads/${threadId}/messages/tree`);
   }
 
   async createChatMessage(data: CreateMessageRequest): Promise<ApiResponse<ChatMessage>> {
-    return this.post<ChatMessage>('/chatbot/messages', data);
+    return this.post<ChatMessage>('/assistant/messages', data);
   }
 
-  async updateChatMessage(id: string, content: string): Promise<ApiResponse<ChatMessage>> {
-    return this.patch<ChatMessage>(`/chatbot/messages/${id}`, { content });
-  }
-
-  async deleteMessagesAfter(messageId: string, threadId: string): Promise<ApiResponse<void>> {
-    return this.delete<void>(`/chatbot/messages?after=${messageId}&threadId=${threadId}`);
+  async editChatMessage(
+    threadId: string,
+    messageId: string,
+    data: EditMessageRequest
+  ): Promise<ApiResponse<ChatMessage>> {
+    return this.patch<ChatMessage>(`/assistant/threads/${threadId}/messages/${messageId}`, data);
   }
 
   // Draft Notes
@@ -665,6 +673,22 @@ class ApiClient {
 
   async resetFeatureConfig(feature: AIFeature): Promise<ApiResponse<void>> {
     return this.delete<void>(`/preferences/feature-configs/${feature}`);
+  }
+
+  async getAssistantToolApprovalConfig(): Promise<
+    ApiResponse<AssistantToolApprovalConfig>
+  > {
+    return this.get<AssistantToolApprovalConfig>('/preferences/assistant-tools');
+  }
+
+  async setAssistantToolApprovalConfig(
+    body: AssistantToolApprovalConfig
+  ): Promise<ApiResponse<AssistantToolApprovalConfig>> {
+    return this.put<AssistantToolApprovalConfig>('/preferences/assistant-tools', body);
+  }
+
+  async getAssistantToolRegistry(): Promise<ApiResponse<AssistantToolRegistryEntry[]>> {
+    return this.get<AssistantToolRegistryEntry[]>('/assistant/tool-registry');
   }
 }
 

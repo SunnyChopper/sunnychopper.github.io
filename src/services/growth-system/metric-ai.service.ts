@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import { llmLogger } from '@/lib/logger';
 import type { Metric, MetricLog, Goal } from '@/types/growth-system';
 import type { ApiResponse } from '@/types/api-contracts';
 import { z } from 'zod';
@@ -125,7 +126,7 @@ export const metricAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error analyzing patterns:', error);
+      llmLogger.error('Error analyzing patterns', error);
       return {
         data: undefined,
         error: {
@@ -167,7 +168,7 @@ export const metricAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error detecting anomalies:', error);
+      llmLogger.error('Error detecting anomalies', error);
       return {
         data: undefined,
         error: {
@@ -210,7 +211,7 @@ export const metricAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error finding correlations:', error);
+      llmLogger.error('Error finding correlations', error);
       return {
         data: undefined,
         error: {
@@ -255,7 +256,7 @@ export const metricAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error generating narrative:', error);
+      llmLogger.error('Error generating narrative', error);
       return {
         data: undefined,
         error: {
@@ -297,7 +298,7 @@ export const metricAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error predicting trajectory:', error);
+      llmLogger.error('Error predicting trajectory', error);
       return {
         data: undefined,
         error: {
@@ -342,7 +343,7 @@ export const metricAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error generating recommendations:', error);
+      llmLogger.error('Error generating recommendations', error);
       return {
         data: undefined,
         error: {
@@ -387,7 +388,7 @@ export const metricAIService = {
         success: false,
       };
     } catch (error) {
-      console.error('Error generating coaching:', error);
+      llmLogger.error('Error generating coaching', error);
       return {
         data: undefined,
         error: {

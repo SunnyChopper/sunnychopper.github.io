@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Monitor, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
 import { AISettingsPanel } from '@/components/settings/AISettingsPanel';
+import { AssistantToolApprovalSettings } from '@/components/settings/AssistantToolApprovalSettings';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -157,6 +158,10 @@ export default function SettingsPage() {
             />
           </button>
         </div>
+      </div>
+
+      <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <AssistantToolApprovalSettings />
       </div>
 
       <div className="mt-6">

@@ -6,6 +6,7 @@ import { extractApiError } from '@/lib/react-query/error-utils';
 import { updateLocalFile, purgeLocalFile } from '@/hooks/useLocalFiles';
 import { useMarkdownBackendStatus } from '@/hooks/useMarkdownBackendStatus';
 import { buildUpdateFile } from '@/lib/markdown/file-utils';
+import { logger } from '@/lib/logger';
 import { removeMarkdownFileCache, upsertMarkdownFileCache } from '@/lib/react-query/markdown-cache';
 import type { FileTreeNode } from '@/types/markdown-files';
 
@@ -123,33 +124,27 @@ export function useMarkdownFiles(folder?: string) {
   const deleteMutation = useMutation({
     mutationFn: async ({ filePath, fileId }: { filePath: string; fileId?: string }) => {
       if (import.meta.env.DEV) {
-        console.log(
-          `[useMarkdownFiles] deleteMutation started for: ${filePath}`,
-          fileId ? `(ID: ${fileId})` : ''
-        );
+        logger.debug('deleteMutation started', { filePath, fileId });
       }
 
       // Always purge from localStorage first - this is aggressive and will remove the file
       // regardless of exact path matching. This ensures complete local deletion.
-      console.log(`[useMarkdownFiles] Purging from localStorage: ${filePath}`);
+      logger.debug('Purging markdown file from local storage', { filePath });
       purgeLocalFile(filePath);
 
       // Try to delete from backend (service also purges localStorage, but we do it here too for safety)
       // Pass fileId if available so backend can use it instead of path
-      console.log(
-        `[useMarkdownFiles] Calling markdownFilesService.deleteFile: ${filePath}`,
-        fileId ? `with ID: ${fileId}` : ''
-      );
+      logger.debug('Calling markdownFilesService.deleteFile', { filePath, fileId });
       const result = await markdownFilesService.deleteFile(filePath, fileId);
 
-      console.log(`[useMarkdownFiles] Service returned:`, result);
+      logger.debug('markdownFilesService.deleteFile returned', result);
 
       // Even if backend deletion failed, localStorage has been purged
       // Return success for local files since local deletion is what matters
       return result;
     },
     onSuccess: (_result, variables) => {
-      console.log(`[useMarkdownFiles] deleteMutation succeeded, updating caches`);
+      logger.debug('deleteMutation succeeded, updating caches', variables);
       removeMarkdownFileCache(queryClient, variables.filePath);
     },
   });

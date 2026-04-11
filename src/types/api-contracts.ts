@@ -277,3 +277,18 @@ export interface NoteDraft {
 export interface ModePreference {
   mode: 'work' | 'leisure';
 }
+
+/** Assistant human-in-the-loop tool policy (API camelCase). */
+export type AssistantToolApprovalMode = 'dangerousOnly' | 'allWrites' | 'none';
+
+export interface AssistantToolApprovalConfig {
+  mode: AssistantToolApprovalMode;
+  dangerousTools: string[];
+}
+
+export interface AssistantToolRegistryEntry {
+  name: string;
+  description: string;
+  safeRead: boolean;
+  category: string;
+}

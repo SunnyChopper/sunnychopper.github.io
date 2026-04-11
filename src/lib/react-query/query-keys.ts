@@ -99,6 +99,19 @@ export const queryKeys = {
       all: () => [...queryKeys.chatbot.all, 'messages'] as const,
       lists: () => [...queryKeys.chatbot.messages.all(), 'list'] as const,
       list: (threadId: string) => [...queryKeys.chatbot.messages.lists(), threadId] as const,
+      tree: (threadId: string) => [...queryKeys.chatbot.messages.all(), 'tree', threadId] as const,
+    },
+    memory: {
+      all: () => [...queryKeys.chatbot.all, 'memory'] as const,
+      shortTerm: (date?: string) =>
+        date
+          ? ([...queryKeys.chatbot.memory.all(), 'short-term', date] as const)
+          : ([...queryKeys.chatbot.memory.all(), 'short-term'] as const),
+      history: () => [...queryKeys.chatbot.memory.all(), 'history'] as const,
+      longTerm: (search?: string) =>
+        search
+          ? ([...queryKeys.chatbot.memory.all(), 'long-term', search] as const)
+          : ([...queryKeys.chatbot.memory.all(), 'long-term'] as const),
     },
   },
 
@@ -135,6 +148,13 @@ export const queryKeys = {
       limit
         ? ([...queryKeys.wallet.all, 'transactions', limit] as const)
         : ([...queryKeys.wallet.all, 'transactions'] as const),
+  },
+
+  // Knowledge Vault (vault items + courses lists)
+  knowledgeVault: {
+    all: ['knowledge-vault'] as const,
+    vaultItems: () => [...queryKeys.knowledgeVault.all, 'vault-items'] as const,
+    courses: () => [...queryKeys.knowledgeVault.all, 'courses'] as const,
   },
 
   // Rewards

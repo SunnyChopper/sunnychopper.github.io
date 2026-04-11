@@ -41,6 +41,7 @@ export function useToast() {
       toasts = toasts.filter((t) => t.id !== id);
       notifyListeners();
     }, duration);
+    return id;
   }, []);
 
   const dismissToast = useCallback((id: string) => {
@@ -48,9 +49,15 @@ export function useToast() {
     notifyListeners();
   }, []);
 
+  const clearToasts = useCallback(() => {
+    toasts = [];
+    notifyListeners();
+  }, []);
+
   return {
     showToast,
     dismissToast,
+    clearToasts,
     ToastContainer: () => <ToastContainer toasts={toastState} onDismiss={dismissToast} />,
   };
 }

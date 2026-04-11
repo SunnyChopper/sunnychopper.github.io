@@ -4,6 +4,7 @@ import type { FileTreeNode } from '@/types/markdown-files';
 import { useBackendStatus } from '@/contexts/BackendStatusContext';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { extractApiError } from '@/lib/react-query/error-utils';
+import { logger } from '@/lib/logger';
 import { useMemo } from 'react';
 
 // Helper to find a node by path
@@ -71,7 +72,7 @@ export function useFileTree() {
                 const id = node.metadata.id;
                 const looksLikePath = id.endsWith('.md') || id.includes('/');
                 if (looksLikePath) {
-                  console.warn('[useFileTree] ⚠️  Backend returned file with path-like ID:', {
+                  logger.warn('Backend returned file with path-like ID', {
                     path: node.path,
                     id,
                     expectedFormat: 'UUID',

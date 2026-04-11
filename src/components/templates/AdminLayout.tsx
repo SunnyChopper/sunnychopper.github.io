@@ -1,6 +1,7 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/Auth';
 import { useMode } from '@/contexts/Mode';
+import { AdminShellProvider, useAdminShell } from '@/contexts/AdminShellContext';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -118,11 +119,12 @@ const getMaxWidth = () => {
   return 320; // sm and below
 };
 
-export default function AdminLayout() {
+function AdminLayoutContent() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isLeisureMode } = useMode();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { mainNavOpen, toggleMainNav, closeMainNav, assistantChatsOpen, toggleAssistantChats } =
+    useAdminShell();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -139,6 +141,10 @@ export default function AdminLayout() {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const resizeStartX = useRef<number>(0);
   const resizeStartWidth = useRef<number>(0);
+  const isFullBleedRoute =
+    location.pathname.startsWith('/admin/markdown-viewer') ||
+    location.pathname.startsWith('/admin/assistant');
+  const isAssistantRoute = location.pathname.startsWith('/admin/assistant');
 
   const navigation = isLeisureMode ? leisureNavigation : workNavigation;
 
@@ -257,11 +263,23 @@ export default function AdminLayout() {
           >
             <Command size={20} />
           </button>
+          {isAssistantRoute && (
+            <button
+              onClick={toggleAssistantChats}
+              aria-label="Open chats"
+              aria-expanded={assistantChatsOpen}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <MessageCircle size={20} />
+            </button>
+          )}
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={toggleMainNav}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            aria-label={mainNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mainNavOpen}
           >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            {mainNavOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
@@ -269,7 +287,7 @@ export default function AdminLayout() {
       <div
         ref={sidebarRef}
         className={`fixed inset-y-0 left-0 z-40 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transform lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          mainNavOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isResizing ? 'select-none transition-none' : 'transition-transform duration-200 ease-in-out'}`}
         style={{
           width: `${sidebarWidth}px`,
@@ -281,15 +299,9 @@ export default function AdminLayout() {
           {/* Resize handle */}
           <div
             onMouseDown={handleResizeStart}
-            className={`absolute top-0 right-0 w-1 h-full cursor-col-resize z-50 lg:block hidden ${
+            className={`absolute top-0 right-0 w-1 h-full cursor-col-resize z-50 lg:block hidden touch-none -mr-0.5 pr-0.5 ${
               isResizing ? 'bg-blue-500' : 'hover:bg-blue-400/50'
             }`}
-            style={{
-              touchAction: 'none',
-              // Make it easier to grab by extending the hit area
-              marginRight: '-2px',
-              paddingRight: '2px',
-            }}
             aria-label="Resize sidebar"
             role="separator"
             aria-orientation="vertical"
@@ -297,7 +309,9 @@ export default function AdminLayout() {
 
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user?.email}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate" title={user?.email}>
+              {user?.email?.includes('@') ? user.email : user ? 'Signed in' : ''}
+            </p>
             <div className="mt-3 flex justify-center">
               <WalletWidget />
             </div>
@@ -340,7 +354,7 @@ export default function AdminLayout() {
                         <div className="ml-4 mt-1 space-y-1">
                           <Link
                             to={item.href}
-                            onClick={() => setSidebarOpen(false)}
+                            onClick={closeMainNav}
                             className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
                               location.pathname === item.href
                                 ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
@@ -359,7 +373,7 @@ export default function AdminLayout() {
                               <Link
                                 key={child.name}
                                 to={child.href}
-                                onClick={() => setSidebarOpen(false)}
+                            onClick={closeMainNav}
                                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
                                   isChildActive
                                     ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
@@ -377,7 +391,7 @@ export default function AdminLayout() {
                   ) : (
                     <Link
                       to={item.href}
-                      onClick={() => setSidebarOpen(false)}
+                      onClick={closeMainNav}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
                         isActive
                           ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
@@ -407,23 +421,23 @@ export default function AdminLayout() {
         </div>
       </div>
 
-      {sidebarOpen && (
-        <div
+      {mainNavOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
           className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeMainNav}
         />
       )}
 
       <div
         className={cn(
           'transition-all duration-200',
-          location.pathname.startsWith('/admin/markdown-viewer')
-            ? 'h-screen overflow-hidden'
-            : 'min-h-screen'
+          isFullBleedRoute ? 'h-screen overflow-hidden' : 'min-h-screen'
         )}
         style={{ marginLeft: isLargeScreen ? `${sidebarWidth}px` : '0' }}
       >
-        {location.pathname.startsWith('/admin/markdown-viewer') ? (
+        {isFullBleedRoute ? (
           <Outlet />
         ) : (
           <div className="pt-20 lg:pt-8 px-6 lg:px-12 pb-12">
@@ -433,5 +447,13 @@ export default function AdminLayout() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AdminLayout() {
+  return (
+    <AdminShellProvider>
+      <AdminLayoutContent />
+    </AdminShellProvider>
   );
 }

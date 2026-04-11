@@ -1,5 +1,6 @@
 import type { Metric, MetricLog } from '@/types/growth-system';
 import type { ApiResponse } from '@/types/api-contracts';
+import { logger } from '@/lib/logger';
 import { predictTrajectory, getTrendData, calculateProgress } from '@/utils/metric-analytics';
 
 export interface PredictionResult {
@@ -83,7 +84,7 @@ export const metricPredictionsService = {
         success: true,
       };
     } catch (error) {
-      console.error('Error predicting value:', error);
+      logger.error('Error predicting value', error);
       return {
         data: undefined,
         error: {
@@ -181,7 +182,7 @@ export const metricPredictionsService = {
         success: true,
       };
     } catch (error) {
-      console.error('Error predicting target date:', error);
+      logger.error('Error predicting target date', error);
       return {
         data: undefined,
         error: {
@@ -273,7 +274,7 @@ export const metricPredictionsService = {
         success: true,
       };
     } catch (error) {
-      console.error('Error predicting risk:', error);
+      logger.error('Error predicting risk', error);
       return {
         data: undefined,
         error: {

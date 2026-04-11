@@ -1,11 +1,12 @@
 import type { ConceptSynthesis, ConceptNode } from '@/types/concept-graph';
+import { llmLogger } from '@/lib/logger';
 
 export const conceptSynthesisService = {
   async generateSynthesis(node1: ConceptNode, node2: ConceptNode): Promise<ConceptSynthesis> {
     try {
       return this.generateFallbackSynthesis(node1, node2);
     } catch (error) {
-      console.error('Error generating synthesis:', error);
+      llmLogger.error('Error generating synthesis', error);
       return this.generateFallbackSynthesis(node1, node2);
     }
   },
