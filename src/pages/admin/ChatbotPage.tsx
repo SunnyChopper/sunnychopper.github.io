@@ -212,7 +212,7 @@ export default function ChatbotPage() {
 
   const renderModelPickerForm = (draft: ModelPickerDraft) => (
     <AssistantRunConfigPickerForm
-      catalog={assistantModelCatalog}
+      catalog={assistantModelCatalog ?? null}
       isLoading={isModelCatalogLoading}
       draft={draft}
       onDraftChange={updatePickerDraft}

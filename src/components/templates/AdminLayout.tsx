@@ -452,7 +452,9 @@ function AdminLayoutContent() {
                           }}
                           className="flex flex-1 items-center gap-3 px-4 py-3 min-w-0 rounded-l-lg"
                         >
-                          <Icon size={20} className="shrink-0" />
+                          <span className="shrink-0">
+                            <Icon size={20} />
+                          </span>
                           <span className="flex-1 text-left truncate">{item.name}</span>
                         </Link>
                         <button

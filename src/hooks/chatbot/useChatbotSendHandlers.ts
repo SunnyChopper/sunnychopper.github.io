@@ -151,6 +151,7 @@ export function useChatbotSendHandlers({
       isLocalDraft,
       onRestoreInput,
       onMessageSent,
+      manualSendBlockedMessage,
       isLoading,
       awaitingWsFollowUp,
       navigate,
