@@ -14,11 +14,11 @@ import Button from '@/components/atoms/Button';
 import { cn } from '@/lib/utils';
 import Dialog from '@/components/molecules/Dialog';
 import { ChevronDown, Settings2, Sparkles } from 'lucide-react';
+import { BrainstormModelPicker } from '@/components/assistant/BrainstormModelPicker';
 import {
-  BrainstormModelPicker,
   brainstormValueToApiModelField,
   type BrainstormModelPickerValue,
-} from '@/components/assistant/BrainstormModelPicker';
+} from '@/lib/assistant/brainstorm-model-picker';
 import { chatbotService } from '@/services/chatbot.service';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { partitionProactiveSuggestions } from '@/pages/admin/proactive-suggestions-partition';
