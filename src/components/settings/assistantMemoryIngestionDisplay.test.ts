@@ -3,7 +3,7 @@ import {
   formatModelDisplayLabel,
   formatProviderDisplay,
   stripParentheticalSegment,
-} from './AssistantMemoryIngestionForm';
+} from './assistantMemoryIngestionDisplay';
 
 describe('assistantMemoryIngestionDisplay', () => {
   it('formats known providers with brand casing', () => {
