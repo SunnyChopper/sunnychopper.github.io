@@ -152,13 +152,11 @@ export const ChatMessageRow = memo(function ChatMessageRow({
     [executionTraceHistory]
   );
   const showExecutionTrace =
-    message.role === 'assistant' &&
-    (visibleTraceEntries.length > 0 || pendingApprovalCount > 0);
+    message.role === 'assistant' && (visibleTraceEntries.length > 0 || pendingApprovalCount > 0);
   const traceHasPlanning = visibleTraceEntries.some((e) => e.stage === 'planning');
   /** Fold thinkingDelta into the latest planning row instead of a separate “Thinking” accordion. */
   const foldThinkingIntoTrace = showExecutionTrace && traceHasPlanning;
-  const assistantThinkingForTrace =
-    run?.thinkingBuffer?.trim() || message.thinking?.trim() || '';
+  const assistantThinkingForTrace = run?.thinkingBuffer?.trim() || message.thinking?.trim() || '';
   const assistantThinkingStreaming = Boolean(run?.thinkingBuffer?.trim());
 
   /** Thinking stream duplicates the execution trace during HITL; hide standalone panel until the reply has body text. */

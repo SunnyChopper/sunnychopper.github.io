@@ -5,8 +5,7 @@ import { cn } from '@/lib/utils';
 const headingBase =
   '!mt-4 !mb-2 first:!mt-0 font-semibold font-sans tracking-tight text-gray-900 dark:text-gray-100';
 
-const userHeadingBase =
-  '!mt-4 !mb-2 first:!mt-0 font-semibold font-sans tracking-tight text-white';
+const userHeadingBase = '!mt-4 !mb-2 first:!mt-0 font-semibold font-sans tracking-tight text-white';
 
 /**
  * Stable markdown component map for assistant chat bubbles (avoids new object identity each render).
@@ -104,9 +103,7 @@ export const chatMessageMarkdownComponents: Partial<Components> = {
       </table>
     </div>
   ),
-  thead: ({ children }) => (
-    <thead className="bg-gray-100 dark:bg-gray-800/90">{children}</thead>
-  ),
+  thead: ({ children }) => <thead className="bg-gray-100 dark:bg-gray-800/90">{children}</thead>,
   tbody: ({ children }) => <tbody>{children}</tbody>,
   tr: ({ children }) => <tr>{children}</tr>,
   th: ({ children, className }) => (
@@ -147,10 +144,7 @@ export const chatUserMessageMarkdownComponents: Partial<Components> = {
   ),
   blockquote: ({ children, className }) => (
     <blockquote
-      className={cn(
-        '!mt-0 !mb-2 border-l-4 border-white/40 pl-3 py-0.5 text-white/90',
-        className
-      )}
+      className={cn('!mt-0 !mb-2 border-l-4 border-white/40 pl-3 py-0.5 text-white/90', className)}
     >
       {children}
     </blockquote>
@@ -194,10 +188,7 @@ export const chatUserMessageMarkdownComponents: Partial<Components> = {
   ),
   hr: ({ className, ...props }) => (
     <hr
-      className={cn(
-        '!my-2 border-0 border-t border-solid border-white/45',
-        className
-      )}
+      className={cn('!my-2 border-0 border-t border-solid border-white/45', className)}
       {...props}
     />
   ),
@@ -205,10 +196,7 @@ export const chatUserMessageMarkdownComponents: Partial<Components> = {
     const href = props.href || '';
     if (href.startsWith('/')) {
       return (
-        <Link
-          to={href}
-          className="text-blue-100 hover:text-white hover:underline font-medium"
-        >
+        <Link to={href} className="text-blue-100 hover:text-white hover:underline font-medium">
           {props.children}
         </Link>
       );

@@ -2,10 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AssistantMemoryIngestionForm } from '@/components/settings/AssistantMemoryIngestionForm';
 import { AssistantToolApprovalForm } from '@/components/settings/AssistantToolApprovalForm';
 import { apiClient } from '@/lib/api-client';
-import type {
-  AssistantToolApprovalMode,
-  AssistantToolRegistryEntry,
-} from '@/types/api-contracts';
+import type { AssistantToolApprovalMode, AssistantToolRegistryEntry } from '@/types/api-contracts';
 import type { AssistantModelCatalogData } from '@/types/chatbot';
 
 export default function AssistantSettingsPage() {
@@ -148,8 +145,8 @@ export default function AssistantSettingsPage() {
             Assistant Settings
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Configure tool confirmations and background models for memory ingestion (short-term notes
-            and thread summarization).
+            Configure tool confirmations and background models for memory ingestion (short-term
+            notes and thread summarization).
           </p>
         </div>
 
@@ -167,7 +164,9 @@ export default function AssistantSettingsPage() {
 
         <div className="space-y-8">
           <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Tool safety</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+              Tool safety
+            </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
               Control when the assistant must ask you to approve a tool before it runs. Approvals
               appear in the chat execution trace while a reply is streaming.

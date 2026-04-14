@@ -19,9 +19,9 @@ describe('assistantMemoryIngestionDisplay', () => {
   });
 
   it('removes redundant provider prefix from model label', () => {
-    expect(
-      formatModelDisplayLabel('Groq GPT-OSS 20B (openai/gpt-oss-20b)', 'groq')
-    ).toBe('GPT-OSS 20B');
+    expect(formatModelDisplayLabel('Groq GPT-OSS 20B (openai/gpt-oss-20b)', 'groq')).toBe(
+      'GPT-OSS 20B'
+    );
     expect(formatModelDisplayLabel('OpenAI GPT-4o mini', 'openai')).toBe('GPT-4o mini');
   });
 });

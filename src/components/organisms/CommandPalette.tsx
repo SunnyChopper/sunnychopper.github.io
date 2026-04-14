@@ -224,7 +224,7 @@ function CommandPaletteContent({ onClose }: CommandPaletteContentProps) {
           'memory',
           'ingestion',
           'model',
- ],
+        ],
       },
       {
         id: 'nav-proactive-assistant',

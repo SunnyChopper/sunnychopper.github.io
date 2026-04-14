@@ -122,7 +122,9 @@ function TraceEntry({
   const [toolExpanded, setToolExpanded] = useState(false);
   const userCollapsedReasoning = useRef(false);
   const [reasoningExpanded, setReasoningExpanded] = useState(() =>
-    Boolean(planningReasoning && (planningReasoning.text.length > 0 || planningReasoning.isStreaming))
+    Boolean(
+      planningReasoning && (planningReasoning.text.length > 0 || planningReasoning.isStreaming)
+    )
   );
   const config = STAGE_CONFIG[entry.stage];
   const Icon = config.icon;

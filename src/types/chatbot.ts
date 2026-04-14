@@ -83,12 +83,7 @@ export interface UpdateThreadRequest {
   title: string;
 }
 
-export type AssistantOptimizeFor =
-  | 'speed'
-  | 'intelligence'
-  | 'cost'
-  | 'balanced'
-  | 'value';
+export type AssistantOptimizeFor = 'speed' | 'intelligence' | 'cost' | 'balanced' | 'value';
 
 /** Labels for the model configuration that the next outgoing message will use (from saved picker state). */
 export interface AssistantNextSendModelsDisplay {

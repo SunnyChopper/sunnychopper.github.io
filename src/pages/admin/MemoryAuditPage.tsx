@@ -1,14 +1,6 @@
 import { useMemo, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Archive,
-  ArchiveRestore,
-  Loader2,
-  Pencil,
-  RefreshCw,
-  Search,
-  Trash2,
-} from 'lucide-react';
+import { Archive, ArchiveRestore, Loader2, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react';
 import Dialog from '@/components/molecules/Dialog';
 import TagInput from '@/components/molecules/TagInput';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -110,14 +102,7 @@ export default function MemoryAuditPage() {
       out = out.filter((e) => new Date(e.updatedAt).getTime() <= to.getTime());
     }
     return out;
-  }, [
-    rawEntries,
-    filterArea,
-    filterSourceTrim,
-    filterTags,
-    filterUpdatedFrom,
-    filterUpdatedTo,
-  ]);
+  }, [rawEntries, filterArea, filterSourceTrim, filterTags, filterUpdatedFrom, filterUpdatedTo]);
 
   const hasClientFilters =
     filterArea !== 'all' ||
@@ -149,8 +134,7 @@ export default function MemoryAuditPage() {
     hasClientFilters,
   ]);
 
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: queryKeys.ltm.all });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.ltm.all });
 
   const archiveToggleMut = useMutation({
     mutationFn: async ({ id, archived }: { id: string; archived: boolean }) => {
@@ -173,9 +157,9 @@ export default function MemoryAuditPage() {
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Memory Audit</h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Inspect and manage assistant long-term memory (PostgreSQL + pgvector). Search is debounced;
-          refine results by visibility, area, source, tags, or updated date—all client-side on the
-          loaded set.
+          Inspect and manage assistant long-term memory (PostgreSQL + pgvector). Search is
+          debounced; refine results by visibility, area, source, tags, or updated date—all
+          client-side on the loaded set.
         </p>
       </header>
 
@@ -547,7 +531,9 @@ export default function MemoryAuditPage() {
             Permanently remove this memory from Postgres? This cannot be undone.
           </p>
           {deleteTarget && (
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{deleteTarget.title}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {deleteTarget.title}
+            </p>
           )}
           {deleteError && (
             <div className="text-sm text-red-600 dark:text-red-400">{deleteError}</div>

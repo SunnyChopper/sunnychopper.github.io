@@ -265,9 +265,7 @@ export function useChatbotSendHandlers({
         content: userMessage,
         parentId,
         clientMessageId,
-        ...(runConfigSnapshot
-          ? { metadata: { assistantModelConfig: runConfigSnapshot } }
-          : {}),
+        ...(runConfigSnapshot ? { metadata: { assistantModelConfig: runConfigSnapshot } } : {}),
       });
       if (isDraft) {
         if (draftPendingMessageId) {

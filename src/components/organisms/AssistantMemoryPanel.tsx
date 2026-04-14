@@ -264,7 +264,7 @@ export function AssistantMemoryPanel() {
             <div className="text-gray-500 dark:text-gray-400">Loading long-term memory...</div>
           ) : longTermQuery.data && longTermQuery.data.length > 0 ? (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                           {longTermQuery.data.map((entry) => (
+              {longTermQuery.data.map((entry) => (
                 <button
                   key={entry.id}
                   type="button"

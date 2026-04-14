@@ -95,9 +95,7 @@ function buildDefaults(
     const lt =
       typeof suggestionPayload.localTime === 'string' ? suggestionPayload.localTime : '08:00';
     const tz =
-      typeof suggestionPayload.timeZone === 'string'
-        ? suggestionPayload.timeZone
-        : defaultTimeZone;
+      typeof suggestionPayload.timeZone === 'string' ? suggestionPayload.timeZone : defaultTimeZone;
     const ts =
       suggestionPayload.threadStrategy === 'newThreadEachRun' ||
       suggestionPayload.threadStrategy === 'reuseFixedThread'
@@ -108,8 +106,7 @@ function buildDefaults(
       typeof suggestionPayload.customUserPrompt === 'string'
         ? suggestionPayload.customUserPrompt
         : '';
-    const title =
-      typeof suggestionPayload.title === 'string' ? suggestionPayload.title.trim() : '';
+    const title = typeof suggestionPayload.title === 'string' ? suggestionPayload.title.trim() : '';
     return {
       kind: k,
       localTime: lt,
@@ -162,7 +159,9 @@ function AutomationFormFields({
   const [localTime, setLocalTime] = useState(defaults.localTime);
   const [timeZone, setTimeZone] = useState(defaults.timeZone);
   const [customUserPrompt, setCustomUserPrompt] = useState(defaults.customUserPrompt);
-  const [threadStrategy, setThreadStrategy] = useState<ProactiveThreadStrategy>(defaults.threadStrategy);
+  const [threadStrategy, setThreadStrategy] = useState<ProactiveThreadStrategy>(
+    defaults.threadStrategy
+  );
   const [channelEmailEnabled, setChannelEmailEnabled] = useState(defaults.channelEmailEnabled);
   const [title, setTitle] = useState(defaults.title);
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(defaults.daysOfWeek);
@@ -198,10 +197,7 @@ function AutomationFormFields({
       if (!ids.has(responseModelId)) {
         responseModelId = modelCatalog.defaults.defaultResponseModelId;
       }
-      if (
-        reasoningModelId === d.reasoningModelId &&
-        responseModelId === d.responseModelId
-      ) {
+      if (reasoningModelId === d.reasoningModelId && responseModelId === d.responseModelId) {
         return d;
       }
       return { ...d, reasoningModelId, responseModelId };
@@ -241,16 +237,15 @@ function AutomationFormFields({
     void onSubmit(body);
   };
 
-  const primaryLabel =
-    saving
-      ? 'Saving…'
-      : mode === 'create'
-        ? 'Create'
-        : mode === 'suggestion'
-          ? 'Create automation'
-          : mode === 'rejectedSuggestion'
-            ? 'Save changes'
-            : 'Save changes';
+  const primaryLabel = saving
+    ? 'Saving…'
+    : mode === 'create'
+      ? 'Create'
+      : mode === 'suggestion'
+        ? 'Create automation'
+        : mode === 'rejectedSuggestion'
+          ? 'Save changes'
+          : 'Save changes';
 
   return (
     <div className="space-y-4">
@@ -280,7 +275,9 @@ function AutomationFormFields({
           </select>
         </label>
         <label className="text-xs flex flex-col gap-1">
-          <span className="font-medium text-gray-700 dark:text-gray-300">Local time (24h HH:MM)</span>
+          <span className="font-medium text-gray-700 dark:text-gray-300">
+            Local time (24h HH:MM)
+          </span>
           <input
             type="text"
             className="border rounded-lg px-2 py-2 text-sm bg-white dark:bg-gray-900 dark:border-gray-600"

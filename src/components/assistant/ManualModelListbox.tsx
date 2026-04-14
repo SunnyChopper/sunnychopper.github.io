@@ -60,9 +60,7 @@ function CatalogMetaRow({ m }: { m: AssistantModelCatalogEntry }) {
     <div className="text-[9px] text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
       {tags ? <div title={m.capabilityTags?.join(', ')}>{tags}</div> : null}
       {benchStr || ctx ? (
-        <div className="tabular-nums">
-          {[benchStr, ctx].filter(Boolean).join(' · ')}
-        </div>
+        <div className="tabular-nums">{[benchStr, ctx].filter(Boolean).join(' · ')}</div>
       ) : null}
     </div>
   );
@@ -70,10 +68,7 @@ function CatalogMetaRow({ m }: { m: AssistantModelCatalogEntry }) {
 
 function ReasoningStreamMark({ className }: { className?: string }) {
   return (
-    <span
-      className={`inline-flex items-center ${className ?? ''}`}
-      title="Reasoning stream"
-    >
+    <span className={`inline-flex items-center ${className ?? ''}`} title="Reasoning stream">
       <Brain
         size={14}
         className="shrink-0 text-violet-600 dark:text-violet-400"
@@ -179,7 +174,10 @@ export function ManualModelListbox({
 
   return (
     <div className="relative" ref={rootRef}>
-      <span id={`${listId}-label`} className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+      <span
+        id={`${listId}-label`}
+        className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+      >
         {label}
       </span>
       <button

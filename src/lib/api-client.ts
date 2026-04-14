@@ -624,10 +624,7 @@ class ApiClient {
     threadId: string,
     body: { leafMessageId?: string; runConfig?: AssistantRunConfig }
   ): Promise<ApiResponse<ThreadContextUsage>> {
-    return this.post<ThreadContextUsage>(
-      `/assistant/threads/${threadId}/context-usage`,
-      body
-    );
+    return this.post<ThreadContextUsage>(`/assistant/threads/${threadId}/context-usage`, body);
   }
 
   async postAssistantThreadCompact(
@@ -873,7 +870,9 @@ class ApiClient {
     return this.get<{ timeZone: string }>('/preferences/time-zone');
   }
 
-  async setPreferencesTimeZone(body: { timeZone: string }): Promise<ApiResponse<{ timeZone: string }>> {
+  async setPreferencesTimeZone(body: {
+    timeZone: string;
+  }): Promise<ApiResponse<{ timeZone: string }>> {
     return this.put<{ timeZone: string }>('/preferences/time-zone', body);
   }
 }

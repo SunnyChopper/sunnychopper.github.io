@@ -20,7 +20,7 @@ export function runConfigFromModelPickerDraft(
   catalog: AssistantModelCatalogData | null
 ): AssistantRunConfig | undefined {
   if (!catalog?.models?.length) return undefined;
-   const compaction = { compactionMode: draft.compactionMode };
+  const compaction = { compactionMode: draft.compactionMode };
   if (draft.mode === 'auto') {
     return {
       mode: 'auto',

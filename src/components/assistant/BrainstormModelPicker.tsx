@@ -1,10 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AssistantModelCatalogData } from '@/types/chatbot';
 import { ManualModelListbox } from '@/components/assistant/ManualModelListbox';
-import {
-  sortAssistantModels,
-  type ManualModelSortKey,
-} from '@/lib/assistant/model-picker-utils';
+import { sortAssistantModels, type ManualModelSortKey } from '@/lib/assistant/model-picker-utils';
 import {
   AssistantModelManualSortChips,
   AssistantModelModeToggle,

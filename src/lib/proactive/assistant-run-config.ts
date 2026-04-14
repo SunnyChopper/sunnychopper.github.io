@@ -64,7 +64,6 @@ export function formatProactiveAssistantRunConfigSummary(
     const of = cfg.auto.optimizeFor;
     return `Auto · ${OPT_LABELS[of] ?? of}`;
   }
-  const labelFor = (id: string) =>
-    catalog?.models?.find((m) => m.id === id)?.label ?? id;
+  const labelFor = (id: string) => catalog?.models?.find((m) => m.id === id)?.label ?? id;
   return `Manual · ${labelFor(cfg.manual.reasoningModelId)} / ${labelFor(cfg.manual.responseModelId)}`;
 }

@@ -110,14 +110,14 @@ export default function AutomationCard({
               <h3 className="font-semibold text-gray-900 dark:text-white">
                 {automation.title?.trim() ? automation.title.trim() : kindLabel}
               </h3>
-              <span
-                className={cn('text-xs font-medium px-2 py-0.5 rounded-full', pill.className)}
-              >
+              <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', pill.className)}>
                 {pill.label}
               </span>
             </div>
             <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium tabular-nums">{formatProactiveLocalTime12h(automation.localTime)}</span>
+              <span className="font-medium tabular-nums">
+                {formatProactiveLocalTime12h(automation.localTime)}
+              </span>
               <span className="mx-1.5 text-gray-400">·</span>
               <span>{automation.timeZone}</span>
             </p>
@@ -137,7 +137,7 @@ export default function AutomationCard({
             {errorPreview ? (
               <div className="mt-2 rounded-md bg-red-50 dark:bg-red-950/30 px-2 py-1.5 text-xs text-red-800 dark:text-red-200">
                 <span className="line-clamp-2">{shortError}</span>
-                {errorPreview.length >140 ? (
+                {errorPreview.length > 140 ? (
                   <button
                     type="button"
                     className="mt-1 block text-red-700 dark:text-red-300 underline font-medium"

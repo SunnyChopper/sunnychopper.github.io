@@ -61,8 +61,7 @@ export function AssistantToolApprovalForm({
     return writeToolsByCategory
       .map(([category, tools]) => {
         const filtered = tools.filter(
-          (t) =>
-            t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
+          (t) => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
         );
         return [category, filtered] as const;
       })

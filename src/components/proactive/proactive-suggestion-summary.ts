@@ -59,8 +59,7 @@ export function summarizeProactiveSuggestionPayload(
   const kind = readKind(proposedPayload);
   const kindLabel = kind ? KIND_LABELS[kind] : 'Automation';
   const localTimeRaw = readString(proposedPayload, 'localTime') ?? '—';
-  const displayTime12h =
-    localTimeRaw === '—' ? '—' : formatProactiveLocalTime12h(localTimeRaw);
+  const displayTime12h = localTimeRaw === '—' ? '—' : formatProactiveLocalTime12h(localTimeRaw);
   const timeZone = readString(proposedPayload, 'timeZone') ?? '—';
   const customPrompt = readString(proposedPayload, 'customUserPrompt');
   const days = readDaysOfWeek(proposedPayload);

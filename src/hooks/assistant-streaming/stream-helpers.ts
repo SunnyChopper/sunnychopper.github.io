@@ -4,7 +4,10 @@ import type { WsStatusUpdatePayload } from '@/types/chatbot';
 export type StreamingStatusStage = NonNullable<WsStatusUpdatePayload['stage']> | 'awaitingApproval';
 
 export function getRunProgressLabel(
-  run?: Pick<{ statusStage?: StreamingStatusStage; statusMessage?: string }, 'statusStage' | 'statusMessage'>
+  run?: Pick<
+    { statusStage?: StreamingStatusStage; statusMessage?: string },
+    'statusStage' | 'statusMessage'
+  >
 ): string | null {
   if (!run) {
     return null;

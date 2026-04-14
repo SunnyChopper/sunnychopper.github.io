@@ -89,7 +89,9 @@ export default function ProactiveSuggestionCard({
           {statusBadge}
         </div>
         {summary.reasoning ? (
-          <p className="mt-2 text-sm leading-snug text-gray-700 dark:text-gray-300">{summary.reasoning}</p>
+          <p className="mt-2 text-sm leading-snug text-gray-700 dark:text-gray-300">
+            {summary.reasoning}
+          </p>
         ) : null}
         <p className="mt-2 text-xs text-gray-500">
           Suggested {new Date(suggestion.createdAt).toLocaleString()}
@@ -97,13 +99,18 @@ export default function ProactiveSuggestionCard({
         </p>
         {variant === 'approved' && suggestion.createdAutomationId ? (
           <p className="mt-1 text-xs text-gray-500">
-            Automation <span className="font-mono text-[11px]">{suggestion.createdAutomationId}</span>
+            Automation{' '}
+            <span className="font-mono text-[11px]">{suggestion.createdAutomationId}</span>
           </p>
         ) : null}
         {feedback ? (
           <div className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50/80 px-3 py-2 dark:border-amber-800/60 dark:bg-amber-950/30">
-            <p className="text-[11px] font-medium text-gray-600 dark:text-gray-400">Your feedback</p>
-            <p className="mt-0.5 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{feedback}</p>
+            <p className="text-[11px] font-medium text-gray-600 dark:text-gray-400">
+              Your feedback
+            </p>
+            <p className="mt-0.5 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+              {feedback}
+            </p>
           </div>
         ) : null}
 
@@ -132,8 +139,12 @@ export default function ProactiveSuggestionCard({
 
           {customPrompt ? (
             <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 dark:bg-primary/10">
-              <p className="mb-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">Instructions</p>
-              <p className="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">{customPrompt}</p>
+              <p className="mb-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                Instructions
+              </p>
+              <p className="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">
+                {customPrompt}
+              </p>
             </div>
           ) : null}
 

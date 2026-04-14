@@ -208,8 +208,7 @@ export function mergeFetchedMessageTreeWithCache(
         return node;
       }
       const incomingBodyEmpty = !(node.content && node.content.trim());
-      const preserveBody =
-        incomingBodyEmpty && Boolean(old.content && old.content.trim());
+      const preserveBody = incomingBodyEmpty && Boolean(old.content && old.content.trim());
       return {
         ...old,
         ...node,

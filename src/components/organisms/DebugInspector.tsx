@@ -33,12 +33,7 @@ type DebugFabCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 function readStoredDebugFabCorner(): DebugFabCorner {
   try {
     const v = localStorage.getItem(DEBUG_FAB_STORAGE_KEY);
-    if (
-      v === 'top-left' ||
-      v === 'top-right' ||
-      v === 'bottom-left' ||
-      v === 'bottom-right'
-    ) {
+    if (v === 'top-left' || v === 'top-right' || v === 'bottom-left' || v === 'bottom-right') {
       return v;
     }
   } catch {
@@ -470,14 +465,7 @@ export function DebugInspector() {
     if (!isDev) return { left: 0, top: 0 };
     if (debugFabDrag) return debugFabDrag;
     return computeDebugFabPosition(debugFabCorner, debugFabSize.w, debugFabSize.h);
-  }, [
-    isDev,
-    debugFabDrag,
-    debugFabCorner,
-    debugFabSize.w,
-    debugFabSize.h,
-    debugFabLayoutTick,
-  ]);
+  }, [isDev, debugFabDrag, debugFabCorner, debugFabSize.w, debugFabSize.h, debugFabLayoutTick]);
 
   const onDebugFabPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;

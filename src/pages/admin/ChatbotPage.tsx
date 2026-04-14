@@ -216,9 +216,7 @@ export default function ChatbotPage() {
       isLoading={isModelCatalogLoading}
       draft={draft}
       onDraftChange={updatePickerDraft}
-      lastResolved={
-        draft.mode === 'auto' && resolvedModelsDisplay ? resolvedModelsDisplay : null
-      }
+      lastResolved={draft.mode === 'auto' && resolvedModelsDisplay ? resolvedModelsDisplay : null}
       autoLastReplyPlaceholder={
         draft.mode === 'auto' && !resolvedModelsDisplay
           ? 'Shown after your next assistant reply.'
@@ -352,10 +350,7 @@ export default function ChatbotPage() {
                 Connected to your Personal OS
               </p>
               {nextSendModelsDisplay ? (
-                <div
-                  className="pt-0.5 max-w-full"
-                  title={nextModelsTitle}
-                >
+                <div className="pt-0.5 max-w-full" title={nextModelsTitle}>
                   <p className="text-[11px] leading-snug text-gray-800 dark:text-gray-200 flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:gap-x-2 sm:text-[13px]">
                     <span
                       className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
@@ -410,7 +405,9 @@ export default function ChatbotPage() {
                     {contextUsageQuery.isLoading ? (
                       <span className="text-gray-500 dark:text-gray-400">Estimating context…</span>
                     ) : contextUsageQuery.isError ? (
-                      <span className="text-red-600 dark:text-red-400">Could not load context estimate.</span>
+                      <span className="text-red-600 dark:text-red-400">
+                        Could not load context estimate.
+                      </span>
                     ) : contextUsageQuery.data ? (
                       <>
                         <span

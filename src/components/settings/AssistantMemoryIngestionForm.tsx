@@ -109,8 +109,7 @@ export function AssistantMemoryIngestionForm({
           >
             Model
           </label>
-          {modelsForProvider.length > 0 &&
-          modelsForProvider.some((m) => m.apiModelId === model) ? (
+          {modelsForProvider.length > 0 && modelsForProvider.some((m) => m.apiModelId === model) ? (
             <select
               id="mem-ingest-model"
               className={selectClass}
@@ -187,17 +186,13 @@ export function AssistantMemoryIngestionForm({
               <span className="font-medium text-gray-700 dark:text-gray-200">List price</span>
               {' · '}
               {selectedEntry.inputUsdPerMtok != null && (
-                <span>
-                  Input {formatUsdPerMtok(selectedEntry.inputUsdPerMtok)} / 1M tok
-                </span>
+                <span>Input {formatUsdPerMtok(selectedEntry.inputUsdPerMtok)} / 1M tok</span>
               )}
               {selectedEntry.inputUsdPerMtok != null &&
                 selectedEntry.outputUsdPerMtok != null &&
                 ' · '}
               {selectedEntry.outputUsdPerMtok != null && (
-                <span>
-                  Output {formatUsdPerMtok(selectedEntry.outputUsdPerMtok)} / 1M tok
-                </span>
+                <span>Output {formatUsdPerMtok(selectedEntry.outputUsdPerMtok)} / 1M tok</span>
               )}
             </p>
           )}

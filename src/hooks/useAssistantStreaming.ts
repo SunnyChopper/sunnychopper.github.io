@@ -33,7 +33,10 @@ import {
   applyThinkingDeltaToRunsAndCache,
   type AssistantStreamingRunState,
 } from '@/lib/websocket/thinking-delta-cache';
-import { scheduleDeltaFlush, type StreamingStatusStage } from '@/hooks/assistant-streaming/stream-helpers';
+import {
+  scheduleDeltaFlush,
+  type StreamingStatusStage,
+} from '@/hooks/assistant-streaming/stream-helpers';
 
 export { getRunProgressLabel } from '@/hooks/assistant-streaming/stream-helpers';
 
@@ -462,9 +465,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
         const usage = payload.lastRunUsage;
         const hasNumeric =
           usage != null &&
-          (usage.inputTokens != null ||
-            usage.outputTokens != null ||
-            usage.totalTokens != null);
+          (usage.inputTokens != null || usage.outputTokens != null || usage.totalTokens != null);
         setStreamingMeterSnapshot({
           lastRunUsage: hasNumeric ? usage : null,
           lastContextSummaryApplied:

@@ -13,7 +13,6 @@ function isGenericRunningToolsEntry(entry: StatusEntry): boolean {
  */
 export function getVisibleExecutionTraceEntries(statusHistory: StatusEntry[]): StatusEntry[] {
   return statusHistory.filter(
-    (e) =>
-      !isGenericRunningToolsEntry(e) && e.stage !== 'responding' && e.stage !== 'persisting'
+    (e) => !isGenericRunningToolsEntry(e) && e.stage !== 'responding' && e.stage !== 'persisting'
   );
 }

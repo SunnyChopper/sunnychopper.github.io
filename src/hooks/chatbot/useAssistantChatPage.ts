@@ -128,8 +128,7 @@ export function useAssistantChatPage({
   const [responseModelId, setResponseModelId] = useState('');
   const [optimizeFor, setOptimizeFor] = useState<AssistantOptimizeFor>('intelligence');
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
-  const [threadCompactionMode, setThreadCompactionMode] =
-    useState<AssistantCompactionMode>('auto');
+  const [threadCompactionMode, setThreadCompactionMode] = useState<AssistantCompactionMode>('auto');
   const [modelPopoverOpen, setModelPopoverOpen] = useState(false);
   const [isCompactingThread, setIsCompactingThread] = useState(false);
 
@@ -356,9 +355,7 @@ export function useAssistantChatPage({
     leafMessageId: leafForContextUsage,
     runConfig: getRunConfig(),
     enabled: Boolean(
-      serverThreadQueryId &&
-        leafForContextUsage &&
-        Boolean(modelCatalogQuery.data?.models?.length)
+      serverThreadQueryId && leafForContextUsage && Boolean(modelCatalogQuery.data?.models?.length)
     ),
   });
 

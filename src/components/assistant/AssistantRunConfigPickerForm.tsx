@@ -4,10 +4,7 @@ import {
   AssistantModelManualSortChips,
   AssistantModelModeToggle,
 } from '@/components/assistant/AssistantModelPickerPrimitives';
-import {
-  sortAssistantModels,
-  type ManualModelSortKey,
-} from '@/lib/assistant/model-picker-utils';
+import { sortAssistantModels, type ManualModelSortKey } from '@/lib/assistant/model-picker-utils';
 import type { ModelPickerDraft } from '@/lib/assistant/run-config-picker-draft';
 import type { AssistantModelCatalogData } from '@/types/chatbot';
 

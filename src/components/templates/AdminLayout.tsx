@@ -128,9 +128,7 @@ const leisureNavigation: NavItem[] = [
 function navGroupContainsPath(item: NavItem, pathname: string): boolean {
   if (pathname === item.href || pathname.startsWith(`${item.href}/`)) return true;
   return (
-    item.children?.some(
-      (c) => pathname === c.href || pathname.startsWith(`${c.href}/`)
-    ) ?? false
+    item.children?.some((c) => pathname === c.href || pathname.startsWith(`${c.href}/`)) ?? false
   );
 }
 
@@ -350,35 +348,35 @@ function AdminLayoutContent() {
 
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 pt-safe">
         <div className="px-4 py-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
-        <div className="flex items-center gap-2">
-          <WalletWidget />
-          <button
-            onClick={() => setCommandPaletteOpen(true)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            title="Search (Cmd+K)"
-          >
-            <Command size={20} />
-          </button>
-          {isAssistantRoute && (
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
+          <div className="flex items-center gap-2">
+            <WalletWidget />
             <button
-              onClick={toggleAssistantChats}
-              aria-label="Open chats"
-              aria-expanded={assistantChatsOpen}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={() => setCommandPaletteOpen(true)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              title="Search (Cmd+K)"
             >
-              <MessageCircle size={20} />
+              <Command size={20} />
             </button>
-          )}
-          <button
-            onClick={toggleMainNav}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            aria-label={mainNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={mainNavOpen}
-          >
-            {mainNavOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
+            {isAssistantRoute && (
+              <button
+                onClick={toggleAssistantChats}
+                aria-label="Open chats"
+                aria-expanded={assistantChatsOpen}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <MessageCircle size={20} />
+              </button>
+            )}
+            <button
+              onClick={toggleMainNav}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              aria-label={mainNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mainNavOpen}
+            >
+              {mainNavOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -38,7 +38,8 @@ function RejectSuggestionDialogBody({
   return (
     <>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-        Optional feedback helps future <strong>Generate from my data</strong> runs avoid similar ideas.
+        Optional feedback helps future <strong>Generate from my data</strong> runs avoid similar
+        ideas.
       </p>
       <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50/80 dark:bg-gray-900/40 px-3 py-2 mb-4 text-sm">
         <p className="font-medium text-gray-900 dark:text-white">{summary.title}</p>

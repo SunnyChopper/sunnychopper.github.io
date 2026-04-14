@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { detectBrowserTimeZone, getIanaTimeZoneOptions } from '@/lib/iana-time-zones';
-import type { ProactiveAutomation, ProactiveAutomationKind, ProactiveSuggestion } from '@/types/api-contracts';
+import type {
+  ProactiveAutomation,
+  ProactiveAutomationKind,
+  ProactiveSuggestion,
+} from '@/types/api-contracts';
 import type { AssistantModelCatalogData } from '@/types/chatbot';
 import AutomationCard from '@/components/proactive/AutomationCard';
 import AutomationFormModal from '@/components/proactive/AutomationFormModal';
@@ -79,7 +83,10 @@ function AutomationsTab({
   return (
     <section aria-labelledby="automations-heading" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="automations-heading" className="text-lg font-semibold text-gray-900 dark:text-white">
+        <h2
+          id="automations-heading"
+          className="text-lg font-semibold text-gray-900 dark:text-white"
+        >
           Your automations
         </h2>
         <Button type="button" size="sm" className="rounded-lg" onClick={onCreate}>
@@ -171,7 +178,9 @@ function PendingSuggestionSection({
       <div>
         <h3 id={id} className="text-base font-semibold text-gray-900 dark:text-white">
           {title}
-          <span className="ml-2 text-sm font-normal text-gray-500 tabular-nums">({suggestions.length})</span>
+          <span className="ml-2 text-sm font-normal text-gray-500 tabular-nums">
+            ({suggestions.length})
+          </span>
         </h3>
         {description ? (
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 max-w-2xl">{description}</p>
@@ -249,7 +258,9 @@ function ExpandablePaginatedSuggestionSection({
         <div className="min-w-0 flex-1">
           <h3 id={id} className="text-base font-semibold text-gray-900 dark:text-white">
             {title}
-            <span className="ml-2 text-sm font-normal text-gray-500 tabular-nums">({suggestions.length})</span>
+            <span className="ml-2 text-sm font-normal text-gray-500 tabular-nums">
+              ({suggestions.length})
+            </span>
           </h3>
           {description ? (
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 max-w-2xl">{description}</p>
@@ -278,7 +289,9 @@ function ExpandablePaginatedSuggestionSection({
                       : undefined
                   }
                   onApproveRejected={
-                    variant === 'rejected' && onApproveRejected ? () => onApproveRejected(s.id) : undefined
+                    variant === 'rejected' && onApproveRejected
+                      ? () => onApproveRejected(s.id)
+                      : undefined
                   }
                 />
               ))}
@@ -368,7 +381,10 @@ function SuggestionsTab({
     <section aria-labelledby="suggestions-heading" className="space-y-10">
       <div className="flex w-full flex-col gap-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <h2 id="suggestions-heading" className="text-lg font-semibold leading-tight text-gray-900 dark:text-white">
+          <h2
+            id="suggestions-heading"
+            className="text-lg font-semibold leading-tight text-gray-900 dark:text-white"
+          >
             Suggestions
           </h2>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
@@ -398,9 +414,9 @@ function SuggestionsTab({
           </div>
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 w-full">
-          Pending ideas need your OK before they become automations. Accepted and rejected history stays on this page
-          and informs the next <strong>Generate from my data</strong> run (along with your tasks, goals, logbook, and
-          memory). Generation often takes ~30–60s.
+          Pending ideas need your OK before they become automations. Accepted and rejected history
+          stays on this page and informs the next <strong>Generate from my data</strong> run (along
+          with your tasks, goals, logbook, and memory). Generation often takes ~30–60s.
         </p>
       </div>
       <Dialog
@@ -447,7 +463,8 @@ function SuggestionsTab({
           <Sparkles className="h-10 w-10 mx-auto text-primary/80 mb-3" aria-hidden />
           <p className="text-sm font-medium text-gray-900 dark:text-white">No suggestions yet</p>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-            Run <strong>Generate from my data</strong> to brainstorm automations from your workspace.
+            Run <strong>Generate from my data</strong> to brainstorm automations from your
+            workspace.
           </p>
         </div>
       ) : (
@@ -525,11 +542,14 @@ function SettingsTab({
       </h2>
 
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 md:p-5">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Test email delivery</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+          Test email delivery
+        </h3>
         <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 max-w-2xl">
-          Delivers to the email stored on your Cognito user (login email). The visible From address is
-          whatever the API sets in SES_FROM_ADDRESS; that identity must be verified in Amazon SES and is
-          not the same as using your Gmail as the sender unless you verified that address in SES.
+          Delivers to the email stored on your Cognito user (login email). The visible From address
+          is whatever the API sets in SES_FROM_ADDRESS; that identity must be verified in Amazon SES
+          and is not the same as using your Gmail as the sender unless you verified that address in
+          SES.
         </p>
         <Button
           type="button"
@@ -554,10 +574,12 @@ function SettingsTab({
       </div>
 
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 md:p-5">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Default time zone</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+          Default time zone
+        </h3>
         <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 max-w-2xl">
-          Used as the default when you create an automation. Each automation stores its own time zone, so
-          you can mix regions if needed.
+          Used as the default when you create an automation. Each automation stores its own time
+          zone, so you can mix regions if needed.
         </p>
         <div className="flex flex-wrap gap-2 items-center">
           <select
@@ -590,7 +612,9 @@ function SettingsTab({
       </div>
 
       <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 md:p-5 bg-gray-50/50 dark:bg-gray-950/20">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Automation kinds</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+          Automation kinds
+        </h3>
         <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
           {KINDS.map((k) => (
             <li key={k}>
@@ -619,12 +643,15 @@ export default function ProactiveAutomationsPage() {
     message: string;
   } | null>(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
-  const [formMode, setFormMode] = useState<'create' | 'edit' | 'suggestion' | 'rejectedSuggestion'>('create');
+  const [formMode, setFormMode] = useState<'create' | 'edit' | 'suggestion' | 'rejectedSuggestion'>(
+    'create'
+  );
   const [editingAutomation, setEditingAutomation] = useState<ProactiveAutomation | null>(null);
   const [suggestionEditId, setSuggestionEditId] = useState<string | null>(null);
-  const [suggestionFormPayload, setSuggestionFormPayload] = useState<Record<string, unknown> | null>(
-    null
-  );
+  const [suggestionFormPayload, setSuggestionFormPayload] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [automationFormKey, setAutomationFormKey] = useState(0);
   const [brainstormError, setBrainstormError] = useState<string | null>(null);
   const [brainstormStatus, setBrainstormStatus] = useState<string | null>(null);
@@ -633,14 +660,19 @@ export default function ProactiveAutomationsPage() {
     manualCatalogModelId: '',
   });
   const [historyAutomation, setHistoryAutomation] = useState<ProactiveAutomation | null>(null);
-  const [rejectSuggestionTarget, setRejectSuggestionTarget] = useState<ProactiveSuggestion | null>(null);
-  const [updateFeedbackTarget, setUpdateFeedbackTarget] = useState<ProactiveSuggestion | null>(null);
+  const [rejectSuggestionTarget, setRejectSuggestionTarget] = useState<ProactiveSuggestion | null>(
+    null
+  );
+  const [updateFeedbackTarget, setUpdateFeedbackTarget] = useState<ProactiveSuggestion | null>(
+    null
+  );
 
   const timeZonePrefQ = useQuery({
     queryKey: ['preferences', 'time-zone'],
     queryFn: async () => {
       const res = await apiClient.getPreferencesTimeZone();
-      if (!res.success || !res.data?.timeZone) throw new Error(res.error?.message ?? 'Failed to load');
+      if (!res.success || !res.data?.timeZone)
+        throw new Error(res.error?.message ?? 'Failed to load');
       return res.data.timeZone;
     },
   });
@@ -687,11 +719,7 @@ export default function ProactiveAutomationsPage() {
   const automations = automationsQ.data ?? [];
   const zoneOptions = useMemo(
     () =>
-      mergeZoneOptions([
-        tz,
-        savedTimeZone,
-        ...(automationsQ.data ?? []).map((a) => a.timeZone),
-      ]),
+      mergeZoneOptions([tz, savedTimeZone, ...(automationsQ.data ?? []).map((a) => a.timeZone)]),
     [tz, savedTimeZone, automationsQ.data]
   );
 
@@ -889,8 +917,11 @@ export default function ProactiveAutomationsPage() {
     },
   });
 
-  const { pending: pendingSuggestions, accepted: acceptedSuggestions, rejected: rejectedSuggestions } =
-    useMemo(() => partitionProactiveSuggestions(suggestionsQ.data ?? []), [suggestionsQ.data]);
+  const {
+    pending: pendingSuggestions,
+    accepted: acceptedSuggestions,
+    rejected: rejectedSuggestions,
+  } = useMemo(() => partitionProactiveSuggestions(suggestionsQ.data ?? []), [suggestionsQ.data]);
 
   const openCreateModal = () => {
     setFormError(null);
@@ -919,7 +950,9 @@ export default function ProactiveAutomationsPage() {
     setSuggestionEditId(s.id);
     const raw = s.proposedPayload;
     setSuggestionFormPayload(
-      raw && typeof raw === 'object' && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {}
+      raw && typeof raw === 'object' && !Array.isArray(raw)
+        ? { ...(raw as Record<string, unknown>) }
+        : {}
     );
     setAutomationFormKey((k) => k + 1);
     setFormModalOpen(true);
@@ -932,7 +965,9 @@ export default function ProactiveAutomationsPage() {
     setSuggestionEditId(s.id);
     const raw = s.proposedPayload;
     setSuggestionFormPayload(
-      raw && typeof raw === 'object' && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {}
+      raw && typeof raw === 'object' && !Array.isArray(raw)
+        ? { ...(raw as Record<string, unknown>) }
+        : {}
     );
     setAutomationFormKey((k) => k + 1);
     setFormModalOpen(true);
@@ -955,10 +990,7 @@ export default function ProactiveAutomationsPage() {
 
   const handleFormSubmit = (body: Record<string, unknown>) => {
     setFormError(null);
-    if (
-      (formMode === 'suggestion' || formMode === 'rejectedSuggestion') &&
-      suggestionFormPayload
-    ) {
+    if ((formMode === 'suggestion' || formMode === 'rejectedSuggestion') && suggestionFormPayload) {
       const reasoning = suggestionFormPayload.reasoning;
       if (typeof reasoning === 'string' && reasoning.trim() && body.reasoning === undefined) {
         body.reasoning = reasoning.trim();
@@ -997,12 +1029,14 @@ export default function ProactiveAutomationsPage() {
     <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain">
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 pb-12 pt-20 lg:px-8 lg:pt-8">
         <header className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Proactive assistant</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            Proactive assistant
+          </h1>
           <p className="mt-1 w-full text-sm text-gray-600 dark:text-gray-400">
-            Schedule morning briefings and evening logbook check-ins. At the time you pick, the assistant
-            prepares an update you can open in the app; you can also get a short email with a link back to
-            the conversation. When your workspace is set up for it, replying to that email continues the same
-            thread.
+            Schedule morning briefings and evening logbook check-ins. At the time you pick, the
+            assistant prepares an update you can open in the app; you can also get a short email
+            with a link back to the conversation. When your workspace is set up for it, replying to
+            that email continues the same thread.
           </p>
         </header>
 
@@ -1087,7 +1121,9 @@ export default function ProactiveAutomationsPage() {
             acceptedSuggestions={acceptedSuggestions}
             rejectedSuggestions={rejectedSuggestions}
             resolvePending={
-              resolveMut.isPending || suggestionWorkflowMut.isPending || patchSuggestionMut.isPending
+              resolveMut.isPending ||
+              suggestionWorkflowMut.isPending ||
+              patchSuggestionMut.isPending
             }
             onApprove={(id) => resolveMut.mutate({ id, approve: true })}
             onRejectRequest={(s) => setRejectSuggestionTarget(s)}
@@ -1138,7 +1174,9 @@ export default function ProactiveAutomationsPage() {
           mode={formMode}
           initialAutomation={editingAutomation}
           suggestionPayload={
-            formMode === 'suggestion' || formMode === 'rejectedSuggestion' ? suggestionFormPayload : null
+            formMode === 'suggestion' || formMode === 'rejectedSuggestion'
+              ? suggestionFormPayload
+              : null
           }
           zoneOptions={zoneOptions}
           defaultTimeZone={savedTimeZone}
