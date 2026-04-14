@@ -286,9 +286,141 @@ export interface AssistantToolApprovalConfig {
   dangerousTools: string[];
 }
 
+/** Background STM extract + thread summarization (API camelCase). */
+export interface AssistantMemoryIngestionConfig {
+  provider: string;
+  model: string;
+}
+
+export interface AssistantSettingsConfig {
+  toolApproval: AssistantToolApprovalConfig;
+  memoryIngestion: AssistantMemoryIngestionConfig;
+  memoryIngestionIsCustom: boolean;
+}
+
 export interface AssistantToolRegistryEntry {
   name: string;
   description: string;
   safeRead: boolean;
   category: string;
+}
+
+export type ProactiveAutomationKind = 'dailyBriefing' | 'logbookEvening' | 'custom';
+
+export type ProactiveThreadStrategy = 'reuseFixedThread' | 'newThreadEachRun';
+
+/** Same shape as assistant WebSocket `runConfig` / chat model picker. */
+export type ProactiveAssistantRunConfig =
+  | ({
+      mode: 'manual';
+      manual: { reasoningModelId: string; responseModelId: string };
+    } & { webSearchEnabled?: boolean })
+  | ({
+      mode: 'auto';
+      auto: {
+        optimizeFor: 'speed' | 'intelligence' | 'cost' | 'balanced' | 'value';
+      };
+    } & { webSearchEnabled?: boolean });
+
+export interface ProactiveAutomation {
+  id: string;
+  kind: ProactiveAutomationKind;
+  enabled: boolean;
+  localTime: string;
+  timeZone: string;
+  threadStrategy: ProactiveThreadStrategy;
+  dedicatedThreadId?: string | null;
+  channelEmailEnabled: boolean;
+  customUserPrompt?: string | null;
+  /** Optional display name (e.g. from brainstorm or user). */
+  title?: string | null;
+  /** Optional short explanation (e.g. from brainstorm). */
+  reasoning?: string | null;
+  daysOfWeek?: number[] | null;
+  /** Per-automation assistant model selection (optional; server defaults when omitted). */
+  assistantRunConfig?: ProactiveAssistantRunConfig | null;
+  lastRunLocalDate?: string | null;
+  lastRunAt?: string | null;
+  lastStatus?: string | null;
+  lastErrorPreview?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProactiveSuggestionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ProactiveSuggestion {
+  id: string;
+  status: ProactiveSuggestionStatus;
+  proposedPayload: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  createdAutomationId?: string | null;
+  resolutionFeedback?: string | null;
+  resolvedPayload?: Record<string, unknown> | null;
+}
+
+export interface ProactiveDispatchErrorItem {
+  userId: string;
+  automationId: string;
+  error: string;
+}
+
+export interface ProactiveDispatchRunResult {
+  processedUsers: number;
+  ran: number;
+  errors: ProactiveDispatchErrorItem[];
+}
+
+/** Async job for POST /proactive/automations/{id}/dispatch/test (poll with GET /proactive/dispatch/jobs/{id}). */
+export interface ProactiveDispatchJob {
+  id: string;
+  automationId: string;
+  status: 'pending' | 'running' | 'succeeded' | 'failed';
+  errorMessage?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProactiveEmailTestResult {
+  sentTo: string;
+  messageId?: string | null;
+  replyToUsed: boolean;
+  threadId: string;
+  deployedStage: string;
+}
+
+export interface ProactiveBrainstormSkippedItem {
+  reason: string;
+  proposedPayload: Record<string, unknown>;
+}
+
+export interface ProactiveBrainstormContextStats {
+  taskCount: number;
+  goalCount: number;
+  memorySnippetCount: number;
+  existingAutomationCount: number;
+}
+
+export interface ProactiveBrainstormResult {
+  created: ProactiveSuggestion[];
+  skipped: ProactiveBrainstormSkippedItem[];
+  model: string;
+  contextStats: ProactiveBrainstormContextStats;
+}
+
+export interface ProactiveAutomationRun {
+  id: string;
+  automationId: string;
+  status: string;
+  ranAt: string;
+  runSource: string;
+  errorMessage?: string | null;
+  threadId?: string | null;
+  assistantMessageId?: string | null;
+  responsePreview?: string | null;
+}
+
+export interface ProactiveAutomationRunsList {
+  runs: ProactiveAutomationRun[];
 }

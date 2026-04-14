@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Brain, Clock3, RefreshCw, Save, Search } from 'lucide-react';
 import Dialog from '@/components/molecules/Dialog';
-import NoteForm from '@/components/organisms/NoteForm';
+import TagInput from '@/components/molecules/TagInput';
 import { assistantMemoryService } from '@/services/assistant-memory.service';
 import { queryKeys } from '@/lib/react-query/query-keys';
-import type { AssistantMemoryFile, LongTermMemoryNote } from '@/types/assistant-memory';
+import type { Area } from '@/types/growth-system';
+import type { AssistantMemoryFile, LongTermMemoryEntry } from '@/types/assistant-memory';
+
+const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 
 type MemoryTab = 'shortTerm' | 'longTerm';
 
@@ -23,7 +26,13 @@ export function AssistantMemoryPanel() {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [draftContent, setDraftContent] = useState('');
   const [search, setSearch] = useState('');
-  const [editingNote, setEditingNote] = useState<LongTermMemoryNote | null>(null);
+  const [editingEntry, setEditingEntry] = useState<LongTermMemoryEntry | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editSummary, setEditSummary] = useState('');
+  const [editArea, setEditArea] = useState<Area>('Operations');
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const currentMemoryQuery = useQuery({
     queryKey: queryKeys.chatbot.memory.shortTerm(),
@@ -105,7 +114,6 @@ export function AssistantMemoryPanel() {
         queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.memory.shortTerm() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.memory.history() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.memory.longTerm() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeVault.all }),
       ]);
     },
   });
@@ -256,22 +264,29 @@ export function AssistantMemoryPanel() {
             <div className="text-gray-500 dark:text-gray-400">Loading long-term memory...</div>
           ) : longTermQuery.data && longTermQuery.data.length > 0 ? (
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {longTermQuery.data.map((note) => (
+                           {longTermQuery.data.map((entry) => (
                 <button
-                  key={note.id}
+                  key={entry.id}
                   type="button"
-                  onClick={() => setEditingNote(note)}
+                  onClick={() => {
+                    setEditingEntry(entry);
+                    setEditTitle(entry.title);
+                    setEditSummary(entry.summary);
+                    setEditArea((entry.area as Area) || 'Operations');
+                    setEditTags(entry.tags || []);
+                    setEditError(null);
+                  }}
                   className="text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 hover:border-green-400 dark:hover:border-green-500 transition"
                 >
                   <div className="flex items-center justify-between gap-4 mb-2">
-                    <h4 className="font-semibold text-gray-900 dark:text-white">{note.title}</h4>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{note.area}</span>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">{entry.title}</h4>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{entry.area}</span>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                    {contentPreview(note.content) || 'No summary yet.'}
+                    {contentPreview(entry.summary) || 'No summary yet.'}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {note.tags.map((tag) => (
+                    {(entry.tags || []).map((tag) => (
                       <span
                         key={tag}
                         className="rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-1 text-xs text-gray-700 dark:text-gray-300"
@@ -285,32 +300,106 @@ export function AssistantMemoryPanel() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 text-gray-600 dark:text-gray-400">
-              Long-term memory notes will appear here after consolidation or when the assistant
-              promotes durable knowledge into the Knowledge Vault.
+              Assistant long-term memory (semantic, stored in Postgres) appears here after
+              consolidation or when the assistant saves durable facts.
             </div>
           )}
         </div>
       )}
 
       <Dialog
-        isOpen={editingNote !== null}
-        onClose={() => setEditingNote(null)}
-        title={editingNote ? `Edit ${editingNote.title}` : 'Edit long-term memory note'}
+        isOpen={editingEntry !== null}
+        onClose={() => setEditingEntry(null)}
+        title={editingEntry ? `Edit ${editingEntry.title}` : 'Edit long-term memory'}
         size="full"
       >
-        <div className="p-6">
-          {editingNote && (
-            <NoteForm
-              note={editingNote}
-              onSuccess={async () => {
-                setEditingNote(null);
-                await Promise.all([
-                  queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.memory.longTerm() }),
-                  queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeVault.all }),
-                ]);
+        <div className="p-6 max-w-3xl mx-auto space-y-4">
+          {editingEntry && (
+            <form
+              className="space-y-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setEditSaving(true);
+                setEditError(null);
+                try {
+                  await assistantMemoryService.updateLongTermMemory(editingEntry.id, {
+                    title: editTitle.trim(),
+                    summary: editSummary.trim(),
+                    area: editArea,
+                    tags: editTags,
+                  });
+                  setEditingEntry(null);
+                  await queryClient.invalidateQueries({
+                    queryKey: queryKeys.chatbot.memory.longTerm(),
+                  });
+                } catch (err) {
+                  setEditError(err instanceof Error ? err.message : 'Save failed');
+                } finally {
+                  setEditSaving(false);
+                }
               }}
-              onCancel={() => setEditingNote(null)}
-            />
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(ev) => setEditTitle(ev.target.value)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Summary
+                </label>
+                <textarea
+                  value={editSummary}
+                  onChange={(ev) => setEditSummary(ev.target.value)}
+                  rows={10}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Area
+                </label>
+                <select
+                  value={editArea}
+                  onChange={(ev) => setEditArea(ev.target.value as Area)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-gray-900 dark:text-gray-100"
+                >
+                  {AREAS.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <TagInput value={editTags} onChange={setEditTags} />
+              {editError && (
+                <div className="text-sm text-red-600 dark:text-red-400">{editError}</div>
+              )}
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setEditingEntry(null)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white disabled:opacity-50"
+                >
+                  {editSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </form>
           )}
         </div>
       </Dialog>

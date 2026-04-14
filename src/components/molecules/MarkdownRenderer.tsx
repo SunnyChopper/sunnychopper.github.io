@@ -315,7 +315,7 @@ export default function MarkdownRenderer({
           'prose-blockquote:my-2',
           '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
           variant === 'chat' &&
-            'min-w-0 w-full max-w-full break-words prose-headings:font-sans prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:font-medium prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-pre:!my-2',
+            'min-w-0 w-full max-w-full break-words prose-headings:font-sans prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-code:font-medium prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-pre:!my-2 prose-hr:!my-2',
           className
         )}
       >

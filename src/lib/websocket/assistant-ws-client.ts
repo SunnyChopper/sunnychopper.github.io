@@ -11,10 +11,24 @@ import type {
   WsMessageCompletePayload,
   WsThreadUpdatedPayload,
   WsRunErrorPayload,
+  WsAssistantModelResolvedPayload,
 } from '@/types/chatbot';
+
+export type WsContextBudgetMetaPayload = {
+  runId: string;
+  threadId: string;
+  contextWindowTokens?: number;
+  budgetTokens?: number;
+  estimatedInputTokens?: number;
+  fittedInputTokens?: number;
+  compactionMode?: string;
+};
 
 type WsEventHandlers = {
   onRunStarted?: (payload: WsRunStartedPayload) => void;
+  onAssistantModelResolved?: (payload: WsAssistantModelResolvedPayload) => void;
+  /** Best-effort: server may emit during a run; optional cache refresh hook. */
+  onContextBudgetMeta?: (payload: WsContextBudgetMetaPayload) => void;
   onAssistantDelta?: (payload: WsAssistantDeltaPayload) => void;
   onThinkingDelta?: (payload: WsThinkingDeltaPayload) => void;
   onStatusUpdate?: (payload: WsStatusUpdatePayload) => void;
@@ -42,6 +56,7 @@ type AssistantWsClientOptions = WsEventHandlers & {
 
 type IncomingMessage =
   | { type: 'runStarted'; payload: WsRunStartedPayload }
+  | { type: 'assistantModelResolved'; payload: WsAssistantModelResolvedPayload }
   | { type: 'assistantDelta'; payload: WsAssistantDeltaPayload }
   | { type: 'thinkingDelta'; payload: WsThinkingDeltaPayload }
   | { type: 'statusUpdate'; payload: WsStatusUpdatePayload }
@@ -49,7 +64,8 @@ type IncomingMessage =
   | { type: 'toolCallComplete'; payload: WsToolCallCompletePayload }
   | { type: 'messageComplete'; payload: WsMessageCompletePayload }
   | { type: 'threadUpdated'; payload: WsThreadUpdatedPayload }
-  | { type: 'runError'; payload: WsRunErrorPayload };
+  | { type: 'runError'; payload: WsRunErrorPayload }
+  | { type: 'contextBudgetMeta'; payload: WsContextBudgetMetaPayload };
 
 export type AssistantWsConnectionState =
   | 'disconnected'
@@ -83,6 +99,7 @@ export class AssistantWsClient {
     this.getAccessToken = options.getAccessToken;
     this.handlers = {
       onRunStarted: options.onRunStarted,
+      onAssistantModelResolved: options.onAssistantModelResolved,
       onAssistantDelta: options.onAssistantDelta,
       onThinkingDelta: options.onThinkingDelta,
       onStatusUpdate: options.onStatusUpdate,
@@ -91,6 +108,7 @@ export class AssistantWsClient {
       onMessageComplete: options.onMessageComplete,
       onThreadUpdated: options.onThreadUpdated,
       onRunError: options.onRunError,
+      onContextBudgetMeta: options.onContextBudgetMeta,
       onConnectionStateChange: options.onConnectionStateChange,
       onOpen: options.onOpen,
       onClose: options.onClose,
@@ -260,6 +278,9 @@ export class AssistantWsClient {
       case 'runStarted':
         this.handlers.onRunStarted?.(parsed.payload);
         break;
+      case 'assistantModelResolved':
+        this.handlers.onAssistantModelResolved?.(parsed.payload);
+        break;
       case 'assistantDelta':
         this.handlers.onAssistantDelta?.(parsed.payload);
         break;
@@ -295,6 +316,9 @@ export class AssistantWsClient {
       }
       case 'runError':
         this.handlers.onRunError?.(parsed.payload);
+        break;
+      case 'contextBudgetMeta':
+        this.handlers.onContextBudgetMeta?.(parsed.payload);
         break;
       default:
         break;

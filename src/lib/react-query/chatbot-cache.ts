@@ -50,23 +50,34 @@ const sortMessages = (messages: ChatMessage[]): ChatMessage[] =>
   [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
 /**
- * HTTP payloads and some upserts carry `executionSteps: []` / `toolCallDetails: []` while the
- * client already has a richer trace from WebSocket streaming — prefer non-empty so we do not
- * wipe the accordion mid-run or after tool calls.
+ * Merge assistant trace arrays from HTTP/refetch vs React Query cache (or WS buffer vs payload).
+ * - Empty `incoming` never wipes a non-empty cache.
+ * - When both non-empty, keep the **longer** list (WS/cache often has more steps than a
+ *   partially-persisted or lagging API snapshot — this was losing the accordion in production).
+ * - Same length: prefer `incoming` (server payload slightly fresher).
  */
-function preferNonEmptyTraceArray<T extends readonly unknown[] | undefined | null>(
+export function preferRicherTraceArray<T extends readonly unknown[] | undefined | null>(
   incoming: T,
-  existing: T
+  cached: T
 ): T | undefined {
   const inLen = incoming?.length ?? 0;
-  const exLen = existing?.length ?? 0;
-  if (inLen > 0) {
+  const cacheLen = cached?.length ?? 0;
+  if (inLen === 0 && cacheLen === 0) {
+    return (incoming ?? cached) as T;
+  }
+  if (inLen === 0) {
+    return cached as T;
+  }
+  if (cacheLen === 0) {
     return incoming as T;
   }
-  if (exLen > 0) {
-    return existing as T;
+  if (inLen > cacheLen) {
+    return incoming as T;
   }
-  return (incoming ?? existing) as T;
+  if (cacheLen > inLen) {
+    return cached as T;
+  }
+  return incoming as T;
 }
 
 export const upsertChatThreadCache = (queryClient: QueryClient, thread: ChatThread): void => {
@@ -176,7 +187,7 @@ export const replaceMessageTreeCache = (
 /**
  * When React Query refetches `/messages/tree`, the HTTP snapshot can race behind WebSocket
  * persistence. Merge preserves assistant `executionSteps` / `toolCallDetails` from cache when
- * the server omits them or sends empty arrays (which would otherwise wipe a live trace).
+ * the server omits them, sends empty arrays, or returns a shorter trace than the live cache.
  */
 export function mergeFetchedMessageTreeWithCache(
   incoming: MessageTreeResponse,
@@ -196,11 +207,15 @@ export function mergeFetchedMessageTreeWithCache(
       if (!old || old.role !== 'assistant') {
         return node;
       }
+      const incomingBodyEmpty = !(node.content && node.content.trim());
+      const preserveBody =
+        incomingBodyEmpty && Boolean(old.content && old.content.trim());
       return {
         ...old,
         ...node,
-        executionSteps: preferNonEmptyTraceArray(node.executionSteps, old.executionSteps),
-        toolCallDetails: preferNonEmptyTraceArray(node.toolCallDetails, old.toolCallDetails),
+        ...(preserveBody ? { content: old.content } : {}),
+        executionSteps: preferRicherTraceArray(node.executionSteps, old.executionSteps),
+        toolCallDetails: preferRicherTraceArray(node.toolCallDetails, old.toolCallDetails),
       };
     }),
   };
@@ -214,11 +229,15 @@ const upsertOrMergeMessageNode = (items: ChatMessage[], item: ChatMessage): Chat
   const next = [...items];
   const existing = next[index];
   if (existing.role === 'assistant' && item.role === 'assistant') {
+    const incomingEmpty = !(item.content && item.content.trim());
+    const preserveStreamedBody =
+      incomingEmpty && Boolean(existing.content && existing.content.trim());
     next[index] = {
       ...existing,
       ...item,
-      executionSteps: preferNonEmptyTraceArray(item.executionSteps, existing.executionSteps),
-      toolCallDetails: preferNonEmptyTraceArray(item.toolCallDetails, existing.toolCallDetails),
+      ...(preserveStreamedBody ? { content: existing.content } : {}),
+      executionSteps: preferRicherTraceArray(item.executionSteps, existing.executionSteps),
+      toolCallDetails: preferRicherTraceArray(item.toolCallDetails, existing.toolCallDetails),
     };
   } else {
     next[index] = { ...existing, ...item };

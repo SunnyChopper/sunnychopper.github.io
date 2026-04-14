@@ -1,10 +1,13 @@
 import type {
+  AssistantModelCatalogData,
+  AssistantRunConfig,
   ChatThread,
   ChatMessage,
   CreateThreadRequest,
   CreateMessageRequest,
   EditMessageRequest,
   MessageTreeResponse,
+  ThreadContextUsage,
   UpdateThreadRequest,
 } from '@/types/chatbot';
 import { apiClient } from '@/lib/api-client';
@@ -70,6 +73,17 @@ export const chatbotService = {
     }
   },
 
+  async getAssistantModelCatalog(): Promise<AssistantModelCatalogData> {
+    const response = await apiClient.getAssistantModelCatalog();
+    if (response.success && response.data) {
+      return response.data;
+    }
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to fetch assistant model catalog');
+  },
+
   async getMessages(threadId: string): Promise<ChatMessage[]> {
     const response = await apiClient.getChatMessages(threadId);
     if (response.success && response.data) {
@@ -118,5 +132,39 @@ export const chatbotService = {
       throw response.error;
     }
     throw new Error('Failed to edit message');
+  },
+
+  async getThreadContextUsage(
+    threadId: string,
+    params?: { leafMessageId?: string; runConfig?: AssistantRunConfig }
+  ): Promise<ThreadContextUsage> {
+    const response = await apiClient.postAssistantThreadContextUsage(threadId, {
+      leafMessageId: params?.leafMessageId,
+      runConfig: params?.runConfig,
+    });
+    if (response.success && response.data) {
+      return response.data;
+    }
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to load thread context usage');
+  },
+
+  async compactThreadContext(
+    threadId: string,
+    params?: { leafMessageId?: string; runConfig?: AssistantRunConfig }
+  ): Promise<ThreadContextUsage> {
+    const response = await apiClient.postAssistantThreadCompact(threadId, {
+      leafMessageId: params?.leafMessageId,
+      runConfig: params?.runConfig,
+    });
+    if (response.success && response.data) {
+      return response.data;
+    }
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to compact thread context');
   },
 };

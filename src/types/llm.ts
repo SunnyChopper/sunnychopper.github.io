@@ -8,6 +8,8 @@ import type {
   AIInsight,
 } from './growth-system';
 
+/** Prefer Zod schemas under `@/lib/llm/schemas` with `z.infer<>` for new LLM I/O to avoid duplicating shapes here. */
+
 export type LLMAdapterType = 'direct' | 'api';
 
 export interface LLMConfig {

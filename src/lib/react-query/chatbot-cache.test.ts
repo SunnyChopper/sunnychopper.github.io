@@ -86,8 +86,12 @@ describe('mergeFetchedMessageTreeWithCache', () => {
     expect(merged.nodes[0].executionSteps).toEqual(steps);
   });
 
-  it('uses server executionSteps when the server sends them', () => {
-    const serverSteps: StatusEntry[] = [{ stage: 'responding', startedAt: 9 }];
+  it('uses server executionSteps when the server sends a longer trace', () => {
+    const serverSteps: StatusEntry[] = [
+      { stage: 'planning', startedAt: 1 },
+      { stage: 'runningTools', message: 'Tool: x', startedAt: 2 },
+      { stage: 'responding', startedAt: 9 },
+    ];
     const prev: MessageTreeResponse = {
       rootKey,
       nodes: [
@@ -109,6 +113,75 @@ describe('mergeFetchedMessageTreeWithCache', () => {
     };
     const merged = mergeFetchedMessageTreeWithCache(incoming, prev);
     expect(merged.nodes[0].executionSteps).toEqual(serverSteps);
+  });
+
+  it('preserves non-empty assistant content when refetch returns empty body', () => {
+    const prev: MessageTreeResponse = {
+      rootKey,
+      nodes: [
+        {
+          id: 'a1',
+          threadId: 't',
+          role: 'assistant',
+          content: 'Streamed reply',
+          createdAt: 'b',
+        },
+      ],
+      childrenByParentId: {},
+      leafIds: ['a1'],
+    };
+    const incoming: MessageTreeResponse = {
+      ...prev,
+      nodes: [{ ...prev.nodes[0], content: '' }],
+    };
+    const merged = mergeFetchedMessageTreeWithCache(incoming, prev);
+    expect(merged.nodes[0].content).toBe('Streamed reply');
+  });
+
+  it('keeps longer cache executionSteps when server returns a shorter snapshot', () => {
+    const shortServer: StatusEntry[] = [{ stage: 'planning', startedAt: 1 }];
+    const prev: MessageTreeResponse = {
+      rootKey,
+      nodes: [
+        {
+          id: 'a1',
+          threadId: 't',
+          role: 'assistant',
+          content: 'x',
+          createdAt: 'b',
+          executionSteps: steps,
+        },
+      ],
+      childrenByParentId: {},
+      leafIds: ['a1'],
+    };
+    const incoming: MessageTreeResponse = {
+      ...prev,
+      nodes: [{ ...prev.nodes[0], executionSteps: shortServer }],
+    };
+    const merged = mergeFetchedMessageTreeWithCache(incoming, prev);
+    expect(merged.nodes[0].executionSteps).toEqual(steps);
+  });
+
+  it('tree upsert merge keeps assistant body when messageComplete sends empty content', () => {
+    const qc = new QueryClient();
+    const threadId = 'thread-y';
+    const base = {
+      id: 'a1',
+      threadId,
+      role: 'assistant' as const,
+      content: 'Hello from stream',
+      createdAt: '2026-01-01',
+    };
+    upsertMessageTreeNodeCache(qc, threadId, base);
+    upsertMessageTreeNodeCache(qc, threadId, {
+      ...base,
+      content: '',
+      executionSteps: steps,
+    });
+    const tree = qc.getQueryData<MessageTreeResponse>(queryKeys.chatbot.messages.tree(threadId));
+    expect(tree?.nodes.find((n) => n.id === 'a1')?.content).toBe('Hello from stream');
+    expect(tree?.nodes.find((n) => n.id === 'a1')?.executionSteps).toEqual(steps);
   });
 
   it('tree upsert merge keeps executionSteps when follow-up patch sends empty array', () => {

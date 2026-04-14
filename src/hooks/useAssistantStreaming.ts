@@ -1,9 +1,12 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
+  AssistantLastResolvedModels,
+  AssistantRunUsageTokens,
   ChatMessage,
   MessageTreeResponse,
   StatusEntry,
+  WsAssistantModelResolvedPayload,
   WsStatusUpdatePayload,
   WsThinkingDeltaPayload,
   WsToolApprovalRequiredPayload,
@@ -18,6 +21,7 @@ import {
 import { authService } from '@/lib/auth/auth.service';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import {
+  preferRicherTraceArray,
   removeChatMessageCache,
   removeNodeFromTree,
   upsertMessageTreeNodeCache,
@@ -29,9 +33,9 @@ import {
   applyThinkingDeltaToRunsAndCache,
   type AssistantStreamingRunState,
 } from '@/lib/websocket/thinking-delta-cache';
+import { scheduleDeltaFlush, type StreamingStatusStage } from '@/hooks/assistant-streaming/stream-helpers';
 
-/** WS statusUpdate stages plus client-only HITL stage (not sent as statusUpdate). */
-type StreamingStatusStage = NonNullable<WsStatusUpdatePayload['stage']> | 'awaitingApproval';
+export { getRunProgressLabel } from '@/hooks/assistant-streaming/stream-helpers';
 
 type RunState = AssistantStreamingRunState & {
   runId: string;
@@ -45,33 +49,9 @@ type RunState = AssistantStreamingRunState & {
   toolCallDetails?: WsToolCallCompletePayload[];
   /** Outstanding HITL prompts keyed by approvalId */
   pendingToolApprovals?: Record<string, WsToolApprovalRequiredPayload>;
-};
-
-export const getRunProgressLabel = (
-  run?: Pick<RunState, 'statusStage' | 'statusMessage'>
-): string | null => {
-  if (!run) {
-    return null;
-  }
-  if (run.statusMessage) {
-    return run.statusMessage;
-  }
-  if (run.statusStage === 'runningTools') {
-    return 'Running tools...';
-  }
-  if (run.statusStage === 'responding') {
-    return 'Generating response...';
-  }
-  if (run.statusStage === 'persisting') {
-    return 'Persisting response...';
-  }
-  if (run.statusStage === 'planning') {
-    return 'Planning response...';
-  }
-  if (run.statusStage === 'awaitingApproval') {
-    return 'Awaiting tool approval...';
-  }
-  return null;
+  resolvedReasoningModelId?: string;
+  resolvedResponseModelId?: string;
+  modelMode?: string;
 };
 
 type StreamingState = {
@@ -88,17 +68,13 @@ type PendingRunDelta = {
   thinkingDelta: string;
 };
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL;
-
-const scheduleDeltaFlush = (callback: FrameRequestCallback): number => {
-  if (typeof window !== 'undefined') {
-    if (typeof window.requestAnimationFrame === 'function') {
-      return window.requestAnimationFrame(callback);
-    }
-    return window.setTimeout(() => callback(Date.now()), 16);
-  }
-  return 0;
+/** Last completed run token usage + summary flag (from `messageComplete`). */
+export type AssistantStreamingMeterSnapshot = {
+  lastRunUsage: AssistantRunUsageTokens | null;
+  lastContextSummaryApplied: boolean | null;
 };
+
+const WS_BASE_URL = import.meta.env.VITE_WS_URL;
 
 const cancelScheduledDeltaFlush = (handle: number): void => {
   if (typeof window !== 'undefined') {
@@ -140,6 +116,10 @@ export { removeNodeFromTree };
 export function useAssistantStreaming(threadId: string | undefined) {
   const queryClient = useQueryClient();
   const [runs, setRuns] = useState<Record<string, RunState>>({});
+  const [lastResolvedModelPick, setLastResolvedModelPick] =
+    useState<AssistantLastResolvedModels | null>(null);
+  const [streamingMeterSnapshot, setStreamingMeterSnapshot] =
+    useState<AssistantStreamingMeterSnapshot | null>(null);
   const [pendingRunStartCount, setPendingRunStartCount] = useState(0);
   const [error, setError] = useState<WsRunErrorPayload | null>(null);
   const [connectionState, setConnectionState] =
@@ -171,6 +151,11 @@ export function useAssistantStreaming(threadId: string | undefined) {
 
   useEffect(() => {
     threadIdRef.current = threadId;
+  }, [threadId]);
+
+  useEffect(() => {
+    setLastResolvedModelPick(null);
+    setStreamingMeterSnapshot(null);
   }, [threadId]);
 
   const applyPendingDeltas = useCallback(
@@ -274,6 +259,12 @@ export function useAssistantStreaming(threadId: string | undefined) {
         thinkingSoundPlayedRef.current[payload.runId] = false;
         streamedAssistantByRunIdRef.current[payload.runId] = '';
         const runStartedAt = Date.now();
+        const bootstrapPlanningMessage = 'Planning your answer';
+        const bootstrapPlanningEntry: StatusEntry = {
+          stage: 'planning',
+          message: bootstrapPlanningMessage,
+          startedAt: runStartedAt,
+        };
         setRuns((current) => ({
           ...current,
           [payload.runId]: {
@@ -284,8 +275,8 @@ export function useAssistantStreaming(threadId: string | undefined) {
             buffer: '',
             thinkingBuffer: '',
             statusStage: 'planning',
-            statusMessage: 'Planning response',
-            statusHistory: [],
+            statusMessage: bootstrapPlanningMessage,
+            statusHistory: [bootstrapPlanningEntry],
             runStartedAt,
             pendingToolApprovals: {},
           },
@@ -297,6 +288,41 @@ export function useAssistantStreaming(threadId: string | undefined) {
           ''
         );
         upsertMessageTreeNodeCache(queryClient, payload.threadId, placeholder);
+      },
+      onContextBudgetMeta: (payload) => {
+        const tid = typeof payload.threadId === 'string' ? payload.threadId : '';
+        if (tid) {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.chatbot.contextUsage.prefix(tid),
+          });
+        }
+      },
+      onAssistantModelResolved: (payload: WsAssistantModelResolvedPayload) => {
+        if (threadIdRef.current && payload.threadId === threadIdRef.current) {
+          setLastResolvedModelPick({
+            threadId: payload.threadId,
+            resolvedReasoningModelId: payload.resolvedReasoningModelId,
+            resolvedResponseModelId: payload.resolvedResponseModelId,
+            modelMode: payload.modelMode,
+          });
+        }
+        startTransition(() => {
+          setRuns((current) => {
+            const run = current[payload.runId];
+            if (!run) {
+              return current;
+            }
+            return {
+              ...current,
+              [payload.runId]: {
+                ...run,
+                resolvedReasoningModelId: payload.resolvedReasoningModelId,
+                resolvedResponseModelId: payload.resolvedResponseModelId,
+                modelMode: payload.modelMode,
+              },
+            };
+          });
+        });
       },
       onAssistantDelta: (payload) => {
         const prevStreamed = streamedAssistantByRunIdRef.current[payload.runId] ?? '';
@@ -333,18 +359,52 @@ export function useAssistantStreaming(threadId: string | undefined) {
             if (!run) {
               return current;
             }
+            const now = Date.now();
             const newEntry: StatusEntry = {
               stage: payload.stage,
               message: payload.message,
-              startedAt: Date.now(),
+              startedAt: now,
             };
+            const prevHistory = run.statusHistory;
+            const soleBootstrapPlanning =
+              prevHistory.length === 1 &&
+              prevHistory[0].stage === 'planning' &&
+              payload.stage === 'planning';
+            const mergedMessage =
+              (payload.message?.trim() && payload.message.trim()) ||
+              prevHistory[0]?.message ||
+              undefined;
+            // Use the time the first real server planning status arrived — not runStarted —
+            // so step durations reflect planner/tool phases instead of model resolution + RPC.
+            const nextHistory = soleBootstrapPlanning
+              ? [{ ...newEntry, message: mergedMessage, startedAt: now }]
+              : [...prevHistory, newEntry];
+            const prevLast = prevHistory[prevHistory.length - 1];
+            const replanAfterTools =
+              payload.stage === 'planning' &&
+              !soleBootstrapPlanning &&
+              prevLast?.stage === 'runningTools';
+            if (replanAfterTools) {
+              upsertMessageTreeNodeCache(
+                queryClient,
+                run.threadId,
+                buildPlaceholderMessage(
+                  run.threadId,
+                  run.assistantMessageId,
+                  run.userMessageId,
+                  run.buffer,
+                  ''
+                )
+              );
+            }
             return {
               ...current,
               [payload.runId]: {
                 ...run,
                 statusStage: payload.stage,
-                statusMessage: payload.message,
-                statusHistory: [...run.statusHistory, newEntry],
+                statusMessage: mergedMessage ?? payload.message,
+                statusHistory: nextHistory,
+                ...(replanAfterTools ? { thinkingBuffer: '' } : {}),
               },
             };
           });
@@ -399,6 +459,26 @@ export function useAssistantStreaming(threadId: string | undefined) {
       onMessageComplete: (payload) => {
         flushPendingDeltas();
         delete thinkingSoundPlayedRef.current[payload.runId];
+        const usage = payload.lastRunUsage;
+        const hasNumeric =
+          usage != null &&
+          (usage.inputTokens != null ||
+            usage.outputTokens != null ||
+            usage.totalTokens != null);
+        setStreamingMeterSnapshot({
+          lastRunUsage: hasNumeric ? usage : null,
+          lastContextSummaryApplied:
+            payload.contextSummaryApplied === true
+              ? true
+              : payload.contextSummaryApplied === false
+                ? false
+                : null,
+        });
+        if (payload.threadId) {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.chatbot.contextUsage.prefix(payload.threadId),
+          });
+        }
         setRuns((current) => {
           const run = current[payload.runId];
           if (run && run.assistantMessageId !== payload.message.id) {
@@ -430,18 +510,17 @@ export function useAssistantStreaming(threadId: string | undefined) {
           if (!isCompletionForFailedPlaceholder && !shouldIgnoreCompletionForFailedRun) {
             soundEffects.play('success', { volume: 0.18 });
             let messageToStore = payload.message;
-            if (
-              run &&
-              messageToStore.role === 'assistant' &&
-              !messageToStore.executionSteps?.length &&
-              (run.statusHistory?.length ?? 0) > 0
-            ) {
+            if (run && messageToStore.role === 'assistant') {
               messageToStore = {
                 ...messageToStore,
-                executionSteps: run.statusHistory,
-                toolCallDetails: messageToStore.toolCallDetails?.length
-                  ? messageToStore.toolCallDetails
-                  : run.toolCallDetails,
+                executionSteps: preferRicherTraceArray(
+                  messageToStore.executionSteps,
+                  run.statusHistory
+                ),
+                toolCallDetails: preferRicherTraceArray(
+                  messageToStore.toolCallDetails,
+                  run.toolCallDetails
+                ),
               };
             }
             upsertMessageTreeNodeCache(queryClient, payload.threadId, messageToStore);
@@ -587,7 +666,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
   );
 
   const sendFollowUp = useCallback(
-    (userMessageId: string) => {
+    (userMessageId: string, options?: { runConfig?: WsUserMessagePayload['runConfig'] }) => {
       if (!threadId) {
         return;
       }
@@ -611,7 +690,10 @@ export function useAssistantStreaming(threadId: string | undefined) {
         }
       }
 
-      sendUserMessage({ messageId: userMessageId });
+      sendUserMessage({
+        messageId: userMessageId,
+        ...(options?.runConfig ? { runConfig: options.runConfig } : {}),
+      });
     },
     [queryClient, sendUserMessage, threadId]
   );
@@ -703,7 +785,11 @@ export function useAssistantStreaming(threadId: string | undefined) {
   }, [ensureClient, threadId]);
 
   const retryRun = useCallback(
-    (userMessageId: string, failedAssistantPlaceholderId: string) => {
+    (
+      userMessageId: string,
+      failedAssistantPlaceholderId: string,
+      options?: { runConfig?: WsUserMessagePayload['runConfig'] }
+    ) => {
       if (!threadId) {
         return;
       }
@@ -731,7 +817,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
       }
 
       setError(null);
-      sendFollowUp(userMessageId);
+      sendFollowUp(userMessageId, { runConfig: options?.runConfig });
     },
     [queryClient, sendFollowUp, threadId]
   );
@@ -746,6 +832,8 @@ export function useAssistantStreaming(threadId: string | undefined) {
 
   return {
     ...state,
+    lastResolvedModelPick,
+    streamingMeterSnapshot,
     sendUserMessage,
     sendFollowUp,
     cancelRun,

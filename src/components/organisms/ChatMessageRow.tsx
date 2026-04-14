@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react';
+import { getVisibleExecutionTraceEntries } from '@/lib/chat/assistant-execution-trace-entries';
 import { AlertTriangle, Loader2, Search, Sparkles } from 'lucide-react';
 import MarkdownRenderer from '@/components/molecules/MarkdownRenderer';
 import { AssistantExecutionTracePanel } from '@/components/molecules/AssistantExecutionTracePanel';
@@ -9,7 +10,10 @@ import { ChatUserMessageToolbar } from '@/components/molecules/ChatUserMessageTo
 import { formatRelativeChatTimestamp } from '@/lib/chat/format-relative-time';
 import { shouldShowAssistantErrorDetails } from '@/lib/chat/assistant-error-display';
 import { getRunProgressLabel } from '@/hooks/useAssistantStreaming';
-import { chatMessageMarkdownComponents } from '@/lib/markdown/chat-message-markdown-components';
+import {
+  chatMessageMarkdownComponents,
+  chatUserMessageMarkdownComponents,
+} from '@/lib/markdown/chat-message-markdown-components';
 import type { AssistantStreamingRunState } from '@/lib/websocket/thinking-delta-cache';
 import type {
   ChatMessage,
@@ -143,14 +147,26 @@ export const ChatMessageRow = memo(function ChatMessageRow({
   const pendingApprovalCount = run?.pendingToolApprovals
     ? Object.keys(run.pendingToolApprovals).length
     : 0;
+  const visibleTraceEntries = useMemo(
+    () => getVisibleExecutionTraceEntries(executionTraceHistory),
+    [executionTraceHistory]
+  );
   const showExecutionTrace =
-    message.role === 'assistant' && (executionTraceHistory.length > 0 || pendingApprovalCount > 0);
+    message.role === 'assistant' &&
+    (visibleTraceEntries.length > 0 || pendingApprovalCount > 0);
+  const traceHasPlanning = visibleTraceEntries.some((e) => e.stage === 'planning');
+  /** Fold thinkingDelta into the latest planning row instead of a separate “Thinking” accordion. */
+  const foldThinkingIntoTrace = showExecutionTrace && traceHasPlanning;
+  const assistantThinkingForTrace =
+    run?.thinkingBuffer?.trim() || message.thinking?.trim() || '';
+  const assistantThinkingStreaming = Boolean(run?.thinkingBuffer?.trim());
 
-  /** Thinking stream duplicates the execution trace during HITL; hide it until the reply has body text. */
+  /** Thinking stream duplicates the execution trace during HITL; hide standalone panel until the reply has body text. */
   const hitlSuppressesThinking =
     message.role === 'assistant' &&
     Boolean(run) &&
     showExecutionTrace &&
+    !foldThinkingIntoTrace &&
     !message.content.trim() &&
     (pendingApprovalCount > 0 ||
       run?.statusStage === 'awaitingApproval' ||
@@ -184,19 +200,29 @@ export const ChatMessageRow = memo(function ChatMessageRow({
 
   return (
     <div className="group">
-      <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+      >
         {message.role === 'assistant' && (
-          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <Sparkles size={16} className="text-blue-600 dark:text-blue-400" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+            <Sparkles size={16} className="text-blue-600 dark:text-blue-400 max-sm:scale-90" />
           </div>
         )}
-        <div className="flex-1 max-w-[80%] min-w-0">
+        <div
+          className={
+            message.role === 'user'
+              ? 'min-w-0 max-w-[min(100%,34rem)]'
+              : 'min-w-0 flex-1 max-w-full sm:max-w-[min(100%,48rem)]'
+          }
+        >
           {showExecutionTrace && (
             <AssistantExecutionTracePanel
               messageId={message.id}
               statusHistory={executionTraceHistory}
               isActive={Boolean(run)}
               toolCallDetails={executionTraceToolDetails}
+              assistantThinkingText={assistantThinkingForTrace}
+              assistantThinkingStreaming={assistantThinkingStreaming}
               expanded={executionTracePanelExpanded}
               onToggle={() => onToggleExecutionTrace(message.id)}
               pendingToolApprovals={run?.pendingToolApprovals}
@@ -205,6 +231,7 @@ export const ChatMessageRow = memo(function ChatMessageRow({
             />
           )}
           {message.role === 'assistant' &&
+            !foldThinkingIntoTrace &&
             !hitlSuppressesThinking &&
             (Boolean(message.thinking?.trim()) || isStreamingThinking) && (
               <AssistantThinkingPanel
@@ -254,7 +281,7 @@ export const ChatMessageRow = memo(function ChatMessageRow({
               {!isEmptyStreamingAssistantPlaceholder && showAssistantReplyBubble && (
                 <>
                   <div
-                    className={`min-w-0 w-full rounded-lg px-4 py-3 ${
+                    className={`min-w-0 w-full rounded-lg px-3 py-2.5 sm:px-4 sm:py-3 ${
                       message.role === 'user'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
@@ -280,15 +307,28 @@ export const ChatMessageRow = memo(function ChatMessageRow({
                         </button>
                       </div>
                     ) : message.role === 'assistant' ? (
+                      message.content.trim() ? (
+                        <MarkdownRenderer
+                          content={message.content}
+                          variant="chat"
+                          contentKey={message.id}
+                          className="prose-p:my-3 prose-ul:my-2 prose-li:my-1"
+                          components={chatMessageMarkdownComponents}
+                        />
+                      ) : (
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          No reply text was returned for this run. Use the execution steps above to
+                          see what ran.
+                        </p>
+                      )
+                    ) : (
                       <MarkdownRenderer
                         content={message.content}
                         variant="chat"
                         contentKey={message.id}
-                        className="prose-p:my-3 prose-ul:my-2 prose-li:my-1"
-                        components={chatMessageMarkdownComponents}
+                        className="prose-invert !prose-strong:text-white prose-p:my-3 prose-ul:my-2 prose-li:my-1"
+                        components={chatUserMessageMarkdownComponents}
                       />
-                    ) : (
-                      message.content
                     )}
                   </div>
                   {message.role === 'user' ? (

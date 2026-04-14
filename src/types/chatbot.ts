@@ -4,6 +4,8 @@ export interface ChatThread {
   title: string;
   createdAt: string;
   updatedAt: string;
+  /** True when the thread was created by proactive/scheduled automation */
+  automationOriginated?: boolean;
   activeLeafMessageId?: string;
 }
 
@@ -42,6 +44,10 @@ export interface ChatMessage {
     webSearch?: boolean;
     searchQuery?: string;
     editedFromMessageId?: string;
+    assistantModelConfig?: AssistantRunConfig;
+    proactiveAutomationId?: string;
+    source?: string;
+    inboundMessageId?: string;
   };
   createdAt: string;
   parentId?: string;
@@ -77,12 +83,116 @@ export interface UpdateThreadRequest {
   title: string;
 }
 
+export type AssistantOptimizeFor =
+  | 'speed'
+  | 'intelligence'
+  | 'cost'
+  | 'balanced'
+  | 'value';
+
+/** Labels for the model configuration that the next outgoing message will use (from saved picker state). */
+export interface AssistantNextSendModelsDisplay {
+  mode: 'manual' | 'auto';
+  reasoningLabel: string;
+  responseLabel: string;
+  optimizeFor?: AssistantOptimizeFor;
+  webSearchEnabled?: boolean;
+}
+
+export type AssistantCompactionMode = 'auto' | 'manual';
+
+export type AssistantRunConfig = (
+  | {
+      mode: 'manual';
+      manual: {
+        reasoningModelId: string;
+        responseModelId: string;
+      };
+    }
+  | {
+      mode: 'auto';
+      auto: {
+        optimizeFor: AssistantOptimizeFor;
+      };
+    }
+) & { webSearchEnabled?: boolean; compactionMode?: AssistantCompactionMode };
+
+/** Provider-reported token usage for one assistant run (when the adapter captures it). */
+export interface AssistantRunUsageTokens {
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  totalTokens?: number | null;
+  provider?: string | null;
+}
+
+/** Preflight thread context vs model budget (`POST /assistant/threads/{id}/context-usage`). */
+export interface ThreadContextUsage {
+  resolvedResponseModelId: string;
+  contextWindowTokens: number;
+  budgetTokens: number;
+  estimatedThreadTokens: number;
+  remainingBudgetTokens: number;
+  utilizationPercent: number;
+  compactionMode: AssistantCompactionMode;
+  contextSummaryAvailable: boolean;
+  contextSummaryWouldApply: boolean;
+  manualCompactionRecommended: boolean;
+  manualCompactionRequired: boolean;
+  lastRunUsage: AssistantRunUsageTokens | null;
+}
+
+export interface AssistantModelCatalogEntry {
+  id: string;
+  provider: string;
+  apiModelId: string;
+  label: string;
+  supportsReasoningStream: boolean;
+  speedScore: number;
+  /** Cheapness 1–10 (higher = lower $); not the research report “expense” scale */
+  costScore: number;
+  qualityScore: number;
+  /** USD per 1M input tokens (list price), when known */
+  inputUsdPerMtok?: number;
+  /** USD per 1M output tokens (list price), when known */
+  outputUsdPerMtok?: number;
+  /** Vendor- or OpenRouter-published throughput (tokens/s), when available */
+  publishedTps?: number;
+  pricingNote?: string;
+  contextTokens?: number;
+  timeToFirstTokenSec?: number;
+  arenaElo?: number;
+  gpqaPercent?: number;
+  mmluProPercent?: number;
+  sweBenchPercent?: number;
+  /** capability slugs: reasoning, configurableEffort, caching, vision, tools, realtimeWeb, openWeight */
+  capabilityTags?: string[];
+  bestFor?: string[];
+}
+
+/** Latest catalog ids chosen for a run (persists after WS run state is cleared). */
+export interface AssistantLastResolvedModels {
+  threadId: string;
+  resolvedReasoningModelId: string;
+  resolvedResponseModelId: string;
+  modelMode: string;
+}
+
+export interface AssistantModelCatalogData {
+  providersConfigured: Record<string, boolean>;
+  models: AssistantModelCatalogEntry[];
+  defaults: {
+    defaultReasoningModelId: string;
+    defaultResponseModelId: string;
+  };
+}
+
 export interface WsUserMessagePayload {
   threadId: string;
   content?: string;
   parentId?: string | null;
   metadata?: ChatMessage['metadata'];
   messageId?: string;
+  runConfig?: AssistantRunConfig;
 }
 
 export interface WsCancelRunPayload {
@@ -94,6 +204,15 @@ export interface WsRunStartedPayload {
   threadId: string;
   assistantMessageId: string;
   userMessageId: string;
+}
+
+export interface WsAssistantModelResolvedPayload {
+  runId: string;
+  threadId: string;
+  resolvedReasoningModelId: string;
+  resolvedResponseModelId: string;
+  modelMode: string;
+  compactionMode?: AssistantCompactionMode;
 }
 
 export interface WsAssistantDeltaPayload {
@@ -147,6 +266,8 @@ export interface WsMessageCompletePayload {
   message: ChatMessage;
   /** Present when older turns were summarized for model context limits. */
   contextSummaryApplied?: boolean;
+  /** Exact usage from the reply provider when captured during streaming. */
+  lastRunUsage?: AssistantRunUsageTokens | null;
 }
 
 export interface WsThreadUpdatedPayload {

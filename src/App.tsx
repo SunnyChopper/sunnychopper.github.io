@@ -43,6 +43,9 @@ import TasksPage from './pages/admin/TasksPage';
 import WeeklyReviewPage from './pages/admin/WeeklyReviewPage';
 import ZenDashboardPage from './pages/admin/ZenDashboardPage';
 import MarkdownViewerPage from './pages/admin/MarkdownViewerPage';
+import MemoryAuditPage from './pages/admin/MemoryAuditPage';
+import AssistantSettingsPage from './pages/admin/AssistantSettingsPage';
+import ProactiveAutomationsPage from './pages/admin/ProactiveAutomationsPage';
 import ToolsOverviewPage from './pages/admin/ToolsOverviewPage';
 import HomePage from './pages/HomePage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -102,7 +105,10 @@ function AppContent() {
           <Route path={ADMIN_CHILD_ROUTES.logbook} element={<LogbookPage />} />
           <Route path={ADMIN_CHILD_ROUTES.weeklyReview} element={<WeeklyReviewPage />} />
           <Route path={ADMIN_CHILD_ROUTES.assistant} element={<ChatbotPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.assistantToolSafety} element={<AssistantSettingsPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.assistantProactive} element={<ProactiveAutomationsPage />} />
           <Route path={`${ADMIN_CHILD_ROUTES.assistant}/:threadId`} element={<ChatbotPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.memoryAudit} element={<MemoryAuditPage />} />
           <Route path={ADMIN_CHILD_ROUTES.componentsDemo} element={<ComponentsDemoPage />} />
           <Route path={ADMIN_CHILD_ROUTES.settings} element={<SettingsPage />} />
           <Route path={ADMIN_CHILD_ROUTES.mediaBacklog} element={<MediaBacklogPage />} />

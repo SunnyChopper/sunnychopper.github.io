@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { LogbookEntry } from '@/types/growth-system';
 import { LogbookEntryCard } from '@/components/molecules/LogbookEntryCard';
 import { LogbookEntryCardSkeleton } from '@/components/molecules/LogbookEntryCardSkeleton';
@@ -16,22 +16,6 @@ interface LogbookListViewProps {
   onDateClick?: (date: Date) => void;
   onCreateEntry: () => void;
 }
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.05,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0, filter: 'blur(4px)' },
-  show: { y: 0, opacity: 1, filter: 'blur(0px)' },
-};
 
 export function LogbookListView({
   entries,
@@ -85,22 +69,11 @@ export function LogbookListView({
     );
   }
 
-  // Mobile/Tablet: Grid layout with cards
-  // Desktop: Single column list when "List" mode is selected
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="show"
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6"
-    >
-      <AnimatePresence mode="popLayout">
-        {entries.map((entry) => (
-          <motion.div key={entry.id} variants={itemVariants} layout>
-            <LogbookEntryCard entry={entry} onClick={onEntryClick} />
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </motion.div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6">
+      {entries.map((entry) => (
+        <LogbookEntryCard key={entry.id} entry={entry} onClick={onEntryClick} />
+      ))}
+    </div>
   );
 }

@@ -131,7 +131,10 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
   }, [stickKey, transcript.length]);
 
   return (
-    <div ref={scrollParentRef} className="flex-1 overflow-y-auto p-6 min-h-0">
+    <div
+      ref={scrollParentRef}
+      className="flex-1 overflow-y-auto min-h-0 px-2 py-3 sm:px-4 sm:py-4 lg:p-6"
+    >
       {isTreeLoading && (
         <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 gap-2">
           <Loader2 size={18} className="animate-spin" />
@@ -166,7 +169,7 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
                 key={message.id}
                 data-index={virtualRow.index}
                 ref={virtualizer.measureElement}
-                className={cn('absolute left-0 top-0 w-full', !isLastRow && 'pb-4')}
+                className={cn('absolute left-0 top-0 w-full', !isLastRow && 'pb-3 sm:pb-4')}
                 style={{
                   transform: `translateY(${virtualRow.start}px)`,
                 }}

@@ -13,6 +13,9 @@ interface AssistantExecutionTracePanelProps {
   statusHistory: StatusEntry[];
   isActive: boolean;
   toolCallDetails?: WsToolCallCompletePayload[];
+  /** Streamed or persisted model reasoning; shown under the latest planning step. */
+  assistantThinkingText?: string;
+  assistantThinkingStreaming?: boolean;
   expanded: boolean;
   onToggle: () => void;
   pendingToolApprovals?: Record<string, WsToolApprovalRequiredPayload>;
@@ -29,6 +32,8 @@ export function AssistantExecutionTracePanel({
   statusHistory,
   isActive,
   toolCallDetails,
+  assistantThinkingText,
+  assistantThinkingStreaming,
   expanded,
   onToggle,
   pendingToolApprovals,
@@ -80,6 +85,8 @@ export function AssistantExecutionTracePanel({
                 statusHistory={statusHistory}
                 isActive={isActive}
                 toolCallDetails={toolCallDetails}
+                assistantThinkingText={assistantThinkingText}
+                assistantThinkingStreaming={assistantThinkingStreaming}
                 bare
                 pendingToolApprovals={pendingToolApprovals}
                 runId={runId}
