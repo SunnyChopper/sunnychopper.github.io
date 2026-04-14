@@ -11,7 +11,7 @@
 If you are new to the codebase or debugging app behavior, start here for the fastest context.
 
 - **App bootstrap + providers**: `src/main.tsx` (provider tree, `configureAmplify()`, theme init).
-- **Routes/layouts**: `src/App.tsx` + `src/routes.ts` (routing ownership, layouts, `ProtectedRoute`).
+- **Routes/layouts**: `src/App.tsx` + `src/routes.ts` (routing ownership, layouts, `ProtectedRoute`). Admin **Memory Audit** route: `ROUTES.admin.memoryAudit` → `/admin/memory-audit` (`MemoryAuditPage`).
 - **HTTP + auth header wiring**: `src/lib/api-client.ts` (baseURL, auth header, 401 refresh/redirect, response wrapping).
 - **Auth + token lifecycle**: `src/lib/auth/auth.service.ts` (Cognito sign-in/out, token storage, refresh, `apiClient` sync).
 - **Cognito env usage**: `src/lib/aws-config.ts`, `src/lib/auth/cognito-config.ts` (env vars + “is configured” logic).
@@ -19,6 +19,8 @@ If you are new to the codebase or debugging app behavior, start here for the fas
 
 Quick mapping:
 
+- **Assistant LTM audit UI** (not Knowledge Vault) → `src/pages/admin/MemoryAuditPage.tsx`, `src/services/ltm.service.ts` (HTTP `/ltm` on the API host). Contract: monorepo `docs/backend/API_ENDPOINTS.md` (LTM audit). Do not call `/assistant/memory/*` for this page.
+- **Proactive assistant UI** → `src/pages/admin/ProactiveAutomationsPage.tsx`, `ROUTES.admin.assistantProactive` in `src/routes.ts` (`/admin/assistant/proactive`); API via `apiClient` proactive + `preferences/time-zone` methods. Ops/architecture: monorepo `docs/backend/PROACTIVE_ASSISTANT.md`.
 - Auth/login/redirect issues → `src/lib/auth/auth.service.ts`, then `src/lib/api-client.ts`
 - Routes/layout/rendering issues → `src/App.tsx`, then `src/routes.ts`
 - Backend calls/401/headers → `src/lib/api-client.ts`

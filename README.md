@@ -94,7 +94,8 @@ Available admin routes:
 - `/admin/habits` - Habit formation and tracking
 - `/admin/logbook` - Daily journaling and reflection
 - `/admin/settings` - AI provider configuration
-- `/admin/chatbot` - AI chatbot assistant
+- `/admin/assistant` - AI assistant (chat threads; optional `/:threadId`)
+- `/admin/memory-audit` - **Memory Audit**: list, semantic search, edit, archive, and delete **assistant long-term memory** (Postgres + pgvector via `/ltm` API). Requires backend `DATABASE_URL` and LTM migrations; toggle **Include archived** to include soft-archived rows. See monorepo [`docs/backend/API_ENDPOINTS.md`](../docs/backend/API_ENDPOINTS.md) (LTM audit).
 - `/admin/components-demo` - Component showcase
 
 ### Build for Production
