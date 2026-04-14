@@ -6,13 +6,15 @@ alwaysApply: false
 
 # API Integration
 
+Keep this file aligned with sibling `api-integration.mdc` (same env vars and patterns).
+
 Standards for API calls, error handling, and response processing.
 
 ## API Client Setup
 
 ```tsx
 // lib/api-client.ts
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
@@ -197,10 +199,10 @@ function useSearchTasks(query: string) {
 
 ```tsx
 // Always prefix with VITE_ for client-side access
-VITE_API_URL=https://api.example.com
+VITE_API_BASE_URL=https://api.example.com
 VITE_SUPABASE_URL=https://xxx.supabase.co
 VITE_SUPABASE_ANON_KEY=xxx
 
 // Access in code
-const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 ```
