@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   Brain,
@@ -25,6 +25,9 @@ interface AssistantExecutionTraceProps {
   isActive: boolean;
   /** Tool call input/output per completion (order matches Running tool status entries) */
   toolCallDetails?: WsToolCallCompletePayload[];
+  /** Model reasoning stream (thinkingDelta / persisted thinking); shown under the latest planning step. */
+  assistantThinkingText?: string;
+  assistantThinkingStreaming?: boolean;
   /** Strip outer card when nested (e.g. inside a collapsible panel). */
   bare?: boolean;
   /** Live HITL payloads keyed by approvalId */
@@ -47,7 +50,7 @@ const STAGE_CONFIG: Record<StatusEntry['stage'], StageConfig> = {
   planning: {
     icon: Brain,
     color: 'text-violet-500 dark:text-violet-400',
-    defaultLabel: 'Planning response',
+    defaultLabel: 'Planning your answer',
   },
   runningTools: {
     icon: Wrench,
@@ -94,16 +97,35 @@ function formatLabel(entry: StatusEntry): string {
   return STAGE_CONFIG[entry.stage].defaultLabel;
 }
 
+type PlanningReasoningSlot = {
+  text: string;
+  isStreaming: boolean;
+};
+
 interface TraceEntryProps {
   entry: StatusEntry;
   isLast: boolean;
   isActive: boolean;
   nextStartedAt: number | undefined;
   toolDetails?: WsToolCallCompletePayload | null;
+  planningReasoning?: PlanningReasoningSlot | null;
 }
 
-function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: TraceEntryProps) {
-  const [expanded, setExpanded] = useState(false);
+function TraceEntry({
+  entry,
+  isLast,
+  isActive,
+  nextStartedAt,
+  toolDetails,
+  planningReasoning,
+}: TraceEntryProps) {
+  const [toolExpanded, setToolExpanded] = useState(false);
+  const userCollapsedReasoning = useRef(false);
+  const [reasoningExpanded, setReasoningExpanded] = useState(() =>
+    Boolean(
+      planningReasoning && (planningReasoning.text.length > 0 || planningReasoning.isStreaming)
+    )
+  );
   const config = STAGE_CONFIG[entry.stage];
   const Icon = config.icon;
   const toolName = parseToolName(entry.message);
@@ -114,9 +136,20 @@ function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: Tra
       ? nextStartedAt - entry.startedAt
       : (toolDetails?.durationMs ?? null)
     : (toolDetails?.durationMs ?? null);
-  const canExpand = Boolean(toolDetails && toolName);
+  const canExpandTool = Boolean(toolDetails && toolName);
   const displayDurationMs =
     durationMs !== null && durationMs > 0 ? durationMs : (toolDetails?.durationMs ?? null);
+
+  useEffect(() => {
+    if (planningReasoning?.isStreaming && !userCollapsedReasoning.current) {
+      setReasoningExpanded(true);
+    }
+  }, [planningReasoning?.isStreaming]);
+
+  const toggleReasoning = () => {
+    userCollapsedReasoning.current = true;
+    setReasoningExpanded((e) => !e);
+  };
 
   return (
     <motion.div
@@ -148,15 +181,70 @@ function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: Tra
 
       {/* Step content */}
       <div className="min-w-0 flex-1 pb-2">
-        <div className="flex items-center gap-2">
-          {canExpand ? (
+        {planningReasoning ? (
+          <>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleReasoning}
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                aria-expanded={reasoningExpanded}
+              >
+                {reasoningExpanded ? (
+                  <ChevronDown size={14} className="shrink-0 text-gray-500" />
+                ) : (
+                  <ChevronRight size={14} className="shrink-0 text-gray-500" />
+                )}
+                <Icon
+                  size={12}
+                  className={`mt-0.5 shrink-0 ${isCompleted ? 'text-gray-400 dark:text-gray-500' : config.color}`}
+                />
+                <span
+                  className={`min-w-0 truncate text-xs ${
+                    isCompleted
+                      ? 'text-gray-500 dark:text-gray-400'
+                      : 'font-medium text-gray-700 dark:text-gray-200'
+                  }`}
+                >
+                  {formatLabel(entry)}
+                </span>
+              </button>
+              {displayDurationMs !== null && displayDurationMs > 0 && (
+                <span className="ml-auto shrink-0 tabular-nums text-[10px] text-gray-400 dark:text-gray-500">
+                  {formatDurationMs(displayDurationMs)}
+                </span>
+              )}
+              {!isCompleted && (
+                <Circle
+                  size={6}
+                  className="ml-auto shrink-0 animate-pulse text-gray-300 dark:text-gray-600"
+                />
+              )}
+            </div>
+            {reasoningExpanded && (
+              <div className="mt-2 space-y-2 rounded border border-gray-200 bg-gray-50 p-2 text-xs dark:border-gray-700 dark:bg-gray-800/50">
+                <div className="mb-1 font-medium text-gray-600 dark:text-gray-400">
+                  Internal reasoning
+                </div>
+                <pre className="max-h-64 overflow-y-auto overflow-x-auto whitespace-pre-wrap break-words rounded bg-white p-2 font-mono text-[11px] leading-relaxed text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                  {planningReasoning.text.trim()
+                    ? planningReasoning.text
+                    : planningReasoning.isStreaming
+                      ? 'Receiving reasoning from the model…'
+                      : 'No reasoning stream was captured for this run (the thinking model may be disabled).'}
+                </pre>
+              </div>
+            )}
+          </>
+        ) : canExpandTool ? (
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setExpanded((e) => !e)}
+              onClick={() => setToolExpanded((e) => !e)}
               className="flex min-w-0 flex-1 items-center gap-2 text-left"
-              aria-expanded={expanded}
+              aria-expanded={toolExpanded}
             >
-              {expanded ? (
+              {toolExpanded ? (
                 <ChevronDown size={14} className="shrink-0 text-gray-500" />
               ) : (
                 <ChevronRight size={14} className="shrink-0 text-gray-500" />
@@ -174,55 +262,59 @@ function TraceEntry({ entry, isLast, isActive, nextStartedAt, toolDetails }: Tra
                 {toolName}
               </code>
             </button>
-          ) : (
-            <>
-              <Icon
-                size={12}
-                className={`mt-0.5 shrink-0 ${isCompleted ? 'text-gray-400 dark:text-gray-500' : config.color}`}
-              />
-              <span
-                className={`truncate text-xs ${
-                  isCompleted
-                    ? 'text-gray-500 dark:text-gray-400'
-                    : 'font-medium text-gray-700 dark:text-gray-200'
-                }`}
-              >
-                {toolName ? (
-                  <>
-                    <span className={isCompleted ? undefined : 'text-gray-500 dark:text-gray-400'}>
-                      Tool:{' '}
-                    </span>
-                    <code
-                      className={`rounded px-1 py-0.5 font-mono text-[10px] ${
-                        isCompleted
-                          ? 'bg-gray-100 dark:bg-gray-700'
-                          : 'bg-amber-50 dark:bg-amber-900/20'
-                      }`}
-                    >
-                      {toolName}
-                    </code>
-                  </>
-                ) : (
-                  formatLabel(entry)
-                )}
+            {displayDurationMs !== null && displayDurationMs > 0 && (
+              <span className="ml-auto shrink-0 tabular-nums text-[10px] text-gray-400 dark:text-gray-500">
+                {formatDurationMs(displayDurationMs)}
               </span>
-            </>
-          )}
-
-          {displayDurationMs !== null && displayDurationMs > 0 && (
-            <span className="ml-auto shrink-0 tabular-nums text-[10px] text-gray-400 dark:text-gray-500">
-              {formatDurationMs(displayDurationMs)}
-            </span>
-          )}
-          {!isCompleted && !canExpand && (
-            <Circle
-              size={6}
-              className="ml-auto shrink-0 animate-pulse text-gray-300 dark:text-gray-600"
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Icon
+              size={12}
+              className={`mt-0.5 shrink-0 ${isCompleted ? 'text-gray-400 dark:text-gray-500' : config.color}`}
             />
-          )}
-        </div>
+            <span
+              className={`min-w-0 truncate text-xs ${
+                isCompleted
+                  ? 'text-gray-500 dark:text-gray-400'
+                  : 'font-medium text-gray-700 dark:text-gray-200'
+              }`}
+            >
+              {toolName ? (
+                <>
+                  <span className={isCompleted ? undefined : 'text-gray-500 dark:text-gray-400'}>
+                    Tool:{' '}
+                  </span>
+                  <code
+                    className={`rounded px-1 py-0.5 font-mono text-[10px] ${
+                      isCompleted
+                        ? 'bg-gray-100 dark:bg-gray-700'
+                        : 'bg-amber-50 dark:bg-amber-900/20'
+                    }`}
+                  >
+                    {toolName}
+                  </code>
+                </>
+              ) : (
+                formatLabel(entry)
+              )}
+            </span>
+            {displayDurationMs !== null && displayDurationMs > 0 && (
+              <span className="ml-auto shrink-0 tabular-nums text-[10px] text-gray-400 dark:text-gray-500">
+                {formatDurationMs(displayDurationMs)}
+              </span>
+            )}
+            {!isCompleted && (
+              <Circle
+                size={6}
+                className="ml-auto shrink-0 animate-pulse text-gray-300 dark:text-gray-600"
+              />
+            )}
+          </div>
+        )}
 
-        {canExpand && expanded && toolDetails && (
+        {canExpandTool && toolExpanded && toolDetails && (
           <div className="mt-2 space-y-2 rounded border border-gray-200 bg-gray-50 p-2 text-xs dark:border-gray-700 dark:bg-gray-800/50">
             <div>
               <div className="mb-1 font-medium text-gray-600 dark:text-gray-400">Input</div>
@@ -254,6 +346,8 @@ export function AssistantExecutionTrace({
   statusHistory,
   isActive,
   toolCallDetails,
+  assistantThinkingText,
+  assistantThinkingStreaming,
   bare = false,
   pendingToolApprovals,
   runId,
@@ -262,6 +356,13 @@ export function AssistantExecutionTrace({
   const shouldReduceMotion = useReducedMotion();
 
   const visibleEntries = getVisibleExecutionTraceEntries(statusHistory);
+  let lastPlanningVisibleIndex = -1;
+  for (let i = visibleEntries.length - 1; i >= 0; i--) {
+    if (visibleEntries[i].stage === 'planning') {
+      lastPlanningVisibleIndex = i;
+      break;
+    }
+  }
   const toolEntryCount = visibleEntries.filter(
     (e) => e.stage === 'runningTools' && parseToolName(e.message)
   ).length;
@@ -346,6 +447,13 @@ export function AssistantExecutionTrace({
           const isToolEntry = entry.stage === 'runningTools' && parseToolName(entry.message);
           const toolIndex = toolIndexFor(index);
           const toolDetails = isToolEntry ? (toolCallDetails?.[toolIndex] ?? null) : null;
+          const planningReasoning =
+            entry.stage === 'planning' && index === lastPlanningVisibleIndex
+              ? {
+                  text: assistantThinkingText ?? '',
+                  isStreaming: Boolean(assistantThinkingStreaming),
+                }
+              : null;
           return (
             <TraceEntry
               key={`${entry.stage}-${entry.startedAt}-${index}`}
@@ -354,6 +462,7 @@ export function AssistantExecutionTrace({
               isActive={isActive}
               nextStartedAt={nextEntry?.startedAt}
               toolDetails={toolDetails ?? undefined}
+              planningReasoning={planningReasoning}
             />
           );
         })}

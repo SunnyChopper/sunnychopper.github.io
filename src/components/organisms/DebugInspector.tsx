@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { Query } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,6 +25,64 @@ import { JsonViewer } from '../molecules/JsonViewer';
 type TabKey = 'query' | 'zustand' | 'app' | 'export';
 
 const isDev = import.meta.env.DEV;
+
+const DEBUG_FAB_STORAGE_KEY = 'personal-os-debug-fab-corner';
+
+type DebugFabCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
+function readStoredDebugFabCorner(): DebugFabCorner {
+  try {
+    const v = localStorage.getItem(DEBUG_FAB_STORAGE_KEY);
+    if (v === 'top-left' || v === 'top-right' || v === 'bottom-left' || v === 'bottom-right') {
+      return v;
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'bottom-right';
+}
+
+function computeDebugFabPosition(
+  corner: DebugFabCorner,
+  fabWidth: number,
+  fabHeight: number
+): { left: number; top: number } {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const isLg = vw >= 1024;
+  const insetX = isLg ? 24 : 12;
+  const insetTop = isLg ? 24 : 12;
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const insetBottom = isLg ? 24 : 5.25 * rem;
+
+  switch (corner) {
+    case 'top-left':
+      return { left: insetX, top: insetTop };
+    case 'top-right':
+      return { left: vw - fabWidth - insetX, top: insetTop };
+    case 'bottom-left':
+      return { left: insetX, top: vh - fabHeight - insetBottom };
+    case 'bottom-right':
+    default:
+      return { left: vw - fabWidth - insetX, top: vh - fabHeight - insetBottom };
+  }
+}
+
+function cornerFromDragRelease(
+  left: number,
+  top: number,
+  fabWidth: number,
+  fabHeight: number
+): DebugFabCorner {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const cx = left + fabWidth / 2;
+  const cy = top + fabHeight / 2;
+  if (cx < vw / 2) {
+    return cy < vh / 2 ? 'top-left' : 'bottom-left';
+  }
+  return cy < vh / 2 ? 'top-right' : 'bottom-right';
+}
 
 const tabs: Array<{ id: TabKey; label: string }> = [
   { id: 'query', label: 'TanStack Query' },
@@ -141,6 +199,105 @@ export function DebugInspector() {
   const [showDiff, setShowDiff] = useState(false);
 
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const debugFabButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [debugFabCorner, setDebugFabCorner] = useState<DebugFabCorner>(readStoredDebugFabCorner);
+  const [debugFabDrag, setDebugFabDrag] = useState<{ left: number; top: number } | null>(null);
+  const [debugFabDragging, setDebugFabDragging] = useState(false);
+  const [debugFabLayoutTick, setDebugFabLayoutTick] = useState(0);
+  const [debugFabSize, setDebugFabSize] = useState({ w: 120, h: 44 });
+  const debugFabDragSessionRef = useRef<{
+    pointerId: number;
+    originLeft: number;
+    originTop: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null>(null);
+  const debugFabDragPixelRef = useRef<{ left: number; top: number }>({ left: 0, top: 0 });
+  const suppressDebugFabClickRef = useRef(false);
+
+  useEffect(() => {
+    if (!isDev) return;
+    try {
+      localStorage.setItem(DEBUG_FAB_STORAGE_KEY, debugFabCorner);
+    } catch {
+      /* ignore */
+    }
+  }, [debugFabCorner]);
+
+  useEffect(() => {
+    if (!isDev) return;
+    const onResize = () => {
+      if (debugFabDragSessionRef.current) return;
+      setDebugFabLayoutTick((n) => n + 1);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [isDev]);
+
+  useLayoutEffect(() => {
+    if (!isDev) return;
+    const el = debugFabButtonRef.current;
+    if (!el) return;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    if (!w || !h) return;
+    setDebugFabSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+  }, [isDev, debugFabCorner, debugFabLayoutTick, debugFabDrag, isOpen]);
+
+  useEffect(() => {
+    if (!isDev) return;
+
+    const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+    const onPointerMove = (e: PointerEvent) => {
+      const d = debugFabDragSessionRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+      const btn = debugFabButtonRef.current;
+      const bw = btn?.offsetWidth ?? 0;
+      const bh = btn?.offsetHeight ?? 0;
+      let left = d.originLeft + (e.clientX - d.startX);
+      let top = d.originTop + (e.clientY - d.startY);
+      left = clamp(left, 0, window.innerWidth - bw);
+      top = clamp(top, 0, window.innerHeight - bh);
+      if (Math.abs(e.clientX - d.startX) + Math.abs(e.clientY - d.startY) > 6) {
+        d.moved = true;
+      }
+      debugFabDragPixelRef.current = { left, top };
+      setDebugFabDrag({ left, top });
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      const d = debugFabDragSessionRef.current;
+      if (!d || e.pointerId !== d.pointerId) return;
+      debugFabDragSessionRef.current = null;
+      try {
+        debugFabButtonRef.current?.releasePointerCapture(e.pointerId);
+      } catch {
+        /* ignore if not captured */
+      }
+      const btn = debugFabButtonRef.current;
+      const bw = btn?.offsetWidth ?? 0;
+      const bh = btn?.offsetHeight ?? 0;
+      const { left, top } = debugFabDragPixelRef.current;
+      const nextCorner = cornerFromDragRelease(left, top, bw, bh);
+      if (d.moved) {
+        suppressDebugFabClickRef.current = true;
+      }
+      setDebugFabCorner(nextCorner);
+      setDebugFabDrag(null);
+      setDebugFabDragging(false);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, [isDev]);
 
   useEffect(() => {
     if (!isDev) return;
@@ -304,6 +461,31 @@ export function DebugInspector() {
     return mutations[selectedMutationIndex] || null;
   }, [mutations, selectedMutationIndex]);
 
+  const debugFabDisplayPos = useMemo(() => {
+    if (!isDev) return { left: 0, top: 0 };
+    if (debugFabDrag) return debugFabDrag;
+    return computeDebugFabPosition(debugFabCorner, debugFabSize.w, debugFabSize.h);
+  }, [isDev, debugFabDrag, debugFabCorner, debugFabSize.w, debugFabSize.h, debugFabLayoutTick]);
+
+  const onDebugFabPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    const btn = debugFabButtonRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    debugFabDragSessionRef.current = {
+      pointerId: e.pointerId,
+      originLeft: rect.left,
+      originTop: rect.top,
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false,
+    };
+    debugFabDragPixelRef.current = { left: rect.left, top: rect.top };
+    setDebugFabDragging(true);
+    setDebugFabDrag({ left: rect.left, top: rect.top });
+    btn.setPointerCapture(e.pointerId);
+  };
+
   const handleCopySnapshot = async () => {
     const snapshot = buildDebugSnapshot({
       queryClient,
@@ -373,13 +555,31 @@ export function DebugInspector() {
   return (
     <>
       <button
+        ref={debugFabButtonRef}
         type="button"
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-3 py-2 rounded-full bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900 shadow-lg hover:opacity-90 transition"
-        aria-label="Open debug inspector"
+        onPointerDown={onDebugFabPointerDown}
+        onClick={() => {
+          if (suppressDebugFabClickRef.current) {
+            suppressDebugFabClickRef.current = false;
+            return;
+          }
+          setIsOpen(true);
+        }}
+        style={{
+          left: debugFabDisplayPos.left,
+          top: debugFabDisplayPos.top,
+          right: 'auto',
+          bottom: 'auto',
+          touchAction: debugFabDragging ? 'none' : undefined,
+          transition: debugFabDragging
+            ? undefined
+            : 'left 0.28s cubic-bezier(0.25, 0.8, 0.25, 1), top 0.28s cubic-bezier(0.25, 0.8, 0.25, 1)',
+        }}
+        className="fixed z-50 flex cursor-grab select-none items-center gap-2 rounded-full bg-gray-900 px-2.5 py-2 text-white shadow-lg active:cursor-grabbing hover:opacity-90 lg:px-3 dark:bg-gray-100 dark:text-gray-900"
+        aria-label="Open debug inspector (drag to move)"
       >
-        <Bug className="w-4 h-4" />
-        <span className="text-sm font-medium">Debug</span>
+        <Bug className="h-4 w-4 shrink-0" />
+        <span className="hidden text-sm font-medium sm:inline">Debug</span>
       </button>
 
       {isOpen && (

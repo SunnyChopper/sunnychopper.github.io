@@ -11,7 +11,7 @@ import {
 import { queryKeys } from '@/lib/react-query/query-keys';
 import type { AssistantWsConnectionState } from '@/lib/websocket/assistant-ws-client';
 import { wsLogger } from '@/lib/logger';
-import type { ChatThread, MessageTreeResponse } from '@/types/chatbot';
+import type { AssistantRunConfig, ChatThread, MessageTreeResponse } from '@/types/chatbot';
 
 type ShowToast = (options: { type: 'error'; title: string; message: string }) => void;
 
@@ -22,6 +22,7 @@ type CreateMessageFn = (input: {
   content: string;
   parentId?: string;
   clientMessageId?: string;
+  metadata?: import('@/types/chatbot').ChatMessage['metadata'];
 }) => Promise<{ id: string }>;
 
 export function useChatbotSendHandlers({
@@ -34,12 +35,15 @@ export function useChatbotSendHandlers({
   createThread,
   createMessage,
   sendFollowUp,
+  getRunConfig,
   connectionState,
   streamingThreadId,
   setStreamingThreadOverrideId,
   isAwaitingRunStart,
   isLocalDraft,
   onRestoreInput,
+  onMessageSent,
+  manualSendBlockedMessage,
 }: {
   queryClient: QueryClient;
   navigate: NavigateFunction;
@@ -49,7 +53,11 @@ export function useChatbotSendHandlers({
   setSelectedLeafId: (leafId: string | null) => void;
   createThread: CreateThreadFn;
   createMessage: CreateMessageFn;
-  sendFollowUp: (userMessageId: string) => void;
+  sendFollowUp: (
+    userMessageId: string,
+    options?: { runConfig?: import('@/types/chatbot').AssistantRunConfig }
+  ) => void;
+  getRunConfig: () => AssistantRunConfig | undefined;
   connectionState: AssistantWsConnectionState;
   streamingThreadId: string | undefined;
   setStreamingThreadOverrideId: (id: string | null) => void;
@@ -57,6 +65,10 @@ export function useChatbotSendHandlers({
   isLocalDraft: boolean;
   /** Called with the original message content when a send fails so the composer can restore it. */
   onRestoreInput: (content: string) => void;
+  /** Called after a user message is successfully queued for the assistant (HTTP + WS handoff). */
+  onMessageSent?: () => void;
+  /** When set (e.g. manual compaction required), block sends and toast instead of hitting the API/WS. */
+  manualSendBlockedMessage?: string | null;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
@@ -65,6 +77,7 @@ export function useChatbotSendHandlers({
   const [pendingWsFollowUp, setPendingWsFollowUp] = useState<{
     threadId: string;
     userMessageId: string;
+    runConfig?: AssistantRunConfig;
   } | null>(null);
 
   useEffect(() => {
@@ -80,7 +93,9 @@ export function useChatbotSendHandlers({
     if (streamingThreadId !== pendingWsFollowUp.threadId) {
       return;
     }
-    sendFollowUp(pendingWsFollowUp.userMessageId);
+    sendFollowUp(pendingWsFollowUp.userMessageId, {
+      runConfig: pendingWsFollowUp.runConfig,
+    });
     setPendingWsFollowUp(null);
     queueMicrotask(() => {
       setAwaitingWsFollowUp(false);
@@ -104,12 +119,15 @@ export function useChatbotSendHandlers({
     createThread,
     createMessage,
     sendFollowUp,
+    getRunConfig,
     connectionState,
     streamingThreadId,
     setStreamingThreadOverrideId,
     isAwaitingRunStart,
     isLocalDraft,
     onRestoreInput,
+    onMessageSent,
+    manualSendBlockedMessage,
     isLoading,
     awaitingWsFollowUp,
     navigate,
@@ -125,12 +143,14 @@ export function useChatbotSendHandlers({
       createThread,
       createMessage,
       sendFollowUp,
+      getRunConfig,
       connectionState,
       streamingThreadId,
       setStreamingThreadOverrideId,
       isAwaitingRunStart,
       isLocalDraft,
       onRestoreInput,
+      onMessageSent,
       isLoading,
       awaitingWsFollowUp,
       navigate,
@@ -144,12 +164,15 @@ export function useChatbotSendHandlers({
     createThread,
     createMessage,
     sendFollowUp,
+    getRunConfig,
     connectionState,
     streamingThreadId,
     setStreamingThreadOverrideId,
     isAwaitingRunStart,
     isLocalDraft,
     onRestoreInput,
+    onMessageSent,
+    manualSendBlockedMessage,
     isLoading,
     awaitingWsFollowUp,
     navigate,
@@ -165,6 +188,7 @@ export function useChatbotSendHandlers({
       createThread,
       createMessage,
       sendFollowUp,
+      getRunConfig: getRunConfigFn,
       connectionState,
       streamingThreadId: _streamingThreadId,
       setStreamingThreadOverrideId,
@@ -176,6 +200,8 @@ export function useChatbotSendHandlers({
       navigate,
       showToast,
       queryClient,
+      onMessageSent: onMessageSentCb,
+      manualSendBlockedMessage: manualBlocked,
     } = stateRef.current;
 
     const userMessage = content.trim();
@@ -189,6 +215,15 @@ export function useChatbotSendHandlers({
       isAwaitingRunStart ||
       blockedByConnection
     ) {
+      return;
+    }
+
+    if (manualBlocked) {
+      showToast({
+        type: 'error',
+        title: 'Thread needs compaction',
+        message: manualBlocked,
+      });
       return;
     }
 
@@ -223,12 +258,14 @@ export function useChatbotSendHandlers({
         parentId = undefined;
       }
 
+      const runConfigSnapshot = getRunConfigFn();
       const userMsg = await createMessage({
         threadId,
         role: 'user',
         content: userMessage,
         parentId,
         clientMessageId,
+        ...(runConfigSnapshot ? { metadata: { assistantModelConfig: runConfigSnapshot } } : {}),
       });
       if (isDraft) {
         if (draftPendingMessageId) {
@@ -240,12 +277,17 @@ export function useChatbotSendHandlers({
             replaceMessageTreeCache(queryClient, threadForSend.id, nextDraftTree);
           }
         }
-        setPendingWsFollowUp({ threadId, userMessageId: userMsg.id });
+        setPendingWsFollowUp({
+          threadId,
+          userMessageId: userMsg.id,
+          runConfig: runConfigSnapshot,
+        });
         navigate(`/admin/assistant/${threadId}`, { replace: true });
       } else {
         setSelectedLeafId(userMsg.id);
-        sendFollowUp(userMsg.id);
+        sendFollowUp(userMsg.id, { runConfig: runConfigSnapshot });
       }
+      onMessageSentCb?.();
       setIsLoading(false);
     } catch (error) {
       wsLogger.error('Error sending message', error);

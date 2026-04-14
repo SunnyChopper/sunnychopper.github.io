@@ -111,6 +111,36 @@ describe('AssistantWsClient', () => {
     });
   });
 
+  it('dispatches contextBudgetMeta payloads to handler', async () => {
+    const onContextBudgetMeta = vi.fn();
+    const client = new AssistantWsClient({
+      wsBaseUrl,
+      getAccessToken: async () => token,
+      onContextBudgetMeta,
+    });
+
+    await client.connect();
+    const socket = MockWebSocket.instances[0];
+    expect(socket).toBeDefined();
+
+    const payload = {
+      runId: 'run-1',
+      threadId,
+      budgetTokens: 96000,
+      estimatedInputTokens: 50000,
+      compactionMode: 'auto',
+    };
+
+    socket.onmessage?.({
+      data: JSON.stringify({
+        type: 'contextBudgetMeta',
+        payload,
+      }),
+    } as MessageEvent);
+
+    expect(onContextBudgetMeta).toHaveBeenCalledWith(payload);
+  });
+
   it('dispatches toolApprovalRequired payloads to handler', async () => {
     const onToolApprovalRequired = vi.fn();
     const client = new AssistantWsClient({

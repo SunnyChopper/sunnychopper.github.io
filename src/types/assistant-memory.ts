@@ -1,5 +1,5 @@
 import type { MarkdownFile } from '@/types/markdown-files';
-import type { Note } from '@/types/knowledge-vault';
+import type { Area } from '@/types/growth-system';
 
 export interface AssistantMemoryFile extends MarkdownFile {
   userId?: string;
@@ -28,4 +28,23 @@ export interface ConsolidateMemoryResponse {
   archived: boolean;
 }
 
-export type LongTermMemoryNote = Note;
+/** Assistant semantic LTM (PostgreSQL pgvector); not a Knowledge Vault note. */
+export interface LongTermMemoryEntry {
+  id: string;
+  dedupeKey: string;
+  title: string;
+  summary: string;
+  area: Area | string | null;
+  tags: string[];
+  source: string;
+  relatedMemoryIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  embeddingModel: string;
+  embeddingVersion: number;
+  vaultNoteId?: string | null;
+  score?: number | null;
+  archived?: boolean;
+  accessCount?: number;
+  lastAccessedAt?: string | null;
+}

@@ -13,6 +13,9 @@ import {
   Sparkles,
   X,
   FileText,
+  ClipboardList,
+  Shield,
+  Zap,
 } from 'lucide-react';
 import { useNavigate, generatePath } from 'react-router-dom';
 import {
@@ -194,6 +197,43 @@ function CommandPaletteContent({ onClose }: CommandPaletteContentProps) {
         type: 'navigation',
         action: () => navigate(ROUTES.admin.assistant),
         keywords: ['ai', 'assistant', 'chat', 'help'],
+      },
+      {
+        id: 'nav-memory-audit',
+        title: 'Memory Audit',
+        subtitle: 'Assistant long-term memory',
+        icon: <ClipboardList size={18} />,
+        type: 'navigation',
+        action: () => navigate(ROUTES.admin.memoryAudit),
+        keywords: ['memory', 'ltm', 'long-term', 'audit', 'pgvector'],
+      },
+      {
+        id: 'nav-assistant-settings',
+        title: 'Assistant Settings',
+        subtitle: 'Tool safety and memory ingestion',
+        icon: <Shield size={18} />,
+        type: 'navigation',
+        action: () => navigate(ROUTES.admin.assistantToolSafety),
+        keywords: [
+          'assistant',
+          'settings',
+          'tool',
+          'safety',
+          'approval',
+          'hitl',
+          'memory',
+          'ingestion',
+          'model',
+        ],
+      },
+      {
+        id: 'nav-proactive-assistant',
+        title: 'Proactive assistant',
+        subtitle: 'Scheduled briefings and email',
+        icon: <Zap size={18} />,
+        type: 'navigation',
+        action: () => navigate(ROUTES.admin.assistantProactive),
+        keywords: ['proactive', 'automation', 'schedule', 'email', 'briefing', 'cron'],
       },
     ];
 

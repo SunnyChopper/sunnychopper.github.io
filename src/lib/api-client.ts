@@ -6,21 +6,33 @@ import type {
   NoteDraft,
   ModePreference,
   AssistantToolApprovalConfig,
+  AssistantMemoryIngestionConfig,
+  AssistantSettingsConfig,
   AssistantToolRegistryEntry,
   DashboardSummaryResponse,
   DashboardSummaryRequest,
+  ProactiveAutomation,
+  ProactiveDispatchJob,
+  ProactiveDispatchRunResult,
+  ProactiveEmailTestResult,
+  ProactiveBrainstormResult,
+  ProactiveAutomationRunsList,
+  ProactiveSuggestion,
 } from '@/types/api-contracts';
 import { authService } from '@/lib/auth/auth.service';
 import { isAdminLoginPath, ROUTES } from '@/routes';
 import type { z } from 'zod';
 import type { AIFeature, FeatureProviderConfig } from '@/lib/llm/config/feature-types';
 import type {
+  AssistantModelCatalogData,
+  AssistantRunConfig,
   ChatThread,
   ChatMessage,
   CreateThreadRequest,
   CreateMessageRequest,
   EditMessageRequest,
   MessageTreeResponse,
+  ThreadContextUsage,
   UpdateThreadRequest,
 } from '@/types/chatbot';
 import { apiLogger } from '@/lib/logger';
@@ -608,6 +620,20 @@ class ApiClient {
     return this.patch<ChatMessage>(`/assistant/threads/${threadId}/messages/${messageId}`, data);
   }
 
+  async postAssistantThreadContextUsage(
+    threadId: string,
+    body: { leafMessageId?: string; runConfig?: AssistantRunConfig }
+  ): Promise<ApiResponse<ThreadContextUsage>> {
+    return this.post<ThreadContextUsage>(`/assistant/threads/${threadId}/context-usage`, body);
+  }
+
+  async postAssistantThreadCompact(
+    threadId: string,
+    body: { leafMessageId?: string; runConfig?: AssistantRunConfig }
+  ): Promise<ApiResponse<ThreadContextUsage>> {
+    return this.post<ThreadContextUsage>(`/assistant/threads/${threadId}/compact`, body);
+  }
+
   // Draft Notes
   async getDraftNote(): Promise<ApiResponse<NoteDraft | null>> {
     return this.get<NoteDraft | null>('/drafts/notes');
@@ -675,6 +701,21 @@ class ApiClient {
     return this.delete<void>(`/preferences/feature-configs/${feature}`);
   }
 
+  async getAssistantSettings(): Promise<ApiResponse<AssistantSettingsConfig>> {
+    return this.get<AssistantSettingsConfig>('/preferences/assistant-settings');
+  }
+
+  async setAssistantSettings(body: {
+    toolApproval: AssistantToolApprovalConfig;
+    memoryIngestion: AssistantMemoryIngestionConfig;
+  }): Promise<ApiResponse<AssistantSettingsConfig>> {
+    return this.put<AssistantSettingsConfig>('/preferences/assistant-settings', body);
+  }
+
+  async resetAssistantMemoryIngestion(): Promise<ApiResponse<AssistantSettingsConfig>> {
+    return this.delete<AssistantSettingsConfig>('/preferences/assistant-settings/memory-ingestion');
+  }
+
   async getAssistantToolApprovalConfig(): Promise<ApiResponse<AssistantToolApprovalConfig>> {
     return this.get<AssistantToolApprovalConfig>('/preferences/assistant-tools');
   }
@@ -687,6 +728,152 @@ class ApiClient {
 
   async getAssistantToolRegistry(): Promise<ApiResponse<AssistantToolRegistryEntry[]>> {
     return this.get<AssistantToolRegistryEntry[]>('/assistant/tool-registry');
+  }
+
+  async getAssistantModelCatalog(): Promise<ApiResponse<AssistantModelCatalogData>> {
+    return this.get<AssistantModelCatalogData>('/assistant/model-catalog');
+  }
+
+  async getProactiveAutomations(): Promise<ApiResponse<ProactiveAutomation[]>> {
+    return this.get<ProactiveAutomation[]>('/proactive/automations');
+  }
+
+  async getProactiveAutomationRuns(
+    automationId: string
+  ): Promise<ApiResponse<ProactiveAutomationRunsList>> {
+    return this.get<ProactiveAutomationRunsList>(`/proactive/automations/${automationId}/runs`);
+  }
+
+  async runProactiveDispatchTest(): Promise<ApiResponse<ProactiveDispatchRunResult>> {
+    return this.post<ProactiveDispatchRunResult>('/proactive/dispatch/test', {});
+  }
+
+  async getProactiveDispatchJob(jobId: string): Promise<ApiResponse<ProactiveDispatchJob>> {
+    return this.get<ProactiveDispatchJob>(`/proactive/dispatch/jobs/${jobId}`);
+  }
+
+  /**
+   * Queue a single-automation test run and poll until it finishes (async on AWS via worker Lambda).
+   */
+  async runProactiveAutomationDispatchTest(
+    automationId: string
+  ): Promise<ApiResponse<ProactiveDispatchRunResult>> {
+    const start = await this.post<ProactiveDispatchJob>(
+      `/proactive/automations/${automationId}/dispatch/test`,
+      {}
+    );
+    if (!start.success || !start.data) {
+      return {
+        success: false,
+        error: start.error ?? { message: 'Failed to queue automation test', code: 'UNKNOWN_ERROR' },
+      };
+    }
+    const jobId = start.data.id;
+    const deadline = Date.now() + 5 * 60 * 1000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 2000));
+      const st = await this.getProactiveDispatchJob(jobId);
+      if (!st.success || !st.data) {
+        return {
+          success: false,
+          error: st.error ?? { message: 'Failed to poll dispatch job', code: 'UNKNOWN_ERROR' },
+        };
+      }
+      const { status, errorMessage } = st.data;
+      if (status === 'succeeded') {
+        return {
+          success: true,
+          data: { processedUsers: 1, ran: 1, errors: [] },
+        };
+      }
+      if (status === 'failed') {
+        return {
+          success: true,
+          data: {
+            processedUsers: 1,
+            ran: 0,
+            errors: [
+              {
+                userId: '',
+                automationId: st.data.automationId,
+                error: errorMessage ?? 'Run failed',
+              },
+            ],
+          },
+        };
+      }
+    }
+    return {
+      success: false,
+      error: {
+        message:
+          'Automation test is still running after 5 minutes. Refresh this page and check the automation row (last run / error).',
+        code: 'TIMEOUT',
+      },
+    };
+  }
+
+  async sendProactiveTestEmail(): Promise<ApiResponse<ProactiveEmailTestResult>> {
+    return this.post<ProactiveEmailTestResult>('/proactive/email/test', {});
+  }
+
+  async createProactiveAutomation(
+    body: Record<string, unknown>
+  ): Promise<ApiResponse<ProactiveAutomation>> {
+    return this.post<ProactiveAutomation>('/proactive/automations', body);
+  }
+
+  async updateProactiveAutomation(
+    id: string,
+    body: Record<string, unknown>
+  ): Promise<ApiResponse<ProactiveAutomation>> {
+    return this.patch<ProactiveAutomation>(`/proactive/automations/${id}`, body);
+  }
+
+  async deleteProactiveAutomation(id: string): Promise<ApiResponse<void>> {
+    return this.delete<void>(`/proactive/automations/${id}`);
+  }
+
+  async getProactiveSuggestions(): Promise<ApiResponse<ProactiveSuggestion[]>> {
+    return this.get<ProactiveSuggestion[]>('/proactive/suggestions');
+  }
+
+  async resolveProactiveSuggestion(
+    id: string,
+    body: {
+      approve: boolean;
+      feedback?: string;
+      resolvedPayload?: Record<string, unknown>;
+    }
+  ): Promise<ApiResponse<ProactiveSuggestion>> {
+    return this.post<ProactiveSuggestion>(`/proactive/suggestions/${id}/resolve`, body);
+  }
+
+  /** Update feedback and/or proposed payload on a rejected suggestion only. */
+  async patchProactiveSuggestion(
+    id: string,
+    body: { feedback?: string; proposedPayload?: Record<string, unknown> }
+  ): Promise<ApiResponse<ProactiveSuggestion>> {
+    return this.patch<ProactiveSuggestion>(`/proactive/suggestions/${id}`, body);
+  }
+
+  /** LLM brainstorm: dashboard + LTM context → pending suggestions. */
+  async brainstormProactiveSuggestions(body?: {
+    timeZone?: string;
+    /** Omit for default OpenAI model. Use GET /assistant/model-catalog ``id`` (e.g. openai:gpt-5.4-mini) or legacy API model id strings. */
+    model?: string;
+  }): Promise<ApiResponse<ProactiveBrainstormResult>> {
+    return this.post<ProactiveBrainstormResult>('/proactive/suggestions/brainstorm', body ?? {});
+  }
+
+  async getPreferencesTimeZone(): Promise<ApiResponse<{ timeZone: string }>> {
+    return this.get<{ timeZone: string }>('/preferences/time-zone');
+  }
+
+  async setPreferencesTimeZone(body: {
+    timeZone: string;
+  }): Promise<ApiResponse<{ timeZone: string }>> {
+    return this.put<{ timeZone: string }>('/preferences/time-zone', body);
   }
 }
 

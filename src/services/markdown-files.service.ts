@@ -18,11 +18,11 @@ import type {
 } from '@/types/markdown-files';
 import type { ApiResponse, ApiError } from '@/types/api-contracts';
 import {
-  updateLocalFile,
   getLocalFile,
-  updateLocalFileMetadata,
   purgeLocalFile,
-} from '@/hooks/useLocalFiles';
+  updateLocalFile,
+  updateLocalFileMetadata,
+} from '@/lib/markdown/local-files-store';
 import { logger } from '@/lib/logger';
 
 /**

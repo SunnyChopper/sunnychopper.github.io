@@ -113,6 +113,20 @@ export const queryKeys = {
           ? ([...queryKeys.chatbot.memory.all(), 'long-term', search] as const)
           : ([...queryKeys.chatbot.memory.all(), 'long-term'] as const),
     },
+    modelCatalog: () => [...queryKeys.chatbot.all, 'model-catalog'] as const,
+    /** Prefix match invalidates all leaf/runConfig variants for a thread. */
+    contextUsage: {
+      prefix: (threadId: string) => [...queryKeys.chatbot.all, 'context-usage', threadId] as const,
+      detail: (threadId: string, leafId: string, runConfigKey: string) =>
+        [...queryKeys.chatbot.all, 'context-usage', threadId, leafId, runConfigKey] as const,
+    },
+  },
+
+  // Assistant LTM audit (/ltm)
+  ltm: {
+    all: ['ltm'] as const,
+    list: (visibility: 'active' | 'all' | 'archivedOnly', search: string) =>
+      [...queryKeys.ltm.all, 'list', visibility, search] as const,
   },
 
   // Draft Notes

@@ -18,7 +18,6 @@ import {
   Brain,
   ChevronDown,
   ChevronRight,
-  Info,
   MessageCircle,
   Command,
   Film,
@@ -33,10 +32,16 @@ import {
   Sparkles,
   Wrench,
   FileText,
+  ClipboardList,
+  Shield,
+  Zap,
 } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { CommandPalette } from '@/components/organisms/CommandPalette';
-import { DebugInspector } from '@/components/organisms/DebugInspector';
+
+const DebugInspector = lazy(() =>
+  import('@/components/organisms/DebugInspector').then((m) => ({ default: m.DebugInspector }))
+);
 import LeisureModeToggle from '@/components/atoms/LeisureModeToggle';
 import { WalletWidget } from '@/components/molecules/WalletWidget';
 import { BackendStatusBanner } from '@/components/molecules/BackendStatusBanner';
@@ -54,7 +59,16 @@ interface NavItem {
 
 const workNavigation: NavItem[] = [
   { name: 'Dashboard', href: ROUTES.admin.dashboard, icon: LayoutDashboard },
-  { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
+  {
+    name: 'Assistant',
+    href: ROUTES.admin.assistant,
+    icon: MessageCircle,
+    children: [
+      { name: 'Settings', href: ROUTES.admin.assistantToolSafety, icon: Shield },
+      { name: 'Proactive', href: ROUTES.admin.assistantProactive, icon: Zap },
+      { name: 'Memory Audit', href: ROUTES.admin.memoryAudit, icon: ClipboardList },
+    ],
+  },
   {
     name: 'Growth System',
     href: ROUTES.admin.growthSystem,
@@ -97,9 +111,26 @@ const leisureNavigation: NavItem[] = [
   { name: 'Media Backlog', href: ROUTES.admin.mediaBacklog, icon: Film },
   { name: 'Hobby Quests', href: ROUTES.admin.hobbyQuests, icon: Star },
   { name: 'Rewards Store', href: ROUTES.admin.rewardsStore, icon: Store },
-  { name: 'Assistant', href: ROUTES.admin.assistant, icon: MessageCircle },
+  {
+    name: 'Assistant',
+    href: ROUTES.admin.assistant,
+    icon: MessageCircle,
+    children: [
+      { name: 'Settings', href: ROUTES.admin.assistantToolSafety, icon: Shield },
+      { name: 'Proactive', href: ROUTES.admin.assistantProactive, icon: Zap },
+      { name: 'Memory Audit', href: ROUTES.admin.memoryAudit, icon: ClipboardList },
+    ],
+  },
   { name: 'Settings', href: ROUTES.admin.settings, icon: Settings },
 ];
+
+/** True when pathname is the group root or any of its child routes (for auto-expanding the drawer). */
+function navGroupContainsPath(item: NavItem, pathname: string): boolean {
+  if (pathname === item.href || pathname.startsWith(`${item.href}/`)) return true;
+  return (
+    item.children?.some((c) => pathname === c.href || pathname.startsWith(`${c.href}/`)) ?? false
+  );
+}
 
 const SIDEBAR_WIDTH_STORAGE_KEY = 'sidebar-width';
 const DEFAULT_SIDEBAR_WIDTH = 256; // w-64 = 256px
@@ -126,6 +157,8 @@ function AdminLayoutContent() {
   const { mainNavOpen, toggleMainNav, closeMainNav, assistantChatsOpen, toggleAssistantChats } =
     useAdminShell();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  /** When user collapses a group while the route would keep it open, store pathname at collapse time so it clears on navigation without an effect. */
+  const [routeCollapsedAt, setRouteCollapsedAt] = useState<Record<string, string>>({});
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
@@ -147,15 +180,74 @@ function AdminLayoutContent() {
   const isAssistantRoute = location.pathname.startsWith('/admin/assistant');
 
   const navigation = isLeisureMode ? leisureNavigation : workNavigation;
+  const prevNavPathRef = useRef(location.pathname);
+
+  const clearRouteCollapseForGroup = useCallback((itemName: string) => {
+    setRouteCollapsedAt((prev) => {
+      if (!(itemName in prev)) return prev;
+      const next = { ...prev };
+      delete next[itemName];
+      return next;
+    });
+  }, []);
+
+  /**
+   * Entering a group's root from elsewhere must drop a stale "collapsed on this root" flag
+   * (otherwise child→parent navigation briefly opens then snaps shut). Same for browser back/forward.
+   * Intentional URL→UI sync; not derivable without tracking previous pathname.
+   */
+  useEffect(() => {
+    const path = location.pathname;
+    const prev = prevNavPathRef.current;
+    prevNavPathRef.current = path;
+    if (path === prev) return;
+
+    for (const item of navigation) {
+      if (!item.children?.length) continue;
+      if (path === item.href && prev !== item.href) {
+        /* eslint-disable-next-line react-hooks/set-state-in-effect -- pathname transition is the external signal */
+        setRouteCollapsedAt((p) => {
+          if (!(item.name in p)) return p;
+          const next = { ...p };
+          delete next[item.name];
+          return next;
+        });
+      }
+    }
+  }, [location.pathname, navigation]);
+
+  const isNavGroupExpanded = (item: NavItem): boolean => {
+    if (!item.children?.length) return false;
+    const collapsedForPath = routeCollapsedAt[item.name];
+    if (collapsedForPath && collapsedForPath === location.pathname) return false;
+    if (navGroupContainsPath(item, location.pathname)) return true;
+    return expandedItems.includes(item.name);
+  };
 
   const handleSignOut = async () => {
     await signOut();
   };
 
   const toggleExpanded = (itemName: string) => {
-    setExpandedItems((prev) =>
-      prev.includes(itemName) ? prev.filter((name) => name !== itemName) : [...prev, itemName]
-    );
+    const item = navigation.find((i) => i.name === itemName);
+    if (!item?.children?.length) return;
+    const pathOpen = navGroupContainsPath(item, location.pathname);
+    const currentlyOpen = isNavGroupExpanded(item);
+
+    if (currentlyOpen) {
+      setExpandedItems((prev) => prev.filter((name) => name !== itemName));
+      if (pathOpen) {
+        setRouteCollapsedAt((prev) => ({ ...prev, [itemName]: location.pathname }));
+      }
+    } else {
+      setExpandedItems((prev) => [...new Set([...prev, itemName])]);
+      setRouteCollapsedAt((prev) => {
+        if (!(itemName in prev)) return prev;
+        const next = { ...prev };
+        delete next[itemName];
+        return next;
+      });
+    }
   };
 
   const isItemActive = (item: NavItem): boolean => {
@@ -250,37 +342,41 @@ function AdminLayoutContent() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
-      <DebugInspector />
+      <Suspense fallback={null}>
+        <DebugInspector />
+      </Suspense>
 
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
-        <div className="flex items-center gap-2">
-          <WalletWidget />
-          <button
-            onClick={() => setCommandPaletteOpen(true)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            title="Search (Cmd+K)"
-          >
-            <Command size={20} />
-          </button>
-          {isAssistantRoute && (
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 pt-safe">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
+          <div className="flex items-center gap-2">
+            <WalletWidget />
             <button
-              onClick={toggleAssistantChats}
-              aria-label="Open chats"
-              aria-expanded={assistantChatsOpen}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={() => setCommandPaletteOpen(true)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              title="Search (Cmd+K)"
             >
-              <MessageCircle size={20} />
+              <Command size={20} />
             </button>
-          )}
-          <button
-            onClick={toggleMainNav}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            aria-label={mainNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={mainNavOpen}
-          >
-            {mainNavOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+            {isAssistantRoute && (
+              <button
+                onClick={toggleAssistantChats}
+                aria-label="Open chats"
+                aria-expanded={assistantChatsOpen}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <MessageCircle size={20} />
+              </button>
+            )}
+            <button
+              onClick={toggleMainNav}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              aria-label={mainNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={mainNavOpen}
+            >
+              {mainNavOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -295,7 +391,7 @@ function AdminLayoutContent() {
           maxWidth: `${getMaxWidth()}px`,
         }}
       >
-        <div className="flex flex-col h-full relative">
+        <div className="flex flex-col h-full relative max-lg:pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
           {/* Resize handle */}
           <div
             onMouseDown={handleResizeStart}
@@ -334,39 +430,47 @@ function AdminLayoutContent() {
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = isItemActive(item);
-              const isExpanded = expandedItems.includes(item.name);
+              const isExpanded = isNavGroupExpanded(item);
               const hasChildren = item.children && item.children.length > 0;
 
               return (
                 <div key={item.name}>
                   {hasChildren ? (
                     <div>
-                      <button
-                        onClick={() => toggleExpanded(item.name)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                      <div
+                        className={`flex items-stretch rounded-lg transition ${
                           isActive
                             ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                       >
-                        <Icon size={20} />
-                        <span className="flex-1 text-left">{item.name}</span>
-                        {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                      </button>
+                        <Link
+                          to={item.href}
+                          onClick={() => {
+                            clearRouteCollapseForGroup(item.name);
+                            closeMainNav();
+                          }}
+                          className="flex flex-1 items-center gap-3 px-4 py-3 min-w-0 rounded-l-lg"
+                        >
+                          <Icon size={20} className="shrink-0" />
+                          <span className="flex-1 text-left truncate">{item.name}</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(item.name)}
+                          aria-expanded={isExpanded}
+                          aria-label={
+                            isExpanded
+                              ? `Collapse ${item.name} submenu`
+                              : `Expand ${item.name} submenu`
+                          }
+                          className="flex items-center justify-center px-2.5 py-3 rounded-r-lg shrink-0 border-l border-gray-200/80 dark:border-gray-600/80 hover:bg-black/5 dark:hover:bg-white/5"
+                        >
+                          {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        </button>
+                      </div>
                       {isExpanded && item.children && (
                         <div className="ml-4 mt-1 space-y-1">
-                          <Link
-                            to={item.href}
-                            onClick={closeMainNav}
-                            className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
-                              location.pathname === item.href
-                                ? 'accent-bg-50 dark:bg-green-900/30 accent-text-700 dark:accent-text-400 font-medium'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            <Info size={18} />
-                            <span>Overview</span>
-                          </Link>
                           {item.children.map((child) => {
                             const ChildIcon = child.icon;
                             const isChildActive =
