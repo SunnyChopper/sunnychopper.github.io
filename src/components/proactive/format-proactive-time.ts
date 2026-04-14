@@ -5,7 +5,7 @@ export function formatProactiveLocalTime12h(localTime: string): string {
   const t = (localTime || '').trim();
   const m = /^(\d{1,2}):(\d{2})$/.exec(t);
   if (!m) return t || '—';
-  let h = Number.parseInt(m[1], 10);
+  const h = Number.parseInt(m[1], 10);
   const minutes = m[2];
   if (!Number.isFinite(h) || h < 0 || h > 23) return t;
   const ap = h >= 12 ? 'PM' : 'AM';
