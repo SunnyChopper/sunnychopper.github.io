@@ -287,10 +287,15 @@ function GrowingThread({
       transparent: true,
       opacity: 0.2,
     });
-    const line = new THREE.Line(geometry, material);
-    lineRef.current = line;
-    return line;
+    return new THREE.Line(geometry, material);
   }, [colorObj]);
+
+  useLayoutEffect(() => {
+    lineRef.current = lineObj;
+    return () => {
+      lineRef.current = null;
+    };
+  }, [lineObj]);
 
   useFrame(() => {
     const grow = growBlendRef.current;
