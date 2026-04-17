@@ -370,7 +370,10 @@ function AutomationFormFields({
           </span>
         </label>
       </div>
-      <div className="flex flex-wrap justify-end gap-2 pt-2">
+      <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+        {isModelCatalogLoading && !catalogReady ? (
+          <span className="text-xs text-gray-500 dark:text-gray-400 mr-auto">Loading models…</span>
+        ) : null}
         <Button
           type="button"
           variant="secondary"
@@ -386,7 +389,11 @@ function AutomationFormFields({
           variant="primary"
           size="sm"
           className="rounded-lg"
-          disabled={saving || (kind === 'custom' && !customUserPrompt.trim())}
+          disabled={
+            saving ||
+            !catalogReady ||
+            (kind === 'custom' && !customUserPrompt.trim())
+          }
           onClick={handleSubmit}
         >
           {primaryLabel}

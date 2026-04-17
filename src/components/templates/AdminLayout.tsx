@@ -1,4 +1,5 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/Auth';
 import { useMode } from '@/contexts/Mode';
 import { AdminShellProvider, useAdminShell } from '@/contexts/AdminShellContext';
@@ -30,11 +31,14 @@ import {
   Network,
   Layers,
   Sparkles,
+  Inbox,
+  Box,
   Wrench,
   FileText,
   ClipboardList,
   Shield,
   Zap,
+  Link2,
 } from 'lucide-react';
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { CommandPalette } from '@/components/organisms/CommandPalette';
@@ -47,6 +51,7 @@ import { WalletWidget } from '@/components/molecules/WalletWidget';
 import { BackendStatusBanner } from '@/components/molecules/BackendStatusBanner';
 import { ROUTES } from '@/routes';
 import { cn } from '@/lib/utils';
+import { taskLinksService } from '@/services/knowledge-vault/task-links.service';
 
 interface NavItem {
   name: string;
@@ -89,10 +94,15 @@ const workNavigation: NavItem[] = [
     icon: Brain,
     children: [
       { name: 'Library', href: ROUTES.admin.knowledgeVaultLibrary, icon: Library },
+      { name: 'Inbox', href: ROUTES.admin.knowledgeVaultInbox, icon: Inbox },
+      { name: 'Task links', href: ROUTES.admin.knowledgeVaultTaskLinks, icon: Link2 },
       { name: 'Courses', href: ROUTES.admin.knowledgeVaultCourses, icon: GraduationCap },
       { name: 'Skill Tree', href: ROUTES.admin.knowledgeVaultSkillTree, icon: Network },
       { name: 'Flashcards', href: ROUTES.admin.knowledgeVaultFlashcards, icon: Layers },
       { name: 'Concept Collider', href: ROUTES.admin.knowledgeVaultCollider, icon: Sparkles },
+      { name: 'Mind Palace', href: ROUTES.admin.knowledgeVaultMindPalace, icon: Box },
+      { name: 'Cheat sheet', href: ROUTES.admin.knowledgeVaultCheatSheet, icon: ClipboardList },
+      { name: 'Syntopic', href: ROUTES.admin.knowledgeVaultSyntopic, icon: FileText },
     ],
   },
   {
@@ -181,6 +191,17 @@ function AdminLayoutContent() {
 
   const navigation = isLeisureMode ? leisureNavigation : workNavigation;
   const prevNavPathRef = useRef(location.pathname);
+
+  const vaultTaskLinkBadgeQuery = useQuery({
+    queryKey: ['vault-task-links-unack-count'],
+    queryFn: async () => {
+      const d = await taskLinksService.listUnacknowledged();
+      return d?.items?.length ?? 0;
+    },
+    refetchInterval: 60_000,
+    enabled: !isLeisureMode,
+  });
+  const vaultLinkBadge = vaultTaskLinkBadgeQuery.data ?? 0;
 
   const clearRouteCollapseForGroup = useCallback((itemName: string) => {
     setRouteCollapsedAt((prev) => {
@@ -340,7 +361,14 @@ function AdminLayoutContent() {
   }, [isResizing, handleResizeMove, handleResizeEnd]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div
+      className={cn(
+        'flex flex-col bg-gray-50 dark:bg-gray-900',
+        isFullBleedRoute
+          ? 'h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden'
+          : 'min-h-screen min-h-[100dvh]'
+      )}
+    >
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       <Suspense fallback={null}>
         <DebugInspector />
@@ -455,7 +483,17 @@ function AdminLayoutContent() {
                           <span className="shrink-0">
                             <Icon size={20} />
                           </span>
-                          <span className="flex-1 text-left truncate">{item.name}</span>
+                          <span className="flex-1 text-left truncate flex items-center gap-2">
+                            {item.name}
+                            {item.name === 'Knowledge Vault' && vaultLinkBadge > 0 && (
+                              <span
+                                className="shrink-0 text-[10px] font-semibold bg-amber-500 text-white rounded-full px-1.5 py-0.5"
+                                title="Pending vault–task link suggestions"
+                              >
+                                {vaultLinkBadge > 99 ? '99+' : vaultLinkBadge}
+                              </span>
+                            )}
+                          </span>
                         </Link>
                         <button
                           type="button"
@@ -490,7 +528,13 @@ function AdminLayoutContent() {
                                 }`}
                               >
                                 <ChildIcon size={18} />
-                                <span>{child.name}</span>
+                                <span className="flex-1">{child.name}</span>
+                                {child.href === ROUTES.admin.knowledgeVaultTaskLinks &&
+                                  vaultLinkBadge > 0 && (
+                                    <span className="shrink-0 text-[10px] font-semibold bg-amber-500 text-white rounded-full px-1.5 py-0.5">
+                                      {vaultLinkBadge > 99 ? '99+' : vaultLinkBadge}
+                                    </span>
+                                  )}
                               </Link>
                             );
                           })}
@@ -541,17 +585,21 @@ function AdminLayoutContent() {
 
       <div
         className={cn(
-          'transition-all duration-200',
-          isFullBleedRoute ? 'h-screen overflow-hidden' : 'min-h-screen'
+          'flex min-h-0 min-w-0 flex-1 flex-col transition-all duration-200',
+          isFullBleedRoute ? 'h-full overflow-hidden' : 'min-h-[100dvh]'
         )}
         style={{ marginLeft: isLargeScreen ? `${sidebarWidth}px` : '0' }}
       >
         {isFullBleedRoute ? (
-          <Outlet />
-        ) : (
-          <div className="pt-20 lg:pt-8 px-6 lg:px-12 pb-12">
-            <BackendStatusBanner className="-mx-6 lg:-mx-12 -mt-6 lg:-mt-8 mb-6" />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <Outlet />
+          </div>
+        ) : (
+          <div className="flex h-full w-full min-h-0 min-w-0 flex-1 flex-col px-6 pb-12 pt-20 lg:px-12 lg:pt-8">
+            <BackendStatusBanner className="-mx-6 lg:-mx-12 -mt-6 lg:-mt-8 mb-6 shrink-0" />
+            <div className="flex h-full w-full min-h-0 min-w-0 flex-1 flex-col">
+              <Outlet />
+            </div>
           </div>
         )}
       </div>

@@ -1,9 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Monitor, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
+import { Activity, Monitor, Moon, Sun, Volume2, VolumeX } from 'lucide-react';
 import { AISettingsPanel } from '@/components/settings/AISettingsPanel';
 import { useSoundEffects } from '@/hooks/useSoundEffects';
+import { apiClient } from '@/lib/api-client';
 
 type Theme = 'light' | 'dark' | 'system';
+
+const WEEKLY_REVIEW_DAY_LABELS = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+] as const;
 
 export default function SettingsPage() {
   const [theme, setTheme] = useState<Theme>(() => {
@@ -12,6 +23,30 @@ export default function SettingsPage() {
   });
 
   const { enabled: soundEnabled, setEnabled: setSoundEnabled, play } = useSoundEffects();
+
+  const [weeklyReviewDay, setWeeklyReviewDay] = useState<number>(0);
+  const [weeklyReviewLoading, setWeeklyReviewLoading] = useState(true);
+  const [weeklyReviewSaving, setWeeklyReviewSaving] = useState(false);
+  const [weeklyReviewError, setWeeklyReviewError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setWeeklyReviewLoading(true);
+      setWeeklyReviewError(null);
+      const res = await apiClient.getPreferencesWeeklyReviewDay();
+      if (cancelled) return;
+      if (res.success && res.data) {
+        setWeeklyReviewDay(res.data.weeklyReviewDay);
+      } else {
+        setWeeklyReviewError(res.error?.message ?? 'Could not load weekly review day');
+      }
+      setWeeklyReviewLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const applyTheme = (selectedTheme: Theme) => {
     let effectiveTheme = selectedTheme;
@@ -157,6 +192,62 @@ export default function SettingsPage() {
             />
           </button>
         </div>
+      </div>
+
+      <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Growth System</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+          Weekly Review runs in the background on your chosen day (first hour after midnight in your{' '}
+          <span className="font-medium">time zone</span> from Proactive Assistant settings).
+        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400">
+              <Activity size={20} />
+            </div>
+            <div>
+              <label
+                htmlFor="weekly-review-day"
+                className="block text-sm font-medium text-gray-900 dark:text-gray-100"
+              >
+                Weekly review day
+              </label>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                AI synthesis and email run on this day
+              </p>
+            </div>
+          </div>
+          <select
+            id="weekly-review-day"
+            disabled={weeklyReviewLoading || weeklyReviewSaving}
+            value={weeklyReviewDay}
+            onChange={async (e) => {
+              const next = Number(e.target.value);
+              setWeeklyReviewDay(next);
+              setWeeklyReviewSaving(true);
+              setWeeklyReviewError(null);
+              const res = await apiClient.setPreferencesWeeklyReviewDay({
+                weeklyReviewDay: next,
+              });
+              if (!res.success || !res.data) {
+                setWeeklyReviewError(res.error?.message ?? 'Save failed');
+              } else {
+                setWeeklyReviewDay(res.data.weeklyReviewDay);
+              }
+              setWeeklyReviewSaving(false);
+            }}
+            className="sm:ml-auto px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm min-w-[200px] disabled:opacity-50"
+          >
+            {WEEKLY_REVIEW_DAY_LABELS.map((label, i) => (
+              <option key={label} value={i}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {weeklyReviewError && (
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{weeklyReviewError}</p>
+        )}
       </div>
 
       <div className="mt-6">

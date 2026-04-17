@@ -81,7 +81,7 @@ export default function AutomationRunHistoryDialog({
               </p>
               {run.threadId ? (
                 <a
-                  href={`${ROUTES.admin.assistant}?threadId=${encodeURIComponent(run.threadId)}`}
+                  href={`${ROUTES.admin.assistant}/${encodeURIComponent(run.threadId)}`}
                   className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
                   target="_blank"
                   rel="noreferrer"
