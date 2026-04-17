@@ -267,7 +267,7 @@ export function AIProjectAssistPanel({
                 <p className="font-medium text-gray-900 dark:text-white">{task.title}</p>
                 {task.description && <p className="text-sm text-gray-500">{task.description}</p>}
                 <p className="text-xs text-gray-400 mt-1">
-                  {task.priority} | {task.size ? `${task.size}h` : 'Size TBD'}
+                  {task.priority} | {task.size ? `${task.size}pts` : 'Points TBD'}
                 </p>
               </div>
             ))}

@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import type { Task, TaskDependency } from '@/types/growth-system';
 import { cn } from '@/lib/utils';
 
 interface DependencyGraphProps {
   tasks: Task[];
   dependencies: TaskDependency[];
+  isLoading?: boolean;
   onTaskClick?: (taskId: string) => void;
   className?: string;
 }
@@ -28,6 +30,7 @@ interface GraphEdge {
 export default function DependencyGraph({
   tasks,
   dependencies,
+  isLoading = false,
   onTaskClick,
   className,
 }: DependencyGraphProps) {
@@ -166,6 +169,25 @@ export default function DependencyGraph({
       onTaskClick(nodeId);
     }
   };
+
+  if (isLoading) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className={cn(
+          'flex flex-col items-center justify-center gap-4 min-h-96 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700',
+          className
+        )}
+        aria-busy="true"
+        aria-label="Loading dependency graph"
+      >
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600 dark:text-blue-400" />
+        <p className="text-sm text-gray-600 dark:text-gray-400">Loading dependency graph…</p>
+        <div className="w-full max-w-md h-32 rounded-lg bg-gray-200/80 dark:bg-gray-700/80 animate-pulse" />
+      </motion.div>
+    );
+  }
 
   if (tasks.length === 0) {
     return (

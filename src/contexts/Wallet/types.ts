@@ -5,6 +5,8 @@ export interface WalletContextType {
   balance: WalletBalance | null;
   transactions: WalletTransaction[];
   loading: boolean;
+  /** Wallet queries refetching after invalidation (e.g. task status → clawback). */
+  isRefreshing: boolean;
   error: string | null;
   refreshWallet: () => Promise<void>;
   addPoints: (

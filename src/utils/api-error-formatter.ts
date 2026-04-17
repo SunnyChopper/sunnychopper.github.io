@@ -44,3 +44,59 @@ export function formatApiError(
     error.message || (error as ApiError).code || 'An unexpected error occurred. Please try again.'
   );
 }
+
+/**
+ * Multi-line message for thrown errors / debug UI: includes `code` and full `details`
+ * (e.g. Pydantic issue lists from the backend).
+ */
+export function formatApiFailure(error: ApiError | undefined, fallback: string): string {
+  if (!error) return fallback;
+
+  const lines: string[] = [];
+  if (error.message?.trim()) {
+    lines.push(error.message.trim());
+  } else {
+    lines.push(fallback);
+  }
+
+  if (error.code) {
+    lines.push(`Code: ${error.code}`);
+  }
+
+  const { details } = error;
+  if (details === undefined || details === null) {
+    return lines.join('\n');
+  }
+
+  if (Array.isArray(details)) {
+    lines.push('Details:');
+    for (const item of details) {
+      if (item && typeof item === 'object') {
+        const rec = item as Record<string, unknown>;
+        const loc = rec.loc;
+        const msg = rec.msg;
+        const typ = rec.type;
+        const locStr = Array.isArray(loc) ? loc.map(String).join('.') : JSON.stringify(loc);
+        const parts = [locStr, typeof msg === 'string' ? msg : JSON.stringify(msg)];
+        if (typeof typ === 'string') parts.push(`(${typ})`);
+        lines.push(`  • ${parts.filter(Boolean).join(' — ')}`);
+      } else {
+        lines.push(`  • ${String(item)}`);
+      }
+    }
+    return lines.join('\n');
+  }
+
+  if (typeof details === 'string') {
+    lines.push(`Details: ${details}`);
+    return lines.join('\n');
+  }
+
+  try {
+    lines.push(`Details:\n${JSON.stringify(details, null, 2)}`);
+  } catch {
+    lines.push(`Details: ${String(details)}`);
+  }
+
+  return lines.join('\n');
+}

@@ -8,6 +8,7 @@ import {
   CircleCheck as CheckCircle2,
   Circle,
   ChevronRight,
+  ChevronDown,
   Sparkles,
   Play,
   Copy,
@@ -41,6 +42,7 @@ export default function CourseDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [preQuizOpen, setPreQuizOpen] = useState(false);
 
   useEffect(() => {
     loadCourseData();
@@ -100,22 +102,20 @@ export default function CourseDetailPage() {
 
       if (!module) return;
 
-      const totalLessons = module.lessons.length;
-
       const response = await aiCourseGeneratorService.generateLessonContent({
-        courseTitle: courseData.course.title,
-        moduleTitle: module.module.title,
-        lessonTitle: lesson.title,
-        lessonIndex: lesson.lessonIndex,
-        totalLessons,
-        difficulty: courseData.course.difficulty,
+        courseId: courseId!,
+        lessonId: lesson.id,
         onProgress: handleProgress,
       });
 
       if (response.success && response.data) {
-        await vaultItemsService.update(lesson.id, {
-          content: response.data,
-        });
+        const bcRes = await coursesService.getById(courseId!);
+        if (bcRes.success && bcRes.data) {
+          const lessons = bcRes.data.lessons.map((l) =>
+            l.id === lesson.id ? { ...l, content: response.data as string } : l
+          );
+          await coursesService.update(courseId!, { lessons });
+        }
 
         setSelectedLesson((prev) => (prev ? { ...prev, content: response.data } : null));
 
@@ -139,7 +139,7 @@ export default function CourseDetailPage() {
   const handleMarkComplete = async () => {
     if (!selectedLesson) return;
 
-    await vaultItemsService.markLessonComplete(selectedLesson.id);
+    await vaultItemsService.markLessonComplete(courseId!, selectedLesson.id);
     await loadCourseData();
 
     const currentModuleLessons =
@@ -382,6 +382,44 @@ export default function CourseDetailPage() {
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {getCompletedLessons()} of {getTotalLessons()} lessons completed
                     </p>
+
+                    {courseData.preAssessment && courseData.preAssessment.questions.length > 0 && (
+                      <div className="mt-4 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setPreQuizOpen((o) => !o)}
+                          className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm font-medium text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900"
+                          aria-expanded={preQuizOpen}
+                          aria-controls="pre-course-quiz-panel"
+                        >
+                          <span>Pre-course quiz — your starting point</span>
+                          <ChevronDown
+                            size={18}
+                            className={`flex-shrink-0 transition-transform ${preQuizOpen ? 'rotate-180' : ''}`}
+                          />
+                        </button>
+                        {preQuizOpen && (
+                          <div
+                            id="pre-course-quiz-panel"
+                            className="px-3 py-3 space-y-3 text-sm border-t border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
+                          >
+                            {courseData.preAssessment.questions.map((q, idx) => (
+                              <div key={q.id}>
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  {idx + 1}. {q.questionText}
+                                </p>
+                                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                                  <span className="text-gray-500 dark:text-gray-500">
+                                    Your answer:{' '}
+                                  </span>
+                                  {courseData.preAssessment?.userResponses[q.id] ?? '—'}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

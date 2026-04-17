@@ -6,6 +6,7 @@ import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { SUBCATEGORIES_BY_AREA } from '@/constants/growth-system';
+import { JitKnowledgePanel } from '@/components/organisms/JitKnowledgePanel';
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -125,29 +126,33 @@ export function TaskDetailDialog({ task, isOpen, onClose, onEdit }: TaskDetailDi
             </div>
           )}
 
-          {/* Size/Story Points */}
           {task.size && task.size > 0 && (
             <div className="flex items-start gap-3">
               <Tag className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
               <div>
                 <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Story Points
+                  Story points
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{task.size} pts</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{task.size}pts</div>
               </div>
             </div>
           )}
 
-          {/* Point Value */}
+          {/* Wallet reward (distinct from effort) */}
           {task.pointValue !== null && task.pointValue !== undefined && (
             <div className="flex items-start gap-3">
               <Award className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
               <div>
                 <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Reward Points
+                  Wallet reward
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   {task.pointValue} {task.pointValue === 1 ? 'point' : 'points'}
+                  {task.rewardLedgerStatus === 'reversed'
+                    ? ' · reward was clawed back after reopening (see wallet history)'
+                    : task.pointsAwarded
+                      ? ' · credited to wallet'
+                      : ' · credited when marked Done'}
                 </div>
               </div>
             </div>
@@ -172,7 +177,7 @@ export function TaskDetailDialog({ task, isOpen, onClose, onEdit }: TaskDetailDi
         {/* Metadata Section */}
         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-            {task.completedDate && (
+            {task.status === 'Done' && task.completedDate && (
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Completed:</span>{' '}
                 <span className="text-gray-700 dark:text-gray-300">
@@ -202,6 +207,13 @@ export function TaskDetailDialog({ task, isOpen, onClose, onEdit }: TaskDetailDi
             )}
           </div>
         </div>
+
+        <JitKnowledgePanel
+          query={[task.title, task.description, task.extendedDescription]
+            .filter(Boolean)
+            .join('\n')}
+          contextId={task.id}
+        />
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

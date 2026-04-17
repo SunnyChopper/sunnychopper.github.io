@@ -84,7 +84,8 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
     // Calculate positions and assign lanes to avoid overlap
     const goalsInRange = goalsWithDates.filter((goal) => {
       const targetDate = new Date(goal.targetDate!);
-      return targetDate >= minDate && targetDate <= maxDate;
+      const startDate = new Date(goal.createdAt);
+      return startDate <= maxDate && targetDate >= minDate;
     });
 
     // Sort by start date for lane assignment
@@ -104,14 +105,19 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
       const targetDate = new Date(goal.targetDate!);
       const createdDate = new Date(goal.createdAt);
       const startDate = createdDate < minDate ? minDate : createdDate;
-      const endDate = targetDate;
+      const endDate = targetDate > maxDate ? maxDate : targetDate;
 
-      const startPos = ((startDate.getTime() - minDate.getTime()) / totalRange) * 100;
+      let startPos = ((startDate.getTime() - minDate.getTime()) / totalRange) * 100;
       const endPos = ((endDate.getTime() - minDate.getTime()) / totalRange) * 100;
       let width = endPos - startPos;
 
       // Apply minimum width
-      width = Math.max(width, MIN_WIDTH_PERCENT);
+      if (width < MIN_WIDTH_PERCENT) {
+        width = MIN_WIDTH_PERCENT;
+        if (startPos + width > 100) {
+          startPos = 100 - width;
+        }
+      }
 
       // Find available lane (avoid overlaps)
       let lane = 0;
@@ -211,17 +217,47 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
       {/* Timeline Container */}
       <div ref={containerRef} className="relative overflow-x-visible">
         {/* Month Labels */}
-        <div
-          className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible"
-          style={{ paddingLeft: '0.5rem', paddingRight: '80px' }}
-        >
+        <div className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible">
           {(() => {
-            return monthsBetween.map((month, index) => {
-              const monthStart = month.getTime();
-              const totalRange = maxDate.getTime() - minDate.getTime();
-              const rawPosition = ((monthStart - minDate.getTime()) / totalRange) * 100;
-              const isFirst = index === 0;
-              const isLast = index === monthsBetween.length - 1;
+            const totalRange = maxDate.getTime() - minDate.getTime();
+            const validMonths = monthsBetween
+              .map((month) => ({
+                month,
+                rawPosition: ((month.getTime() - minDate.getTime()) / totalRange) * 100,
+              }))
+              .filter((m) => m.rawPosition >= 0 && m.rawPosition <= 100);
+
+            const visibleMonths = [];
+            for (let i = 0; i < validMonths.length; i++) {
+              const current = validMonths[i];
+              const isLast = i === validMonths.length - 1;
+
+              if (visibleMonths.length === 0) {
+                visibleMonths.push(current);
+              } else {
+                const lastVisible = visibleMonths[visibleMonths.length - 1];
+                const distance = current.rawPosition - lastVisible.rawPosition;
+
+                if (distance >= 8) {
+                  visibleMonths.push(current);
+                } else if (isLast && visibleMonths.length > 1) {
+                  visibleMonths.pop();
+                  visibleMonths.push(current);
+                }
+              }
+            }
+
+            return visibleMonths.map(({ month, rawPosition }) => {
+              let textStyle: React.CSSProperties = {
+                left: '0',
+                transform: 'translateX(-50%)',
+              };
+
+              if (rawPosition < 5) {
+                textStyle = { left: '0.5rem' };
+              } else if (rawPosition > 95) {
+                textStyle = { right: '0.5rem' };
+              }
 
               return (
                 <div
@@ -229,20 +265,13 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
                   className="absolute top-0 bottom-0"
                   style={{ left: `${rawPosition}%` }}
                 >
-                  {/* Vertical border line - always at exact position (marks the month start) */}
+                  {/* Vertical border line */}
                   <div className="absolute top-0 bottom-0 left-0 border-l border-gray-300 dark:border-gray-600" />
 
-                  {/* Text label - positioned relative to border line */}
+                  {/* Text label */}
                   <span
                     className="absolute top-0 text-xs text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap"
-                    style={{
-                      // For first month: text starts at border (left edge of text at border)
-                      // For last month: text ends at border (right edge of text at border)
-                      // For others: text starts just after border
-                      left: isFirst ? '0' : '0.5rem',
-                      right: isLast ? '0' : 'auto',
-                      transform: isLast ? 'translateX(-100%)' : 'none',
-                    }}
+                    style={textStyle}
                   >
                     {month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </span>

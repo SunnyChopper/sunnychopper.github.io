@@ -65,10 +65,12 @@ export interface EffortEstimationInput {
   similarTasks?: Task[];
 }
 
+/** Matches backend TaskEffortEstimate (camelCase). */
 export interface EffortEstimationOutput {
-  estimatedSize: number;
-  confidence: number;
-  comparisons: string[];
+  storyPoints: number;
+  confidence: 'low' | 'medium' | 'high';
+  complexityFactors: string[];
+  assumptions: string[];
 }
 
 export interface TaskCategorizationInput {

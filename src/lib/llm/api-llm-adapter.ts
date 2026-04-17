@@ -96,14 +96,45 @@ export class APILLMAdapter implements ILLMAdapter {
   }
 
   async estimateEffort(input: EffortEstimationInput): Promise<LLMResponse<EffortEstimationOutput>> {
-    return this.callAIEndpoint<
-      { taskId?: string; title: string; description?: string },
-      EffortEstimationOutput
-    >('/ai/tasks/estimate', {
-      taskId: input.task.id,
-      title: input.task.title || '',
-      description: input.task.description || undefined,
-    });
+    try {
+      const similarTasks = (input.similarTasks ?? []).slice(0, 5).map((t) => ({
+        title: t.title,
+        size: t.size,
+      }));
+      type EffortPayload = {
+        storyPoints: number;
+        confidence: 'low' | 'medium' | 'high';
+        complexityFactors: string[];
+        assumptions: string[];
+      };
+      const response = await apiClient.post<EffortPayload>('/ai/tasks/estimate-effort', {
+        taskId: input.task.id ?? 'new',
+        title: input.task.title ?? '',
+        description: input.task.description ?? undefined,
+        similarTasks: similarTasks.length ? similarTasks : undefined,
+      });
+      if (response.success && response.data) {
+        const d = response.data;
+        return {
+          success: true,
+          error: null,
+          data: {
+            storyPoints: d.storyPoints,
+            confidence: d.confidence,
+            complexityFactors: d.complexityFactors ?? [],
+            assumptions: d.assumptions ?? [],
+          },
+        };
+      }
+      return {
+        success: false,
+        data: null,
+        error: response.error?.message ?? 'Failed to estimate story points',
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { data: null, error: message, success: false };
+    }
   }
 
   async categorizeTask(

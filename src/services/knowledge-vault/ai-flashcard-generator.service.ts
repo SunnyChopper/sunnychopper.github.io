@@ -1,9 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import { llmLogger } from '@/lib/logger';
 import { vaultItemsService } from './vault-items.service';
-import { generateId } from '@/mocks/storage';
-import type { ApiResponse, Flashcard } from '@/types/knowledge-vault';
-import { spacedRepetitionService } from './spaced-repetition.service';
+import type { ApiResponse, CreateFlashcardDeckInput, Flashcard } from '@/types/knowledge-vault';
 
 interface GenerateFlashcardsInput {
   lessonId: string;
@@ -44,49 +42,50 @@ export const aiFlashcardGeneratorService = {
       }
 
       const flashcardsData = response.data.data.result || [];
+      const pairs = flashcardsData
+        .map((c) => ({ front: (c.front || '').trim(), back: (c.back || '').trim() }))
+        .filter((c) => c.front && c.back);
 
-      const flashcards: Flashcard[] = [];
-      const now = new Date().toISOString();
-
-      for (const cardData of flashcardsData) {
-        const flashcard: Flashcard = {
-          id: generateId(),
-          type: 'flashcard',
-          title: cardData.front.substring(0, 100),
-          content: null,
-          tags: [],
-          area: 'Operations',
-          status: 'active',
-          searchableText: `${cardData.front} ${cardData.back}`.toLowerCase(),
-          front: cardData.front,
-          back: cardData.back,
-          sourceItemId: input.lessonId,
-          nextReviewDate: now,
-          interval: 0,
-          easeFactor: 2.5,
-          repetitions: 0,
-          userId: 'user-1',
-          createdAt: now,
-          updatedAt: now,
-          lastAccessedAt: null,
+      if (!pairs.length) {
+        return {
+          data: [],
+          error: null,
+          success: true,
         };
+      }
 
-        const createResponse = await vaultItemsService.createFlashcard({
-          title: flashcard.title,
-          front: flashcard.front,
-          back: flashcard.back,
-          area: flashcard.area,
-          tags: flashcard.tags,
-          sourceItemId: input.lessonId,
-        });
+      const deckInput: CreateFlashcardDeckInput = {
+        name: input.lessonTitle.slice(0, 200),
+        area: 'Operations',
+        tags: [],
+        flashcards: pairs,
+      };
 
-        if (createResponse.success && createResponse.data) {
-          flashcards.push(createResponse.data);
-        }
+      const createDeck = await vaultItemsService.createFlashcardDeck(deckInput);
+      if (!createDeck.success || !createDeck.data) {
+        const msg =
+          typeof createDeck.error === 'string'
+            ? createDeck.error
+            : (createDeck.error as { message?: string } | null)?.message;
+        throw new Error(msg || 'Failed to save flashcard deck');
+      }
+
+      const cardsRes = await vaultItemsService.getFlashcardsForDeck(createDeck.data.id, {
+        area: 'Operations',
+        tags: [],
+        sourceItemId: input.lessonId,
+      });
+
+      if (!cardsRes.success || !cardsRes.data) {
+        const msg =
+          typeof cardsRes.error === 'string'
+            ? cardsRes.error
+            : (cardsRes.error as { message?: string } | null)?.message;
+        throw new Error(msg || 'Failed to load cards');
       }
 
       return {
-        data: flashcards,
+        data: cardsRes.data,
         error: null,
         success: true,
       };
@@ -138,39 +137,71 @@ export const aiFlashcardGeneratorService = {
     }
   },
 
-  async reviewFlashcard(flashcardId: string, quality: number): Promise<ApiResponse<Flashcard>> {
+  async reviewFlashcard(
+    flashcardId: string,
+    quality: number,
+    deckId?: string
+  ): Promise<ApiResponse<Flashcard>> {
     try {
-      const flashcardResponse = await vaultItemsService.getById(flashcardId);
-
-      if (!flashcardResponse.success || !flashcardResponse.data) {
-        throw new Error('Flashcard not found');
+      let dId = deckId;
+      if (!dId) {
+        const all = await vaultItemsService.getAll({ type: 'flashcard' });
+        const f = all.data?.find((x) => x.id === flashcardId && x.type === 'flashcard') as
+          | Flashcard
+          | undefined;
+        dId = f?.deckId;
+      }
+      if (!dId) {
+        throw new Error('Could not resolve flashcard deck; open Flashcards to refresh list.');
       }
 
-      const flashcard = flashcardResponse.data as Flashcard;
-
-      if (flashcard.type !== 'flashcard') {
-        throw new Error('Item is not a flashcard');
-      }
-
-      const currentData = {
-        easinessFactor: flashcard.easeFactor,
-        repetitionCount: flashcard.repetitions,
-        intervalDays: flashcard.interval,
-        nextReviewDate: flashcard.nextReviewDate,
-        lastReviewDate: flashcard.lastAccessedAt,
-        reviewHistory: [],
-      };
-
-      const result = spacedRepetitionService.calculateNextReview(currentData, quality);
-
-      const updateResponse = await vaultItemsService.updateFlashcard(flashcardId, {
-        nextReviewDate: result.nextReviewDate,
-        interval: result.intervalDays,
-        easeFactor: result.easinessFactor,
-        repetitions: result.repetitionCount,
+      const response = await apiClient.post<{
+        id: string;
+        front: string;
+        back: string;
+        intervalDays: number;
+        easeFactor: number;
+        nextReviewAt: string | null;
+        reviewCount: number;
+      }>(`/knowledge/flashcards/${dId}/review`, {
+        flashcardId,
+        quality,
       });
 
-      return updateResponse;
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || 'Review failed');
+      }
+
+      const c = response.data;
+      const list = await vaultItemsService.getAll({ type: 'flashcard' });
+      const existing = list.data?.find((v) => v.id === flashcardId && v.type === 'flashcard') as
+        | Flashcard
+        | undefined;
+
+      const merged: Flashcard = {
+        id: c.id,
+        type: 'flashcard',
+        title: c.front.substring(0, 100),
+        content: null,
+        tags: existing?.tags ?? [],
+        area: existing?.area ?? 'Operations',
+        status: 'active',
+        searchableText: `${c.front} ${c.back}`,
+        userId: existing?.userId ?? '',
+        createdAt: existing?.createdAt ?? '',
+        updatedAt: new Date().toISOString(),
+        lastAccessedAt: existing?.lastAccessedAt ?? null,
+        deckId: dId,
+        front: c.front,
+        back: c.back,
+        sourceItemId: existing?.sourceItemId ?? null,
+        nextReviewDate: c.nextReviewAt || '',
+        interval: c.intervalDays,
+        easeFactor: c.easeFactor,
+        repetitions: c.reviewCount,
+      };
+
+      return { data: merged, error: null, success: true };
     } catch (error) {
       llmLogger.error('Error reviewing flashcard', error);
       return {

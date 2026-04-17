@@ -8,6 +8,7 @@ import type {
   Project,
   Task,
   TaskDependency,
+  UpdateTaskInput,
 } from '@/types/growth-system';
 import type {
   Reward,
@@ -101,6 +102,60 @@ export const upsertTaskCache = (queryClient: QueryClient, task: Task): void => {
   }));
   updateDetailCache(queryClient, queryKeys.growthSystem.tasks.detail, task);
 };
+
+/** Merge a task with partial update input for optimistic cache updates. */
+export function mergeTaskWithUpdate(task: Task, input: UpdateTaskInput): Task {
+  const merged: Task = {
+    ...task,
+    ...(input.title !== undefined ? { title: input.title } : {}),
+    ...(input.description !== undefined ? { description: input.description || null } : {}),
+    ...(input.extendedDescription !== undefined
+      ? { extendedDescription: input.extendedDescription || null }
+      : {}),
+    ...(input.area !== undefined ? { area: input.area } : {}),
+    ...(input.subCategory !== undefined ? { subCategory: input.subCategory } : {}),
+    ...(input.priority !== undefined ? { priority: input.priority } : {}),
+    ...(input.status !== undefined ? { status: input.status } : {}),
+    ...(input.size !== undefined ? { size: input.size } : {}),
+    ...(input.dueDate !== undefined ? { dueDate: input.dueDate || null } : {}),
+    ...(input.scheduledDate !== undefined ? { scheduledDate: input.scheduledDate || null } : {}),
+    ...(input.completedDate !== undefined ? { completedDate: input.completedDate || null } : {}),
+    ...(input.notes !== undefined ? { notes: input.notes || null } : {}),
+    ...(input.isRecurring !== undefined ? { isRecurring: input.isRecurring } : {}),
+    ...(input.recurrenceRule !== undefined ? { recurrenceRule: input.recurrenceRule } : {}),
+    ...(input.pointValue !== undefined ? { pointValue: input.pointValue } : {}),
+    ...(input.projectIds !== undefined ? { projectIds: input.projectIds } : {}),
+    ...(input.goalIds !== undefined ? { goalIds: input.goalIds } : {}),
+  };
+
+  if (input.status !== undefined && task.status === 'Done' && input.status !== 'Done') {
+    return {
+      ...merged,
+      completedDate: input.completedDate !== undefined ? input.completedDate : null,
+      pointsAwarded: false,
+      rewardLedgerStatus: 'reversed',
+      rewardReversalTransactionId: null,
+      rewardReversedAt: null,
+    };
+  }
+
+  return merged;
+}
+
+export function findTaskInClientCache(queryClient: QueryClient, id: string): Task | undefined {
+  const queries = queryClient.getQueriesData<ListCache<Task>>({
+    queryKey: queryKeys.growthSystem.tasks.lists(),
+  });
+  for (const [, data] of queries) {
+    const items = extractListData<Task>(data);
+    const found = items.find((t) => t.id === id);
+    if (found) return found;
+  }
+  const detail = queryClient.getQueryData<ApiResponse<Task>>(
+    queryKeys.growthSystem.tasks.detail(id)
+  );
+  return detail?.data;
+}
 
 /**
  * Helper to find all dependency queries in the cache

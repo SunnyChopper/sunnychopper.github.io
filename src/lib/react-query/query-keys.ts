@@ -73,6 +73,14 @@ export const queryKeys = {
       details: () => [...queryKeys.growthSystem.logbook.all(), 'detail'] as const,
       detail: (id: string) => [...queryKeys.growthSystem.logbook.details(), id] as const,
     },
+    weeklyReviews: {
+      all: () => [...queryKeys.growthSystem.all, 'weekly-reviews'] as const,
+      current: () => [...queryKeys.growthSystem.weeklyReviews.all(), 'current'] as const,
+      list: (page: number, pageSize: number) =>
+        [...queryKeys.growthSystem.weeklyReviews.all(), 'list', page, pageSize] as const,
+      detail: (weekStart: string) =>
+        [...queryKeys.growthSystem.weeklyReviews.all(), weekStart] as const,
+    },
   },
 
   // Markdown Files
@@ -169,6 +177,7 @@ export const queryKeys = {
     all: ['knowledge-vault'] as const,
     vaultItems: () => [...queryKeys.knowledgeVault.all, 'vault-items'] as const,
     courses: () => [...queryKeys.knowledgeVault.all, 'courses'] as const,
+    flashcardDecks: () => [...queryKeys.knowledgeVault.all, 'flashcard-decks'] as const,
   },
 
   // Rewards

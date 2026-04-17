@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Project } from '@/types/growth-system';
+import type { ProjectDisplayModel } from '@/utils/project-summary';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { ProjectSummaryDetails } from '@/components/molecules/ProjectSummaryBlocks';
@@ -11,6 +12,8 @@ interface ProjectTimelineViewProps {
   onProjectClick: (project: Project) => void;
   projectHealthMap?: Map<string, ProjectHealthSummary>;
   isHealthLoading?: boolean;
+  /** When set, bar colors, badges, and progress use derived completion (e.g. all tasks done). */
+  resolveProjectDisplay?: (project: Project) => ProjectDisplayModel;
 }
 
 interface TimelineProject {
@@ -37,6 +40,7 @@ export function ProjectTimelineView({
   onProjectClick,
   projectHealthMap,
   isHealthLoading = false,
+  resolveProjectDisplay,
 }: ProjectTimelineViewProps) {
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>('All');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,8 +100,10 @@ export function ProjectTimelineView({
 
     // Calculate positions and assign lanes to avoid overlap
     const projectsInRange = projectsWithDates.filter((project) => {
-      const start = project.startDate ? new Date(project.startDate) : minDate;
-      const end = project.targetEndDate ? new Date(project.targetEndDate) : maxDate;
+      const start = project.startDate ? new Date(project.startDate) : new Date(project.createdAt);
+      const end = project.targetEndDate
+        ? new Date(project.targetEndDate)
+        : new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
       // Project is in range if it overlaps with the visible range
       return end >= minDate && start <= maxDate;
     });
@@ -127,16 +133,25 @@ export function ProjectTimelineView({
           ? minDate
           : new Date(project.createdAt);
       // Use endDate if available, otherwise use maxDate or startDate + 30 days
-      const endDate = project.targetEndDate
+      let endDate = project.targetEndDate
         ? new Date(project.targetEndDate)
         : new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-      const startPos = ((startDate.getTime() - minDate.getTime()) / totalRange) * 100;
+      if (endDate > maxDate) {
+        endDate = maxDate;
+      }
+
+      let startPos = ((startDate.getTime() - minDate.getTime()) / totalRange) * 100;
       const endPos = ((endDate.getTime() - minDate.getTime()) / totalRange) * 100;
       let width = endPos - startPos;
 
       // Apply minimum width
-      width = Math.max(width, MIN_WIDTH_PERCENT);
+      if (width < MIN_WIDTH_PERCENT) {
+        width = MIN_WIDTH_PERCENT;
+        if (startPos + width > 100) {
+          startPos = 100 - width;
+        }
+      }
 
       // Find available lane (avoid overlaps)
       let lane = 0;
@@ -236,40 +251,68 @@ export function ProjectTimelineView({
       {/* Timeline Container */}
       <div ref={containerRef} className="relative overflow-x-visible">
         {/* Month Labels */}
-        <div
-          className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible"
-          style={{ paddingLeft: '0.5rem', paddingRight: '80px' }}
-        >
-          {monthsBetween.map((month, index) => {
-            const monthStart = month.getTime();
+        <div className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible">
+          {(() => {
             const totalRange = maxDate.getTime() - minDate.getTime();
-            const rawPosition = ((monthStart - minDate.getTime()) / totalRange) * 100;
-            const isFirst = index === 0;
-            const isLast = index === monthsBetween.length - 1;
+            const validMonths = monthsBetween
+              .map((month) => ({
+                month,
+                rawPosition: ((month.getTime() - minDate.getTime()) / totalRange) * 100,
+              }))
+              .filter((m) => m.rawPosition >= 0 && m.rawPosition <= 100);
 
-            return (
-              <div
-                key={month.toISOString()}
-                className="absolute top-0 bottom-0"
-                style={{ left: `${rawPosition}%` }}
-              >
-                {/* Vertical border line */}
-                <div className="absolute top-0 bottom-0 left-0 border-l border-gray-300 dark:border-gray-600" />
+            const visibleMonths = [];
+            for (let i = 0; i < validMonths.length; i++) {
+              const current = validMonths[i];
+              const isLast = i === validMonths.length - 1;
 
-                {/* Text label */}
-                <span
-                  className="absolute top-0 text-xs text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap"
-                  style={{
-                    left: isFirst ? '0' : '0.5rem',
-                    right: isLast ? '0' : 'auto',
-                    transform: isLast ? 'translateX(-100%)' : 'none',
-                  }}
+              if (visibleMonths.length === 0) {
+                visibleMonths.push(current);
+              } else {
+                const lastVisible = visibleMonths[visibleMonths.length - 1];
+                const distance = current.rawPosition - lastVisible.rawPosition;
+
+                if (distance >= 8) {
+                  visibleMonths.push(current);
+                } else if (isLast && visibleMonths.length > 1) {
+                  visibleMonths.pop();
+                  visibleMonths.push(current);
+                }
+              }
+            }
+
+            return visibleMonths.map(({ month, rawPosition }) => {
+              let textStyle: React.CSSProperties = {
+                left: '0',
+                transform: 'translateX(-50%)',
+              };
+
+              if (rawPosition < 5) {
+                textStyle = { left: '0.5rem' };
+              } else if (rawPosition > 95) {
+                textStyle = { right: '0.5rem' };
+              }
+
+              return (
+                <div
+                  key={month.toISOString()}
+                  className="absolute top-0 bottom-0"
+                  style={{ left: `${rawPosition}%` }}
                 >
-                  {month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                </span>
-              </div>
-            );
-          })}
+                  {/* Vertical border line */}
+                  <div className="absolute top-0 bottom-0 left-0 border-l border-gray-300 dark:border-gray-600" />
+
+                  {/* Text label */}
+                  <span
+                    className="absolute top-0 text-xs text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap"
+                    style={textStyle}
+                  >
+                    {month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {/* Timeline Bars */}
@@ -297,23 +340,28 @@ export function ProjectTimelineView({
           {timelineProjects.map((timelineProject) => {
             const project = timelineProject.project;
             const projectHealth = projectHealthMap?.get(project.id);
-            const progressPercent = projectHealth?.percentComplete ?? 0;
-            const hasHealthData = !!projectHealth;
+            const display = resolveProjectDisplay?.(project);
+            const effectiveStatus = display?.effectiveStatus ?? project.status;
+            const isWorkComplete = display?.isWorkComplete ?? project.status === 'Completed';
+            const progressPercent = display?.progressPercent ?? projectHealth?.percentComplete ?? 0;
+            const hasProgressBar =
+              display != null || (!!projectHealth && (projectHealth.taskCount ?? 0) > 0);
+            const hasHealthData = !!projectHealth || display != null;
             const showDescription = !!project.description && project.description.length <= 120;
-            // Determine color based on status
+            // Determine color based on effective status / derived completion
             let colorClasses =
               'from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 border-blue-600 dark:border-blue-500';
 
-            if (project.status === 'Completed') {
+            if (effectiveStatus === 'Completed' || isWorkComplete) {
               colorClasses =
                 'from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border-green-600 dark:border-green-500';
-            } else if (project.status === 'On Hold') {
+            } else if (effectiveStatus === 'On Hold') {
               colorClasses =
                 'from-yellow-500 to-yellow-600 dark:from-yellow-600 dark:to-yellow-700 border-yellow-600 dark:border-yellow-500';
-            } else if (project.status === 'Cancelled') {
+            } else if (effectiveStatus === 'Cancelled') {
               colorClasses =
                 'from-gray-500 to-gray-600 dark:from-gray-600 dark:to-gray-700 border-gray-600 dark:border-gray-500';
-            } else if (project.status === 'Planning') {
+            } else if (effectiveStatus === 'Planning') {
               colorClasses =
                 'from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 border-purple-600 dark:border-purple-500';
             }
@@ -351,9 +399,9 @@ export function ProjectTimelineView({
                         {project.name}
                       </span>
                     </div>
-                    <StatusBadge status={project.status} size="sm" />
+                    <StatusBadge status={effectiveStatus} size="sm" />
                   </div>
-                  {hasHealthData && (
+                  {hasProgressBar && (
                     <div className="absolute left-2 right-2 bottom-1 h-1 bg-white/30 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-white/80"

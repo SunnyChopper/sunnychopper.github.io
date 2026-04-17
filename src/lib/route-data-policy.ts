@@ -8,15 +8,14 @@ export function shouldLoadKnowledgeVaultData(pathname: string): boolean {
   return pathname.startsWith(ROUTES.admin.knowledgeVault);
 }
 
-const GROWTH_LEAF_ONLY_ROUTES = /^\/admin\/(tasks|habits|metrics|goals|projects)$/;
-
 /**
- * Wallet + rewards lists are deferred on Growth System leaf pages so those screens
- * only load growth data (e.g. tasks/goals/projects). Other admin routes still fetch
- * for header wallet, Reward Studio, store, etc.
+ * Wallet + rewards: load on every authenticated admin route.
+ *
+ * AdminLayout always shows WalletWidget in the header; deferring fetches on growth
+ * leaf pages left balance stuck at null with loading=false (permanent "..." state).
  */
 export function shouldLoadWalletAndRewards(pathname: string): boolean {
   if (!pathname.startsWith('/admin')) return false;
   if (isAdminLoginPath(pathname)) return false;
-  return !GROWTH_LEAF_ONLY_ROUTES.test(pathname);
+  return true;
 }

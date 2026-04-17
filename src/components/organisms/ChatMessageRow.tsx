@@ -289,12 +289,12 @@ export const ChatMessageRow = memo(function ChatMessageRow({
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
                           <AlertTriangle size={14} />
-                          <span className="font-medium">Failed to generate response</span>
+                          <span className="font-medium">Assistant run failed</span>
                         </div>
                         {shouldShowAssistantErrorDetails(message.clientError) && (
-                          <p className="text-sm text-red-600 dark:text-red-200">
+                          <pre className="text-xs leading-relaxed whitespace-pre-wrap break-words text-red-600 dark:text-red-200 font-mono">
                             {message.clientError}
-                          </p>
+                          </pre>
                         )}
                         <button
                           type="button"

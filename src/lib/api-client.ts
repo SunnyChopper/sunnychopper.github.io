@@ -875,6 +875,16 @@ class ApiClient {
   }): Promise<ApiResponse<{ timeZone: string }>> {
     return this.put<{ timeZone: string }>('/preferences/time-zone', body);
   }
+
+  async getPreferencesWeeklyReviewDay(): Promise<ApiResponse<{ weeklyReviewDay: number }>> {
+    return this.get<{ weeklyReviewDay: number }>('/preferences/weekly-review-day');
+  }
+
+  async setPreferencesWeeklyReviewDay(body: {
+    weeklyReviewDay: number;
+  }): Promise<ApiResponse<{ weeklyReviewDay: number }>> {
+    return this.put<{ weeklyReviewDay: number }>('/preferences/weekly-review-day', body);
+  }
 }
 
 export const apiClient = new ApiClient();

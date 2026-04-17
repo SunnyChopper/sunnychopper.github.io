@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search,
   Plus,
@@ -12,8 +12,10 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import { ROUTES } from '@/routes';
 import VaultItemCard from '@/components/organisms/VaultItemCard';
 import CourseStackCard from '@/components/organisms/CourseStackCard';
+import FlashcardDeckCard from '@/components/organisms/FlashcardDeckCard';
 import Dialog from '@/components/molecules/Dialog';
 import NoteForm from '@/components/organisms/NoteForm';
 import DocumentForm from '@/components/organisms/DocumentForm';
@@ -33,14 +35,40 @@ interface CourseStack {
 
 export default function KnowledgeVaultPage() {
   const navigate = useNavigate();
-  const { vaultItems, courses, loading, refreshVaultItems } = useKnowledgeVault();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+  const editNoteId = searchParams.get('editNote');
+  const { vaultItems, courses, flashcardDecks, loading, refreshVaultItems } = useKnowledgeVault();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [selectedArea, setSelectedArea] = useState<Area | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [createDialogType, setCreateDialogType] = useState<VaultItemType | null>(null);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
+
+  const editingNote = useMemo(() => {
+    if (!editNoteId) return null;
+    const item = vaultItems.find((v) => v.id === editNoteId && v.type === 'note');
+    return (item as Note | undefined) ?? null;
+  }, [editNoteId, vaultItems]);
+
+  const setEditingNote = useCallback(
+    (note: Note | null) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (note) {
+            next.set('editNote', note.id);
+          } else {
+            next.delete('editNote');
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   // Group course lessons by courseId
   const courseStacks = useMemo(() => {
@@ -93,6 +121,9 @@ export default function KnowledgeVaultPage() {
       if (filterType === 'course_lesson') {
         return []; // We'll handle course stacks separately
       }
+      if (filterType === 'flashcard') {
+        return []; // Decks rendered from flashcardDecks
+      }
       filtered = filtered.filter((item) => item.type === filterType);
     }
 
@@ -109,6 +140,29 @@ export default function KnowledgeVaultPage() {
   }, [vaultItems, filterType, selectedArea, searchQuery, courseIdsWithLessons]);
 
   // Filter course stacks based on search and area
+  const filteredFlashcardDecks = useMemo(() => {
+    let d = flashcardDecks;
+
+    if (selectedArea !== 'all') {
+      d = d.filter((deck) => {
+        const firstLine = deck.description?.split('\n')[0]?.trim() || '';
+        return firstLine === `Area: ${selectedArea}`;
+      });
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      d = d.filter(
+        (deck) =>
+          deck.name.toLowerCase().includes(q) ||
+          (deck.description || '').toLowerCase().includes(q) ||
+          (deck.topic || '').toLowerCase().includes(q)
+      );
+    }
+
+    return d;
+  }, [flashcardDecks, selectedArea, searchQuery]);
+
   const filteredCourseStacks = useMemo(() => {
     let filtered = courseStacks;
 
@@ -150,7 +204,7 @@ export default function KnowledgeVaultPage() {
           if (!courseIdsWithLessons.has((item as CourseLesson).courseId)) {
             counts[item.type]++;
           }
-        } else {
+        } else if (item.type !== 'flashcard') {
           counts[item.type]++;
         }
       }
@@ -158,9 +212,22 @@ export default function KnowledgeVaultPage() {
 
     // Add course stacks count to course_lesson count
     counts.course_lesson += courseStacks.length;
+    counts.flashcard = flashcardDecks.length;
 
     return counts;
-  }, [vaultItems, courseIdsWithLessons, courseStacks]);
+  }, [vaultItems, courseIdsWithLessons, courseStacks, flashcardDecks.length]);
+
+  useEffect(() => {
+    if (highlightId && !loading) {
+      const t = window.setTimeout(() => {
+        const el = document.getElementById(`vault-item-${highlightId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      return () => window.clearTimeout(t);
+    }
+  }, [highlightId, loading, filterType, selectedArea, searchQuery]);
 
   const handleCreateClick = (type: VaultItemType) => {
     setShowCreateMenu(false);
@@ -218,7 +285,7 @@ export default function KnowledgeVaultPage() {
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-left"
                 >
                   <CreditCard size={18} className="text-amber-600" />
-                  <span className="text-gray-900 dark:text-white">Flashcard</span>
+                  <span className="text-gray-900 dark:text-white">Flashcard deck</span>
                 </button>
               </div>
             </>
@@ -307,7 +374,9 @@ export default function KnowledgeVaultPage() {
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
-      ) : filteredItems.length === 0 && filteredCourseStacks.length === 0 ? (
+      ) : filteredItems.length === 0 &&
+        filteredCourseStacks.length === 0 &&
+        !(filterType === 'flashcard' && filteredFlashcardDecks.length > 0) ? (
         <div className="text-center py-12">
           <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -349,11 +418,25 @@ export default function KnowledgeVaultPage() {
               />
             ))}
 
+          {filterType === 'flashcard' &&
+            filteredFlashcardDecks.map((deck) => (
+              <FlashcardDeckCard
+                key={deck.id}
+                deck={deck}
+                onClick={() => {
+                  navigate(
+                    `${ROUTES.admin.knowledgeVaultFlashcards}?deck=${encodeURIComponent(deck.id)}`
+                  );
+                }}
+              />
+            ))}
+
           {/* Show regular vault items */}
           {filteredItems.map((item) => (
             <VaultItemCard
               key={item.id}
               item={item}
+              highlighted={item.id === highlightId}
               onClick={() => {
                 if (item.type === 'note') {
                   setEditingNote(item as Note);
@@ -370,8 +453,10 @@ export default function KnowledgeVaultPage() {
       <Dialog
         isOpen={createDialogType !== null}
         onClose={() => setCreateDialogType(null)}
-        title={`Create ${createDialogType === 'note' ? 'Note' : createDialogType === 'document' ? 'Document' : 'Flashcard'}`}
-        size={createDialogType === 'note' ? 'full' : 'md'}
+        title={`Create ${createDialogType === 'note' ? 'Note' : createDialogType === 'document' ? 'Document' : 'Flashcard deck'}`}
+        size={
+          createDialogType === 'note' ? 'full' : createDialogType === 'flashcard' ? 'full' : 'md'
+        }
       >
         <div className="p-6">
           {createDialogType === 'note' && (

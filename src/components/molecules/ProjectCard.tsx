@@ -5,7 +5,11 @@ import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
-import { getImpactColors, getDateUrgency } from '@/utils/project-summary';
+import {
+  getDateUrgency,
+  getProjectCardAccentBarClasses,
+  type ProjectDisplayModel,
+} from '@/utils/project-summary';
 import { formatDateString } from '@/utils/date-formatters';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +23,9 @@ interface ProjectCardProps {
   hasHealthData?: boolean;
   isHealthLoading?: boolean;
   viewMode?: ViewMode;
+  /** When set, drives status badge, progress ring value, overdue hiding, and completion accent. */
+  display?: ProjectDisplayModel;
+  linkedGoalCount?: number;
 }
 
 const itemVariants = {
@@ -43,13 +50,22 @@ export function ProjectCard({
   onClick,
   taskCount = 0,
   completedTaskCount = 0,
-  hasHealthData = false,
+  hasHealthData: _hasHealthData = false,
   isHealthLoading: _isHealthLoading = false,
   viewMode = 'grid',
+  display,
+  linkedGoalCount = 0,
 }: ProjectCardProps) {
-  const impactColors = getImpactColors(project.impact || 0);
-  const progress = taskCount > 0 ? Math.round(((completedTaskCount || 0) / taskCount) * 100) : 0;
-  const dateUrgency = getDateUrgency(project.targetEndDate);
+  const progress =
+    display?.progressPercent ??
+    (taskCount > 0 ? Math.round(((completedTaskCount || 0) / taskCount) * 100) : 0);
+  const effectiveStatus = display?.effectiveStatus ?? project.status;
+  const isWorkComplete = display?.isWorkComplete ?? project.status === 'Completed';
+  const { showBar, barBgClass } = getProjectCardAccentBarClasses(project, isWorkComplete);
+  const dateUrgency = getDateUrgency(project.targetEndDate, {
+    hideWhenComplete: isWorkComplete || project.status === 'Cancelled',
+  });
+  const showProgressRing = taskCount > 0 || linkedGoalCount > 0;
 
   const startDate = project.startDate ? formatDateString(project.startDate) : null;
   const endDate = project.targetEndDate ? formatDateString(project.targetEndDate) : null;
@@ -85,9 +101,7 @@ export function ProjectCard({
           'min-h-[160px]',
           // Desktop: Hover effects
           'lg:hover:shadow-lg lg:hover:border-blue-500 dark:lg:hover:border-blue-400',
-          'lg:transition-all lg:duration-200',
-          // Impact accent
-          project.impact > 0 && impactColors.accent
+          'lg:transition-all lg:duration-200'
         )}
         role="button"
         tabIndex={0}
@@ -96,17 +110,12 @@ export function ProjectCard({
           ? { whileHover: desktopHoverVariants.hover, whileTap: desktopHoverVariants.tap }
           : { whileHover: mobileTapVariants.hover, whileTap: mobileTapVariants.tap })}
       >
-        {/* Impact accent border */}
-        {project.impact > 0 && (
+        {showBar && (
           <motion.div
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
             transition={{ duration: 0.3 }}
-            className={cn(
-              'absolute left-0 top-0 bottom-0',
-              'w-1',
-              impactColors.accent.replace('border-l-', 'bg-')
-            )}
+            className={cn('absolute left-0 top-0 bottom-0 w-1', barBgClass)}
           />
         )}
 
@@ -127,14 +136,14 @@ export function ProjectCard({
                 {project.name}
               </motion.h3>
               <div className="flex items-center gap-2 flex-wrap">
-                <StatusBadge status={project.status} size="sm" />
+                <StatusBadge status={effectiveStatus} size="sm" />
                 <AreaBadge area={project.area} size="sm" />
               </div>
             </div>
           </div>
           {/* Progress Ring */}
           <div className="shrink-0">
-            {hasHealthData && taskCount > 0 ? (
+            {showProgressRing ? (
               <ProgressRing
                 progress={progress}
                 size="sm"
@@ -196,8 +205,7 @@ export function ProjectCard({
           // Mobile: Full width, vertical stack
           // Desktop: Horizontal layout with hover
           'lg:hover:shadow-md lg:hover:border-blue-500 dark:lg:hover:border-blue-400',
-          'lg:transition-all lg:duration-200',
-          project.impact > 0 && impactColors.accent
+          'lg:transition-all lg:duration-200'
         )}
         role="button"
         tabIndex={0}
@@ -206,15 +214,7 @@ export function ProjectCard({
           ? { whileHover: desktopHoverVariants.hover, whileTap: desktopHoverVariants.tap }
           : { whileHover: mobileTapVariants.hover, whileTap: mobileTapVariants.tap })}
       >
-        {/* Impact accent */}
-        {project.impact > 0 && (
-          <div
-            className={cn(
-              'absolute left-0 top-0 bottom-0 w-1',
-              impactColors.accent.replace('border-l-', 'bg-')
-            )}
-          />
-        )}
+        {showBar && <div className={cn('absolute left-0 top-0 bottom-0 w-1', barBgClass)} />}
 
         {/* Left: Priority + Title + Status */}
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -224,7 +224,7 @@ export function ProjectCard({
               {project.name}
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={project.status} size="sm" />
+              <StatusBadge status={effectiveStatus} size="sm" />
               <AreaBadge area={project.area} size="sm" />
             </div>
           </div>
@@ -232,7 +232,7 @@ export function ProjectCard({
 
         {/* Center: Progress (hidden on mobile) */}
         <div className="hidden md:flex items-center gap-4 shrink-0">
-          {hasHealthData && taskCount > 0 && (
+          {showProgressRing && (
             <div className="flex items-center gap-2">
               <ProgressRing progress={progress} size="sm" />
               <span className="text-sm font-medium text-gray-900 dark:text-white w-12 text-right">
@@ -276,14 +276,13 @@ export function ProjectCard({
         'cursor-pointer',
         'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
         'transition-shadow duration-200',
-        // Status-based colors
-        project.status === 'Completed' &&
+        (effectiveStatus === 'Completed' || isWorkComplete) &&
           'from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border-green-600 dark:border-green-500',
-        project.status === 'On Hold' &&
+        effectiveStatus === 'On Hold' &&
           'from-yellow-500 to-yellow-600 dark:from-yellow-600 dark:to-yellow-700 border-yellow-600 dark:border-yellow-500',
-        project.status === 'Cancelled' &&
+        effectiveStatus === 'Cancelled' &&
           'from-gray-500 to-gray-600 dark:from-gray-600 dark:to-gray-700 border-gray-600 dark:border-gray-500',
-        project.status === 'Planning' &&
+        effectiveStatus === 'Planning' &&
           'from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 border-purple-600 dark:border-purple-500'
       )}
       role="button"
@@ -296,9 +295,9 @@ export function ProjectCard({
         <PriorityIndicator priority={project.priority} size="sm" variant="badge" />
         <span className="text-xs sm:text-sm font-medium text-white truncate">{project.name}</span>
       </div>
-      <StatusBadge status={project.status} size="sm" />
+      <StatusBadge status={effectiveStatus} size="sm" />
       {/* Progress indicator */}
-      {hasHealthData && taskCount > 0 && (
+      {showProgressRing && (
         <div className="absolute left-2 right-2 bottom-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}

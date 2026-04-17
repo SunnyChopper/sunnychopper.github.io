@@ -26,6 +26,7 @@ import { useTasks, useProjects, useGoals, useTaskDependencies } from '@/hooks/us
 import { tasksService, goalsService, projectsService } from '@/services/growth-system';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query/query-keys';
+import { extractErrorMessage } from '@/lib/react-query/error-utils';
 import {
   addTaskDependencyToCache,
   removeTaskDependencyFromCache,
@@ -121,7 +122,14 @@ export default function TasksPage() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   // Use individual hooks for data fetching and mutations
-  const { tasks, isLoading: tasksLoading, createTask, updateTask, deleteTask } = useTasks();
+  const {
+    tasks,
+    isLoading: tasksDataLoading,
+    createTask,
+    updateTask,
+    completeTask,
+    deleteTask,
+  } = useTasks();
   const { projects } = useProjects();
   const { goals } = useGoals();
 
@@ -180,6 +188,9 @@ export default function TasksPage() {
         type: 'goal' as const,
         area: g.area,
         status: g.status,
+        parentGoalId: g.parentGoalId,
+        targetDate: g.targetDate,
+        completedDate: g.completedDate,
       })),
     [goals]
   );
@@ -233,7 +244,7 @@ export default function TasksPage() {
     return { taskDependencies: depMap, taskBlockedBy: blockedMap };
   }, [dependencyMap, tasks]);
 
-  const isLoading = tasksLoading || (viewMode === 'graph' && dependenciesLoading);
+  const graphViewLoading = tasksDataLoading || dependenciesLoading;
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     setIsSubmitting(true);
@@ -263,16 +274,51 @@ export default function TasksPage() {
     }
   };
 
-  const handleUpdateTask = async (taskId: string, input: UpdateTaskInput): Promise<void> => {
-    setIsSubmitting(true);
+  const handleUpdateTask = async (
+    taskId: string,
+    input: UpdateTaskInput,
+    options?: { trackSubmitting?: boolean; notifyOnError?: boolean }
+  ): Promise<void> => {
+    const trackSubmitting = options?.trackSubmitting !== false;
+    const notifyOnError = options?.notifyOnError === true;
+    if (trackSubmitting) {
+      setIsSubmitting(true);
+    }
     try {
       await updateTask({ id: taskId, input });
     } catch (error) {
       console.error('Failed to update task:', error);
-      throw error; // Re-throw so TaskEditPanel can handle it
+      if (notifyOnError) {
+        showToast({
+          type: 'error',
+          title: "Couldn't update task",
+          message: extractErrorMessage(error, 'Failed to update task. Please try again.'),
+        });
+        return;
+      }
+      throw error;
     } finally {
-      setIsSubmitting(false);
+      if (trackSubmitting) {
+        setIsSubmitting(false);
+      }
     }
+  };
+
+  const handleKanbanTaskUpdate = async (id: string, input: UpdateTaskInput) => {
+    if (input.status === 'Done') {
+      try {
+        await completeTask(id);
+      } catch (error) {
+        console.error('Failed to complete task:', error);
+        showToast({
+          type: 'error',
+          title: "Couldn't complete task",
+          message: extractErrorMessage(error, 'Failed to complete task. Please try again.'),
+        });
+      }
+      return;
+    }
+    await handleUpdateTask(id, input, { trackSubmitting: false, notifyOnError: true });
   };
 
   const handleDeleteTask = (task: Task) => {
@@ -386,12 +432,18 @@ export default function TasksPage() {
   const activeFilterCount = [selectedArea, selectedStatus, selectedPriority].filter(Boolean).length;
 
   return (
-    <div className="h-full">
+    <div
+      className={
+        viewMode === 'kanban' ? 'flex h-full w-full min-h-0 min-w-0 flex-1 flex-col' : 'min-h-0'
+      }
+    >
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+        className={`flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between ${
+          viewMode === 'kanban' ? 'shrink-0' : ''
+        }`}
       >
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Tasks</h1>
@@ -419,7 +471,9 @@ export default function TasksPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
-        className="mb-4 flex items-center gap-3 flex-wrap"
+        className={`mb-4 flex flex-wrap items-center gap-3 ${
+          viewMode === 'kanban' ? 'shrink-0' : ''
+        }`}
       >
         <div className="relative flex-1 min-w-[200px] sm:min-w-[300px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -593,24 +647,51 @@ export default function TasksPage() {
         )}
       </AnimatePresence>
 
-      <AISuggestionBanner entityType="task" />
+      <div className={viewMode === 'kanban' ? 'shrink-0' : undefined}>
+        <AISuggestionBanner entityType="task" />
+      </div>
 
       {viewMode === 'list' && (
         <div>
-          {isLoading ? (
+          {tasksDataLoading ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center justify-center py-12"
+              className="space-y-3"
+              aria-busy="true"
+              aria-label="Loading tasks"
             >
-              <div className="text-center">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
-                />
-                <p className="text-gray-600 dark:text-gray-400">Loading tasks...</p>
-              </div>
+              <div className="h-4 w-48 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mb-4" />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 lg:p-5"
+                >
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-0">
+                    <div className="min-w-0 flex-1 space-y-3 lg:pr-6 xl:pr-8">
+                      <div className="flex flex-wrap items-start gap-3">
+                        <div className="h-7 w-10 shrink-0 rounded bg-gray-200 dark:bg-gray-600" />
+                        <div className="h-5 min-w-[8rem] flex-1 rounded bg-gray-200 dark:bg-gray-600 lg:h-6" />
+                        <div className="h-6 w-20 shrink-0 rounded-full bg-gray-200 dark:bg-gray-600 lg:hidden" />
+                      </div>
+                      <div className="h-3.5 w-full max-w-3xl rounded bg-gray-200 dark:bg-gray-600" />
+                      <div className="h-3.5 w-4/5 max-w-2xl rounded bg-gray-200 dark:bg-gray-600 lg:hidden" />
+                    </div>
+                    <div className="flex flex-col gap-2 border-t border-gray-100 pt-3 dark:border-gray-700/80 lg:min-w-[10rem] lg:max-w-xs lg:border-t-0 lg:border-l lg:border-gray-200 lg:pt-0 xl:max-w-md dark:lg:border-gray-700">
+                      <div className="hidden h-6 w-24 shrink-0 rounded-full bg-gray-200 dark:bg-gray-600 lg:ml-auto lg:block" />
+                      <div className="flex flex-wrap gap-2 lg:justify-end">
+                        <div className="h-5 w-14 rounded-full bg-gray-200 dark:bg-gray-600" />
+                        <div className="h-5 w-16 rounded bg-gray-200 dark:bg-gray-600" />
+                        <div className="h-5 w-20 rounded bg-gray-200 dark:bg-gray-600" />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-700/80 lg:flex-col lg:items-end lg:border-t-0 lg:border-l lg:border-gray-200 lg:pt-0 lg:pl-6 xl:pl-8 dark:lg:border-gray-700">
+                      <div className="h-11 w-11 rounded-lg bg-gray-200 dark:bg-gray-600" />
+                      <div className="h-11 w-11 rounded-lg bg-gray-200 dark:bg-gray-600" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </motion.div>
           ) : filteredTasks.length === 0 ? (
             <motion.div
@@ -671,11 +752,12 @@ export default function TasksPage() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="-mx-12 -mb-12 -mt-4"
+            className="-mx-6 -mb-12 mt-6 flex min-h-0 min-w-0 flex-1 flex-col self-stretch lg:-mx-12 lg:-mb-12 lg:mt-8"
           >
             <TaskKanbanBoard
               tasks={filteredTasks}
-              onTaskUpdate={handleUpdateTask}
+              isLoading={tasksDataLoading}
+              onTaskUpdate={handleKanbanTaskUpdate}
               onTaskEdit={handleEditTask}
               onTaskClick={handleViewTask}
               onTaskCreate={(status) => {
@@ -694,7 +776,11 @@ export default function TasksPage() {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <TaskCalendarView tasks={filteredTasks} onTaskClick={handleEditTask} />
+            <TaskCalendarView
+              tasks={filteredTasks}
+              isLoading={tasksDataLoading}
+              onTaskClick={handleEditTask}
+            />
           </motion.div>
         )}
 
@@ -709,6 +795,7 @@ export default function TasksPage() {
             <DependencyGraph
               tasks={filteredTasks}
               dependencies={allDependencies}
+              isLoading={graphViewLoading}
               onTaskClick={(taskId) => {
                 const task = filteredTasks.find((t) => t.id === taskId);
                 if (task) handleEditTask(task);

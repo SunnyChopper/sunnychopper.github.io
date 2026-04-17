@@ -36,7 +36,8 @@ import type { RewardWithRedemptions, WalletBalance, WalletTransaction } from './
 export interface ApiError {
   message: string;
   code: string;
-  details?: Record<string, unknown>;
+  /** Backend may send Pydantic issue lists, objects, or strings. */
+  details?: unknown;
 }
 
 export interface ApiResponse<T> {

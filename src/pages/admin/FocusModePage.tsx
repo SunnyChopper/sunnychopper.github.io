@@ -28,7 +28,7 @@ const POMODORO_DURATION = 25 * 60;
 export default function FocusModePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { updateTask } = useTasks();
+  const { completeTask } = useTasks();
 
   const [sessionTasks, setSessionTasks] = useState<Task[]>([]);
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
@@ -98,13 +98,7 @@ export default function FocusModePage() {
 
     setShowCompleteConfirm(false);
 
-    await updateTask({
-      id: currentTask.id,
-      input: {
-        status: 'Done',
-        completedDate: new Date().toISOString(),
-      },
-    });
+    await completeTask(currentTask.id);
 
     setCompletedTasks((prev) => [...prev, currentTask.id]);
 

@@ -7,7 +7,11 @@ import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
 import Button from '@/components/atoms/Button';
 import { formatDateString } from '@/utils/date-formatters';
-import { getDateUrgency } from '@/utils/project-summary';
+import {
+  getDateUrgency,
+  getProjectCardAccentBarClasses,
+  type ProjectDisplayModel,
+} from '@/utils/project-summary';
 import { cn } from '@/lib/utils';
 
 interface ProjectListItemProps {
@@ -19,6 +23,8 @@ interface ProjectListItemProps {
   completedTaskCount?: number;
   hasHealthData?: boolean;
   isHealthLoading?: boolean;
+  display?: ProjectDisplayModel;
+  linkedGoalCount?: number;
 }
 
 export function ProjectListItem({
@@ -28,15 +34,25 @@ export function ProjectListItem({
   onDelete,
   taskCount = 0,
   completedTaskCount = 0,
-  hasHealthData = false,
+  hasHealthData: _hasHealthData = false,
   isHealthLoading: _isHealthLoading = false,
+  display,
+  linkedGoalCount = 0,
 }: ProjectListItemProps) {
   const handleClick = () => {
     onClick(project);
   };
 
-  const progress = taskCount > 0 ? Math.round(((completedTaskCount || 0) / taskCount) * 100) : 0;
-  const dateUrgency = getDateUrgency(project.targetEndDate);
+  const progress =
+    display?.progressPercent ??
+    (taskCount > 0 ? Math.round(((completedTaskCount || 0) / taskCount) * 100) : 0);
+  const effectiveStatus = display?.effectiveStatus ?? project.status;
+  const isWorkComplete = display?.isWorkComplete ?? project.status === 'Completed';
+  const { showBar, barBgClass } = getProjectCardAccentBarClasses(project, isWorkComplete);
+  const dateUrgency = getDateUrgency(project.targetEndDate, {
+    hideWhenComplete: isWorkComplete || project.status === 'Cancelled',
+  });
+  const showProgressRing = taskCount > 0 || linkedGoalCount > 0;
   const startDate = project.startDate ? formatDateString(project.startDate) : null;
   const endDate = project.targetEndDate ? formatDateString(project.targetEndDate) : null;
   const dateLabel =
@@ -47,7 +63,7 @@ export function ProjectListItem({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 overflow-hidden"
       onClick={(e) => {
         // Don't trigger click if clicking on action buttons
         if ((e.target as HTMLElement).closest('button')) {
@@ -68,6 +84,7 @@ export function ProjectListItem({
       whileTap={{ scale: 0.99 }}
     >
       <div className="flex items-center gap-4 w-full">
+        {showBar && <div className={cn('absolute left-0 top-0 bottom-0 w-1', barBgClass)} />}
         {/* Left: Priority + Title + Status + Area */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <PriorityIndicator priority={project.priority} size="sm" variant="badge" />
@@ -76,7 +93,7 @@ export function ProjectListItem({
               {project.name}
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={project.status} size="sm" />
+              <StatusBadge status={effectiveStatus} size="sm" />
               <AreaBadge area={project.area} size="sm" />
             </div>
           </div>
@@ -84,7 +101,7 @@ export function ProjectListItem({
 
         {/* Center: Progress */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
-          {hasHealthData && taskCount > 0 ? (
+          {showProgressRing ? (
             <>
               <ProgressRing progress={progress} size="sm" />
               <span className="text-sm font-medium text-gray-900 dark:text-white w-10 text-right">

@@ -13,6 +13,7 @@ import {
   type Note,
   type Document,
   type Flashcard,
+  type FlashcardDeck,
   type VaultItemType,
   type VaultItemFilters,
   type CreateNoteInput,
@@ -20,6 +21,7 @@ import {
   type CreateDocumentInput,
   type UpdateDocumentInput,
   type CreateFlashcardInput,
+  type CreateFlashcardDeckInput,
   type UpdateFlashcardInput,
   type CreateCourseInput,
   type UpdateCourseInput,
@@ -73,16 +75,38 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
     staleTime: 5 * 60 * 1000,
   });
 
+  const flashcardDecksQuery = useQuery({
+    queryKey: queryKeys.knowledgeVault.flashcardDecks(),
+    enabled: kvEnabled,
+    queryFn: async (): Promise<FlashcardDeck[]> => {
+      const response = await vaultItemsService.getFlashcardDecks();
+      if (response.success && response.data) {
+        return response.data;
+      }
+      const msg = response.error || '';
+      if (typeof msg === 'string' && (msg.includes('404') || msg.includes('Not Found'))) {
+        return [];
+      }
+      throw new Error(typeof msg === 'string' ? msg : 'Failed to load flashcard decks');
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const vaultItems = vaultQuery.data ?? [];
   const courses = coursesQuery.data ?? [];
+  const flashcardDecks = flashcardDecksQuery.data ?? [];
 
-  const loading = kvEnabled && (vaultQuery.isPending || coursesQuery.isPending);
+  const loading =
+    kvEnabled && (vaultQuery.isPending || coursesQuery.isPending || flashcardDecksQuery.isPending);
 
   const error = useMemo(() => {
     if (!kvEnabled) return actionError;
     const qErr =
       (vaultQuery.isError && vaultQuery.error ? errMsg(vaultQuery.error) : null) ||
-      (coursesQuery.isError && coursesQuery.error ? errMsg(coursesQuery.error) : null);
+      (coursesQuery.isError && coursesQuery.error ? errMsg(coursesQuery.error) : null) ||
+      (flashcardDecksQuery.isError && flashcardDecksQuery.error
+        ? errMsg(flashcardDecksQuery.error)
+        : null);
     return qErr || actionError;
   }, [
     kvEnabled,
@@ -91,6 +115,8 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
     vaultQuery.error,
     coursesQuery.isError,
     coursesQuery.error,
+    flashcardDecksQuery.isError,
+    flashcardDecksQuery.error,
   ]);
 
   const invalidateKv = useCallback(async () => {
@@ -103,6 +129,10 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
 
   const refreshCourses = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeVault.courses() });
+  }, [queryClient]);
+
+  const refreshFlashcardDecks = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeVault.flashcardDecks() });
   }, [queryClient]);
 
   const searchItems = useCallback(async (query: string): Promise<VaultItem[]> => {
@@ -249,6 +279,31 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
     [invalidateKv]
   );
 
+  const createFlashcardDeck = useCallback(
+    async (input: CreateFlashcardDeckInput): Promise<FlashcardDeck> => {
+      try {
+        setActionError(null);
+        const response = await vaultItemsService.createFlashcardDeck(input);
+
+        if (response.success && response.data) {
+          await invalidateKv();
+          return response.data;
+        } else {
+          const msg =
+            typeof response.error === 'string'
+              ? response.error
+              : (response.error as { message?: string } | undefined)?.message;
+          throw new Error(msg || 'Failed to create flashcard deck');
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create flashcard deck';
+        setActionError(errorMessage);
+        throw err;
+      }
+    },
+    [invalidateKv]
+  );
+
   const updateFlashcard = useCallback(
     async (id: string, input: UpdateFlashcardInput): Promise<Flashcard> => {
       try {
@@ -366,10 +421,12 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
   const value: KnowledgeVaultContextType = {
     vaultItems,
     flashcards,
+    flashcardDecks,
     courses,
     loading,
     error,
     refreshVaultItems,
+    refreshFlashcardDecks,
     refreshCourses,
     searchItems,
     getItemsByType,
@@ -379,6 +436,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
     createDocument,
     updateDocument,
     createFlashcard,
+    createFlashcardDeck,
     updateFlashcard,
     createCourse,
     updateCourse,

@@ -1,7 +1,8 @@
 import type { Task, Area, Priority } from '@/types/growth-system';
 import type { TaskPointValuation } from '@/types/rewards';
 
-const BASE_POINTS_PER_MINUTE = 10;
+/** Wallet reward base scale: points per story point (aligns with backend TasksService). */
+const BASE_POINTS_PER_STORY_POINT = 20;
 
 const PRIORITY_MULTIPLIERS: Record<Priority, number> = {
   P1: 2.0,
@@ -21,15 +22,16 @@ const AREA_MULTIPLIERS: Record<Area, number> = {
 
 export const pointCalculatorService = {
   calculateTaskPoints(task: Task): TaskPointValuation {
-    const size = task.size || 30;
+    const sp = task.size ?? 5;
 
-    const basePoints = size * BASE_POINTS_PER_MINUTE;
+    const basePoints = sp * BASE_POINTS_PER_STORY_POINT;
 
     const priorityMultiplier = PRIORITY_MULTIPLIERS[task.priority];
 
     const areaMultiplier = AREA_MULTIPLIERS[task.area];
 
-    const sizeMultiplier = size >= 120 ? 1.5 : size >= 60 ? 1.2 : 1.0;
+    const sizeMultiplier =
+      task.size != null ? (task.size >= 13 ? 1.5 : task.size >= 8 ? 1.2 : 1.0) : 1.0;
 
     const totalPoints = Math.round(
       basePoints * priorityMultiplier * areaMultiplier * sizeMultiplier
@@ -46,8 +48,8 @@ export const pointCalculatorService = {
     };
   },
 
-  getBasePointsPerMinute(): number {
-    return BASE_POINTS_PER_MINUTE;
+  getBasePointsPerStoryPoint(): number {
+    return BASE_POINTS_PER_STORY_POINT;
   },
 
   getPriorityMultiplier(priority: Priority): number {
