@@ -58,8 +58,8 @@ export default function ConceptColliderPage() {
 
   const [searchHits, setSearchHits] = useState<VaultItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   const runSearch = async () => {
     if (!searchQuery.trim()) return;

@@ -13,7 +13,6 @@ import Button from '@/components/atoms/Button';
 import {
   AREAS,
   AREA_LABELS,
-  GOAL_TIME_HORIZONS,
   SUBCATEGORIES_BY_AREA,
   SUBCATEGORY_LABELS,
 } from '@/constants/growth-system';

@@ -33,7 +33,7 @@ export interface CourseWithDetails {
 
 const DIFFICULTIES: DifficultyLevel[] = ['beginner', 'intermediate', 'advanced', 'expert'];
 
-function backendCourseToCourse(bc: BackendCourse): Course {
+export function backendCourseToCourse(bc: BackendCourse): Course {
   const difficulty: DifficultyLevel =
     bc.difficulty && DIFFICULTIES.includes(bc.difficulty) ? bc.difficulty : 'intermediate';
   return {

@@ -1,8 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import type { OrbitControls as DreiOrbitControls } from '@react-three/drei';
 import { OrbitControls, Text, Stars } from '@react-three/drei';
-import { useMemo, useState, useCallback, useRef, useLayoutEffect } from 'react';
+import {
+  useMemo,
+  useState,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+  type ComponentRef,
+} from 'react';
 import { Brain, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
@@ -10,6 +16,8 @@ import { vaultPrimitivesService } from '@/services/knowledge-vault/vault-primiti
 import { ROUTES } from '@/routes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+type OrbitControlsHandle = ComponentRef<typeof OrbitControls>;
 
 interface Cluster {
   area: string;
@@ -64,7 +72,7 @@ function CameraAndControlsRig({
   controlsRef,
 }: {
   expanded: boolean;
-  controlsRef: React.RefObject<DreiOrbitControls | null>;
+  controlsRef: React.RefObject<OrbitControlsHandle | null>;
 }) {
   const { camera } = useThree();
   const microWeight = useRef(0);
@@ -127,7 +135,6 @@ function MacroSphere({
           e.stopPropagation();
           onClick();
         }}
-        cursor="pointer"
       >
         <sphereGeometry args={[radius * 1.06, 48, 48]} />
         <meshStandardMaterial
@@ -220,7 +227,6 @@ function ItemSphere({
           e.stopPropagation();
           onClick();
         }}
-        cursor="pointer"
       >
         <sphereGeometry args={[0.24, 32, 32]} />
         <meshStandardMaterial
@@ -270,9 +276,21 @@ function GrowingThread({
   index: number;
   total: number;
 }) {
-  const lineRef = useRef<THREE.Line>(null);
+  const lineRef = useRef<THREE.Line | null>(null);
   const origin = useMemo(() => new THREE.Vector3(0, 0, 0), []);
-  const c = useMemo(() => hexToRgb(color), [color]);
+  const colorObj = useMemo(() => hexToRgb(color), [color]);
+
+  const lineObj = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    const material = new THREE.LineBasicMaterial({
+      color: colorObj,
+      transparent: true,
+      opacity: 0.2,
+    });
+    const line = new THREE.Line(geometry, material);
+    lineRef.current = line;
+    return line;
+  }, [colorObj]);
 
   useFrame(() => {
     const grow = growBlendRef.current;
@@ -290,12 +308,7 @@ function GrowingThread({
     }
   });
 
-  return (
-    <line ref={lineRef}>
-      <bufferGeometry />
-      <lineBasicMaterial color={c} transparent opacity={0.2} linewidth={1} />
-    </line>
-  );
+  return <primitive object={lineObj} />;
 }
 
 function SceneContent({
@@ -407,7 +420,7 @@ function SceneContent({
 export default function MindPalacePage() {
   const navigate = useNavigate();
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
-  const controlsRef = useRef<DreiOrbitControls | null>(null);
+  const controlsRef = useRef<OrbitControlsHandle | null>(null);
   const growBlendRef = useRef(0);
 
   const q = useQuery({
@@ -415,7 +428,7 @@ export default function MindPalacePage() {
     queryFn: async () => {
       const res = await vaultPrimitivesService.getGraphClusters();
       if (!res.success || !res.data) throw new Error(res.error?.message || 'Failed');
-      return (res.data.clusters || []) as Cluster[];
+      return (res.data.clusters || []) as unknown as Cluster[];
     },
   });
 

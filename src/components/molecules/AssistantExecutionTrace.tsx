@@ -11,6 +11,7 @@ import {
   MessageSquare,
   ShieldAlert,
   Wrench,
+  type LucideIcon,
 } from 'lucide-react';
 import { ToolApprovalCard } from '@/components/molecules/ToolApprovalCard';
 import { getVisibleExecutionTraceEntries } from '@/lib/chat/assistant-execution-trace-entries';
@@ -41,7 +42,7 @@ interface AssistantExecutionTraceProps {
 }
 
 type StageConfig = {
-  icon: React.ElementType;
+  icon: LucideIcon;
   color: string;
   defaultLabel: string;
 };

@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Query } from '@tanstack/react-query';
 import { formatApiFailure } from '@/utils/api-error-formatter';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { weeklyReviewService } from '@/services/growth-system';
-import type { WeeklyReviewPlanActions } from '@/types/growth-system';
+import type { WeeklyReview, WeeklyReviewPlanActions } from '@/types/growth-system';
 
 export function useWeeklyReviewCurrent(options?: { refetchInterval?: number | false }) {
   return useQuery({
@@ -36,7 +37,12 @@ export function useWeeklyReviewList(page = 1, pageSize = 20) {
 
 export function useWeeklyReviewSnapshot(
   weekStart: string | null,
-  options?: { refetchInterval?: number | false }
+  options?: {
+    refetchInterval?:
+      | number
+      | false
+      | ((query: Query<WeeklyReview | null, Error>) => number | false);
+  }
 ) {
   return useQuery({
     queryKey: weekStart

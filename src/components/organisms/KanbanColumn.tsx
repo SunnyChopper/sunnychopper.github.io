@@ -88,7 +88,7 @@ export function KanbanColumn({
     }
   }, [menuOpen]);
 
-  const handleMoveAllTasks = (fromStatus: TaskStatus, toStatus: TaskStatus) => {
+  const handleMoveAllTasks = (_fromStatus: TaskStatus, toStatus: TaskStatus) => {
     statusTasks.forEach((task) => {
       if (task.status !== toStatus) {
         onTaskUpdate(task.id, { status: toStatus });

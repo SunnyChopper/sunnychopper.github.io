@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { vaultItemsService, coursesService } from '@/services/knowledge-vault';
+import { vaultItemsService, coursesService, backendCourseToCourse } from '@/services/knowledge-vault';
 import { shouldLoadKnowledgeVaultData } from '@/lib/route-data-policy';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import {
@@ -289,10 +289,16 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
           await invalidateKv();
           return response.data;
         } else {
+          const err = response.error;
           const msg =
-            typeof response.error === 'string'
-              ? response.error
-              : (response.error as { message?: string } | undefined)?.message;
+            typeof err === 'string'
+              ? err
+              : err != null &&
+                  typeof err === 'object' &&
+                  'message' in err &&
+                  typeof (err as { message?: unknown }).message === 'string'
+                ? (err as { message: string }).message
+                : undefined;
           throw new Error(msg || 'Failed to create flashcard deck');
         }
       } catch (err) {
@@ -333,7 +339,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
 
         if (response.success && response.data) {
           await refreshCourses();
-          return response.data;
+          return backendCourseToCourse(response.data);
         } else {
           throw new Error(response.error || 'Failed to create course');
         }
@@ -354,7 +360,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
 
         if (response.success && response.data) {
           await refreshCourses();
-          return response.data;
+          return backendCourseToCourse(response.data);
         } else {
           throw new Error(response.error || 'Failed to update course');
         }
