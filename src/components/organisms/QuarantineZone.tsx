@@ -1,5 +1,8 @@
 import { Trash2, RefreshCw, CalendarClock } from 'lucide-react';
-import type { WeeklyReviewQuarantineCandidate, WeeklyReviewQuarantineDecision } from '@/types/growth-system';
+import type {
+  WeeklyReviewQuarantineCandidate,
+  WeeklyReviewQuarantineDecision,
+} from '@/types/growth-system';
 import { cn } from '@/lib/utils';
 
 interface QuarantineZoneProps {
@@ -16,7 +19,10 @@ export function QuarantineZone({
   onChange,
   readOnly = false,
 }: QuarantineZoneProps) {
-  const setAction = (c: WeeklyReviewQuarantineCandidate, action: WeeklyReviewQuarantineDecision['action']) => {
+  const setAction = (
+    c: WeeklyReviewQuarantineCandidate,
+    action: WeeklyReviewQuarantineDecision['action']
+  ) => {
     if (readOnly) return;
     const rest = decisions.filter(
       (d) => !(d.entityType === c.entityType && d.entityId === c.entityId)

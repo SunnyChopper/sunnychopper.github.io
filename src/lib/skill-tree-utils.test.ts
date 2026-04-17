@@ -46,8 +46,8 @@ describe('isSkillMastered', () => {
           level: 'Master',
           verificationStatus: 'current',
           decayRate: 0.1,
-        }),
-      ),
+        })
+      )
     ).toBe(true);
   });
 
@@ -60,8 +60,8 @@ describe('isSkillMastered', () => {
           level: 'Expert',
           verificationStatus: 'current',
           decayRate: 0,
-        }),
-      ),
+        })
+      )
     ).toBe(false);
   });
 
@@ -74,8 +74,8 @@ describe('isSkillMastered', () => {
           level: 'Master',
           verificationStatus: 'current',
           decayRate: 0.3,
-        }),
-      ),
+        })
+      )
     ).toBe(false);
   });
 
@@ -88,8 +88,8 @@ describe('isSkillMastered', () => {
           level: 'Master',
           verificationStatus: 'needs_verification',
           decayRate: 0,
-        }),
-      ),
+        })
+      )
     ).toBe(false);
   });
 });

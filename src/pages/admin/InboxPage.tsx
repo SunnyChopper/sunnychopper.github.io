@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Inbox, Trash2, Sparkles, FileInput, Loader2 } from 'lucide-react';
-import { inboxService, type InboxItem, type InboxTriageStatus } from '@/services/knowledge-vault/inbox.service';
+import {
+  inboxService,
+  type InboxItem,
+  type InboxTriageStatus,
+} from '@/services/knowledge-vault/inbox.service';
 import { vaultFileUploadService } from '@/services/knowledge-vault/file-upload.service';
 import FileUploadZone from '@/components/molecules/FileUploadZone';
 import Button from '@/components/atoms/Button';
@@ -20,7 +24,9 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<InboxTriageStatus | 'all'>('all');
   const [capture, setCapture] = useState('');
   const [selected, setSelected] = useState<InboxItem | null>(null);
-  const [overrideType, setOverrideType] = useState<'note' | 'flashcard' | 'course' | 'document'>('note');
+  const [overrideType, setOverrideType] = useState<'note' | 'flashcard' | 'course' | 'document'>(
+    'note'
+  );
   const [uploadingFiles, setUploadingFiles] = useState<string[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -140,9 +146,7 @@ export default function InboxPage() {
             Uploading: {uploadingFiles.join(', ')}
           </div>
         )}
-        {uploadError && (
-          <p className="text-sm text-red-600 dark:text-red-400">{uploadError}</p>
-        )}
+        {uploadError && <p className="text-sm text-red-600 dark:text-red-400">{uploadError}</p>}
         <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-gray-200 dark:border-gray-600">
           <input
             value={capture}
@@ -189,7 +193,12 @@ export default function InboxPage() {
                           onClick={() => {
                             setSelected(item);
                             const t = item.aiSuggestedType;
-                            if (t === 'flashcard' || t === 'course' || t === 'document' || t === 'note') {
+                            if (
+                              t === 'flashcard' ||
+                              t === 'course' ||
+                              t === 'document' ||
+                              t === 'note'
+                            ) {
                               setOverrideType(t);
                             }
                           }}
@@ -223,7 +232,9 @@ export default function InboxPage() {
                       : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
                   }`}
                 >
-                  <p className="text-sm line-clamp-3 text-gray-900 dark:text-white">{item.rawContent}</p>
+                  <p className="text-sm line-clamp-3 text-gray-900 dark:text-white">
+                    {item.rawContent}
+                  </p>
                 </button>
               ))}
         </div>
@@ -246,8 +257,7 @@ export default function InboxPage() {
                     {selected.aiSuggestedTitle || '—'}
                   </p>
                   <p>
-                    <span className="text-gray-500">Type:</span>{' '}
-                    {selected.aiSuggestedType || '—'}
+                    <span className="text-gray-500">Type:</span> {selected.aiSuggestedType || '—'}
                   </p>
                   <p>
                     <span className="text-gray-500">Tags:</span>{' '}

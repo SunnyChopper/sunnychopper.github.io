@@ -101,7 +101,9 @@ export function ProjectTimelineView({
     // Calculate positions and assign lanes to avoid overlap
     const projectsInRange = projectsWithDates.filter((project) => {
       const start = project.startDate ? new Date(project.startDate) : new Date(project.createdAt);
-      const end = project.targetEndDate ? new Date(project.targetEndDate) : new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const end = project.targetEndDate
+        ? new Date(project.targetEndDate)
+        : new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
       // Project is in range if it overlaps with the visible range
       return end >= minDate && start <= maxDate;
     });
@@ -134,7 +136,7 @@ export function ProjectTimelineView({
       let endDate = project.targetEndDate
         ? new Date(project.targetEndDate)
         : new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-      
+
       if (endDate > maxDate) {
         endDate = maxDate;
       }
@@ -249,17 +251,15 @@ export function ProjectTimelineView({
       {/* Timeline Container */}
       <div ref={containerRef} className="relative overflow-x-visible">
         {/* Month Labels */}
-        <div
-          className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible"
-        >
+        <div className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible">
           {(() => {
             const totalRange = maxDate.getTime() - minDate.getTime();
             const validMonths = monthsBetween
-              .map(month => ({
+              .map((month) => ({
                 month,
-                rawPosition: ((month.getTime() - minDate.getTime()) / totalRange) * 100
+                rawPosition: ((month.getTime() - minDate.getTime()) / totalRange) * 100,
               }))
-              .filter(m => m.rawPosition >= 0 && m.rawPosition <= 100);
+              .filter((m) => m.rawPosition >= 0 && m.rawPosition <= 100);
 
             const visibleMonths = [];
             for (let i = 0; i < validMonths.length; i++) {
@@ -284,7 +284,7 @@ export function ProjectTimelineView({
             return visibleMonths.map(({ month, rawPosition }) => {
               let textStyle: React.CSSProperties = {
                 left: '0',
-                transform: 'translateX(-50%)'
+                transform: 'translateX(-50%)',
               };
 
               if (rawPosition < 5) {
@@ -343,11 +343,9 @@ export function ProjectTimelineView({
             const display = resolveProjectDisplay?.(project);
             const effectiveStatus = display?.effectiveStatus ?? project.status;
             const isWorkComplete = display?.isWorkComplete ?? project.status === 'Completed';
-            const progressPercent =
-              display?.progressPercent ?? projectHealth?.percentComplete ?? 0;
+            const progressPercent = display?.progressPercent ?? projectHealth?.percentComplete ?? 0;
             const hasProgressBar =
-              display != null ||
-              (!!projectHealth && (projectHealth.taskCount ?? 0) > 0);
+              display != null || (!!projectHealth && (projectHealth.taskCount ?? 0) > 0);
             const hasHealthData = !!projectHealth || display != null;
             const showDescription = !!project.description && project.description.length <= 120;
             // Determine color based on effective status / derived completion

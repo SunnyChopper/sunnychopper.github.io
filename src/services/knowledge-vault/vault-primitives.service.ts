@@ -9,7 +9,10 @@ export const vaultPrimitivesService = {
     });
   },
 
-  async feynmanRespond(vaultItemId: string, conversation: Array<{ role: string; content: string }>) {
+  async feynmanRespond(
+    vaultItemId: string,
+    conversation: Array<{ role: string; content: string }>
+  ) {
     return apiClient.post<Record<string, unknown>>('/knowledge/ai/feynman/respond', {
       vaultItemId,
       conversation,
@@ -34,14 +37,14 @@ export const vaultPrimitivesService = {
 
   async getCheatSheet() {
     return apiClient.get<{ markdownContent: string; weekDate: string | null }>(
-      '/knowledge/cheat-sheet',
+      '/knowledge/cheat-sheet'
     );
   },
 
   async generateCheatSheet() {
     return apiClient.post<{ success: boolean; weekDate: string }>(
       '/knowledge/cheat-sheet/generate',
-      {},
+      {}
     );
   },
 

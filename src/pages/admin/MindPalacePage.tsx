@@ -38,7 +38,7 @@ function threadPoints(
   from: THREE.Vector3,
   to: THREE.Vector3,
   bulge: number,
-  segments: number,
+  segments: number
 ): THREE.Vector3[] {
   const mid = from.clone().add(to).multiplyScalar(0.5);
   const dir = to.clone().sub(from);
@@ -117,11 +117,7 @@ function MacroSphere({
   useFrame(({ clock }) => {
     if (!group.current) return;
     const t = clock.elapsedTime * 0.55 + floatPhase;
-    group.current.position.set(
-      position[0],
-      position[1] + Math.sin(t) * 0.08,
-      position[2],
-    );
+    group.current.position.set(position[0], position[1] + Math.sin(t) * 0.08, position[2]);
   });
 
   return (
@@ -156,7 +152,12 @@ function MacroSphere({
           metalness={0.15}
         />
       </mesh>
-      <pointLight position={[0, 0, radius * 0.6]} intensity={dimmed ? 0.15 : 1.1} distance={4} color={c} />
+      <pointLight
+        position={[0, 0, radius * 0.6]}
+        intensity={dimmed ? 0.15 : 1.1}
+        distance={4}
+        color={c}
+      />
       <Text
         position={[0, radius + 0.42, 0]}
         fontSize={0.26}
@@ -200,11 +201,7 @@ function ItemSphere({
     const localGrow = Math.min(1, Math.max(0, (grow - stagger) / denom));
     const eased = easeOutCubic(localGrow);
     if (groupRef.current) {
-      groupRef.current.position.set(
-        position[0] * eased,
-        position[1] * eased,
-        position[2] * eased,
-      );
+      groupRef.current.position.set(position[0] * eased, position[1] * eased, position[2] * eased);
       groupRef.current.scale.setScalar(0.35 + eased * 0.65);
     }
     if (matRef.current) {
@@ -237,7 +234,13 @@ function ItemSphere({
           metalness={0.4}
         />
       </mesh>
-      <pointLight ref={lightRef} position={[0, 0, 0.2]} intensity={0} distance={2.2} color={accent} />
+      <pointLight
+        ref={lightRef}
+        position={[0, 0, 0.2]}
+        intensity={0}
+        distance={2.2}
+        color={accent}
+      />
       <Text
         position={[0, 0.48, 0]}
         fontSize={0.11}
@@ -277,11 +280,7 @@ function GrowingThread({
     const denom = Math.max(1e-6, 1 - stagger * 0.6);
     const localGrow = Math.min(1, Math.max(0, (grow - stagger) / denom));
     const eased = easeOutCubic(localGrow);
-    const end = new THREE.Vector3(
-      target[0] * eased,
-      target[1] * eased,
-      target[2] * eased,
-    );
+    const end = new THREE.Vector3(target[0] * eased, target[1] * eased, target[2] * eased);
     const pts = threadPoints(origin, end, 0.85, 16);
     const line = lineRef.current;
     if (line) {
@@ -322,7 +321,10 @@ function SceneContent({
     radius: number;
     color: string;
   } | null;
-  childLayout: Array<{ ch: { id: string; title: string; type: string }; pos: [number, number, number] }>;
+  childLayout: Array<{
+    ch: { id: string; title: string; type: string };
+    pos: [number, number, number];
+  }>;
   growBlendRef: React.MutableRefObject<number>;
   onExpand: (area: string) => void;
   onCollapse: () => void;
@@ -336,7 +338,9 @@ function SceneContent({
     }
   });
 
-  const accent = expandedClusterData ? hexToRgb(expandedClusterData.color) : new THREE.Color('#38bdf8');
+  const accent = expandedClusterData
+    ? hexToRgb(expandedClusterData.color)
+    : new THREE.Color('#38bdf8');
 
   return (
     <>
@@ -434,7 +438,7 @@ export default function MindPalacePage() {
 
   const expandedCluster = useMemo(
     () => (expandedArea ? (q.data ?? []).find((x) => x.area === expandedArea) : null),
-    [expandedArea, q.data],
+    [expandedArea, q.data]
   );
 
   const childLayout = useMemo(() => {
@@ -459,7 +463,7 @@ export default function MindPalacePage() {
     (itemId: string) => {
       navigate(`${ROUTES.admin.knowledgeVaultLibrary}?highlight=${encodeURIComponent(itemId)}`);
     },
-    [navigate],
+    [navigate]
   );
 
   const activeCluster = expandedCluster;
@@ -490,8 +494,8 @@ export default function MindPalacePage() {
                 </AnimatePresence>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 max-w-2xl">
-                Your vault as a living web — open a sphere to grow its threads; tap a leaf to jump to the
-                library with that note highlighted.
+                Your vault as a living web — open a sphere to grow its threads; tap a leaf to jump
+                to the library with that note highlighted.
               </p>
             </div>
             {expandedArea && (
@@ -512,7 +516,7 @@ export default function MindPalacePage() {
             className={cn(
               'relative rounded-2xl overflow-hidden border border-slate-700/80 bg-gradient-to-b from-slate-950 via-[#060912] to-[#03050c]',
               'shadow-[0_0_0_1px_rgba(99,102,241,0.08),inset_0_1px_0_rgba(255,255,255,0.04)]',
-              'min-h-[min(72vh,880px)] xl:min-h-[min(calc(100vh-10rem),920px)] w-full',
+              'min-h-[min(72vh,880px)] xl:min-h-[min(calc(100vh-10rem),920px)] w-full'
             )}
           >
             <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_60%_at_50%_20%,rgba(99,102,241,0.12),transparent_55%)]" />
@@ -553,7 +557,9 @@ export default function MindPalacePage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">Loading your knowledge web…</p>
           )}
           {q.isError && (
-            <p className="text-sm text-red-600">{q.error instanceof Error ? q.error.message : 'Error'}</p>
+            <p className="text-sm text-red-600">
+              {q.error instanceof Error ? q.error.message : 'Error'}
+            </p>
           )}
         </div>
 
@@ -575,7 +581,7 @@ export default function MindPalacePage() {
                         'w-full text-left rounded-xl px-3 py-2.5 transition-all border',
                         isOpen
                           ? 'bg-violet-600/25 border-violet-400/40 text-white shadow-lg shadow-violet-950/20'
-                          : 'bg-slate-800/40 border-slate-600/40 text-slate-200 hover:bg-slate-800/70 hover:border-slate-500/50',
+                          : 'bg-slate-800/40 border-slate-600/40 text-slate-200 hover:bg-slate-800/70 hover:border-slate-500/50'
                       )}
                     >
                       <span className="font-medium">{c.area}</span>
@@ -605,7 +611,9 @@ export default function MindPalacePage() {
                       className="w-full text-left rounded-lg px-3 py-2 bg-slate-100 dark:bg-slate-800/80 hover:bg-violet-100 dark:hover:bg-violet-950/40 border border-transparent hover:border-violet-500/30 transition-colors"
                     >
                       <span className="text-gray-900 dark:text-gray-100">{ch.title}</span>
-                      <span className="text-gray-500 dark:text-gray-500 text-xs ml-2">· {ch.type}</span>
+                      <span className="text-gray-500 dark:text-gray-500 text-xs ml-2">
+                        · {ch.type}
+                      </span>
                     </button>
                   </li>
                 ))}

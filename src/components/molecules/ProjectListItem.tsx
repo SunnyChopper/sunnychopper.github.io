@@ -7,7 +7,11 @@ import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
 import Button from '@/components/atoms/Button';
 import { formatDateString } from '@/utils/date-formatters';
-import { getDateUrgency, getProjectCardAccentBarClasses, type ProjectDisplayModel } from '@/utils/project-summary';
+import {
+  getDateUrgency,
+  getProjectCardAccentBarClasses,
+  type ProjectDisplayModel,
+} from '@/utils/project-summary';
 import { cn } from '@/lib/utils';
 
 interface ProjectListItemProps {

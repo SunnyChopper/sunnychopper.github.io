@@ -462,11 +462,7 @@ export function useAssistantChatPage({
         : null;
     const fromMessageTree =
       runConfigForSelectedLeaf && catalogModels.length && defaults
-        ? headerLabelsFromAssistantRunConfig(
-            runConfigForSelectedLeaf,
-            catalogModels,
-            defaults
-          )
+        ? headerLabelsFromAssistantRunConfig(runConfigForSelectedLeaf, catalogModels, defaults)
         : null;
     const pick = runResolved ?? persisted;
     if (pick) {

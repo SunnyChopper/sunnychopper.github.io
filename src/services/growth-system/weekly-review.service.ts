@@ -9,10 +9,7 @@ import type {
 } from '@/types/growth-system';
 
 export const weeklyReviewService = {
-  list: async (
-    page = 1,
-    pageSize = 20
-  ): Promise<ApiResponse<WeeklyReviewListResult>> => {
+  list: async (page = 1, pageSize = 20): Promise<ApiResponse<WeeklyReviewListResult>> => {
     const q = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     return apiClient.get<WeeklyReviewListResult>(`/growth-system/weekly-reviews?${q}`);
   },
@@ -22,7 +19,9 @@ export const weeklyReviewService = {
   },
 
   get: async (weekStart: string): Promise<ApiResponse<WeeklyReview>> => {
-    return apiClient.get<WeeklyReview>(`/growth-system/weekly-reviews/${encodeURIComponent(weekStart)}`);
+    return apiClient.get<WeeklyReview>(
+      `/growth-system/weekly-reviews/${encodeURIComponent(weekStart)}`
+    );
   },
 
   generate: async (weekStart?: string): Promise<ApiResponse<WeeklyReview>> => {
@@ -49,12 +48,12 @@ export const weeklyReviewService = {
   },
 
   discard: async (weekStart: string): Promise<ApiResponse<null>> => {
-    return apiClient.delete<null>(
-      `/growth-system/weekly-reviews/${encodeURIComponent(weekStart)}`
-    );
+    return apiClient.delete<null>(`/growth-system/weekly-reviews/${encodeURIComponent(weekStart)}`);
   },
 
-  suggestTasks: async (weekStart?: string): Promise<ApiResponse<{ suggestedTasks: WeeklyReviewSuggestedTask[] }>> => {
+  suggestTasks: async (
+    weekStart?: string
+  ): Promise<ApiResponse<{ suggestedTasks: WeeklyReviewSuggestedTask[] }>> => {
     return apiClient.post<{ suggestedTasks: WeeklyReviewSuggestedTask[] }>(
       '/growth-system/weekly-reviews/suggest-tasks',
       { ...(weekStart ? { weekStart } : {}) }

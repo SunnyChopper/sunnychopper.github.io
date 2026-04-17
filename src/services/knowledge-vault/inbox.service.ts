@@ -73,7 +73,7 @@ export const inboxService = {
         title: body.title,
         tags: body.tags,
         area: body.area,
-      },
+      }
     );
     if (res.success && res.data) {
       return { success: true as const, data: res.data };

@@ -51,7 +51,10 @@ function backendCourseToCourse(bc: BackendCourse): Course {
   };
 }
 
-function backendLessonsToCourseLessons(bc: BackendCourse, area: Area = 'Operations'): CourseLesson[] {
+function backendLessonsToCourseLessons(
+  bc: BackendCourse,
+  area: Area = 'Operations'
+): CourseLesson[] {
   const sorted = [...(bc.lessons || [])].sort((a, b) => a.order - b.order);
   return sorted.map((l) => ({
     id: l.id,
@@ -77,12 +80,13 @@ function backendLessonsToCourseLessons(bc: BackendCourse, area: Area = 'Operatio
 
 export const coursesService = {
   async getAll(): Promise<ApiResponse<Course[]>> {
-    const response = await apiClient.get<BackendPaginatedResponse<BackendCourse>>('/knowledge/courses');
+    const response =
+      await apiClient.get<BackendPaginatedResponse<BackendCourse>>('/knowledge/courses');
     if (response.success && response.data) {
       return {
-        data: response.data.data.map(backendCourseToCourse).sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ),
+        data: response.data.data
+          .map(backendCourseToCourse)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
         error: null,
         success: true,
       };

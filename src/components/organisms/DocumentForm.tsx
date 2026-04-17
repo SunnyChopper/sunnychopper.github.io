@@ -8,7 +8,17 @@ import type { Area } from '@/types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 
-const DOC_UPLOAD_EXTENSIONS = ['pdf', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt', 'md', 'markdown'];
+const DOC_UPLOAD_EXTENSIONS = [
+  'pdf',
+  'docx',
+  'pptx',
+  'png',
+  'jpg',
+  'jpeg',
+  'txt',
+  'md',
+  'markdown',
+];
 
 function titleFromFilename(file: File): string {
   const name = file.name;
@@ -126,10 +136,8 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
       } else if (pendingFile) {
         setUploadProgress(0);
         const presign = await documentUploadService.getPresignedUrl(pendingFile);
-        await documentUploadService.uploadToS3WithProgress(
-          presign.uploadUrl,
-          pendingFile,
-          (pct) => setUploadProgress(pct)
+        await documentUploadService.uploadToS3WithProgress(presign.uploadUrl, pendingFile, (pct) =>
+          setUploadProgress(pct)
         );
         await documentUploadService.createDocumentFromFile({
           fileId: presign.fileId,
@@ -271,7 +279,9 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Uploading… {uploadProgress}%</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Uploading… {uploadProgress}%
+              </p>
             </div>
           )}
 

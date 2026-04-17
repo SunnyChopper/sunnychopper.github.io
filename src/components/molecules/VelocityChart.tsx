@@ -38,10 +38,14 @@ export function VelocityChart({
       )}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Story point velocity</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Story point velocity
+        </h3>
         <span className="text-xs text-gray-600 dark:text-gray-400">
           4-wk avg:{' '}
-          <span className="font-mono text-cyan-600 dark:text-cyan-400">{trailingAverage.toFixed(1)}</span>{' '}
+          <span className="font-mono text-cyan-600 dark:text-cyan-400">
+            {trailingAverage.toFixed(1)}
+          </span>{' '}
           pts
         </span>
       </div>

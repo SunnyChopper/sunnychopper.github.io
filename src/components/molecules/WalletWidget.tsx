@@ -14,10 +14,7 @@ function computePanelPosition(trigger: DOMRect): { top: number; left: number; wi
   const vw = window.innerWidth;
   const width = Math.min(PANEL_MAX_WIDTH, vw - VIEWPORT_MARGIN * 2);
   const centerX = trigger.left + trigger.width / 2 - width / 2;
-  const left = Math.max(
-    VIEWPORT_MARGIN,
-    Math.min(centerX, vw - width - VIEWPORT_MARGIN)
-  );
+  const left = Math.max(VIEWPORT_MARGIN, Math.min(centerX, vw - width - VIEWPORT_MARGIN));
   const top = trigger.bottom + 8;
   return { top, left, width };
 }

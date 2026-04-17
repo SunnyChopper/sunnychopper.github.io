@@ -814,7 +814,9 @@ export default function ProjectsPage() {
                             key={task.id}
                             task={task}
                             onEdit={handleEditTask}
-                            onDelete={() => handleUnlinkTaskFromProject(task.id, selectedProject.id)}
+                            onDelete={() =>
+                              handleUnlinkTaskFromProject(task.id, selectedProject.id)
+                            }
                             deleteLabel="Unlink task"
                             deleteAriaLabel={`Unlink ${task.title} from ${selectedProject.name}`}
                             deleteIcon={<Link2Off className="w-4 h-4" />}
@@ -873,7 +875,9 @@ export default function ProjectsPage() {
                       })
                       .filter((x): x is { fullGoal: Goal } => x != null);
                     const pendingGoalRows = entries.filter((e) => e.fullGoal.status !== 'Achieved');
-                    const achievedGoalRows = entries.filter((e) => e.fullGoal.status === 'Achieved');
+                    const achievedGoalRows = entries.filter(
+                      (e) => e.fullGoal.status === 'Achieved'
+                    );
 
                     const renderGoalRow = (fullGoal: Goal) => {
                       const criteriaProgress = getGoalCriteriaProgressPercent(fullGoal);

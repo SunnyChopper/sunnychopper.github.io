@@ -73,7 +73,7 @@ export const conceptGraphService = {
     nodeIds: string[],
     onDelta: (chunk: string) => void,
     onComplete: (fullText: string) => void,
-    onError?: (message: string) => void,
+    onError?: (message: string) => void
   ): Promise<void> {
     const token = authService.getStoredTokens()?.accessToken;
     const res = await fetch(`${API_BASE}/knowledge/graph/synthesize-stream`, {

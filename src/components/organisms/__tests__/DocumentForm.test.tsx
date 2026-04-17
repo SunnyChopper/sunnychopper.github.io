@@ -36,11 +36,7 @@ vi.mock('@/services/knowledge-vault/document-upload.service', () => ({
 }));
 
 vi.mock('@/components/molecules/FileUploadZone', () => ({
-  default: ({
-    onFilesSelected,
-  }: {
-    onFilesSelected: (files: File[]) => void;
-  }) => (
+  default: ({ onFilesSelected }: { onFilesSelected: (files: File[]) => void }) => (
     <button
       type="button"
       data-testid="mock-pick-file"

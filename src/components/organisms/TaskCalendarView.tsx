@@ -11,11 +11,7 @@ interface TaskCalendarViewProps {
   onTaskClick: (task: Task) => void;
 }
 
-export function TaskCalendarView({
-  tasks,
-  isLoading = false,
-  onTaskClick,
-}: TaskCalendarViewProps) {
+export function TaskCalendarView({ tasks, isLoading = false, onTaskClick }: TaskCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const getMonthData = () => {

@@ -4,59 +4,7 @@ import type { Goal, GoalProgressBreakdown, TimeHorizon } from '@/types/growth-sy
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
-
-const MONTHS_SHORT = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-] as const;
-
-/** ISO week number for a local calendar date */
-function getISOWeek(date: Date): number {
-  const t = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = t.getUTCDay() || 7;
-  t.setUTCDate(t.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
-  return Math.ceil(((t.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-}
-
-export function formatGoalMindmapTimeframe(goal: Goal): string {
-  const { timeHorizon, targetDate } = goal;
-  if (!targetDate) {
-    return timeHorizon;
-  }
-  const d = new Date(targetDate);
-  if (Number.isNaN(d.getTime())) {
-    return timeHorizon;
-  }
-  const y = d.getFullYear();
-  const m = d.getMonth();
-  const q = Math.floor(m / 3) + 1;
-
-  switch (timeHorizon as TimeHorizon) {
-    case 'Yearly':
-      return `Yearly - ${y}`;
-    case 'Quarterly':
-      return `Quarterly - Q${q}`;
-    case 'Monthly':
-      return `Monthly - ${MONTHS_SHORT[m]}`;
-    case 'Weekly':
-      return `Weekly - W${getISOWeek(d).toString().padStart(2, '0')}`;
-    case 'Daily':
-      return `Daily - ${MONTHS_SHORT[m]} ${d.getDate()}`;
-    default:
-      return timeHorizon;
-  }
-}
+import { GOAL_MINDMAP_LAYOUT_TOTAL_WIDTH } from '@/components/molecules/goal-mindmap-utils';
 
 export type GoalMindmapNodeData = {
   goal: Goal;
@@ -69,9 +17,6 @@ export type GoalMindmapNodeData = {
 };
 
 export type GoalMindmapRfNode = Node<GoalMindmapNodeData, 'goalMindmap'>;
-
-/** Total node width for mindmap layout (card + gap + add control). Keep in sync with GoalMindmapView dagre. */
-export const GOAL_MINDMAP_LAYOUT_TOTAL_WIDTH = 260 + 8 + 40;
 
 function healthLabel(status: GoalMindmapNodeData['healthStatus']): string {
   switch (status) {

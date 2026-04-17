@@ -67,7 +67,9 @@ export default function ConceptColliderPage() {
     try {
       const res = await vaultItemsService.search(searchQuery.trim());
       if (res.success && res.data) {
-        setSearchHits(res.data.filter((i) => i.type === 'note' || i.type === 'document').slice(0, 20));
+        setSearchHits(
+          res.data.filter((i) => i.type === 'note' || i.type === 'document').slice(0, 20)
+        );
       }
     } finally {
       setLoading(false);
@@ -80,7 +82,7 @@ export default function ConceptColliderPage() {
     try {
       const sub = await conceptGraphService.getSubgraph(
         seeds.map((s) => s.id),
-        2,
+        2
       );
       if (!sub.success || !sub.data) return;
 
@@ -151,7 +153,7 @@ export default function ConceptColliderPage() {
     (_: React.MouseEvent, node: Node) => {
       toggleSelectedNodeId(node.id);
     },
-    [toggleSelectedNodeId],
+    [toggleSelectedNodeId]
   );
 
   const idToLabel = useMemo(() => {
@@ -165,7 +167,8 @@ export default function ConceptColliderPage() {
 
   const selectionSummary = useMemo(() => {
     if (selectedNodeIds.length === 0) return 'Click one or more nodes to select them for synthesis';
-    if (selectedNodeIds.length === 1) return `${idToLabel.get(selectedNodeIds[0]) ?? selectedNodeIds[0]} (pick at least one more)`;
+    if (selectedNodeIds.length === 1)
+      return `${idToLabel.get(selectedNodeIds[0]) ?? selectedNodeIds[0]} (pick at least one more)`;
     return selectedNodeIds.map((id) => idToLabel.get(id) ?? id).join(' · ');
   }, [selectedNodeIds, idToLabel]);
 
@@ -274,11 +277,7 @@ export default function ConceptColliderPage() {
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            onClick={() => runSynthesis()}
-            disabled={loading || !canSynthesize}
-          >
+          <Button type="button" onClick={() => runSynthesis()} disabled={loading || !canSynthesize}>
             <Sparkles className="w-4 h-4 mr-2" />
             Synthesize
           </Button>

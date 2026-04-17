@@ -455,65 +455,65 @@ export default function HabitsPage() {
 
               {isAIConfigured && (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-4 sm:mb-6">
-              <button
-                onClick={() => setShowAIAssist(!showAIAssist)}
-                className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
-              >
-                <Sparkles size={18} />
-                <span>AI Habit Tools</span>
-                {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
+                  <button
+                    onClick={() => setShowAIAssist(!showAIAssist)}
+                    className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+                  >
+                    <Sparkles size={18} />
+                    <span>AI Habit Tools</span>
+                    {showAIAssist ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
 
-              {showAIAssist && (
-                <div className="mt-4 space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setAIMode('design')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'design' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                    >
-                      Habit Design
-                    </button>
-                    <button
-                      onClick={() => setAIMode('stack')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'stack' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                    >
-                      Habit Stacking
-                    </button>
-                    <button
-                      onClick={() => setAIMode('recovery')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'recovery' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                    >
-                      Streak Recovery
-                    </button>
-                    <button
-                      onClick={() => setAIMode('patterns')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                    >
-                      Pattern Analysis
-                    </button>
-                    <button
-                      onClick={() => setAIMode('triggers')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'triggers' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                    >
-                      Trigger Optimization
-                    </button>
-                    <button
-                      onClick={() => setAIMode('alignment')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'alignment' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                    >
-                      Goal Alignment
-                    </button>
-                  </div>
+                  {showAIAssist && (
+                    <div className="mt-4 space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setAIMode('design')}
+                          className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'design' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                        >
+                          Habit Design
+                        </button>
+                        <button
+                          onClick={() => setAIMode('stack')}
+                          className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'stack' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                        >
+                          Habit Stacking
+                        </button>
+                        <button
+                          onClick={() => setAIMode('recovery')}
+                          className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'recovery' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                        >
+                          Streak Recovery
+                        </button>
+                        <button
+                          onClick={() => setAIMode('patterns')}
+                          className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'patterns' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                        >
+                          Pattern Analysis
+                        </button>
+                        <button
+                          onClick={() => setAIMode('triggers')}
+                          className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'triggers' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                        >
+                          Trigger Optimization
+                        </button>
+                        <button
+                          onClick={() => setAIMode('alignment')}
+                          className={`px-3 py-1.5 text-sm rounded-full transition ${aiMode === 'alignment' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                        >
+                          Goal Alignment
+                        </button>
+                      </div>
 
-                  <AIHabitAssistPanel
-                    mode={aiMode}
-                    habit={selectedHabit}
-                    logs={selectedLogs}
-                    onClose={() => setShowAIAssist(false)}
-                  />
+                      <AIHabitAssistPanel
+                        mode={aiMode}
+                        habit={selectedHabit}
+                        logs={selectedLogs}
+                        onClose={() => setShowAIAssist(false)}
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
               )}
 
               <HabitDetailTabs activeTab={activeTab} onTabChange={setActiveTab}>
@@ -660,224 +660,224 @@ export default function HabitsPage() {
           ) : (
             <>
               <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
-        >
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 sm:gap-3">
-              <Repeat className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
-              Daily Habits
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-              Build consistency one day at a time
-            </p>
-          </div>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              variant="primary"
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="w-full sm:w-auto min-h-[44px] touch-manipulation"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              <span className="hidden sm:inline">New Habit</span>
-              <span className="sm:hidden">New</span>
-            </Button>
-          </motion.div>
-        </motion.div>
-
-        {/* Search and View Mode */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
-        >
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search habits..."
-              className="w-full pl-10 pr-4 py-2.5 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] touch-manipulation"
-            />
-          </div>
-          <div className="flex bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-1">
-            <motion.button
-              onClick={() => setViewMode('today')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`px-4 py-2 rounded-md transition-colors min-h-[44px] touch-manipulation ${
-                viewMode === 'today'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              Today
-            </motion.button>
-            <motion.button
-              onClick={() => setViewMode('all')}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`px-4 py-2 rounded-md transition-colors min-h-[44px] touch-manipulation ${
-                viewMode === 'all'
-                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              All Habits
-            </motion.button>
-          </div>
-        </motion.div>
-
-        {/* Filter Pills */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
-          className="mb-6 flex flex-wrap gap-2"
-        >
-          {/* All Filter */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setSelectedHabitType(null)}
-            className={`px-4 py-2 text-sm font-medium rounded-full border transition-all touch-manipulation ${
-              selectedHabitType === null
-                ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 border-gray-700 dark:border-gray-300 shadow-md'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            All ({habits.length})
-          </motion.button>
-
-          {/* Type Filters */}
-          {HABIT_TYPES.map((type) => {
-            const typeHabits = groupedByType[type];
-            const isSelected = selectedHabitType === type;
-            const hasHabits = typeHabits.length > 0;
-
-            // Color scheme for each type
-            const getTypeStyles = (t: HabitType, selected: boolean) => {
-              const baseStyles =
-                'px-4 py-2 text-sm font-medium rounded-full border transition-all touch-manipulation';
-
-              if (!hasHabits) {
-                return `${baseStyles} bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed`;
-              }
-
-              if (selected) {
-                switch (t) {
-                  case 'Build':
-                    return `${baseStyles} bg-green-600 dark:bg-green-500 text-white border-green-700 dark:border-green-400 shadow-md`;
-                  case 'Maintain':
-                    return `${baseStyles} bg-blue-600 dark:bg-blue-500 text-white border-blue-700 dark:border-blue-400 shadow-md`;
-                  case 'Reduce':
-                    return `${baseStyles} bg-amber-600 dark:bg-amber-500 text-white border-amber-700 dark:border-amber-400 shadow-md`;
-                  case 'Quit':
-                    return `${baseStyles} bg-red-600 dark:bg-red-500 text-white border-red-700 dark:border-red-400 shadow-md`;
-                  default:
-                    return `${baseStyles} bg-gray-600 dark:bg-gray-500 text-white border-gray-700 dark:border-gray-400 shadow-md`;
-                }
-              }
-
-              // Unselected state
-              switch (t) {
-                case 'Build':
-                  return `${baseStyles} bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50 cursor-pointer`;
-                case 'Maintain':
-                  return `${baseStyles} bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50 cursor-pointer`;
-                case 'Reduce':
-                  return `${baseStyles} bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900/50 cursor-pointer`;
-                case 'Quit':
-                  return `${baseStyles} bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50 cursor-pointer`;
-                default:
-                  return `${baseStyles} bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer`;
-              }
-            };
-
-            return (
-              <motion.button
-                key={type}
-                whileHover={hasHabits ? { scale: 1.05 } : {}}
-                whileTap={hasHabits ? { scale: 0.95 } : {}}
-                onClick={() => hasHabits && setSelectedHabitType(isSelected ? null : type)}
-                disabled={!hasHabits}
-                className={getTypeStyles(type, isSelected)}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
               >
-                {type} ({typeHabits.length})
-              </motion.button>
-            );
-          })}
-        </motion.div>
-
-        <AnimatePresence mode="popLayout">
-          {isLoading ? (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-            >
-              <HabitCardSkeleton count={8} />
-            </motion.div>
-          ) : filteredHabits.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-            >
-              <EmptyState
-                title="No habits found"
-                description={
-                  selectedHabitType
-                    ? `No ${selectedHabitType.toLowerCase()} habits found${searchQuery ? ' matching your search' : ''}`
-                    : searchQuery
-                      ? 'Try adjusting your search query'
-                      : 'Get started by creating your first habit'
-                }
-                actionLabel="Create Habit"
-                onAction={() => setIsCreateDialogOpen(true)}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="habits-grid"
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-            >
-              <AnimatePresence mode="popLayout">
-                {filteredHabits.map((habit) => (
-                  <motion.div
-                    key={habit.id}
-                    variants={itemVariants}
-                    initial="hidden"
-                    animate="show"
-                    exit="exit"
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2 sm:gap-3">
+                    <Repeat className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" />
+                    Daily Habits
+                  </h1>
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+                    Build consistency one day at a time
+                  </p>
+                </div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    variant="primary"
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    className="w-full sm:w-auto min-h-[44px] touch-manipulation"
                   >
-                    <HabitCard
-                      habit={habit}
-                      streak={getStreak(habit.id)}
-                      todayCompleted={isTodayCompleted(habit.id)}
-                      todayProgress={getTodayProgress(habit.id)}
-                      weeklyProgress={getWeeklyProgress(habit.id)}
-                      totalCompletions={getTotalCompletions(habit.id)}
-                      lastCompletedDate={getLastCompletedDate(habit.id)}
-                      onClick={handleHabitClick}
-                      onQuickLog={handleQuickLog}
+                    <Plus className="w-5 h-5 mr-2" />
+                    <span className="hidden sm:inline">New Habit</span>
+                    <span className="sm:hidden">New</span>
+                  </Button>
+                </motion.div>
+              </motion.div>
+
+              {/* Search and View Mode */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+              >
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search habits..."
+                    className="w-full pl-10 pr-4 py-2.5 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] touch-manipulation"
+                  />
+                </div>
+                <div className="flex bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-1">
+                  <motion.button
+                    onClick={() => setViewMode('today')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`px-4 py-2 rounded-md transition-colors min-h-[44px] touch-manipulation ${
+                      viewMode === 'today'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Today
+                  </motion.button>
+                  <motion.button
+                    onClick={() => setViewMode('all')}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`px-4 py-2 rounded-md transition-colors min-h-[44px] touch-manipulation ${
+                      viewMode === 'all'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    All Habits
+                  </motion.button>
+                </div>
+              </motion.div>
+
+              {/* Filter Pills */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+                className="mb-6 flex flex-wrap gap-2"
+              >
+                {/* All Filter */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedHabitType(null)}
+                  className={`px-4 py-2 text-sm font-medium rounded-full border transition-all touch-manipulation ${
+                    selectedHabitType === null
+                      ? 'bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-900 border-gray-700 dark:border-gray-300 shadow-md'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  All ({habits.length})
+                </motion.button>
+
+                {/* Type Filters */}
+                {HABIT_TYPES.map((type) => {
+                  const typeHabits = groupedByType[type];
+                  const isSelected = selectedHabitType === type;
+                  const hasHabits = typeHabits.length > 0;
+
+                  // Color scheme for each type
+                  const getTypeStyles = (t: HabitType, selected: boolean) => {
+                    const baseStyles =
+                      'px-4 py-2 text-sm font-medium rounded-full border transition-all touch-manipulation';
+
+                    if (!hasHabits) {
+                      return `${baseStyles} bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed`;
+                    }
+
+                    if (selected) {
+                      switch (t) {
+                        case 'Build':
+                          return `${baseStyles} bg-green-600 dark:bg-green-500 text-white border-green-700 dark:border-green-400 shadow-md`;
+                        case 'Maintain':
+                          return `${baseStyles} bg-blue-600 dark:bg-blue-500 text-white border-blue-700 dark:border-blue-400 shadow-md`;
+                        case 'Reduce':
+                          return `${baseStyles} bg-amber-600 dark:bg-amber-500 text-white border-amber-700 dark:border-amber-400 shadow-md`;
+                        case 'Quit':
+                          return `${baseStyles} bg-red-600 dark:bg-red-500 text-white border-red-700 dark:border-red-400 shadow-md`;
+                        default:
+                          return `${baseStyles} bg-gray-600 dark:bg-gray-500 text-white border-gray-700 dark:border-gray-400 shadow-md`;
+                      }
+                    }
+
+                    // Unselected state
+                    switch (t) {
+                      case 'Build':
+                        return `${baseStyles} bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/50 cursor-pointer`;
+                      case 'Maintain':
+                        return `${baseStyles} bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/50 cursor-pointer`;
+                      case 'Reduce':
+                        return `${baseStyles} bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900/50 cursor-pointer`;
+                      case 'Quit':
+                        return `${baseStyles} bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/50 cursor-pointer`;
+                      default:
+                        return `${baseStyles} bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer`;
+                    }
+                  };
+
+                  return (
+                    <motion.button
+                      key={type}
+                      whileHover={hasHabits ? { scale: 1.05 } : {}}
+                      whileTap={hasHabits ? { scale: 0.95 } : {}}
+                      onClick={() => hasHabits && setSelectedHabitType(isSelected ? null : type)}
+                      disabled={!hasHabits}
+                      className={getTypeStyles(type, isSelected)}
+                    >
+                      {type} ({typeHabits.length})
+                    </motion.button>
+                  );
+                })}
+              </motion.div>
+
+              <AnimatePresence mode="popLayout">
+                {isLoading ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+                  >
+                    <HabitCardSkeleton count={8} />
+                  </motion.div>
+                ) : filteredHabits.length === 0 ? (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <EmptyState
+                      title="No habits found"
+                      description={
+                        selectedHabitType
+                          ? `No ${selectedHabitType.toLowerCase()} habits found${searchQuery ? ' matching your search' : ''}`
+                          : searchQuery
+                            ? 'Try adjusting your search query'
+                            : 'Get started by creating your first habit'
+                      }
+                      actionLabel="Create Habit"
+                      onAction={() => setIsCreateDialogOpen(true)}
                     />
                   </motion.div>
-                ))}
+                ) : (
+                  <motion.div
+                    key="habits-grid"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+                  >
+                    <AnimatePresence mode="popLayout">
+                      {filteredHabits.map((habit) => (
+                        <motion.div
+                          key={habit.id}
+                          variants={itemVariants}
+                          initial="hidden"
+                          animate="show"
+                          exit="exit"
+                        >
+                          <HabitCard
+                            habit={habit}
+                            streak={getStreak(habit.id)}
+                            todayCompleted={isTodayCompleted(habit.id)}
+                            todayProgress={getTodayProgress(habit.id)}
+                            weeklyProgress={getWeeklyProgress(habit.id)}
+                            totalCompletions={getTotalCompletions(habit.id)}
+                            lastCompletedDate={getLastCompletedDate(habit.id)}
+                            onClick={handleHabitClick}
+                            onQuickLog={handleQuickLog}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
               </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
             </>
           )}
         </div>

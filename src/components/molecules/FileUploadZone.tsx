@@ -13,16 +13,7 @@ interface FileUploadZoneProps {
   extensions?: string[];
 }
 
-const DEFAULT_EXT = new Set([
-  'pdf',
-  'png',
-  'jpg',
-  'jpeg',
-  'txt',
-  'md',
-  'markdown',
-  'json',
-]);
+const DEFAULT_EXT = new Set(['pdf', 'png', 'jpg', 'jpeg', 'txt', 'md', 'markdown', 'json']);
 
 export default function FileUploadZone({
   onFilesSelected,

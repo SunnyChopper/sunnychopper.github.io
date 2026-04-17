@@ -424,7 +424,9 @@ export default function KnowledgeVaultPage() {
                 key={deck.id}
                 deck={deck}
                 onClick={() => {
-                  navigate(`${ROUTES.admin.knowledgeVaultFlashcards}?deck=${encodeURIComponent(deck.id)}`);
+                  navigate(
+                    `${ROUTES.admin.knowledgeVaultFlashcards}?deck=${encodeURIComponent(deck.id)}`
+                  );
                 }}
               />
             ))}
@@ -452,7 +454,9 @@ export default function KnowledgeVaultPage() {
         isOpen={createDialogType !== null}
         onClose={() => setCreateDialogType(null)}
         title={`Create ${createDialogType === 'note' ? 'Note' : createDialogType === 'document' ? 'Document' : 'Flashcard deck'}`}
-        size={createDialogType === 'note' ? 'full' : createDialogType === 'flashcard' ? 'full' : 'md'}
+        size={
+          createDialogType === 'note' ? 'full' : createDialogType === 'flashcard' ? 'full' : 'md'
+        }
       >
         <div className="p-6">
           {createDialogType === 'note' && (

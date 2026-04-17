@@ -71,17 +71,8 @@ export const getProjectDisplayModel = (
   completedTaskCount: number,
   linkedGoals: Goal[]
 ): ProjectDisplayModel => {
-  const progressPercent = getProjectProgressPercent(
-    taskCount,
-    completedTaskCount,
-    linkedGoals
-  );
-  const isWorkComplete = isProjectWorkComplete(
-    project,
-    taskCount,
-    completedTaskCount,
-    linkedGoals
-  );
+  const progressPercent = getProjectProgressPercent(taskCount, completedTaskCount, linkedGoals);
+  const isWorkComplete = isProjectWorkComplete(project, taskCount, completedTaskCount, linkedGoals);
   return {
     progressPercent,
     isWorkComplete,

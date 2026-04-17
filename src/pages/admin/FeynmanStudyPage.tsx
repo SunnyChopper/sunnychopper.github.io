@@ -103,7 +103,13 @@ export default function FeynmanStudyPage() {
             {note?.title ?? 'Loading…'}
           </p>
         </div>
-        <Button type="button" size="sm" variant="secondary" className="shrink-0" onClick={() => void start()}>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="shrink-0"
+          onClick={() => void start()}
+        >
           Start / reset prompt
         </Button>
       </div>

@@ -43,11 +43,7 @@ describe('CourseGeneratorPage', () => {
 
   it('hides header back control on the first step', () => {
     renderPage();
-    expect(
-      screen.queryByRole('button', { name: 'Back to choose topic' })
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Back to courses list' })
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back to choose topic' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back to courses list' })).not.toBeInTheDocument();
   });
 });

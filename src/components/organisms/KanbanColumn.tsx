@@ -203,12 +203,7 @@ export function KanbanColumn({
             ) : (
               <>
                 {statusTasks.length} {statusTasks.length === 1 ? 'task' : 'tasks'}
-                {totalEffort > 0 ? (
-                  <>
-                    {' '}
-                    · {totalEffort} SP
-                  </>
-                ) : null}
+                {totalEffort > 0 ? <> · {totalEffort} SP</> : null}
               </>
             )}
           </div>

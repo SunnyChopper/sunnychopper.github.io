@@ -15,11 +15,10 @@ import {
 import '@xyflow/react/dist/style.css';
 import type { Goal, GoalProgressBreakdown } from '@/types/growth-system';
 import {
-  GoalMindmapNode,
   formatGoalMindmapTimeframe,
   GOAL_MINDMAP_LAYOUT_TOTAL_WIDTH,
-  type GoalMindmapRfNode,
-} from '@/components/molecules/GoalMindmapNode';
+} from '@/components/molecules/goal-mindmap-utils';
+import { GoalMindmapNode, type GoalMindmapRfNode } from '@/components/molecules/GoalMindmapNode';
 
 const GOAL_MINDMAP_NODE_HEIGHT = 140;
 

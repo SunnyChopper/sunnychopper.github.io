@@ -20,8 +20,7 @@ export function AISuggestedTasks({
   loading,
   readOnly = false,
 }: AISuggestedTasksProps) {
-  const isAccepted = (t: WeeklyReviewSuggestedTask) =>
-    accepted.some((a) => a.title === t.title);
+  const isAccepted = (t: WeeklyReviewSuggestedTask) => accepted.some((a) => a.title === t.title);
 
   return (
     <div className="space-y-4">

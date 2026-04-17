@@ -97,8 +97,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
   const flashcardDecks = flashcardDecksQuery.data ?? [];
 
   const loading =
-    kvEnabled &&
-    (vaultQuery.isPending || coursesQuery.isPending || flashcardDecksQuery.isPending);
+    kvEnabled && (vaultQuery.isPending || coursesQuery.isPending || flashcardDecksQuery.isPending);
 
   const error = useMemo(() => {
     if (!kvEnabled) return actionError;
@@ -297,8 +296,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
           throw new Error(msg || 'Failed to create flashcard deck');
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to create flashcard deck';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create flashcard deck';
         setActionError(errorMessage);
         throw err;
       }

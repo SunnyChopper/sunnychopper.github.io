@@ -217,17 +217,15 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
       {/* Timeline Container */}
       <div ref={containerRef} className="relative overflow-x-visible">
         {/* Month Labels */}
-        <div
-          className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible"
-        >
+        <div className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700 overflow-visible">
           {(() => {
             const totalRange = maxDate.getTime() - minDate.getTime();
             const validMonths = monthsBetween
-              .map(month => ({
+              .map((month) => ({
                 month,
-                rawPosition: ((month.getTime() - minDate.getTime()) / totalRange) * 100
+                rawPosition: ((month.getTime() - minDate.getTime()) / totalRange) * 100,
               }))
-              .filter(m => m.rawPosition >= 0 && m.rawPosition <= 100);
+              .filter((m) => m.rawPosition >= 0 && m.rawPosition <= 100);
 
             const visibleMonths = [];
             for (let i = 0; i < validMonths.length; i++) {
@@ -252,7 +250,7 @@ export function GoalTimelineView({ goals, onGoalClick }: GoalTimelineViewProps) 
             return visibleMonths.map(({ month, rawPosition }) => {
               let textStyle: React.CSSProperties = {
                 left: '0',
-                transform: 'translateX(-50%)'
+                transform: 'translateX(-50%)',
               };
 
               if (rawPosition < 5) {

@@ -18,11 +18,14 @@ export interface CreateDocumentFromFileBody {
 
 export const documentUploadService = {
   async getPresignedUrl(file: File): Promise<PresignedDocumentUploadPayload> {
-    const res = await apiClient.post<PresignedDocumentUploadPayload>('/knowledge/documents/upload-url', {
-      filename: file.name,
-      mimeType: file.type || 'application/octet-stream',
-      fileSizeBytes: file.size,
-    });
+    const res = await apiClient.post<PresignedDocumentUploadPayload>(
+      '/knowledge/documents/upload-url',
+      {
+        filename: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        fileSizeBytes: file.size,
+      }
+    );
     if (!res.success || !res.data) {
       throw new Error(
         typeof res.error === 'object' && res.error && 'message' in res.error

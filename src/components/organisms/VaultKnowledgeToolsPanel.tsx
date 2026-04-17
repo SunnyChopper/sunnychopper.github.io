@@ -81,7 +81,13 @@ export function VaultKnowledgeToolsPanel({ vaultItemId }: VaultKnowledgeToolsPan
               {m}
             </button>
           ))}
-          <Button type="button" size="sm" variant="secondary" onClick={() => void runRewrite()} disabled={loadingRw}>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => void runRewrite()}
+            disabled={loadingRw}
+          >
             Rewrite preview
           </Button>
         </div>
@@ -145,4 +151,3 @@ export function VaultKnowledgeToolsPanel({ vaultItemId }: VaultKnowledgeToolsPan
     </div>
   );
 }
-

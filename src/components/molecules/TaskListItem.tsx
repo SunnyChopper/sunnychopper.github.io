@@ -272,7 +272,9 @@ export function TaskListItem({
                     <span className="mr-2 flex shrink-0 items-center [&_svg]:h-4 [&_svg]:w-4">
                       {deleteIcon || <Trash2 aria-hidden />}
                     </span>
-                    <span className="min-w-0 truncate text-center leading-tight">{deleteLabel}</span>
+                    <span className="min-w-0 truncate text-center leading-tight">
+                      {deleteLabel}
+                    </span>
                   </Button>
                 </motion.div>
               </div>

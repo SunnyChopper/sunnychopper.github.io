@@ -134,7 +134,9 @@ export default function SkillTreePage() {
       bridgesFrom: String(g.bridgesFrom ?? g.bridges_from ?? ''),
       bridgesTo: String(g.bridgesTo ?? g.bridges_to ?? ''),
       reason: String(g.reason ?? ''),
-      suggestedDifficulty: String(g.suggestedDifficulty ?? g.suggested_difficulty ?? 'intermediate'),
+      suggestedDifficulty: String(
+        g.suggestedDifficulty ?? g.suggested_difficulty ?? 'intermediate'
+      ),
     });
     const gn = raw.ghostNodes;
     if (Array.isArray(gn)) {
@@ -142,9 +144,7 @@ export default function SkillTreePage() {
     }
     const gaps = raw.gaps;
     if (Array.isArray(gaps)) {
-      return gaps
-        .map((x) => mapOne((x as Record<string, unknown>) || {}))
-        .filter((x) => x.name);
+      return gaps.map((x) => mapOne((x as Record<string, unknown>) || {})).filter((x) => x.name);
     }
     return [];
   };
@@ -185,7 +185,7 @@ export default function SkillTreePage() {
   const handleDeleteSkill = async (skill: SkillTreeSkill) => {
     if (
       !window.confirm(
-        `Delete “${skill.name}”? Child skills must be removed first. This cannot be undone.`,
+        `Delete “${skill.name}”? Child skills must be removed first. This cannot be undone.`
       )
     ) {
       return;
@@ -206,7 +206,9 @@ export default function SkillTreePage() {
   const handleBulkDelete = async () => {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
-    if (!window.confirm(`Delete ${ids.length} skill(s)? Child skills block deletion until removed.`)) {
+    if (
+      !window.confirm(`Delete ${ids.length} skill(s)? Child skills block deletion until removed.`)
+    ) {
       return;
     }
     setBulkBusy(true);
@@ -295,9 +297,7 @@ export default function SkillTreePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="p-8 text-gray-600 dark:text-gray-400">Loading skill tree…</div>
-    );
+    return <div className="p-8 text-gray-600 dark:text-gray-400">Loading skill tree…</div>;
   }
 
   if (error) {
@@ -354,7 +354,12 @@ export default function SkillTreePage() {
             <ListChecks className="w-4 h-4 mr-1" />
             {bulkMode ? 'Exit bulk' : 'Bulk manage'}
           </Button>
-          <Button type="button" size="sm" data-testid="add-skill-button" onClick={() => setCreateOpen(true)}>
+          <Button
+            type="button"
+            size="sm"
+            data-testid="add-skill-button"
+            onClick={() => setCreateOpen(true)}
+          >
             <Plus className="w-4 h-4 mr-1" />
             Add skill
           </Button>
@@ -383,8 +388,8 @@ export default function SkillTreePage() {
           {learned} of {skills.length} skills completed · {data?.unlockedSkills ?? 0} unlocked
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-          <span className="font-medium text-amber-600 dark:text-amber-400">Mastery</span> (gold star):
-          completed at Master level, verification status current, decay under 25%.
+          <span className="font-medium text-amber-600 dark:text-amber-400">Mastery</span> (gold
+          star): completed at Master level, verification status current, decay under 25%.
         </p>
       </div>
 
@@ -550,7 +555,11 @@ export default function SkillTreePage() {
 
                         <div className="flex justify-center mb-2">
                           <div className="relative flex items-center justify-center">
-                            <SkillProgressRing progress={skill.progressPercentage ?? 0} size={40} strokeWidth={2.5} />
+                            <SkillProgressRing
+                              progress={skill.progressPercentage ?? 0}
+                              size={40}
+                              strokeWidth={2.5}
+                            />
                             <span className="absolute text-[10px] font-semibold text-gray-700 dark:text-gray-200">
                               {Math.round(skill.progressPercentage ?? 0)}%
                             </span>
@@ -588,13 +597,12 @@ export default function SkillTreePage() {
                     );
                   })}
                 </div>
-                {ghostNodes.some(
-                  (g) =>
-                    groupedByLevel[level].some(
-                      (s) =>
-                        s.name.toLowerCase() === g.bridgesFrom.toLowerCase() ||
-                        s.name.toLowerCase() === g.bridgesTo.toLowerCase(),
-                    ),
+                {ghostNodes.some((g) =>
+                  groupedByLevel[level].some(
+                    (s) =>
+                      s.name.toLowerCase() === g.bridgesFrom.toLowerCase() ||
+                      s.name.toLowerCase() === g.bridgesTo.toLowerCase()
+                  )
                 ) && (
                   <div className="mt-4 flex flex-wrap gap-3">
                     {ghostNodes
@@ -602,8 +610,8 @@ export default function SkillTreePage() {
                         groupedByLevel[level].some(
                           (s) =>
                             s.name.toLowerCase() === g.bridgesFrom.toLowerCase() ||
-                            s.name.toLowerCase() === g.bridgesTo.toLowerCase(),
-                        ),
+                            s.name.toLowerCase() === g.bridgesTo.toLowerCase()
+                        )
                       )
                       .map((g) => (
                         <button

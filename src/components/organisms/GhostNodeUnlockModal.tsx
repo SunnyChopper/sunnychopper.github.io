@@ -29,7 +29,10 @@ export function GhostNodeUnlockModal({ ghost, onClose }: GhostNodeUnlockModalPro
     >
       <div className="bg-white dark:bg-gray-900 border border-purple-300 dark:border-purple-700 rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
         <div className="flex justify-between items-start gap-2">
-          <h2 id="ghost-modal-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2
+            id="ghost-modal-title"
+            className="text-lg font-semibold text-gray-900 dark:text-white"
+          >
             {ghost.name}
           </h2>
           <button
@@ -43,8 +46,14 @@ export function GhostNodeUnlockModal({ ghost, onClose }: GhostNodeUnlockModalPro
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400">{ghost.reason}</p>
         <p className="text-xs text-gray-500">
-          Bridges: <span className="font-medium text-purple-700 dark:text-purple-300">{ghost.bridgesFrom}</span>{' '}
-          → <span className="font-medium text-purple-700 dark:text-purple-300">{ghost.bridgesTo}</span>
+          Bridges:{' '}
+          <span className="font-medium text-purple-700 dark:text-purple-300">
+            {ghost.bridgesFrom}
+          </span>{' '}
+          →{' '}
+          <span className="font-medium text-purple-700 dark:text-purple-300">
+            {ghost.bridgesTo}
+          </span>
         </p>
         <div className="flex flex-wrap gap-2 pt-2">
           <Button type="button" onClick={goCourse}>

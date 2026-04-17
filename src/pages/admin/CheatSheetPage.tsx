@@ -43,7 +43,8 @@ export default function CheatSheetPage() {
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Weekly cheat sheet</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              From your vault notes (same pipeline as the weekly job). Week: {q.data?.weekDate ?? '—'}
+              From your vault notes (same pipeline as the weekly job). Week:{' '}
+              {q.data?.weekDate ?? '—'}
             </p>
           </div>
         </div>
@@ -82,11 +83,14 @@ export default function CheatSheetPage() {
         !q.isLoading && (
           <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50/70 dark:bg-gray-900/35 px-6 py-12 text-center max-w-xl mx-auto">
             <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-              No cheat sheet yet. You can generate one anytime from your latest vault notes—no need to
-              wait for the scheduled job.
+              No cheat sheet yet. You can generate one anytime from your latest vault notes—no need
+              to wait for the scheduled job.
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-              Use <span className="font-medium text-gray-600 dark:text-gray-300">Generate cheat sheet</span>{' '}
+              Use{' '}
+              <span className="font-medium text-gray-600 dark:text-gray-300">
+                Generate cheat sheet
+              </span>{' '}
               above.
             </p>
           </div>

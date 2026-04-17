@@ -57,7 +57,8 @@ export default function SyntopicPage() {
     queryKey: ['graph-clusters'],
     queryFn: async () => {
       const res = await vaultPrimitivesService.getGraphClusters();
-      if (!res.success || !res.data) throw new Error(res.error?.message || 'Failed to load clusters');
+      if (!res.success || !res.data)
+        throw new Error(res.error?.message || 'Failed to load clusters');
       return res.data.clusters as Array<{
         area: string;
         itemCount: number;
@@ -275,11 +276,20 @@ export default function SyntopicPage() {
       />
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={() => void run()} disabled={loading || selectedIds.length < 2}>
+        <Button
+          type="button"
+          onClick={() => void run()}
+          disabled={loading || selectedIds.length < 2}
+        >
           Analyze
         </Button>
         {result && (
-          <Button type="button" variant="secondary" onClick={() => void exportNote()} disabled={exportBusy}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void exportNote()}
+            disabled={exportBusy}
+          >
             Export as note
           </Button>
         )}

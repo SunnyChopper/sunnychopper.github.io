@@ -66,7 +66,9 @@ function buildGoalTree(entities: EntitySummary[]): GoalTreeNode[] {
     return !pid || !byId.has(pid);
   });
   if (roots.length === 0) {
-    return [...entities].sort(compareGoalSummariesByTargetDate).map((e) => ({ entity: e, children: [] }));
+    return [...entities]
+      .sort(compareGoalSummariesByTargetDate)
+      .map((e) => ({ entity: e, children: [] }));
   }
   roots.sort(compareGoalSummariesByTargetDate);
   const toNode = (entity: EntitySummary): GoalTreeNode => {
@@ -164,7 +166,11 @@ function GoalAccordionRows({
                         : 'text-gray-500 hover:bg-gray-200/80 dark:text-gray-400 dark:hover:bg-gray-700/80'
                     )}
                     aria-expanded={isExpanded}
-                    aria-label={isExpanded ? `Collapse subgoals under ${entity.title}` : `Expand subgoals under ${entity.title}`}
+                    aria-label={
+                      isExpanded
+                        ? `Collapse subgoals under ${entity.title}`
+                        : `Expand subgoals under ${entity.title}`
+                    }
                   >
                     {isExpanded ? (
                       <ChevronDown className="h-4 w-4" aria-hidden />
@@ -206,7 +212,9 @@ function GoalAccordionRows({
                           )}
                           <span>Due {dueLabel}</span>
                           {isOverdue && (
-                            <span className="text-amber-700/90 dark:text-amber-400/95">(overdue)</span>
+                            <span className="text-amber-700/90 dark:text-amber-400/95">
+                              (overdue)
+                            </span>
                           )}
                         </span>
                       </>

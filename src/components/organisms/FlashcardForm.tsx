@@ -45,9 +45,7 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
   const [aiCount, setAiCount] = useState(8);
   const [vaultSourceId, setVaultSourceId] = useState<string>('');
 
-  const noteAndDocItems = vaultItems.filter(
-    (v) => v.type === 'note' || v.type === 'document'
-  );
+  const noteAndDocItems = vaultItems.filter((v) => v.type === 'note' || v.type === 'document');
 
   useEffect(() => {
     if (flashcard) {
@@ -94,9 +92,7 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
   };
 
   const updateCard = (localId: string, field: 'front' | 'back', value: string) => {
-    setCards((prev) =>
-      prev.map((c) => (c.localId === localId ? { ...c, [field]: value } : c))
-    );
+    setCards((prev) => prev.map((c) => (c.localId === localId ? { ...c, [field]: value } : c)));
   };
 
   const handleGenerateFromText = async () => {
@@ -148,7 +144,9 @@ export default function FlashcardForm({ flashcard, onSuccess, onCancel }: Flashc
 
       if (flashcard) {
         if (filled.length !== 1) {
-          throw new Error('Editing supports a single card; remove extra rows or create a new deck.');
+          throw new Error(
+            'Editing supports a single card; remove extra rows or create a new deck.'
+          );
         }
         await updateFlashcard(flashcard.id, {
           front: filled[0].front,

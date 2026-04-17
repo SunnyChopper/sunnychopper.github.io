@@ -70,9 +70,7 @@ function buildCreateFlashcardDeckBody(input: CreateFlashcardDeckInput): {
   flashcards: { front: string; back: string }[];
 } {
   const topic =
-    input.tags && input.tags.length > 0
-      ? input.tags.join(', ').slice(0, 100)
-      : undefined;
+    input.tags && input.tags.length > 0 ? input.tags.join(', ').slice(0, 100) : undefined;
   const metaLines: string[] = [`Area: ${input.area}`];
   if (input.tags?.length) {
     metaLines.push(`Tags: ${input.tags.join(', ')}`);
@@ -426,7 +424,9 @@ export const vaultItemsService = {
     if (!upd.success || !upd.data) {
       return { data: null, error: upd.error || 'Failed to add lesson', success: false };
     }
-    const created = upd.data.lessons.find((l) => l.title === input.title && l.order === input.lessonIndex);
+    const created = upd.data.lessons.find(
+      (l) => l.title === input.title && l.order === input.lessonIndex
+    );
     if (!created) {
       return { data: null, error: 'Lesson not found after update', success: false };
     }
@@ -453,10 +453,7 @@ export const vaultItemsService = {
     return { data: cl, error: null, success: true };
   },
 
-  async markLessonComplete(
-    courseId: string,
-    lessonId: string
-  ): Promise<ApiResponse<CourseLesson>> {
+  async markLessonComplete(courseId: string, lessonId: string): Promise<ApiResponse<CourseLesson>> {
     const res = await coursesService.completeLesson(courseId, lessonId);
     if (!res.success || !res.data) {
       return { data: null, error: res.error || 'Failed to complete lesson', success: false };

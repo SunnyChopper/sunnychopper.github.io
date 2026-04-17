@@ -45,7 +45,7 @@ function renderPage() {
       <QueryClientProvider client={qc}>
         <SkillTreePage />
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 

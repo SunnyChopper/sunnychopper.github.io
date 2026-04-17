@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link2, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { taskLinksService, type VaultTaskLink } from '@/services/knowledge-vault/task-links.service';
+import {
+  taskLinksService,
+  type VaultTaskLink,
+} from '@/services/knowledge-vault/task-links.service';
 import { ROUTES } from '@/routes';
 import Button from '@/components/atoms/Button';
 import { EmptyState } from '@/components/molecules/EmptyState';
@@ -86,7 +89,7 @@ export default function TaskLinksPage() {
             analyze.isError &&
               'border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200',
             analyze.isSuccess &&
-              'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-gray-800/60 dark:text-gray-300',
+              'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-gray-800/60 dark:text-gray-300'
           )}
         >
           {analyze.isError
@@ -106,7 +109,9 @@ export default function TaskLinksPage() {
 
       {q.isLoading && <p className="text-gray-500 dark:text-gray-400">Loading…</p>}
       {q.isError && (
-        <p className="text-red-600 dark:text-red-400">{q.error instanceof Error ? q.error.message : 'Error'}</p>
+        <p className="text-red-600 dark:text-red-400">
+          {q.error instanceof Error ? q.error.message : 'Error'}
+        </p>
       )}
 
       {items.length > 0 && (

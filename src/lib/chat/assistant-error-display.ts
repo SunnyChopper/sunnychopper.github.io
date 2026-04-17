@@ -1,6 +1,8 @@
 import type { WsRunErrorPayload } from '@/types/chatbot';
 
-function stringifyAssistantErrorDetails(details: Record<string, unknown> | undefined): string | null {
+function stringifyAssistantErrorDetails(
+  details: Record<string, unknown> | undefined
+): string | null {
   if (!details || Object.keys(details).length === 0) {
     return null;
   }

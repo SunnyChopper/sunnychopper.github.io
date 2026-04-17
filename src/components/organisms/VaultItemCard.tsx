@@ -99,7 +99,9 @@ function DocumentCardContent({ document }: { document: Document }) {
         {document.indexingStatus === 'complete' &&
           document.chunkCount != null &&
           document.chunkCount > 0 && (
-            <span className="text-emerald-600 dark:text-emerald-400">{document.chunkCount} chunks</span>
+            <span className="text-emerald-600 dark:text-emerald-400">
+              {document.chunkCount} chunks
+            </span>
           )}
       </div>
 

@@ -44,7 +44,9 @@ export default function FlashcardDeckCard({ deck, onClick }: FlashcardDeckCardPr
       )}
 
       {deck.topic && (
-        <p className="text-xs text-amber-700 dark:text-amber-300 mb-3 truncate">Topic: {deck.topic}</p>
+        <p className="text-xs text-amber-700 dark:text-amber-300 mb-3 truncate">
+          Topic: {deck.topic}
+        </p>
       )}
 
       <div className="grid grid-cols-2 gap-3 mb-3">

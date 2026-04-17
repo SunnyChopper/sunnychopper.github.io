@@ -209,7 +209,9 @@ export function TaskDetailDialog({ task, isOpen, onClose, onEdit }: TaskDetailDi
         </div>
 
         <JitKnowledgePanel
-          query={[task.title, task.description, task.extendedDescription].filter(Boolean).join('\n')}
+          query={[task.title, task.description, task.extendedDescription]
+            .filter(Boolean)
+            .join('\n')}
           contextId={task.id}
         />
 

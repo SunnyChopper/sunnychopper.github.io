@@ -147,7 +147,10 @@ function AppContent() {
           <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultCheatSheet} element={<CheatSheetPage />} />
           <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultSyntopic} element={<SyntopicPage />} />
           <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultTaskLinks} element={<TaskLinksPage />} />
-          <Route path={`${ADMIN_CHILD_ROUTES.knowledgeVaultFeynmanStudy}/:itemId`} element={<FeynmanStudyPage />} />
+          <Route
+            path={`${ADMIN_CHILD_ROUTES.knowledgeVaultFeynmanStudy}/:itemId`}
+            element={<FeynmanStudyPage />}
+          />
           <Route path="knowledge-vault/study" element={<StudySessionPage />} />
           <Route path="knowledge-vault/statistics" element={<StudyStatisticsPage />} />
           <Route path={ADMIN_CHILD_ROUTES.tools} element={<ToolsOverviewPage />} />

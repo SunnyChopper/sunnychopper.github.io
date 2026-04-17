@@ -128,15 +128,10 @@ export function mergeTaskWithUpdate(task: Task, input: UpdateTaskInput): Task {
     ...(input.goalIds !== undefined ? { goalIds: input.goalIds } : {}),
   };
 
-  if (
-    input.status !== undefined &&
-    task.status === 'Done' &&
-    input.status !== 'Done'
-  ) {
+  if (input.status !== undefined && task.status === 'Done' && input.status !== 'Done') {
     return {
       ...merged,
-      completedDate:
-        input.completedDate !== undefined ? input.completedDate : null,
+      completedDate: input.completedDate !== undefined ? input.completedDate : null,
       pointsAwarded: false,
       rewardLedgerStatus: 'reversed',
       rewardReversalTransactionId: null,

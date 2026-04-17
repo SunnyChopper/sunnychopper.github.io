@@ -81,8 +81,7 @@ export default function WeeklyReviewPage() {
   }, [weekFromUrl, current]);
 
   const liveWeekKey = useMemo(
-    () =>
-      Boolean(current && effectiveWeekStart && effectiveWeekStart === current.weekStart),
+    () => Boolean(current && effectiveWeekStart && effectiveWeekStart === current.weekStart),
     [current, effectiveWeekStart]
   );
 
@@ -107,14 +106,10 @@ export default function WeeklyReviewPage() {
   );
 
   const { tasks } = useGrowthSystemDashboard({ includeCompleted: true });
-  const blockedTasks = useMemo(
-    () => tasks.filter((t) => t.status === 'Blocked'),
-    [tasks]
-  );
+  const blockedTasks = useMemo(() => tasks.filter((t) => t.status === 'Blocked'), [tasks]);
 
-  const { generate, savePlan, complete, suggestTasks, discard } = useWeeklyReviewMutations(
-    effectiveWeekStart
-  );
+  const { generate, savePlan, complete, suggestTasks, discard } =
+    useWeeklyReviewMutations(effectiveWeekStart);
 
   const derivedStep = useMemo((): Step => {
     if (!snapshot) return 'review';
@@ -126,12 +121,10 @@ export default function WeeklyReviewPage() {
   const [stepOverride, setStepOverride] = useState<Step | null>(null);
   const step = stepOverride ?? derivedStep;
 
-  const [quarantineDecisions, setQuarantineDecisions] = useState<
-    WeeklyReviewQuarantineDecision[]
-  >([]);
-  const [blockerResolutions, setBlockerResolutions] = useState<WeeklyReviewBlockerResolution[]>(
+  const [quarantineDecisions, setQuarantineDecisions] = useState<WeeklyReviewQuarantineDecision[]>(
     []
   );
+  const [blockerResolutions, setBlockerResolutions] = useState<WeeklyReviewBlockerResolution[]>([]);
   const [suggestedAccepted, setSuggestedAccepted] = useState<WeeklyReviewAcceptedTask[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<WeeklyReviewSuggestedTask[]>([]);
   const [celebrateComplete, setCelebrateComplete] = useState(false);
@@ -225,11 +218,7 @@ export default function WeeklyReviewPage() {
   };
 
   const showMidWeek =
-    current &&
-    !weekFromUrl &&
-    !current.hasGeneratedReview &&
-    current.isMidWeek &&
-    !snapshot;
+    current && !weekFromUrl && !current.hasGeneratedReview && current.isMidWeek && !snapshot;
 
   const loading = currentLoading || (Boolean(effectiveWeekStart) && snapshotLoading);
 
@@ -279,7 +268,9 @@ export default function WeeklyReviewPage() {
               <h1 className="font-serif text-3xl font-semibold tracking-tight text-gray-900 dark:text-white md:text-4xl">
                 Weekly Review & Planning
               </h1>
-              {snapshot && <WeekContextBadge isHistorical={isHistorical} weekStart={snapshot.weekStart} />}
+              {snapshot && (
+                <WeekContextBadge isHistorical={isHistorical} weekStart={snapshot.weekStart} />
+              )}
               {!snapshot && current && (showMidWeek || showEmpty) && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-500/30 dark:text-emerald-300">
                   <span className="relative flex h-2 w-2">
@@ -294,7 +285,9 @@ export default function WeeklyReviewPage() {
               Reflect on the past week and plan for success ahead
             </p>
           </div>
-          {pastReviewsSelect && <div className="flex shrink-0 justify-center md:justify-end">{pastReviewsSelect}</div>}
+          {pastReviewsSelect && (
+            <div className="flex shrink-0 justify-center md:justify-end">{pastReviewsSelect}</div>
+          )}
         </header>
 
         {currentIsError && (
@@ -304,7 +297,9 @@ export default function WeeklyReviewPage() {
           >
             <AlertCircle className="h-10 w-10 text-red-500" aria-hidden />
             <div>
-              <p className="font-medium text-gray-900 dark:text-white">Could not load weekly review</p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                Could not load weekly review
+              </p>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                 Check the technical details below if you need to debug.
               </p>
@@ -372,9 +367,7 @@ export default function WeeklyReviewPage() {
           >
             <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {currentLoading
-                ? 'Loading your weekly review…'
-                : 'Loading this week’s snapshot…'}
+              {currentLoading ? 'Loading your weekly review…' : 'Loading this week’s snapshot…'}
             </p>
           </div>
         )}
@@ -441,12 +434,7 @@ export default function WeeklyReviewPage() {
         )}
 
         {snapshot && !loading && (
-          <div
-            className={cn(
-              'flex flex-col gap-8 lg:flex-row',
-              isHistorical && 'opacity-[0.97]'
-            )}
-          >
+          <div className={cn('flex flex-col gap-8 lg:flex-row', isHistorical && 'opacity-[0.97]')}>
             <aside className="shrink-0 lg:w-56">
               <div className="lg:sticky lg:top-20">
                 <p className="mb-3 hidden text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 lg:block">
@@ -479,7 +467,10 @@ export default function WeeklyReviewPage() {
                   role="status"
                 >
                   <div className="flex items-start gap-3">
-                    <Lock className="mt-0.5 h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400" aria-hidden />
+                    <Lock
+                      className="mt-0.5 h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400"
+                      aria-hidden
+                    />
                     <div>
                       <p className="font-semibold text-slate-900 dark:text-slate-100">
                         {!liveWeekKey ? 'Historical week' : 'Week locked in'}
@@ -504,9 +495,9 @@ export default function WeeklyReviewPage() {
                       Week in progress
                     </span>
                     <p className="text-gray-700 dark:text-gray-300">
-                      The summary tiles and story-point velocity update as you complete tasks (through
-                      today). AI insights are still from when you first generated this review—run a new
-                      one later if you want them refreshed.
+                      The summary tiles and story-point velocity update as you complete tasks
+                      (through today). AI insights are still from when you first generated this
+                      review—run a new one later if you want them refreshed.
                     </p>
                   </div>
                   <Button
@@ -733,8 +724,8 @@ export default function WeeklyReviewPage() {
                         {snapshot.completionSummary?.sprintTaskIds &&
                           snapshot.completionSummary.sprintTaskIds.length > 0 && (
                             <p className="mb-6 text-sm text-gray-500 dark:text-gray-500">
-                              {snapshot.completionSummary.sprintTaskIds.length} new tasks added to your
-                              board.
+                              {snapshot.completionSummary.sprintTaskIds.length} new tasks added to
+                              your board.
                             </p>
                           )}
                         <div className="flex flex-wrap justify-center gap-3">
@@ -747,7 +738,10 @@ export default function WeeklyReviewPage() {
                               {complete.isPending ? 'Committing…' : 'Confirm & update sprint'}
                             </Button>
                           )}
-                          <Button variant="secondary" onClick={() => navigate(ROUTES.admin.dashboard)}>
+                          <Button
+                            variant="secondary"
+                            onClick={() => navigate(ROUTES.admin.dashboard)}
+                          >
                             Dashboard
                           </Button>
                         </div>
@@ -945,8 +939,7 @@ function Stepper({
   const labelActive = archived
     ? 'text-slate-800 dark:text-slate-200'
     : 'text-blue-600 dark:text-blue-400';
-  const labelIdle =
-    'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200';
+  const labelIdle = 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200';
   const circleActive = archived
     ? 'bg-slate-600 text-white dark:bg-slate-500'
     : 'bg-blue-600 text-white';

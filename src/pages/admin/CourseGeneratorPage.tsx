@@ -49,7 +49,10 @@ export default function CourseGeneratorPage() {
     progress: number;
   } | null>(null);
 
-  const buildAugmentedTopic = async (): Promise<{ topic: string; knowledgeSource: 'global' | 'vault' }> => {
+  const buildAugmentedTopic = async (): Promise<{
+    topic: string;
+    knowledgeSource: 'global' | 'vault';
+  }> => {
     const base = topic.trim();
     if (knowledgeSource === 'global') {
       return { topic: base, knowledgeSource: 'global' };
@@ -142,8 +145,7 @@ export default function CourseGeneratorPage() {
           {
             cleanTopic: topic.trim(),
             knowledgeSource: payload.knowledgeSource,
-            aiGenerationContext:
-              payload.knowledgeSource === 'vault' ? payload.topic : undefined,
+            aiGenerationContext: payload.knowledgeSource === 'vault' ? payload.topic : undefined,
             preAssessment,
           }
         );
@@ -194,9 +196,7 @@ export default function CourseGeneratorPage() {
           <button
             type="button"
             onClick={handleHeaderBack}
-            aria-label={
-              step === 'assessment' ? 'Back to choose topic' : 'Back to courses list'
-            }
+            aria-label={step === 'assessment' ? 'Back to choose topic' : 'Back to courses list'}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
           >
             <ArrowLeft size={20} />
@@ -236,9 +236,7 @@ export default function CourseGeneratorPage() {
                 </div>
                 <span
                   className={`text-xs text-center max-w-[7rem] ${
-                    isCurrent
-                      ? 'text-gray-900 dark:text-white'
-                      : 'text-gray-500 dark:text-gray-400'
+                    isCurrent ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
                   {s.label}
@@ -311,8 +309,8 @@ export default function CourseGeneratorPage() {
               </div>
               {knowledgeSource === 'vault' && (
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                  Course prompts will include retrieved vault notes only (semantic JIT); stay within that
-                  material.
+                  Course prompts will include retrieved vault notes only (semantic JIT); stay within
+                  that material.
                 </p>
               )}
             </div>

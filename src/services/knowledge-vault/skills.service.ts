@@ -28,7 +28,10 @@ export const skillsService = {
   },
 
   async verifySkill(skillId: string): Promise<ApiResponse<SkillVerifyResult>> {
-    const response = await apiClient.post<SkillVerifyResult>(`/knowledge/skills/${skillId}/verify`, {});
+    const response = await apiClient.post<SkillVerifyResult>(
+      `/knowledge/skills/${skillId}/verify`,
+      {}
+    );
     if (response.success && response.data) {
       return { data: response.data, error: null, success: true };
     }

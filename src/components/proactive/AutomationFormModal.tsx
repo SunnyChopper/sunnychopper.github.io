@@ -389,11 +389,7 @@ function AutomationFormFields({
           variant="primary"
           size="sm"
           className="rounded-lg"
-          disabled={
-            saving ||
-            !catalogReady ||
-            (kind === 'custom' && !customUserPrompt.trim())
-          }
+          disabled={saving || !catalogReady || (kind === 'custom' && !customUserPrompt.trim())}
           onClick={handleSubmit}
         >
           {primaryLabel}

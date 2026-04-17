@@ -52,9 +52,7 @@ export const useConceptColliderStore = create<ConceptColliderState>()(
           return;
         }
         const next =
-          seeds.length >= CONCEPT_COLLIDER_MAX_SEEDS
-            ? [...seeds.slice(1), item]
-            : [...seeds, item];
+          seeds.length >= CONCEPT_COLLIDER_MAX_SEEDS ? [...seeds.slice(1), item] : [...seeds, item];
         set((s) => ({
           seeds: next,
           selectedNodeIds: s.selectedNodeIds.includes(item.id)

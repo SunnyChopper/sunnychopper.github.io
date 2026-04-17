@@ -34,10 +34,7 @@ export function SynthesisPanel({
   const [width, setWidth] = useState(defaultWidth);
   const dragRef = useRef<{ startX: number; startW: number } | null>(null);
 
-  const nodeKey = useMemo(
-    () => [...selectedNodeIds].sort().join('\0'),
-    [selectedNodeIds],
-  );
+  const nodeKey = useMemo(() => [...selectedNodeIds].sort().join('\0'), [selectedNodeIds]);
 
   const canRun = selectedNodeIds.length >= 2;
 
@@ -49,10 +46,7 @@ export function SynthesisPanel({
     }
 
     const st = useConceptColliderStore.getState();
-    if (
-      st.lastSynthesisNodeKey === nodeKey &&
-      st.synthesisMarkdown.trim().length > 0
-    ) {
+    if (st.lastSynthesisNodeKey === nodeKey && st.synthesisMarkdown.trim().length > 0) {
       setStreaming(false);
       return;
     }
@@ -79,7 +73,7 @@ export function SynthesisPanel({
             setError(msg);
             setStreaming(false);
           }
-        },
+        }
       );
       if (!cancelled) setStreaming(false);
     })();
@@ -186,7 +180,9 @@ export function SynthesisPanel({
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 prose prose-sm dark:prose-invert max-w-none">
           {error && <p className="text-red-600 text-sm not-prose">{error}</p>}
           {!canRun && (
-            <p className="text-gray-500 text-sm not-prose">Select at least two nodes on the graph.</p>
+            <p className="text-gray-500 text-sm not-prose">
+              Select at least two nodes on the graph.
+            </p>
           )}
           {canRun && streaming && !synthesisMarkdown && !error && (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-gray-500 not-prose">
@@ -194,9 +190,7 @@ export function SynthesisPanel({
               <p className="text-sm">Generating synthesis…</p>
             </div>
           )}
-          {synthesisMarkdown ? (
-            <MarkdownRenderer content={synthesisMarkdown} />
-          ) : null}
+          {synthesisMarkdown ? <MarkdownRenderer content={synthesisMarkdown} /> : null}
         </div>
         <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex gap-2 shrink-0">
           <Button

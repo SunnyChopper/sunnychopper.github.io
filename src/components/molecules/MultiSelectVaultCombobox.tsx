@@ -31,15 +31,13 @@ export function MultiSelectVaultCombobox({
 
   const mergedLabels = useMemo(
     () => ({ ...labelLookup, ...pickedTitles }),
-    [labelLookup, pickedTitles],
+    [labelLookup, pickedTitles]
   );
 
   const selectedItems = useMemo(() => {
     const byId = new Map(hits.map((h) => [h.id, h]));
     return selectedIds.map(
-      (id) =>
-        byId.get(id) ??
-        ({ id, title: mergedLabels[id] || id, type: 'note' } as VaultItem),
+      (id) => byId.get(id) ?? ({ id, title: mergedLabels[id] || id, type: 'note' } as VaultItem)
     );
   }, [selectedIds, hits, mergedLabels]);
 
@@ -146,7 +144,7 @@ export function MultiSelectVaultCombobox({
                     onClick={() => add(h)}
                     className={cn(
                       'w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800',
-                      selectedSet.has(h.id) && 'opacity-50 cursor-not-allowed',
+                      selectedSet.has(h.id) && 'opacity-50 cursor-not-allowed'
                     )}
                   >
                     <span className="font-medium">{h.title}</span>

@@ -146,9 +146,9 @@ export const aiFlashcardGeneratorService = {
       let dId = deckId;
       if (!dId) {
         const all = await vaultItemsService.getAll({ type: 'flashcard' });
-        const f = all.data?.find(
-          (x) => x.id === flashcardId && x.type === 'flashcard'
-        ) as Flashcard | undefined;
+        const f = all.data?.find((x) => x.id === flashcardId && x.type === 'flashcard') as
+          | Flashcard
+          | undefined;
         dId = f?.deckId;
       }
       if (!dId) {
@@ -174,9 +174,9 @@ export const aiFlashcardGeneratorService = {
 
       const c = response.data;
       const list = await vaultItemsService.getAll({ type: 'flashcard' });
-      const existing = list.data?.find(
-        (v) => v.id === flashcardId && v.type === 'flashcard'
-      ) as Flashcard | undefined;
+      const existing = list.data?.find((v) => v.id === flashcardId && v.type === 'flashcard') as
+        | Flashcard
+        | undefined;
 
       const merged: Flashcard = {
         id: c.id,

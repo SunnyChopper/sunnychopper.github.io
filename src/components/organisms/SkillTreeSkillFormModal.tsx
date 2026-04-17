@@ -29,20 +29,18 @@ export function SkillTreeSkillFormModal({
   onSubmit,
   busy = false,
 }: SkillTreeSkillFormModalProps) {
-  const [name, setName] = useState(() =>
-    mode === 'edit' && skill ? skill.name : '',
-  );
+  const [name, setName] = useState(() => (mode === 'edit' && skill ? skill.name : ''));
   const [description, setDescription] = useState(() =>
-    mode === 'edit' && skill ? skill.description ?? '' : '',
+    mode === 'edit' && skill ? (skill.description ?? '') : ''
   );
   const [category, setCategory] = useState(() =>
-    mode === 'edit' && skill ? skill.category ?? '' : '',
+    mode === 'edit' && skill ? (skill.category ?? '') : ''
   );
   const [level, setLevel] = useState<SkillLevelApi>(() =>
-    mode === 'edit' && skill ? ((skill.level as SkillLevelApi) || 'Beginner') : 'Beginner',
+    mode === 'edit' && skill ? (skill.level as SkillLevelApi) || 'Beginner' : 'Beginner'
   );
   const [progress, setProgress] = useState(() =>
-    mode === 'edit' && skill ? skill.progressPercentage ?? 0 : 0,
+    mode === 'edit' && skill ? (skill.progressPercentage ?? 0) : 0
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,7 +80,10 @@ export function SkillTreeSkillFormModal({
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
           <div>
-            <label htmlFor="skill-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="skill-name"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Name
             </label>
             <input
@@ -125,7 +126,10 @@ export function SkillTreeSkillFormModal({
             />
           </div>
           <div>
-            <label htmlFor="skill-level" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="skill-level"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Level
             </label>
             <select
