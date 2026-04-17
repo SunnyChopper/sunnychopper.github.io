@@ -9,7 +9,7 @@ interface WalletProviderProps {
 }
 
 export const WalletProvider = ({ children }: WalletProviderProps) => {
-  const { balance, transactions, loading, error } = useWallet();
+  const { balance, transactions, loading, isRefreshing, error } = useWallet();
   const { addPoints: addPointsMutation, spendPoints: spendPointsMutation } = useWalletMutations();
   const queryClient = useQueryClient();
 
@@ -60,6 +60,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     balance,
     transactions,
     loading,
+    isRefreshing,
     error: error ? (error instanceof Error ? error.message : String(error)) : null,
     refreshWallet,
     addPoints,

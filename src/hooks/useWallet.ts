@@ -16,7 +16,7 @@ export function useWalletBalance() {
   const loadWallet = shouldLoadWalletAndRewards(pathname);
   const { recordError, recordSuccess } = useBackendStatus();
 
-  const { data, isLoading, error, isError } = useQuery({
+  const { data, isLoading, isFetching, isPending, error, isError } = useQuery({
     queryKey: queryKeys.wallet.balance(),
     enabled: loadWallet,
     queryFn: async () => {
@@ -40,9 +40,13 @@ export function useWalletBalance() {
 
   const apiError = error ? extractApiError(error) : null;
 
+  /** True while refetching with cached data (e.g. after task reopen invalidates wallet). */
+  const isRefreshing = isFetching && !isPending && !isError;
+
   return {
     balance: data?.data || null,
     isLoading: isLoading && !isError,
+    isRefreshing,
     isError,
     error: apiError || error,
   };
@@ -56,7 +60,7 @@ export function useWalletTransactions(limit: number = 50) {
   const loadWallet = shouldLoadWalletAndRewards(pathname);
   const { recordError, recordSuccess } = useBackendStatus();
 
-  const { data, isLoading, error, isError } = useQuery({
+  const { data, isLoading, isFetching, isPending, error, isError } = useQuery({
     queryKey: queryKeys.wallet.transactions(limit),
     enabled: loadWallet,
     queryFn: async () => {
@@ -80,9 +84,12 @@ export function useWalletTransactions(limit: number = 50) {
 
   const apiError = error ? extractApiError(error) : null;
 
+  const isRefreshing = isFetching && !isPending && !isError;
+
   return {
     transactions: data?.data || [],
     isLoading: isLoading && !isError,
+    isRefreshing,
     isError,
     error: apiError || error,
   };
@@ -99,6 +106,8 @@ export function useWallet() {
     balance: balanceQuery.balance,
     transactions: transactionsQuery.transactions,
     loading: balanceQuery.isLoading || transactionsQuery.isLoading,
+    /** Background refetch (invalidate) — show compact loading on balance badge */
+    isRefreshing: balanceQuery.isRefreshing || transactionsQuery.isRefreshing,
     error: balanceQuery.error || transactionsQuery.error,
     isError: balanceQuery.isError || transactionsQuery.isError,
   };
