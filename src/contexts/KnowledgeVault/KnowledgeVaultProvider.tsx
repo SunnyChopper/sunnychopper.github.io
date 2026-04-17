@@ -2,7 +2,11 @@ import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { vaultItemsService, coursesService, backendCourseToCourse } from '@/services/knowledge-vault';
+import {
+  vaultItemsService,
+  coursesService,
+  backendCourseToCourse,
+} from '@/services/knowledge-vault';
 import { shouldLoadKnowledgeVaultData } from '@/lib/route-data-policy';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import {

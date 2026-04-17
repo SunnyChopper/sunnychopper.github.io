@@ -1,14 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Text, Stars } from '@react-three/drei';
-import {
-  useMemo,
-  useState,
-  useCallback,
-  useRef,
-  useLayoutEffect,
-  type ComponentRef,
-} from 'react';
+import { useMemo, useState, useCallback, useRef, useLayoutEffect, type ComponentRef } from 'react';
 import { Brain, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
