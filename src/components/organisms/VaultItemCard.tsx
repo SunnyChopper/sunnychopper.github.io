@@ -14,6 +14,7 @@ interface VaultItemCardProps {
   onClick?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  highlighted?: boolean;
 }
 
 function formatDate(dateString: string | null): string {
@@ -86,9 +87,20 @@ function DocumentCardContent({ document }: { document: Document }) {
         </p>
       )}
 
-      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-2">
+      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mb-2 flex-wrap">
         {document.fileType && <span className="uppercase font-medium">{document.fileType}</span>}
         {document.pageCount && <span>{document.pageCount} pages</span>}
+        {document.indexingStatus === 'pending' && (
+          <span className="text-amber-600 dark:text-amber-400 font-medium">Indexing…</span>
+        )}
+        {document.indexingStatus === 'failed' && (
+          <span className="text-red-600 dark:text-red-400 font-medium">Index failed</span>
+        )}
+        {document.indexingStatus === 'complete' &&
+          document.chunkCount != null &&
+          document.chunkCount > 0 && (
+            <span className="text-emerald-600 dark:text-emerald-400">{document.chunkCount} chunks</span>
+          )}
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -187,7 +199,7 @@ function FlashcardCardContent({ flashcard }: { flashcard: Flashcard }) {
   );
 }
 
-export default function VaultItemCard({ item, onClick }: VaultItemCardProps) {
+export default function VaultItemCard({ item, onClick, highlighted }: VaultItemCardProps) {
   const handleClick = () => {
     if (onClick) {
       onClick();
@@ -196,6 +208,7 @@ export default function VaultItemCard({ item, onClick }: VaultItemCardProps) {
 
   return (
     <div
+      id={`vault-item-${item.id}`}
       onClick={handleClick}
       onKeyDown={(e) => {
         if (onClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -210,7 +223,11 @@ export default function VaultItemCard({ item, onClick }: VaultItemCardProps) {
           ? `View ${item.type}: ${item.type === 'note' ? (item as Note).title : item.type === 'document' ? (item as Document).title : 'item'}`
           : undefined
       }
-      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg transition-all cursor-pointer"
+      className={`rounded-lg p-4 transition-all cursor-pointer ${
+        highlighted
+          ? 'bg-white dark:bg-gray-800 border-2 border-violet-500 ring-2 ring-violet-500/20 shadow-lg dark:shadow-violet-900/20'
+          : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg'
+      }`}
     >
       {item.type === 'note' && <NoteCardContent note={item as Note} />}
       {item.type === 'document' && <DocumentCardContent document={item as Document} />}

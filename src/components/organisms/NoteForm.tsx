@@ -7,6 +7,7 @@ import MarkdownEditor from '@/components/molecules/MarkdownEditor';
 import TagInput from '@/components/molecules/TagInput';
 import LinkedItemsPicker from '@/components/molecules/LinkedItemsPicker';
 import NoteAIAssistPanel from '@/components/molecules/NoteAIAssistPanel';
+import { VaultKnowledgeToolsPanel } from '@/components/organisms/VaultKnowledgeToolsPanel';
 import { cn } from '@/lib/utils';
 import { llmConfig } from '@/lib/llm';
 import { useDraftNote, useDraftNoteMutations } from '@/hooks/useDraftNotes';
@@ -262,6 +263,11 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
           minHeight="500px"
           className="min-h-[500px]"
         />
+        {note?.id && (
+          <div className="mt-4">
+            <VaultKnowledgeToolsPanel vaultItemId={note.id} />
+          </div>
+        )}
       </div>
 
       {/* AI Assistant Panel - Fixed Right Side */}

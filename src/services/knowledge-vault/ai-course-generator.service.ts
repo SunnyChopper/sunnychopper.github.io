@@ -1,7 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 import { llmLogger } from '@/lib/logger';
 import { coursesService } from './courses.service';
-import { vaultItemsService } from './vault-items.service';
 import { generateId } from '@/mocks/storage';
 import type {
   Course,
@@ -9,6 +8,7 @@ import type {
   PreAssessmentQuestion,
   DifficultyLevel,
   ApiResponse,
+  PreAssessmentStored,
 } from '@/types/knowledge-vault';
 import {
   buildCourseGenerationGraph,
@@ -36,6 +36,8 @@ interface AIResponse<T> {
 interface GeneratePreAssessmentInput {
   topic: string;
   targetDifficulty: DifficultyLevel;
+  /** When `vault`, backend / client should treat `topic` as already including vault RAG text. */
+  knowledgeSource?: 'global' | 'vault';
 }
 
 interface PreAssessmentResult {
@@ -44,8 +46,9 @@ interface PreAssessmentResult {
 
 interface GenerateCourseSkeletonInput {
   topic: string;
-  assessmentResponses: Record<string, string>;
+  preAssessment: PreAssessmentStored;
   targetDifficulty: DifficultyLevel;
+  knowledgeSource?: 'global' | 'vault';
   onProgress?: (progress: CourseGenerationProgress) => void;
 }
 
@@ -117,13 +120,17 @@ function convertStateToSkeletonResult(state: CourseGenerationState): CourseSkele
 }
 
 interface GenerateLessonContentInput {
-  courseTitle: string;
-  moduleTitle: string;
-  lessonTitle: string;
-  lessonIndex: number;
-  totalLessons: number;
-  difficulty: DifficultyLevel;
+  courseId: string;
+  lessonId: string;
   onProgress?: (progress: LessonGenerationProgress) => void;
+}
+
+export interface CreateCourseFromSkeletonMeta {
+  cleanTopic: string;
+  knowledgeSource: 'global' | 'vault';
+  /** Vault-augmented prompt text; omitted for global courses. */
+  aiGenerationContext?: string;
+  preAssessment: PreAssessmentStored;
 }
 
 export const aiCourseGeneratorService = {
@@ -133,7 +140,11 @@ export const aiCourseGeneratorService = {
     try {
       const response = await apiClient.post<{ data: AIResponse<PreAssessmentResult> }>(
         '/ai/courses/pre-assessment',
-        input
+        {
+          topic: input.topic,
+          targetDifficulty: input.targetDifficulty,
+          knowledgeSource: input.knowledgeSource ?? 'global',
+        }
       );
 
       if (response.success && response.data) {
@@ -174,7 +185,12 @@ export const aiCourseGeneratorService = {
 
       const response = await apiClient.post<{ data: AIResponse<CourseSkeletonResult> }>(
         '/ai/courses/skeleton',
-        input
+        {
+          topic: input.topic,
+          preAssessment: input.preAssessment,
+          targetDifficulty: input.targetDifficulty,
+          knowledgeSource: input.knowledgeSource ?? 'global',
+        }
       );
 
       if (response.success && response.data) {
@@ -316,10 +332,10 @@ export const aiCourseGeneratorService = {
         });
       }
 
-      const response = await apiClient.post<{ data: AIResponse<string> }>(
-        '/ai/courses/lesson',
-        input
-      );
+      const response = await apiClient.post<{ data: AIResponse<string> }>('/ai/courses/lesson', {
+        courseId: input.courseId,
+        lessonId: input.lessonId,
+      });
 
       if (response.success && response.data) {
         if (input.onProgress) {
@@ -352,48 +368,57 @@ export const aiCourseGeneratorService = {
     }
   },
 
-  async createCourseFromSkeleton(skeleton: CourseSkeletonResult): Promise<ApiResponse<Course>> {
+  async createCourseFromSkeleton(
+    skeleton: CourseSkeletonResult,
+    meta: CreateCourseFromSkeletonMeta
+  ): Promise<ApiResponse<Course>> {
     try {
+      let order = 0;
+      const modulesPayload = skeleton.modules.map((bundle) => ({
+        id: bundle.module.id,
+        title: bundle.module.title,
+        description: bundle.module.description ?? null,
+        moduleIndex: bundle.module.moduleIndex,
+        lessons: bundle.lessons.map((lessonData) => ({
+          id: generateId(),
+          title: lessonData.title,
+          order: order++,
+          estimatedMinutes: lessonData.estimatedMinutes,
+          isCompleted: false,
+        })),
+      }));
+
       const courseResponse = await coursesService.create({
         title: skeleton.course.title,
         description: skeleton.course.description || undefined,
-        topic: skeleton.course.topic,
+        topic: meta.cleanTopic,
+        estimatedHours: skeleton.course.estimatedHours ?? null,
         difficulty: skeleton.course.difficulty,
+        isAiGenerated: true,
+        knowledgeSource: meta.knowledgeSource,
+        aiGenerationContext: meta.aiGenerationContext,
+        preAssessment: meta.preAssessment,
+        modules: modulesPayload,
       });
 
       if (!courseResponse.success || !courseResponse.data) {
         throw new Error('Failed to create course');
       }
 
-      const course = courseResponse.data;
-
-      for (const { module, lessons } of skeleton.modules) {
-        const moduleResponse = await coursesService.createModule(
-          course.id,
-          module.title,
-          module.description || undefined
-        );
-
-        if (!moduleResponse.success || !moduleResponse.data) {
-          continue;
-        }
-
-        const createdModule = moduleResponse.data;
-
-        for (let i = 0; i < lessons.length; i++) {
-          const lessonData = lessons[i];
-
-          await vaultItemsService.createCourseLesson({
-            title: lessonData.title,
-            courseId: course.id,
-            moduleId: createdModule.id,
-            lessonIndex: i,
-            estimatedMinutes: lessonData.estimatedMinutes,
-            area: 'Operations',
-            tags: [course.topic.toLowerCase()],
-          });
-        }
-      }
+      const bc = courseResponse.data;
+      const course: Course = {
+        id: bc.id,
+        title: bc.title,
+        description: bc.description,
+        topic: bc.topic || meta.cleanTopic,
+        difficulty: skeleton.course.difficulty,
+        estimatedHours: bc.estimatedHours ?? null,
+        userId: bc.userId,
+        createdAt: bc.createdAt,
+        updatedAt: bc.updatedAt,
+        isAiGenerated: true,
+        knowledgeSource: meta.knowledgeSource,
+      };
 
       return {
         data: course,

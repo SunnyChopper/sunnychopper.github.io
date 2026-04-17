@@ -4,6 +4,7 @@ import type {
   Note,
   Document,
   Flashcard,
+  FlashcardDeck,
   Course,
   VaultItemType,
   VaultItemFilters,
@@ -12,6 +13,7 @@ import type {
   CreateDocumentInput,
   UpdateDocumentInput,
   CreateFlashcardInput,
+  CreateFlashcardDeckInput,
   UpdateFlashcardInput,
   CreateCourseInput,
   UpdateCourseInput,
@@ -20,10 +22,12 @@ import type {
 export interface KnowledgeVaultContextType {
   vaultItems: VaultItem[];
   flashcards: Flashcard[];
+  flashcardDecks: FlashcardDeck[];
   courses: Course[];
   loading: boolean;
   error: string | null;
   refreshVaultItems: () => Promise<void>;
+  refreshFlashcardDecks: () => Promise<void>;
   refreshCourses: () => Promise<void>;
   searchItems: (query: string) => Promise<VaultItem[]>;
   getItemsByType: (type: VaultItemType) => VaultItem[];
@@ -33,6 +37,7 @@ export interface KnowledgeVaultContextType {
   createDocument: (input: CreateDocumentInput) => Promise<Document>;
   updateDocument: (id: string, input: UpdateDocumentInput) => Promise<Document>;
   createFlashcard: (input: CreateFlashcardInput) => Promise<Flashcard>;
+  createFlashcardDeck: (input: CreateFlashcardDeckInput) => Promise<FlashcardDeck>;
   updateFlashcard: (id: string, input: UpdateFlashcardInput) => Promise<Flashcard>;
   createCourse: (input: CreateCourseInput) => Promise<Course>;
   updateCourse: (id: string, input: UpdateCourseInput) => Promise<Course>;
@@ -51,6 +56,7 @@ export type {
   Note,
   Document,
   Flashcard,
+  FlashcardDeck,
   Course,
   VaultItemType,
   VaultItemFilters,
@@ -59,6 +65,7 @@ export type {
   CreateDocumentInput,
   UpdateDocumentInput,
   CreateFlashcardInput,
+  CreateFlashcardDeckInput,
   UpdateFlashcardInput,
   CreateCourseInput,
   UpdateCourseInput,

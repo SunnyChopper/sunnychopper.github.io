@@ -1,14 +1,23 @@
 import type { ConceptSynthesis, ConceptNode } from '@/types/concept-graph';
 import { llmLogger } from '@/lib/logger';
+import { conceptGraphService } from '@/services/knowledge-vault/concept-graph.service';
 
 export const conceptSynthesisService = {
   async generateSynthesis(node1: ConceptNode, node2: ConceptNode): Promise<ConceptSynthesis> {
     try {
-      return this.generateFallbackSynthesis(node1, node2);
+      const res = await conceptGraphService.synthesize([node1.id, node2.id]);
+      if (res.success && res.data?.markdown) {
+        return {
+          synthesis: res.data.markdown,
+          insights: [],
+          applications: [],
+          connectionStrength: 0.85,
+        };
+      }
     } catch (error) {
       llmLogger.error('Error generating synthesis', error);
-      return this.generateFallbackSynthesis(node1, node2);
     }
+    return this.generateFallbackSynthesis(node1, node2);
   },
 
   generateFallbackSynthesis(node1: ConceptNode, node2: ConceptNode): ConceptSynthesis {

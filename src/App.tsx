@@ -17,6 +17,12 @@ import { useThemeInitializer } from './hooks/useTheme';
 import ChatbotPage from './pages/admin/ChatbotPage';
 import ComponentsDemoPage from './pages/admin/ComponentsDemoPage';
 import ConceptColliderPage from './pages/admin/ConceptColliderPage';
+import InboxPage from './pages/admin/InboxPage';
+import MindPalacePage from './pages/admin/MindPalacePage';
+import CheatSheetPage from './pages/admin/CheatSheetPage';
+import SyntopicPage from './pages/admin/SyntopicPage';
+import TaskLinksPage from './pages/admin/TaskLinksPage';
+import FeynmanStudyPage from './pages/admin/FeynmanStudyPage';
 import CourseDetailPage from './pages/admin/CourseDetailPage';
 import CourseGeneratorPage from './pages/admin/CourseGeneratorPage';
 import CoursesPage from './pages/admin/CoursesPage';
@@ -136,6 +142,12 @@ function AppContent() {
             path={ADMIN_CHILD_ROUTES.knowledgeVaultCollider}
             element={<ConceptColliderPage />}
           />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultInbox} element={<InboxPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultMindPalace} element={<MindPalacePage />} />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultCheatSheet} element={<CheatSheetPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultSyntopic} element={<SyntopicPage />} />
+          <Route path={ADMIN_CHILD_ROUTES.knowledgeVaultTaskLinks} element={<TaskLinksPage />} />
+          <Route path={`${ADMIN_CHILD_ROUTES.knowledgeVaultFeynmanStudy}/:itemId`} element={<FeynmanStudyPage />} />
           <Route path="knowledge-vault/study" element={<StudySessionPage />} />
           <Route path="knowledge-vault/statistics" element={<StudyStatisticsPage />} />
           <Route path={ADMIN_CHILD_ROUTES.tools} element={<ToolsOverviewPage />} />

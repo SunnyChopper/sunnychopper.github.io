@@ -1,10 +1,27 @@
 import { useState, useEffect } from 'react';
-import { X, Tag as TagIcon } from 'lucide-react';
+import { X, Tag as TagIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import FileUploadZone from '@/components/molecules/FileUploadZone';
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import { documentUploadService } from '@/services/knowledge-vault/document-upload.service';
 import type { Document, CreateDocumentInput, UpdateDocumentInput } from '@/types/knowledge-vault';
 import type { Area } from '@/types/growth-system';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
+
+const DOC_UPLOAD_EXTENSIONS = ['pdf', 'docx', 'pptx', 'png', 'jpg', 'jpeg', 'txt', 'md', 'markdown'];
+
+function titleFromFilename(file: File): string {
+  const name = file.name;
+  const i = name.lastIndexOf('.');
+  const base = (i > 0 ? name.slice(0, i) : name).replace(/[-_]/g, ' ').trim();
+  return base || 'Untitled';
+}
+
+function extFromFilename(file: File): string {
+  const n = file.name;
+  const i = n.lastIndexOf('.');
+  return i > 0 ? n.slice(i + 1).toLowerCase() : '';
+}
 
 interface DocumentFormProps {
   document?: Document;
@@ -13,9 +30,12 @@ interface DocumentFormProps {
 }
 
 export default function DocumentForm({ document, onSuccess, onCancel }: DocumentFormProps) {
-  const { createDocument, updateDocument } = useKnowledgeVault();
+  const { createDocument, updateDocument, refreshVaultItems } = useKnowledgeVault();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showAdvancedUrl, setShowAdvancedUrl] = useState(false);
 
   const [formData, setFormData] = useState({
     title: document?.title || '',
@@ -40,6 +60,7 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
         pageCount: (document as Document).pageCount || null,
         tags: document.tags,
       });
+      setPendingFile(null);
     }
   }, [document]);
 
@@ -61,10 +82,30 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
     }));
   };
 
+  const onFilesSelected = (files: File[]) => {
+    const f = files[0];
+    if (!f) return;
+    setPendingFile(f);
+    setFormData((prev) => ({
+      ...prev,
+      fileType: extFromFilename(f),
+      title: prev.title.trim() ? prev.title : titleFromFilename(f),
+      fileUrl: '',
+    }));
+    setShowAdvancedUrl(false);
+    setError(null);
+  };
+
+  const clearPendingFile = () => {
+    setPendingFile(null);
+    setUploadProgress(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    setUploadProgress(null);
 
     try {
       if (!formData.title.trim()) {
@@ -82,6 +123,23 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
           tags: formData.tags,
         };
         await updateDocument(document.id, input);
+      } else if (pendingFile) {
+        setUploadProgress(0);
+        const presign = await documentUploadService.getPresignedUrl(pendingFile);
+        await documentUploadService.uploadToS3WithProgress(
+          presign.uploadUrl,
+          pendingFile,
+          (pct) => setUploadProgress(pct)
+        );
+        await documentUploadService.createDocumentFromFile({
+          fileId: presign.fileId,
+          title: formData.title.trim(),
+          area: formData.area,
+          tags: formData.tags,
+          content: formData.content.trim() || undefined,
+          fileType: formData.fileType || undefined,
+        });
+        await refreshVaultItems();
       } else {
         const input: CreateDocumentInput = {
           title: formData.title,
@@ -100,8 +158,11 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
       setError(err instanceof Error ? err.message : 'Failed to save document');
     } finally {
       setLoading(false);
+      setUploadProgress(null);
     }
   };
+
+  const isCreate = !document;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -162,7 +223,7 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
             onChange={(e) =>
               setFormData((prev) => ({
                 ...prev,
-                pageCount: e.target.value ? parseInt(e.target.value) : null,
+                pageCount: e.target.value ? parseInt(e.target.value, 10) : null,
               }))
             }
             className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
@@ -172,18 +233,82 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          File URL
-        </label>
-        <input
-          type="url"
-          value={formData.fileUrl}
-          onChange={(e) => setFormData((prev) => ({ ...prev, fileUrl: e.target.value }))}
-          className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
-          placeholder="https://example.com/document.pdf"
-        />
-      </div>
+      {isCreate && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Upload file
+          </label>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            PDF, DOCX, PPTX, PNG, JPG, TXT, Markdown (max 50 MB). Optional if you use a link below.
+          </p>
+          {pendingFile ? (
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <span className="text-sm text-gray-800 dark:text-gray-200 truncate pr-2">
+                {pendingFile.name}
+              </span>
+              <button
+                type="button"
+                onClick={clearPendingFile}
+                className="text-sm text-red-600 dark:text-red-400 hover:underline shrink-0"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <FileUploadZone
+              onFilesSelected={onFilesSelected}
+              accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg,.txt,.md,.markdown"
+              extensions={DOC_UPLOAD_EXTENSIONS}
+              multiple={false}
+              maxSizeMB={50}
+            />
+          )}
+          {uploadProgress !== null && uploadProgress < 100 && (
+            <div className="space-y-1">
+              <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-600 transition-all duration-150"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Uploading… {uploadProgress}%</p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowAdvancedUrl((v) => !v)}
+            className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 hover:underline"
+          >
+            {showAdvancedUrl ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            Or paste a file URL
+          </button>
+          {showAdvancedUrl && (
+            <input
+              type="url"
+              value={formData.fileUrl}
+              onChange={(e) => setFormData((prev) => ({ ...prev, fileUrl: e.target.value }))}
+              className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
+              placeholder="https://example.com/document.pdf"
+            />
+          )}
+        </div>
+      )}
+
+      {!isCreate && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            File URL
+          </label>
+          <input
+            type="url"
+            value={formData.fileUrl}
+            onChange={(e) => setFormData((prev) => ({ ...prev, fileUrl: e.target.value }))}
+            className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
+            placeholder="https://example.com/document.pdf"
+          />
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

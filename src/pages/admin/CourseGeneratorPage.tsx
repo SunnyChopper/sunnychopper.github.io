@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sparkles, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { aiCourseGeneratorService } from '@/services/knowledge-vault';
+import { vaultPrimitivesService } from '@/services/knowledge-vault/vault-primitives.service';
 import type { PreAssessmentQuestion, DifficultyLevel } from '@/types/knowledge-vault';
 import type { CourseGenerationProgress } from '@/services/knowledge-vault/course-generation/types';
 import { ROUTES } from '@/routes';
@@ -10,11 +11,32 @@ type Step = 'topic' | 'assessment' | 'generating' | 'review';
 
 const DIFFICULTIES: DifficultyLevel[] = ['beginner', 'intermediate', 'advanced', 'expert'];
 
+const WIZARD_STEPS = [
+  { index: 1, label: 'Choose topic' },
+  { index: 2, label: 'Take quiz' },
+  { index: 3, label: 'Create course' },
+] as const;
+
+function wizardStepIndex(step: Step): 1 | 2 | 3 {
+  if (step === 'topic') return 1;
+  if (step === 'assessment') return 2;
+  return 3;
+}
+
 export default function CourseGeneratorPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<Step>('topic');
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('intermediate');
+  const [knowledgeSource, setKnowledgeSource] = useState<'global' | 'vault'>('global');
+
+  useEffect(() => {
+    const t = searchParams.get('topic');
+    const d = searchParams.get('difficulty') as DifficultyLevel | null;
+    if (t) setTopic(t);
+    if (d && DIFFICULTIES.includes(d)) setDifficulty(d);
+  }, [searchParams]);
   const [assessmentQuestions, setAssessmentQuestions] = useState<PreAssessmentQuestion[]>([]);
   const [assessmentResponses, setAssessmentResponses] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -27,6 +49,26 @@ export default function CourseGeneratorPage() {
     progress: number;
   } | null>(null);
 
+  const buildAugmentedTopic = async (): Promise<{ topic: string; knowledgeSource: 'global' | 'vault' }> => {
+    const base = topic.trim();
+    if (knowledgeSource === 'global') {
+      return { topic: base, knowledgeSource: 'global' };
+    }
+    const jit = await vaultPrimitivesService.jitSearch(base);
+    const hits =
+      jit.success && jit.data?.hits
+        ? (jit.data.hits as Array<{ title?: string; summary?: string | null }>)
+        : [];
+    const blob = hits
+      .slice(0, 15)
+      .map((h) => `### ${h.title ?? 'Note'}\n${h.summary ?? ''}`)
+      .join('\n\n');
+    const topicBlock = blob
+      ? `${base}\n\n---\nMY_VAULT_ONLY — Use ONLY the following vault notes as factual sources. Do not invent beyond them.\n\n${blob}`
+      : `${base}\n\n---\nMY_VAULT_ONLY — No vault snippets matched this topic; stay conservative and avoid hallucinating sources.`;
+    return { topic: topicBlock, knowledgeSource: 'vault' };
+  };
+
   const handleTopicSubmit = async () => {
     if (!topic.trim()) {
       setError('Please enter a topic');
@@ -37,9 +79,11 @@ export default function CourseGeneratorPage() {
     setError(null);
 
     try {
+      const payload = await buildAugmentedTopic();
       const response = await aiCourseGeneratorService.generatePreAssessment({
-        topic,
+        topic: payload.topic,
         targetDifficulty: difficulty,
+        knowledgeSource: payload.knowledgeSource,
       });
 
       if (response.success && response.data) {
@@ -76,16 +120,32 @@ export default function CourseGeneratorPage() {
     };
 
     try {
+      const payload = await buildAugmentedTopic();
+      const completedAt = new Date().toISOString();
+      const preAssessment = {
+        questions: assessmentQuestions,
+        userResponses: assessmentResponses,
+        completedAt,
+      };
+
       const skeletonResponse = await aiCourseGeneratorService.generateCourseSkeleton({
-        topic,
-        assessmentResponses,
+        topic: payload.topic,
+        preAssessment,
         targetDifficulty: difficulty,
+        knowledgeSource: payload.knowledgeSource,
         onProgress: handleProgress,
       });
 
       if (skeletonResponse.success && skeletonResponse.data) {
         const courseResponse = await aiCourseGeneratorService.createCourseFromSkeleton(
-          skeletonResponse.data
+          skeletonResponse.data,
+          {
+            cleanTopic: topic.trim(),
+            knowledgeSource: payload.knowledgeSource,
+            aiGenerationContext:
+              payload.knowledgeSource === 'vault' ? payload.topic : undefined,
+            preAssessment,
+          }
         );
 
         if (courseResponse.success && courseResponse.data) {
@@ -118,15 +178,32 @@ export default function CourseGeneratorPage() {
     }));
   };
 
+  const activeWizardStep = wizardStepIndex(step);
+
+  const handleHeaderBack = () => {
+    if (step === 'assessment') setStep('topic');
+    else if (step === 'review') navigate(ROUTES.admin.knowledgeVaultCourses);
+  };
+
+  const showHeaderBack = step === 'assessment' || step === 'review';
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={() => navigate(ROUTES.admin.knowledgeVaultCourses)}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
-        >
-          <ArrowLeft size={20} />
-        </button>
+        {showHeaderBack ? (
+          <button
+            type="button"
+            onClick={handleHeaderBack}
+            aria-label={
+              step === 'assessment' ? 'Back to choose topic' : 'Back to courses list'
+            }
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        ) : (
+          <div className="w-10" aria-hidden />
+        )}
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Course Generator</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -135,27 +212,48 @@ export default function CourseGeneratorPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center mb-8">
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'topic' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}
-          >
-            1
-          </div>
-          <div className="w-16 h-1 bg-gray-300 dark:bg-gray-700" />
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'assessment' || step === 'generating' || step === 'review' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}
-          >
-            2
-          </div>
-          <div className="w-16 h-1 bg-gray-300 dark:bg-gray-700" />
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'review' ? 'bg-green-600 text-white' : 'bg-gray-300 dark:bg-gray-700'}`}
-          >
-            3
-          </div>
-        </div>
-      </div>
+      <nav
+        className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8"
+        aria-label="Course creation steps"
+      >
+        {WIZARD_STEPS.map((s, i) => {
+          const isCurrent = activeWizardStep === s.index;
+          const isDone = activeWizardStep > s.index;
+          return (
+            <div key={s.index} className="flex items-center gap-2">
+              <div
+                className={`flex flex-col items-center gap-1 ${isCurrent ? 'font-semibold' : ''}`}
+              >
+                <div
+                  aria-current={isCurrent ? 'step' : undefined}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                    isDone || isCurrent
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                  }`}
+                >
+                  {s.index}
+                </div>
+                <span
+                  className={`text-xs text-center max-w-[7rem] ${
+                    isCurrent
+                      ? 'text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  {s.label}
+                </span>
+              </div>
+              {i < WIZARD_STEPS.length - 1 && (
+                <div
+                  className="hidden sm:block w-12 h-1 bg-gray-300 dark:bg-gray-700 mx-1"
+                  aria-hidden
+                />
+              )}
+            </div>
+          );
+        })}
+      </nav>
 
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
@@ -181,6 +279,42 @@ export default function CourseGeneratorPage() {
                 placeholder="e.g., React Hooks, Python Data Science, AWS Lambda"
                 className="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 text-lg"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Knowledge source
+              </label>
+              <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden w-full max-w-md">
+                <button
+                  type="button"
+                  onClick={() => setKnowledgeSource('global')}
+                  className={`flex-1 px-4 py-2 text-sm font-medium ${
+                    knowledgeSource === 'global'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  Global Web
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKnowledgeSource('vault')}
+                  className={`flex-1 px-4 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 ${
+                    knowledgeSource === 'vault'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  My Vault Only
+                </button>
+              </div>
+              {knowledgeSource === 'vault' && (
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                  Course prompts will include retrieved vault notes only (semantic JIT); stay within that
+                  material.
+                </p>
+              )}
             </div>
 
             <div>
@@ -265,7 +399,9 @@ export default function CourseGeneratorPage() {
 
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={() => setStep('topic')}
+              aria-label="Back to choose topic"
               className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition"
             >
               Back
