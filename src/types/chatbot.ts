@@ -48,6 +48,8 @@ export interface ChatMessage {
     proactiveAutomationId?: string;
     source?: string;
     inboundMessageId?: string;
+    /** Local date (YYYY-MM-DD) for memory context on scheduled turns (e.g. Daily Briefing). */
+    memoryContextDate?: string;
   };
   createdAt: string;
   parentId?: string;

@@ -251,7 +251,7 @@ export default function ChatbotPage() {
   );
 
   return (
-    <div className="relative flex h-full min-h-0 bg-white dark:bg-gray-800 max-lg:pt-[calc(3.5rem+env(safe-area-inset-top,0px))] lg:pt-0">
+    <div className="relative flex min-h-0 flex-1 min-w-0 overflow-hidden bg-white dark:bg-gray-800 max-lg:pt-[calc(3.5rem+env(safe-area-inset-top,0px))] lg:pt-0">
       {modelPopoverOpen && pickerDraft && typeof document !== 'undefined'
         ? createPortal(
             <div
@@ -330,7 +330,7 @@ export default function ChatbotPage() {
         {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
       </button>
 
-      <div className="flex-1 min-w-0 min-h-0 bg-white dark:bg-gray-800 flex flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-gray-800">
         <BackendStatusBanner />
         <div className="px-2 py-2.5 sm:px-4 sm:py-3 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-2 sm:gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
           <div className="flex gap-2 sm:gap-3 min-w-0 flex-1">

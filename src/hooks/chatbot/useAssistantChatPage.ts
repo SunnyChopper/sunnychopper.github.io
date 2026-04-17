@@ -35,6 +35,10 @@ import type {
   AssistantRunConfig,
 } from '@/types/chatbot';
 import { useThreadContextUsage } from '@/hooks/chatbot/useThreadContextUsage';
+import {
+  extractAssistantRunConfigForLeaf,
+  headerLabelsFromAssistantRunConfig,
+} from '@/lib/assistant/thread-run-config';
 
 export function useAssistantChatPage({
   onRestoreInput,
@@ -89,6 +93,8 @@ export function useAssistantChatPage({
   } = useMessageTree(resolvedThreadId || undefined);
 
   const activeThread = syntheticDraftThread ?? serverThread;
+  const isLocalDraft =
+    Boolean(resolvedThreadId) && isLocalAssistantThreadId(resolvedThreadId ?? '');
 
   const { createThread, updateThread, deleteThread, isUpdating } = useChatThreadMutations();
   const { createMessage } = useChatMessageMutations();
@@ -135,6 +141,14 @@ export function useAssistantChatPage({
   const pickerStorageKey = user?.id ? `assistant-model-picker:${user.id}` : null;
   /** Avoid re-applying localStorage / defaults when React Query refreshes `data` object identity. */
   const pickerHydratedForKeyRef = useRef<string | null>(null);
+  /** When true, the next picker→localStorage sync is skipped (leaf hydration is in-memory only). */
+  const skipNextPickerPersistRef = useRef(false);
+  /** Last (thread, leaf, run-config snapshot) we applied from transcript metadata — avoids reverting Save & apply when picker state changes. */
+  const lastLeafSyncRef = useRef<{
+    threadId: string | null;
+    leafId: string | null;
+    runConfigSig: string;
+  }>({ threadId: null, leafId: null, runConfigSig: '' });
 
   useEffect(() => {
     pickerHydratedForKeyRef.current = null;
@@ -195,6 +209,10 @@ export function useAssistantChatPage({
     if (!pickerStorageKey) {
       return;
     }
+    if (skipNextPickerPersistRef.current) {
+      skipNextPickerPersistRef.current = false;
+      return;
+    }
     try {
       localStorage.setItem(
         pickerStorageKey,
@@ -219,6 +237,54 @@ export function useAssistantChatPage({
     webSearchEnabled,
     threadCompactionMode,
   ]);
+
+  /** Re-apply the saved global picker when a thread leaf has no stored per-message run config. */
+  const restoreGlobalModelPicker = useCallback(() => {
+    const data = modelCatalogQuery.data;
+    if (!data?.defaults || !pickerStorageKey) {
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(pickerStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          mode?: 'manual' | 'auto';
+          reasoningModelId?: string;
+          responseModelId?: string;
+          optimizeFor?: AssistantOptimizeFor;
+          webSearchEnabled?: boolean;
+          compactionMode?: AssistantCompactionMode;
+        };
+        if (parsed.mode === 'auto' || parsed.mode === 'manual') {
+          setModelPickerMode(parsed.mode);
+        }
+        if (parsed.reasoningModelId) {
+          setReasoningModelId(parsed.reasoningModelId);
+        }
+        if (parsed.responseModelId) {
+          setResponseModelId(parsed.responseModelId);
+        }
+        if (parsed.optimizeFor) {
+          setOptimizeFor(parsed.optimizeFor);
+        }
+        if (typeof parsed.webSearchEnabled === 'boolean') {
+          setWebSearchEnabled(parsed.webSearchEnabled);
+        }
+        if (parsed.compactionMode === 'manual' || parsed.compactionMode === 'auto') {
+          setThreadCompactionMode(parsed.compactionMode);
+        }
+        return;
+      }
+    } catch {
+      /* ignore corrupt localStorage */
+    }
+    setModelPickerMode('auto');
+    setOptimizeFor('intelligence');
+    setReasoningModelId(data.defaults.defaultReasoningModelId);
+    setResponseModelId(data.defaults.defaultResponseModelId);
+    setWebSearchEnabled(false);
+    setThreadCompactionMode('auto');
+  }, [modelCatalogQuery.data, pickerStorageKey]);
 
   const getRunConfig = useCallback((): AssistantRunConfig | undefined => {
     const models = modelCatalogQuery.data?.models;
@@ -302,8 +368,80 @@ export function useAssistantChatPage({
     webSearchEnabled,
   ]);
 
+  const { selectedLeafId, transcript, setSelectedLeafId, getSiblings, selectSibling } =
+    useBranchSelection({
+      threadId: resolvedThreadId || undefined,
+      tree: treeForBranch,
+      nodeById: nodeByIdForBranch,
+      activeLeafMessageId: activeThread?.activeLeafMessageId,
+    });
+
+  const runConfigForSelectedLeaf = useMemo(
+    () =>
+      extractAssistantRunConfigForLeaf(
+        selectedLeafId ?? activeThread?.activeLeafMessageId,
+        treeForBranch?.nodes
+      ),
+    [selectedLeafId, activeThread?.activeLeafMessageId, treeForBranch?.nodes]
+  );
+
+  /** Sync picker with the model config stored on the thread leaf (e.g. proactive / headless runs). */
+  useEffect(() => {
+    if (!resolvedThreadId || isLocalAssistantThreadId(resolvedThreadId) || isLocalDraft) {
+      lastLeafSyncRef.current = { threadId: null, leafId: null, runConfigSig: '' };
+      return;
+    }
+    const leafId = selectedLeafId ?? activeThread?.activeLeafMessageId ?? null;
+    const runConfigSig =
+      runConfigForSelectedLeaf == null ? 'null' : JSON.stringify(runConfigForSelectedLeaf);
+    const prev = lastLeafSyncRef.current;
+    if (
+      prev.threadId === resolvedThreadId &&
+      prev.leafId === leafId &&
+      prev.runConfigSig === runConfigSig
+    ) {
+      return;
+    }
+    lastLeafSyncRef.current = {
+      threadId: resolvedThreadId,
+      leafId,
+      runConfigSig,
+    };
+
+    if (!runConfigForSelectedLeaf) {
+      restoreGlobalModelPicker();
+      return;
+    }
+    const cfg = runConfigForSelectedLeaf;
+    skipNextPickerPersistRef.current = true;
+    if (cfg.mode === 'manual') {
+      setModelPickerMode('manual');
+      setReasoningModelId(cfg.manual.reasoningModelId);
+      setResponseModelId(cfg.manual.responseModelId);
+    } else {
+      setModelPickerMode('auto');
+      setOptimizeFor(cfg.auto.optimizeFor);
+    }
+    if (cfg.webSearchEnabled === true) {
+      setWebSearchEnabled(true);
+    } else if (cfg.webSearchEnabled === false) {
+      setWebSearchEnabled(false);
+    }
+    if (cfg.compactionMode === 'manual' || cfg.compactionMode === 'auto') {
+      setThreadCompactionMode(cfg.compactionMode);
+    }
+  }, [
+    activeThread?.activeLeafMessageId,
+    isLocalDraft,
+    resolvedThreadId,
+    restoreGlobalModelPicker,
+    runConfigForSelectedLeaf,
+    selectedLeafId,
+  ]);
+
   const resolvedModelsDisplay = useMemo(() => {
     const catalogModels = modelCatalogQuery.data?.models ?? [];
+    const defaults = modelCatalogQuery.data?.defaults;
     const labelFor = (id: string) => catalogModels.find((m) => m.id === id)?.label ?? id;
     const threadKey = streamingThreadId ?? resolvedThreadId ?? null;
     const runResolved =
@@ -322,31 +460,40 @@ export function useAssistantChatPage({
             modelMode: lastResolvedModelPick.modelMode,
           }
         : null;
+    const fromMessageTree =
+      runConfigForSelectedLeaf && catalogModels.length && defaults
+        ? headerLabelsFromAssistantRunConfig(
+            runConfigForSelectedLeaf,
+            catalogModels,
+            defaults
+          )
+        : null;
     const pick = runResolved ?? persisted;
-    if (!pick) {
-      return null;
+    if (pick) {
+      return {
+        reasoningLabel: labelFor(pick.reasoningId),
+        responseLabel: labelFor(pick.responseId),
+        modelMode: pick.modelMode,
+      };
     }
-    return {
-      reasoningLabel: labelFor(pick.reasoningId),
-      responseLabel: labelFor(pick.responseId),
-      modelMode: pick.modelMode,
-    };
+    if (fromMessageTree) {
+      return {
+        reasoningLabel: fromMessageTree.reasoningLabel,
+        responseLabel: fromMessageTree.responseLabel,
+        modelMode: fromMessageTree.modelMode,
+      };
+    }
+    return null;
   }, [
     activeRunId,
     runs,
     lastResolvedModelPick,
+    modelCatalogQuery.data?.defaults,
     modelCatalogQuery.data?.models,
+    runConfigForSelectedLeaf,
     streamingThreadId,
     resolvedThreadId,
   ]);
-
-  const { selectedLeafId, transcript, setSelectedLeafId, getSiblings, selectSibling } =
-    useBranchSelection({
-      threadId: resolvedThreadId || undefined,
-      tree: treeForBranch,
-      nodeById: nodeByIdForBranch,
-      activeLeafMessageId: activeThread?.activeLeafMessageId,
-    });
 
   const leafForContextUsage = selectedLeafId ?? activeThread?.activeLeafMessageId ?? null;
 
@@ -378,9 +525,6 @@ export function useAssistantChatPage({
 
   useThinkingAccordionSync(runs, setThinkingExpanded);
   useExecutionTraceAccordionSync(runs, setExecutionTraceExpanded);
-
-  const isLocalDraft =
-    Boolean(resolvedThreadId) && isLocalAssistantThreadId(resolvedThreadId ?? '');
 
   const manualSendBlockedMessage = useMemo(() => {
     if (isLocalDraft || threadCompactionMode !== 'manual') {

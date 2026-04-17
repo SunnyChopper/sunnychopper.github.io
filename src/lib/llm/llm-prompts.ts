@@ -39,7 +39,7 @@ Respond with JSON in this exact format:
     "priority": "P1, P2, P3, or P4",
     "dueDate": "YYYY-MM-DD format or null",
     "scheduledDate": "YYYY-MM-DD format or null",
-    "size": "estimated hours as number or null"
+    "size": "Fibonacci story points (1,2,3,5,8,13,21) or null — not time"
   },
   "confidence": 0.0 to 1.0,
   "extractedEntities": ["list", "of", "key", "entities", "found"]
@@ -67,7 +67,7 @@ Respond with JSON in this exact format:
       "description": "brief description",
       "area": "${area}",
       "priority": "P1-P4",
-      "size": estimated hours as number or null
+      "size": "Fibonacci story points (1,2,3,5,8,13,21) or null"
     }
   ],
   "reasoning": "brief explanation of the breakdown approach"
@@ -126,18 +126,19 @@ export function getEffortEstimationPrompt(
   taskDescription: string | null,
   similarTasks: Array<{ title: string; size: number | null }>
 ): string {
-  return `Estimate the effort required for this task:
+  return `Estimate Fibonacci story points for this task (relative complexity, not duration):
 
 Task: ${taskTitle}
 ${taskDescription ? `Description: ${taskDescription}` : ''}
 
-${similarTasks.length > 0 ? `Similar completed tasks for reference:\n${similarTasks.map((t) => `- ${t.title}: ${t.size ?? 'unknown'} hours`).join('\n')}` : ''}
+${similarTasks.length > 0 ? `Similar completed tasks for reference:\n${similarTasks.map((t) => `- ${t.title}: ${t.size ?? 'unknown'} pts`).join('\n')}` : ''}
 
 Respond with JSON in this exact format:
 {
-  "estimatedSize": number in hours,
-  "confidence": 0.0 to 1.0,
-  "comparisons": ["comparison note 1", "comparison note 2"]
+  "storyPoints": one of 1, 2, 3, 5, 8, 13, 21,
+  "confidence": "low" | "medium" | "high",
+  "complexityFactors": ["factor 1", "factor 2"],
+  "assumptions": ["assumption 1"]
 }`;
 }
 
@@ -234,7 +235,7 @@ Respond with JSON in this exact format:
       "description": "brief description",
       "area": "${area}",
       "priority": "P1-P4",
-      "size": estimated hours or null
+      "size": "Fibonacci story points (1,2,3,5,8,13,21) or null"
     }
   ],
   "reasoning": "explanation of what gaps these tasks fill"

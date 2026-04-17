@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
+import { formatAssistantRunErrorForDisplay } from '@/lib/chat/assistant-error-display';
 import type { WsRunErrorPayload } from '@/types/chatbot';
 
-type ShowToast = (options: { type: 'error'; title: string; message: string }) => string;
+type ShowToast = (options: {
+  type: 'error';
+  title: string;
+  message: string;
+  duration?: number;
+}) => string;
 
 export function useAssistantStreamingToasts(
   showToast: ShowToast,
@@ -19,7 +25,8 @@ export function useAssistantStreamingToasts(
     const toastId = showToast({
       type: 'error',
       title: 'Assistant error',
-      message: streamingError.message,
+      message: formatAssistantRunErrorForDisplay(streamingError),
+      duration: 30_000,
     });
     assistantErrorToastIdRef.current = toastId;
   }, [showToast, streamingError]);

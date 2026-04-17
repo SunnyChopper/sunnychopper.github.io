@@ -1,5 +1,13 @@
 import { z } from 'zod';
+import { TASK_STORY_POINTS_FIBONACCI } from '@/constants/growth-system';
 import { AreaSchema, SubCategorySchema, PrioritySchema, ConfidenceSchema } from './common-schemas';
+
+const isFibonacciStoryPoint = (n: number) => TASK_STORY_POINTS_FIBONACCI.includes(n);
+
+export const TaskStoryPointsSchema = z
+  .number()
+  .int()
+  .refine(isFibonacciStoryPoint, { message: 'Must be a Fibonacci story point (1,2,3,5,8,13,21)' });
 
 export const ParseTaskOutputSchema = z.object({
   title: z.string().describe('The task title extracted from natural language'),
@@ -9,7 +17,7 @@ export const ParseTaskOutputSchema = z.object({
   priority: PrioritySchema.default('P3').describe('Suggested priority level'),
   dueDate: z.string().optional().describe('ISO date string if a deadline was mentioned'),
   scheduledDate: z.string().optional().describe('ISO date string if a specific date was mentioned'),
-  size: z.number().min(1).max(5).optional().describe('Effort estimate (1-5 scale)'),
+  size: TaskStoryPointsSchema.optional().describe('Fibonacci story points if inferable'),
   confidence: ConfidenceSchema.describe('Confidence in the parsing accuracy'),
 });
 
@@ -18,7 +26,7 @@ export type ParseTaskOutput = z.infer<typeof ParseTaskOutputSchema>;
 export const SubtaskSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
-  estimatedSize: z.number().min(1).max(5).optional(),
+  storyPoints: TaskStoryPointsSchema.optional(),
   order: z.number(),
 });
 
@@ -26,10 +34,7 @@ export const TaskBreakdownOutputSchema = z.object({
   subtasks: z.array(SubtaskSchema).describe('List of subtasks in logical order'),
   reasoning: z.string().describe('Explanation of how the task was broken down'),
   confidence: ConfidenceSchema.describe('Confidence in the breakdown quality'),
-  totalEstimatedEffort: z
-    .number()
-    .optional()
-    .describe('Total estimated effort across all subtasks'),
+  totalStoryPoints: z.number().int().optional().describe('Total story points across all subtasks'),
 });
 
 export type TaskBreakdownOutput = z.infer<typeof TaskBreakdownOutputSchema>;
@@ -46,22 +51,13 @@ export const PriorityAdvisorOutputSchema = z.object({
 export type PriorityAdvisorOutput = z.infer<typeof PriorityAdvisorOutputSchema>;
 
 export const EffortEstimationOutputSchema = z.object({
-  estimatedSize: z.number().min(1).max(5).describe('Size estimate on 1-5 scale'),
-  reasoning: z.string().describe('Explanation for the estimate'),
-  confidence: ConfidenceSchema.describe('Confidence in the estimate'),
-  factors: z.array(z.string()).describe('Factors affecting the estimate'),
-  breakdown: z
-    .object({
-      research: z.number().min(0).max(5).optional(),
-      implementation: z.number().min(0).max(5).optional(),
-      testing: z.number().min(0).max(5).optional(),
-      documentation: z.number().min(0).max(5).optional(),
-    })
-    .optional()
-    .describe('Optional breakdown by work type'),
+  storyPoints: TaskStoryPointsSchema.describe('Fibonacci story point estimate'),
+  confidence: z.enum(['low', 'medium', 'high']).describe('Confidence in the estimate'),
+  complexityFactors: z.array(z.string()).describe('Factors affecting complexity'),
+  assumptions: z.array(z.string()).describe('Assumptions made'),
 });
 
-export type EffortEstimationOutput = z.infer<typeof EffortEstimationOutputSchema>;
+export type EffortEstimationOutputZ = z.infer<typeof EffortEstimationOutputSchema>;
 
 export const TaskCategorizationOutputSchema = z.object({
   area: AreaSchema.describe('Recommended life area'),

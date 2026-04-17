@@ -12,10 +12,16 @@ import type {
   DependencyDetectionOutput,
 } from '@/types/llm';
 import Button from '@/components/atoms/Button';
+import { nearestTaskStoryPoints } from '@/constants/growth-system';
 import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
 import { AIConfidenceIndicator } from '@/components/atoms/AIConfidenceIndicator';
 
 type AssistMode = 'parse' | 'categorize' | 'estimate' | 'priority' | 'breakdown' | 'dependencies';
+
+function effortConfidenceToPercent(c: EffortEstimationOutput['confidence']): number {
+  const map = { low: 45, medium: 68, high: 88 } as const;
+  return map[c];
+}
 
 interface AITaskAssistPanelProps {
   mode: AssistMode;
@@ -161,7 +167,7 @@ export function AITaskAssistPanel({
       case 'categorize':
         return 'Auto-Categorize';
       case 'estimate':
-        return 'Estimate Effort';
+        return 'Estimate story points';
       case 'priority':
         return 'Priority Advisor';
       case 'breakdown':
@@ -178,7 +184,7 @@ export function AITaskAssistPanel({
       case 'categorize':
         return 'AI will suggest the best area and subcategory for this task.';
       case 'estimate':
-        return 'AI will estimate the effort required based on similar completed tasks.';
+        return 'AI will suggest Fibonacci story points (1–21) based on similar completed tasks.';
       case 'priority':
         return 'AI will recommend a priority based on your current workload.';
       case 'breakdown':
@@ -336,6 +342,11 @@ export function AITaskAssistPanel({
                 <strong>Due:</strong> {parseResult.task.dueDate}
               </p>
             )}
+            {parseResult.task.size != null && (
+              <p>
+                <strong>Story points:</strong> {parseResult.task.size}pts
+              </p>
+            )}
           </div>
           <div className="flex gap-2 mt-3">
             <Button
@@ -395,26 +406,35 @@ export function AITaskAssistPanel({
         <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-900 dark:text-white">
-              Effort Estimate
+              Story point estimate
             </span>
-            <AIConfidenceIndicator confidence={effortResult.confidence} size="sm" />
+            <AIConfidenceIndicator
+              confidence={effortConfidenceToPercent(effortResult.confidence)}
+              size="sm"
+            />
           </div>
           <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
             <p>
-              <strong>Estimated:</strong> {effortResult.estimatedSize} hours
+              <strong>Suggested:</strong> {effortResult.storyPoints}pts (Fibonacci)
             </p>
-            {effortResult.comparisons.length > 0 && (
+            {effortResult.complexityFactors.length > 0 && (
               <ul className="list-disc list-inside text-gray-500 dark:text-gray-400">
-                {effortResult.comparisons.map((c, i) => (
+                {effortResult.complexityFactors.map((c, i) => (
                   <li key={i}>{c}</li>
                 ))}
               </ul>
+            )}
+            {effortResult.assumptions.length > 0 && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                <span className="font-medium text-gray-600 dark:text-gray-300">Assumptions:</span>{' '}
+                {effortResult.assumptions.join(' · ')}
+              </div>
             )}
           </div>
           <div className="flex gap-2 mt-3">
             <Button
               onClick={() => {
-                onApplyEffort?.(effortResult.estimatedSize);
+                onApplyEffort?.(nearestTaskStoryPoints(effortResult.storyPoints));
                 onClose();
               }}
               variant="primary"
@@ -479,7 +499,11 @@ export function AITaskAssistPanel({
                   <p className="text-sm text-gray-500">{subtask.description}</p>
                 )}
                 <p className="text-xs text-gray-400">
-                  {subtask.priority} | {subtask.size ? `${subtask.size}h` : 'Size TBD'}
+                  {(() => {
+                    const st = subtask as CreateTaskInput & { storyPoints?: number };
+                    const sp = st.storyPoints ?? st.size;
+                    return sp != null ? `${sp}pts` : 'Points TBD';
+                  })()}
                 </p>
               </div>
             ))}

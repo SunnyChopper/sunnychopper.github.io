@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AreaSchema, SubCategorySchema, PrioritySchema, ConfidenceSchema } from './common-schemas';
+import { TaskStoryPointsSchema } from './task-schemas';
 
 export const ProjectHealthIssueSchema = z.object({
   severity: z.enum(['low', 'medium', 'high', 'critical']).describe('Severity level'),
@@ -47,7 +48,7 @@ export const GeneratedTaskSchema = z.object({
   area: AreaSchema.describe('Life area'),
   subCategory: SubCategorySchema.optional().describe('Subcategory'),
   priority: PrioritySchema.describe('Suggested priority'),
-  size: z.number().min(1).max(5).optional().describe('Effort estimate'),
+  size: TaskStoryPointsSchema.optional().describe('Fibonacci story points'),
   reasoning: z.string().describe('Why this task is needed'),
   dependencies: z.array(z.string()).optional().describe('Task titles this depends on'),
   order: z.number().describe('Suggested execution order'),

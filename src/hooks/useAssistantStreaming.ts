@@ -37,6 +37,8 @@ import {
   scheduleDeltaFlush,
   type StreamingStatusStage,
 } from '@/hooks/assistant-streaming/stream-helpers';
+import { invalidateGrowthSystemCachesAfterTaskTool } from '@/hooks/assistant-streaming/growth-system-tool-invalidation';
+import { formatAssistantRunErrorForDisplay } from '@/lib/chat/assistant-error-display';
 
 export { getRunProgressLabel } from '@/hooks/assistant-streaming/stream-helpers';
 
@@ -442,6 +444,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
         });
       },
       onToolCallComplete: (payload: WsToolCallCompletePayload) => {
+        invalidateGrowthSystemCachesAfterTaskTool(queryClient, payload);
         startTransition(() => {
           setRuns((current) => {
             const run = current[payload.runId];
@@ -568,7 +571,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
             );
             if (!hadStreamedAssistant) {
               placeholder.clientStatus = 'failed';
-              placeholder.clientError = payload.message;
+              placeholder.clientError = formatAssistantRunErrorForDisplay(payload);
             }
             upsertMessageTreeNodeCache(queryClient, payload.threadId, placeholder);
           } else {
