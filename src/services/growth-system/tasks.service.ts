@@ -98,6 +98,12 @@ export const tasksService = {
     return response;
   },
 
+  /** Mark task complete with wallet award (idempotent). Prefer over PATCH for explicit completion UX. */
+  async complete(id: string): Promise<ApiResponse<Task>> {
+    const response = await apiClient.post<Task>(`/tasks/${id}/complete`, {});
+    return response;
+  },
+
   async delete(id: string): Promise<ApiResponse<void>> {
     const response = await apiClient.delete<void>(`/tasks/${id}`);
     return response;

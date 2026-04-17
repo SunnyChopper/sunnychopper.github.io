@@ -47,10 +47,12 @@ export function HabitDetailHeader({
       </nav>
 
       {/* Header Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">{habit.name}</h1>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 break-words">
+              {habit.name}
+            </h1>
 
             <div className="flex items-center gap-3 mb-4 flex-wrap">
               <AreaBadge area={habit.area} />
@@ -76,7 +78,9 @@ export function HabitDetailHeader({
             </div>
 
             {habit.description && (
-              <p className="text-gray-700 dark:text-gray-300 mb-4">{habit.description}</p>
+              <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm sm:text-base break-words">
+                {habit.description}
+              </p>
             )}
 
             {/* Contextual Information */}
@@ -103,8 +107,13 @@ export function HabitDetailHeader({
             </div>
           </div>
 
-          <div className="flex gap-2 flex-shrink-0">
-            <Button variant="secondary" size="sm" onClick={onEdit}>
+          <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto lg:max-w-[min(100%,280px)] lg:justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onEdit}
+              className="min-h-[44px] flex-1 sm:flex-none touch-manipulation"
+            >
               <Edit2 className="w-4 h-4 mr-1" />
               Edit
             </Button>
@@ -112,7 +121,7 @@ export function HabitDetailHeader({
               variant="secondary"
               size="sm"
               onClick={onDelete}
-              className="hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20 dark:hover:!text-red-400"
+              className="min-h-[44px] flex-1 sm:flex-none touch-manipulation hover:!bg-red-50 hover:!text-red-600 dark:hover:!bg-red-900/20 dark:hover:!text-red-400"
             >
               <Trash2 className="w-4 h-4 mr-1" />
               Delete

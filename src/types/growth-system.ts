@@ -64,6 +64,8 @@ export type LogbookMood = 'Low' | 'Steady' | 'High';
 
 export type RecurrenceUnit = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
 
+export type TaskRewardLedgerStatus = 'none' | 'awarded' | 'reversed';
+
 export interface Task {
   id: string;
   title: string;
@@ -73,6 +75,7 @@ export interface Task {
   subCategory: SubCategory | null;
   priority: Priority;
   status: TaskStatus;
+  /** Fibonacci story points (1, 2, 3, 5, 8, 13, 21), not minutes. */
   size: number | null;
   dueDate: string | null;
   scheduledDate: string | null;
@@ -82,6 +85,10 @@ export interface Task {
   recurrenceRule: RecurrenceRule | null;
   pointValue: number | null;
   pointsAwarded: boolean | null;
+  rewardLedgerStatus?: TaskRewardLedgerStatus;
+  rewardAwardTransactionId?: string | null;
+  rewardReversalTransactionId?: string | null;
+  rewardReversedAt?: string | null;
   projectIds: string[];
   goalIds: string[];
   userId: string;
@@ -673,6 +680,12 @@ export interface EntitySummary {
   type: 'task' | 'project' | 'goal' | 'metric' | 'habit' | 'logbook';
   area: Area;
   status: string;
+  /** When type is goal, used for hierarchical pickers (parent / subgoal). */
+  parentGoalId?: string | null;
+  /** Goal milestone / due date (YYYY-MM-DD or ISO). */
+  targetDate?: string | null;
+  /** When set on a goal, overdue styling is suppressed. */
+  completedDate?: string | null;
 }
 
 export interface DailyBriefing {
@@ -685,14 +698,149 @@ export interface DailyBriefing {
   suggestedFocus: string;
 }
 
-export interface WeeklyReview {
+/** Weekly Review snapshot (API `/growth-system/weekly-reviews`). */
+export type WeeklyReviewStatus = 'generated' | 'planned' | 'completed';
+
+export interface WeeklyReviewVelocityWeek {
   weekStart: string;
-  weekEnd: string;
+  storyPointsCompleted: number;
+  tasksCompleted: number;
+}
+
+export interface WeeklyReviewStats {
   tasksCompleted: number;
   tasksPlanned: number;
-  habitConsistency: number;
-  goalProgress: Array<{ goalId: string; progress: number }>;
-  keyWins: string[];
-  areasForImprovement: string[];
-  nextWeekPriorities: string[];
+  totalStoryPoints: number;
+  completedStoryPoints: number;
+  habitCompletions: number;
+  habitTargets: number;
+  metricsLogged: number;
+  goalsActive: number;
+  goalsAtRisk: number;
+  journalEntries: number;
+}
+
+export interface WeeklyReviewOverdueTask {
+  taskId: string;
+  title: string;
+  dueDate?: string | null;
+  note: string;
+}
+
+export interface WeeklyReviewMetricDelta {
+  metricName: string;
+  direction: string;
+  deltaSummary: string;
+  suggestion: string;
+}
+
+export interface WeeklyReviewAtRiskAlert {
+  goalOrProject: string;
+  entityType: string;
+  entityId: string;
+  summary: string;
+  scopeReductionSuggestion: string;
+}
+
+export interface WeeklyReviewQuarantineCandidate {
+  entityType: string;
+  entityId: string;
+  name: string;
+  reason: string;
+}
+
+export interface WeeklyReviewSuggestedTask {
+  title: string;
+  rationale: string;
+  suggestedStoryPoints?: number | null;
+  area?: string | null;
+  goalIds: string[];
+  projectIds: string[];
+}
+
+export interface WeeklyReviewAiAnalysis {
+  tasksSummary: string;
+  overdueTasks: WeeklyReviewOverdueTask[];
+  velocityTrend: string;
+  habitsSummary: string;
+  habitsOnTarget: boolean;
+  habitsAiMessage: string;
+  metricsSummary: string;
+  metricDeltas: WeeklyReviewMetricDelta[];
+  goalsSummary: string;
+  atRiskAlerts: WeeklyReviewAtRiskAlert[];
+  logbookSummary: string;
+  reflectionPrompt?: string | null;
+  quarantineCandidates: WeeklyReviewQuarantineCandidate[];
+  suggestedTasks: WeeklyReviewSuggestedTask[];
+  hypeSummary: string;
+}
+
+export interface WeeklyReviewQuarantineDecision {
+  entityType: string;
+  entityId: string;
+  action: 'revive' | 'delete' | 'schedule';
+  rescheduleNote?: string | null;
+}
+
+export interface WeeklyReviewBlockerResolution {
+  taskId: string;
+  nextAction: string;
+}
+
+export interface WeeklyReviewAcceptedTask {
+  title: string;
+  description?: string | null;
+  area: string;
+  priority?: string | null;
+  size?: number | null;
+  goalIds: string[];
+  projectIds: string[];
+}
+
+export interface WeeklyReviewPlanActions {
+  quarantineDecisions: WeeklyReviewQuarantineDecision[];
+  blockerResolutions: WeeklyReviewBlockerResolution[];
+  suggestedTasksAccepted: WeeklyReviewAcceptedTask[];
+}
+
+export interface WeeklyReviewCompletionSummary {
+  hypeMessage: string;
+  sprintTaskIds: string[];
+}
+
+export interface WeeklyReview {
+  id: string;
+  weekStart: string;
+  weekEnd: string;
+  status: WeeklyReviewStatus;
+  stats: WeeklyReviewStats;
+  velocityData: WeeklyReviewVelocityWeek[];
+  aiAnalysis: WeeklyReviewAiAnalysis;
+  planActions?: WeeklyReviewPlanActions | null;
+  completionSummary?: WeeklyReviewCompletionSummary | null;
+  generatedAt?: string | null;
+  plannedAt?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeeklyReviewListResult {
+  reviews: WeeklyReview[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export interface WeeklyReviewCurrentDashboard {
+  weekStart: string;
+  weekEnd: string;
+  isMidWeek: boolean;
+  hasGeneratedReview: boolean;
+  statsPartial: WeeklyReviewStats;
+  velocityData: WeeklyReviewVelocityWeek[];
+  trailingAverageStoryPoints: number;
+  currentWeekStoryPoints: number;
 }

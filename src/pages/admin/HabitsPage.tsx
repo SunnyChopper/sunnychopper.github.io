@@ -418,12 +418,12 @@ export default function HabitsPage() {
     {} as Record<HabitType, Habit[]>
   );
 
-  if (selectedHabit) {
-    const logs = habitLogs.get(selectedHabit.id) || [];
-    const streak = getStreak(selectedHabit.id);
-    const selectedDateLogs = selectedDate
+  const selectedLogs = selectedHabit ? habitLogs.get(selectedHabit.id) || [] : [];
+  const selectedStreak = selectedHabit ? getStreak(selectedHabit.id) : 0;
+  const selectedDateLogs =
+    selectedHabit && selectedDate
       ? getLogsForDateRange(
-          logs,
+          selectedLogs,
           new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()),
           new Date(
             selectedDate.getFullYear(),
@@ -437,21 +437,24 @@ export default function HabitsPage() {
         )
       : [];
 
-    return (
+  return (
+    <>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Header */}
-          <HabitDetailHeader
-            habit={selectedHabit}
-            logs={logs}
-            onBack={handleBackToGrid}
-            onEdit={() => setIsEditDialogOpen(true)}
-            onDelete={() => setHabitToDelete(selectedHabit)}
-          />
+        <div
+          className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 ${selectedHabit ? 'pb-24 max-lg:pb-28' : ''}`}
+        >
+          {selectedHabit ? (
+            <>
+              <HabitDetailHeader
+                habit={selectedHabit}
+                logs={selectedLogs}
+                onBack={handleBackToGrid}
+                onEdit={() => setIsEditDialogOpen(true)}
+                onDelete={() => setHabitToDelete(selectedHabit)}
+              />
 
-          {/* AI Assist Panel */}
-          {isAIConfigured && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+              {isAIConfigured && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-4 sm:mb-6">
               <button
                 onClick={() => setShowAIAssist(!showAIAssist)}
                 className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
@@ -505,182 +508,158 @@ export default function HabitsPage() {
                   <AIHabitAssistPanel
                     mode={aiMode}
                     habit={selectedHabit}
-                    logs={logs}
+                    logs={selectedLogs}
                     onClose={() => setShowAIAssist(false)}
                   />
                 </div>
               )}
             </div>
-          )}
+              )}
 
-          {/* Tab Navigation */}
-          <HabitDetailTabs activeTab={activeTab} onTabChange={setActiveTab}>
-            {/* Overview Tab */}
-            {activeTab === 'overview' && (
-              <div className="space-y-6">
-                <HabitStatsDashboard habit={selectedHabit} logs={logs} />
-                <LinkedGoalsDisplay goals={linkedGoals.get(selectedHabit.id) || []} />
-              </div>
-            )}
-
-            {/* Activity Tab */}
-            {activeTab === 'activity' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Activity</h2>
-                  <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                    <button
-                      onClick={() => setActivityView('heatmap')}
-                      className={`px-3 py-1.5 text-sm rounded transition-colors ${
-                        activityView === 'heatmap'
-                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                      }`}
-                    >
-                      Heatmap
-                    </button>
-                    <button
-                      onClick={() => setActivityView('calendar')}
-                      className={`px-3 py-1.5 text-sm rounded transition-colors ${
-                        activityView === 'calendar'
-                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                      }`}
-                    >
-                      Calendar
-                    </button>
+              <HabitDetailTabs activeTab={activeTab} onTabChange={setActiveTab}>
+                {activeTab === 'overview' && (
+                  <div className="space-y-6">
+                    <HabitStatsDashboard habit={selectedHabit} logs={selectedLogs} />
+                    <LinkedGoalsDisplay goals={linkedGoals.get(selectedHabit.id) || []} />
                   </div>
-                </div>
-                {activityView === 'heatmap' ? (
-                  <HabitCalendarHeatmap
-                    habit={selectedHabit}
-                    logs={logs}
-                    months={6}
-                    onDateClick={handleDateClick}
-                  />
-                ) : (
-                  <HabitCalendarView
-                    habit={selectedHabit}
-                    logs={logs}
-                    onDateClick={handleDateClick}
-                    onQuickLog={(date) => handleDateModalLog(date)}
-                  />
                 )}
-              </div>
-            )}
 
-            {/* Analytics Tab */}
-            {activeTab === 'analytics' && (
-              <div className="space-y-6">
-                <CompletionRateChart habit={selectedHabit} logs={logs} />
-                <WeeklyMonthlyComparison habit={selectedHabit} logs={logs} />
-              </div>
-            )}
+                {activeTab === 'activity' && (
+                  <div className="space-y-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        Activity
+                      </h2>
+                      <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 shrink-0 self-start sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => setActivityView('heatmap')}
+                          className={`px-3 py-1.5 text-sm rounded transition-colors min-h-[40px] touch-manipulation ${
+                            activityView === 'heatmap'
+                              ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          Heatmap
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActivityView('calendar')}
+                          className={`px-3 py-1.5 text-sm rounded transition-colors min-h-[40px] touch-manipulation ${
+                            activityView === 'calendar'
+                              ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          Calendar
+                        </button>
+                      </div>
+                    </div>
+                    {activityView === 'heatmap' ? (
+                      <HabitCalendarHeatmap
+                        habit={selectedHabit}
+                        logs={selectedLogs}
+                        months={6}
+                        onDateClick={handleDateClick}
+                      />
+                    ) : (
+                      <HabitCalendarView
+                        habit={selectedHabit}
+                        logs={selectedLogs}
+                        onDateClick={handleDateClick}
+                        onQuickLog={(date) => handleDateModalLog(date)}
+                      />
+                    )}
+                  </div>
+                )}
 
-            {/* History Tab */}
-            {activeTab === 'history' && (
-              <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      Completion History
-                    </h2>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {logs.length} total • {streak} day streak
+                {activeTab === 'analytics' && (
+                  <div className="space-y-6">
+                    <CompletionRateChart habit={selectedHabit} logs={selectedLogs} />
+                    <WeeklyMonthlyComparison habit={selectedHabit} logs={selectedLogs} />
+                  </div>
+                )}
+
+                {activeTab === 'history' && (
+                  <div className="space-y-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                          <Calendar className="w-5 h-5 shrink-0" />
+                          Completion History
+                        </h2>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {selectedLogs.length} total • {selectedStreak} day streak
+                        </div>
+                      </div>
+
+                      {selectedLogs.length === 0 ? (
+                        <EmptyState
+                          title="No completions yet"
+                          description="Start building your streak by logging your first completion"
+                          actionLabel="Log Completion"
+                          onAction={() => handleQuickLog(selectedHabit)}
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          {selectedLogs.slice(0, 50).map((log) => (
+                            <button
+                              key={log.id}
+                              onClick={() => {
+                                const logDate = new Date(log.completedAt);
+                                handleDateClick(logDate);
+                              }}
+                              className="w-full text-left flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors min-h-[44px] touch-manipulation"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-base font-semibold text-gray-900 dark:text-white">
+                                    {formatCompletionDate(log.completedAt)}
+                                  </span>
+                                  {log.amount && log.amount > 1 && (
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                      × {log.amount}
+                                    </span>
+                                  )}
+                                </div>
+                                {log.notes && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 break-words">
+                                    {log.notes}
+                                  </p>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
+                )}
+              </HabitDetailTabs>
 
-                  {logs.length === 0 ? (
-                    <EmptyState
-                      title="No completions yet"
-                      description="Start building your streak by logging your first completion"
-                      actionLabel="Log Completion"
-                      onAction={() => handleQuickLog(selectedHabit)}
-                    />
-                  ) : (
-                    <div className="space-y-2">
-                      {logs.slice(0, 50).map((log) => (
-                        <button
-                          key={log.id}
-                          onClick={() => {
-                            const logDate = new Date(log.completedAt);
-                            handleDateClick(logDate);
-                          }}
-                          className="w-full text-left flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-base font-semibold text-gray-900 dark:text-white">
-                                {formatCompletionDate(log.completedAt)}
-                              </span>
-                              {log.amount && log.amount > 1 && (
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                  × {log.amount}
-                                </span>
-                              )}
-                            </div>
-                            {log.notes && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                {log.notes}
-                              </p>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </HabitDetailTabs>
+              <FloatingLogButton
+                habit={selectedHabit}
+                logs={selectedLogs}
+                onLog={() => handleQuickLog(selectedHabit)}
+              />
 
-          {/* Floating Action Button */}
-          <FloatingLogButton
-            habit={selectedHabit}
-            logs={logs}
-            onLog={() => handleQuickLog(selectedHabit)}
-          />
-
-          {/* Date Detail Modal */}
-          {selectedDate && (
-            <DateDetailModal
-              isOpen={isDateModalOpen}
-              onClose={() => {
-                setIsDateModalOpen(false);
-                setSelectedDate(null);
-              }}
-              habit={selectedHabit}
-              date={selectedDate}
-              logs={selectedDateLogs}
-              onLog={handleDateModalLog}
-            />
-          )}
-
-          {/* Edit Dialog */}
-          <Dialog
-            isOpen={isEditDialogOpen}
-            onClose={() => setIsEditDialogOpen(false)}
-            title="Edit Habit"
-            className="max-w-2xl"
-          >
-            <HabitEditForm
-              habit={selectedHabit}
-              onSubmit={handleUpdateHabit}
-              onCancel={() => setIsEditDialogOpen(false)}
-              isLoading={isSubmitting}
-            />
-          </Dialog>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        {/* Header */}
-        <motion.div
+              {selectedDate && (
+                <DateDetailModal
+                  isOpen={isDateModalOpen}
+                  onClose={() => {
+                    setIsDateModalOpen(false);
+                    setSelectedDate(null);
+                  }}
+                  habit={selectedHabit}
+                  date={selectedDate}
+                  logs={selectedDateLogs}
+                  onLog={handleDateModalLog}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -841,7 +820,7 @@ export default function HabitsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
             >
               <HabitCardSkeleton count={8} />
             </motion.div>
@@ -871,7 +850,7 @@ export default function HabitsPage() {
               variants={containerVariants}
               initial="hidden"
               animate="show"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
             >
               <AnimatePresence mode="popLayout">
                 {filteredHabits.map((habit) => (
@@ -899,6 +878,9 @@ export default function HabitsPage() {
             </motion.div>
           )}
         </AnimatePresence>
+            </>
+          )}
+        </div>
       </div>
 
       <Dialog
@@ -965,6 +947,22 @@ export default function HabitsPage() {
           </div>
         </div>
       </Dialog>
-    </div>
+
+      {selectedHabit && (
+        <Dialog
+          isOpen={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          title="Edit Habit"
+          className="max-w-2xl"
+        >
+          <HabitEditForm
+            habit={selectedHabit}
+            onSubmit={handleUpdateHabit}
+            onCancel={() => setIsEditDialogOpen(false)}
+            isLoading={isSubmitting}
+          />
+        </Dialog>
+      )}
+    </>
   );
 }

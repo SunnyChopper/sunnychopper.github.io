@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, AlertCircle, Check, Loader2 } from 'lucide-react';
+import { Plus, X, AlertCircle, Loader2 } from 'lucide-react';
 import type {
   CreateGoalInput,
   Area,
@@ -44,12 +44,21 @@ export function GoalCreateForm({
     'Daily',
   ];
 
+  /** Creatable horizons: nothing smaller than Weekly (Daily is excluded everywhere). */
+  const CREATABLE_TIME_HORIZONS = TIME_HORIZON_HIERARCHY.filter((h) => h !== 'Daily');
+
   // Determine the next time horizon if creating a subgoal
   const getNextTimeHorizon = (parentHorizon: string): TimeHorizon => {
     const currentIndex = TIME_HORIZON_HIERARCHY.indexOf(parentHorizon as TimeHorizon);
-    return currentIndex < TIME_HORIZON_HIERARCHY.length - 1
-      ? TIME_HORIZON_HIERARCHY[currentIndex + 1]
-      : 'Quarterly';
+    if (currentIndex < 0 || currentIndex >= TIME_HORIZON_HIERARCHY.length - 1) {
+      return 'Quarterly';
+    }
+    const next = TIME_HORIZON_HIERARCHY[currentIndex + 1];
+    // Daily goals are not creatable; smallest subgoal under Monthly is Weekly
+    if (next === 'Daily') {
+      return 'Weekly';
+    }
+    return next;
   };
 
   // Get the valid parent time horizon for a given time horizon
@@ -71,9 +80,9 @@ export function GoalCreateForm({
     title: '',
     description: '',
     area: parentGoal?.area || 'Health',
-    timeHorizon: parentGoal ? getNextTimeHorizon(parentGoal.timeHorizon) : 'Quarterly',
+    timeHorizon: parentGoal ? getNextTimeHorizon(parentGoal.timeHorizon) : 'Yearly',
     successCriteria: [] as string[],
-    parentGoalId: undefined, // Explicitly set by user, not automatic
+    parentGoalId: parentGoal?.id,
   });
 
   const [criterionInput, setCriterionInput] = useState('');
@@ -329,41 +338,21 @@ export function GoalCreateForm({
 
         {parentGoal && isValidParent(parentGoal, formData.timeHorizon) && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 flex-1">
-                <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
-                  Suggested parent goal:
-                </span>
-                <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
-                  {parentGoal.timeHorizon}
-                </span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {parentGoal.title}
-                </span>
-              </div>
-              {formData.parentGoalId !== parentGoal.id && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleChange('parentGoalId', parentGoal.id)}
-                  className="flex items-center gap-1.5"
-                >
-                  <Check className="w-4 h-4" />
-                  Use This
-                </Button>
-              )}
-              {formData.parentGoalId === parentGoal.id && (
-                <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-                  <Check className="w-4 h-4" />
-                  Selected
-                </span>
-              )}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                Parent goal:
+              </span>
+              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                {parentGoal.timeHorizon}
+              </span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                {parentGoal.title}
+              </span>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-              The time horizon has been suggested as{' '}
-              <span className="font-medium">{formData.timeHorizon}</span> (next level down). You can
-              explicitly link this goal to a parent using the field below.
+              Time horizon is set to <span className="font-medium">{formData.timeHorizon}</span>{' '}
+              (next level down). The link below is pre-filled; change it only if you need a
+              different parent.
             </p>
           </div>
         )}
@@ -556,7 +545,7 @@ export function GoalCreateForm({
               fieldErrors.timeHorizon && touched.timeHorizon ? 'timeHorizon-error' : undefined
             }
           >
-            {GOAL_TIME_HORIZONS.map((horizon) => (
+            {CREATABLE_TIME_HORIZONS.map((horizon) => (
               <option key={horizon} value={horizon}>
                 {horizon}
               </option>

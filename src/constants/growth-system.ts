@@ -146,6 +146,24 @@ export const HABIT_FREQUENCIES: readonly HabitFrequency[] = [
   'Custom',
 ];
 
+/** Fibonacci story points for task `size` (planning poker set). */
+export const TASK_STORY_POINTS_FIBONACCI: readonly number[] = [1, 2, 3, 5, 8, 13, 21];
+
+export function isTaskStoryPointsValue(n: number): boolean {
+  return TASK_STORY_POINTS_FIBONACCI.includes(n);
+}
+
+/** Snap any numeric estimate to the nearest allowed Fibonacci story point. */
+export function nearestTaskStoryPoints(n: number): number {
+  const values = TASK_STORY_POINTS_FIBONACCI as number[];
+  return values.reduce((best, v) => (Math.abs(v - n) < Math.abs(best - n) ? v : best));
+}
+
+/** Compact label for UI (e.g. "2pts"). */
+export function formatTaskStoryPointsLabel(size: number): string {
+  return `${size}pts`;
+}
+
 export const METRIC_UNITS: readonly MetricUnit[] = [
   'count',
   'hours',

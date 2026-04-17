@@ -7,10 +7,15 @@ import Button from '@/components/atoms/Button';
 
 interface TaskCalendarViewProps {
   tasks: Task[];
+  isLoading?: boolean;
   onTaskClick: (task: Task) => void;
 }
 
-export function TaskCalendarView({ tasks, onTaskClick }: TaskCalendarViewProps) {
+export function TaskCalendarView({
+  tasks,
+  isLoading = false,
+  onTaskClick,
+}: TaskCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const getMonthData = () => {
@@ -99,7 +104,13 @@ export function TaskCalendarView({ tasks, onTaskClick }: TaskCalendarViewProps) 
               </motion.h2>
             </AnimatePresence>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {tasksWithDates} {tasksWithDates === 1 ? 'task' : 'tasks'} scheduled
+              {isLoading ? (
+                <span className="inline-block h-4 w-36 rounded bg-gray-200 dark:bg-gray-600 animate-pulse" />
+              ) : (
+                <>
+                  {tasksWithDates} {tasksWithDates === 1 ? 'task' : 'tasks'} scheduled
+                </>
+              )}
             </p>
           </div>
         </motion.div>
@@ -145,6 +156,15 @@ export function TaskCalendarView({ tasks, onTaskClick }: TaskCalendarViewProps) 
           {days.map((day, index) => {
             if (day === null) {
               return <div key={`empty-${index}`} className="aspect-square" />;
+            }
+
+            if (isLoading) {
+              return (
+                <div
+                  key={`sk-${day}`}
+                  className="aspect-square border-2 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/80 animate-pulse"
+                />
+              );
             }
 
             const date = new Date(year, month, day);
@@ -218,7 +238,7 @@ export function TaskCalendarView({ tasks, onTaskClick }: TaskCalendarViewProps) 
         </div>
       </div>
 
-      {tasksWithDates === 0 && (
+      {!isLoading && tasksWithDates === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

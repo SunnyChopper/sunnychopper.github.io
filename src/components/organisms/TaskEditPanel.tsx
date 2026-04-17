@@ -33,6 +33,7 @@ import {
   TASK_STATUSES,
   AREA_LABELS,
   TASK_STATUS_LABELS,
+  TASK_STORY_POINTS_FIBONACCI,
 } from '@/constants/growth-system';
 
 interface TaskEditPanelProps {
@@ -224,7 +225,12 @@ export function TaskEditPanel({
   };
 
   const handleApplyBreakdown = (subtasks: CreateTaskInput[]) => {
-    onCreateSubtasks?.(subtasks);
+    const normalized = subtasks.map((st) => {
+      const ext = st as CreateTaskInput & { storyPoints?: number };
+      const size = ext.size ?? ext.storyPoints;
+      return { ...ext, size } as CreateTaskInput;
+    });
+    onCreateSubtasks?.(normalized);
   };
 
   const handleApplyDependencies = async (taskIds: string[]) => {
@@ -478,21 +484,28 @@ export function TaskEditPanel({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Size (Story Points)
+                    Story points (Fibonacci)
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    value={formData.size || ''}
+                  <select
+                    value={formData.size ?? ''}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        size: e.target.value ? parseFloat(e.target.value) : undefined,
+                        size: e.target.value === '' ? undefined : parseInt(e.target.value, 10),
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Not set</option>
+                    {TASK_STORY_POINTS_FIBONACCI.map((n) => (
+                      <option key={n} value={n}>
+                        {n} pts
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Not a time estimate — use 1, 2, 3, 5, 8, 13, or 21 only.
+                  </p>
                 </div>
               </div>
 
@@ -578,7 +591,7 @@ export function TaskEditPanel({
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
-                          Estimate Effort
+                          Estimate story points
                         </button>
                         <button
                           type="button"

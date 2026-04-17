@@ -118,8 +118,9 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
         }
       }
 
-      if (task.size && task.size <= 1) score += 15;
+      if (task.size === 1) score += 15;
       else if (task.size && task.size <= 3) score += 10;
+      else if (task.size && task.size <= 5) score += 5;
 
       return { task, score };
     });
@@ -269,9 +270,11 @@ export function DailyPlanningAssistant({ onStartDay }: DailyPlanningAssistantPro
                       >
                         {task.priority}
                       </span>
-                      <span className="text-xs text-gray-600 dark:text-gray-400 capitalize">
-                        {task.size}
-                      </span>
+                      {task.size ? (
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          {task.size}pts
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400" />

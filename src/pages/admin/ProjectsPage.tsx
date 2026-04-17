@@ -29,6 +29,7 @@ import type {
   FilterOptions,
   Area,
   Priority,
+  Goal,
 } from '@/types/growth-system';
 import { useProjects, useGoals, useTasks } from '@/hooks/useGrowthSystem';
 import { useProjectHealthMap } from '@/hooks/useProjectHealthMap';
@@ -69,6 +70,7 @@ import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
 import { llmConfig } from '@/lib/llm';
 import { formatDateString } from '@/utils/date-formatters';
 import { cn } from '@/lib/utils';
+import { getGoalCriteriaProgressPercent, getProjectDisplayModel } from '@/utils/project-summary';
 
 const STATUSES: ProjectStatus[] = [...PROJECT_STATUSES];
 const AREA_OPTIONS: Area[] = [...AREAS];
@@ -127,11 +129,24 @@ export default function ProjectsPage() {
         type: 'goal' as const,
         area: g.area,
         status: g.status,
+        parentGoalId: g.parentGoalId,
+        targetDate: g.targetDate,
+        completedDate: g.completedDate,
       })),
     [goals]
   );
 
   const goalsById = useMemo(() => new Map(allGoals.map((goal) => [goal.id, goal])), [allGoals]);
+
+  const goalsByIdFull = useMemo(() => new Map(goals.map((g) => [g.id, g])), [goals]);
+
+  const getLinkedGoalsFull = useCallback(
+    (project: Project) =>
+      (project.goalIds ?? [])
+        .map((id) => goalsByIdFull.get(id))
+        .filter((g): g is Goal => g !== undefined),
+    [goalsByIdFull]
+  );
 
   const allProjects = useMemo<EntitySummary[]>(
     () =>
@@ -184,6 +199,64 @@ export default function ProjectsPage() {
   );
 
   const { projectHealthMap, isLoading: isHealthLoading } = useProjectHealthMap(filteredProjectIds);
+
+  const getProjectStats = useCallback(
+    (projectId: string) => {
+      const projectTasks = getTasksByProject(tasks, projectId);
+      const completedTasks = projectTasks.filter((t) => t.status === 'Done').length;
+      const hasLocalTasks = projectTasks.length > 0;
+
+      if (hasLocalTasks) {
+        return {
+          taskCount: projectTasks.length,
+          completedTaskCount: completedTasks,
+          hasHealthData: true,
+          isHealthLoading: false,
+        };
+      }
+
+      const health = projectHealthMap.get(projectId);
+      if (health && health.taskCount > 0) {
+        return {
+          taskCount: health.taskCount,
+          completedTaskCount: health.completedTaskCount,
+          hasHealthData: true,
+          isHealthLoading,
+        };
+      }
+
+      return {
+        taskCount: 0,
+        completedTaskCount: 0,
+        hasHealthData: health !== undefined,
+        isHealthLoading,
+      };
+    },
+    [tasks, projectHealthMap, isHealthLoading]
+  );
+
+  const getProjectDisplay = useCallback(
+    (project: Project) => {
+      const stats = getProjectStats(project.id);
+      return getProjectDisplayModel(
+        project,
+        stats.taskCount,
+        stats.completedTaskCount,
+        getLinkedGoalsFull(project)
+      );
+    },
+    [getProjectStats, getLinkedGoalsFull]
+  );
+
+  const { incompleteProjects, completeProjects } = useMemo(() => {
+    const inc: Project[] = [];
+    const comp: Project[] = [];
+    for (const p of filteredProjects) {
+      if (getProjectDisplay(p).isWorkComplete) comp.push(p);
+      else inc.push(p);
+    }
+    return { incompleteProjects: inc, completeProjects: comp };
+  }, [filteredProjects, getProjectDisplay]);
 
   const handleCreateProject = async (input: CreateProjectInput) => {
     setIsSubmitting(true);
@@ -267,14 +340,7 @@ export default function ProjectsPage() {
     if (selectedProject.goalIds && selectedProject.goalIds.length > 0) {
       const linkedGoalSummaries: EntitySummary[] = selectedProject.goalIds
         .map((goalId) => allGoals.find((g) => g.id === goalId))
-        .filter((goal): goal is (typeof allGoals)[0] => goal !== undefined)
-        .map((goal) => ({
-          id: goal.id,
-          title: goal.title,
-          type: 'goal' as const,
-          area: goal.area,
-          status: goal.status,
-        }));
+        .filter((goal): goal is EntitySummary => goal !== undefined);
 
       updateProjectGoals(selectedProject.id, () => linkedGoalSummaries);
       return;
@@ -473,47 +539,26 @@ export default function ProjectsPage() {
     });
   };
 
-  const getProjectStats = (projectId: string) => {
-    const projectTasks = getProjectTasks(projectId);
-    const completedTasks = projectTasks.filter((t) => t.status === 'Done').length;
-    const hasLocalTasks = projectTasks.length > 0;
-
-    // Always prefer local task data when available, as it's more reliable than the health endpoint
-    if (hasLocalTasks) {
-      return {
-        taskCount: projectTasks.length,
-        completedTaskCount: completedTasks,
-        hasHealthData: true,
-        isHealthLoading: false,
-      };
-    }
-
-    // Fall back to health data only when no local tasks are available
-    const health = projectHealthMap.get(projectId);
-    if (health && health.taskCount > 0) {
-      return {
-        taskCount: health.taskCount,
-        completedTaskCount: health.completedTaskCount,
-        hasHealthData: true,
-        isHealthLoading,
-      };
-    }
-
-    // No data available
-    return {
-      taskCount: 0,
-      completedTaskCount: 0,
-      hasHealthData: health !== undefined,
-      isHealthLoading,
-    };
-  };
-
   if (selectedProject) {
     const projectTasks = getProjectTasks(selectedProject.id);
     const completedTasks = projectTasks.filter((t) => t.status === 'Done').length;
-    const progress =
-      projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
+    const goalIdsForDetail =
+      selectedProject.goalIds && selectedProject.goalIds.length > 0
+        ? selectedProject.goalIds
+        : (projectGoals.get(selectedProject.id) || []).map((g) => g.id);
+    const linkedFullGoalsForDetail = goalIdsForDetail
+      .map((id) => goalsByIdFull.get(id))
+      .filter((g): g is Goal => g !== undefined);
+    const detailDisplay = getProjectDisplayModel(
+      selectedProject,
+      projectTasks.length,
+      completedTasks,
+      linkedFullGoalsForDetail
+    );
+    const progress = detailDisplay.progressPercent;
     const linkedGoals = projectGoals.get(selectedProject.id) || [];
+    const pendingTasks = projectTasks.filter((t) => t.status !== 'Done');
+    const doneTasks = projectTasks.filter((t) => t.status === 'Done');
     const getLinkedProjectsForTask = (task: Task) =>
       allProjects.filter((project) => task.projectIds?.includes(project.id));
     const getLinkedGoalsForTask = (task: Task) =>
@@ -521,43 +566,54 @@ export default function ProjectsPage() {
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <button
             onClick={handleBackToGrid}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 transition-colors"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 sm:mb-6 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Projects
           </button>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 mb-6">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-4">
-                  <PriorityIndicator priority={selectedProject.priority} size="lg" />
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 lg:p-8 mb-6">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8 mb-6">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4 mb-4">
+                  <PriorityIndicator
+                    priority={selectedProject.priority}
+                    size="lg"
+                    className="shrink-0 sm:mt-1"
+                  />
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight break-words">
                     {selectedProject.name}
                   </h1>
                 </div>
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
                   <AreaBadge area={selectedProject.area} />
                   {selectedProject.subCategory && (
                     <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                       {SUBCATEGORY_LABELS[selectedProject.subCategory]}
                     </span>
                   )}
-                  <StatusBadge status={selectedProject.status} size="sm" />
+                  <StatusBadge status={detailDisplay.effectiveStatus} size="sm" />
                 </div>
                 {selectedProject.description && (
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm sm:text-base">
                     {selectedProject.description}
                   </p>
                 )}
               </div>
 
-              <div className="flex flex-col items-center gap-4">
-                <ProgressRing progress={progress} size="lg" showLabel />
-                <div className="flex gap-2">
+              <div
+                className={cn(
+                  'flex w-full flex-shrink-0 flex-row flex-wrap items-center justify-between gap-4',
+                  'sm:justify-start lg:w-auto lg:flex-col lg:items-center lg:justify-start'
+                )}
+              >
+                <div className="shrink-0 scale-[0.9] sm:scale-100">
+                  <ProgressRing progress={progress} size="lg" showLabel />
+                </div>
+                <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-2">
                   <Button variant="secondary" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                     <Edit2 className="w-4 h-4 mr-1" />
                     Edit
@@ -575,7 +631,7 @@ export default function ProjectsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-6 mb-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               {selectedProject.impact > 0 && (
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Impact Score</div>
@@ -704,15 +760,16 @@ export default function ProjectsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <CheckSquare className="w-5 h-5" />
+            <div className="min-w-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
+              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white sm:text-xl">
+                  <CheckSquare className="h-5 w-5 shrink-0" />
                   Tasks ({projectTasks.length})
                 </h2>
                 <Button
                   variant="secondary"
                   size="sm"
+                  className="w-full shrink-0 sm:w-auto"
                   onClick={() => {
                     setSelectedTaskIds(projectTasks.map((t) => t.id));
                     setIsTaskPickerOpen(true);
@@ -729,32 +786,58 @@ export default function ProjectsPage() {
                   onAction={() => setIsTaskPickerOpen(true)}
                 />
               ) : (
-                <div className="space-y-3">
-                  {projectTasks.map((task) => (
-                    <TaskListItem
-                      key={task.id}
-                      task={task}
-                      onEdit={handleEditTask}
-                      onDelete={() => handleUnlinkTaskFromProject(task.id, selectedProject.id)}
-                      deleteLabel="Unlink task"
-                      deleteAriaLabel={`Unlink ${task.title} from ${selectedProject.name}`}
-                      deleteIcon={<Link2Off className="w-4 h-4" />}
-                      deleteButtonClassName="!p-2 hover:!bg-amber-50 hover:!text-amber-600 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-400"
-                    />
-                  ))}
+                <div className="min-w-0 space-y-4">
+                  {pendingTasks.length > 0 && (
+                    <div className="space-y-3">
+                      {pendingTasks.map((task) => (
+                        <TaskListItem
+                          key={task.id}
+                          task={task}
+                          onEdit={handleEditTask}
+                          onDelete={() => handleUnlinkTaskFromProject(task.id, selectedProject.id)}
+                          deleteLabel="Unlink task"
+                          deleteAriaLabel={`Unlink ${task.title} from ${selectedProject.name}`}
+                          deleteIcon={<Link2Off className="w-4 h-4" />}
+                          deleteButtonClassName="hover:!bg-amber-50 hover:!text-amber-600 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-400"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {doneTasks.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Completed ({doneTasks.length})
+                      </h3>
+                      <div className="space-y-3">
+                        {doneTasks.map((task) => (
+                          <TaskListItem
+                            key={task.id}
+                            task={task}
+                            onEdit={handleEditTask}
+                            onDelete={() => handleUnlinkTaskFromProject(task.id, selectedProject.id)}
+                            deleteLabel="Unlink task"
+                            deleteAriaLabel={`Unlink ${task.title} from ${selectedProject.name}`}
+                            deleteIcon={<Link2Off className="w-4 h-4" />}
+                            deleteButtonClassName="hover:!bg-amber-50 hover:!text-amber-600 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-400"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Target className="w-5 h-5" />
+            <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 sm:p-5 lg:p-6">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white sm:text-xl">
+                  <Target className="h-5 w-5 shrink-0" />
                   Goals ({linkedGoals.length})
                 </h2>
                 <Button
                   variant="secondary"
                   size="sm"
+                  className="w-full shrink-0 sm:w-auto"
                   onClick={() => {
                     setSelectedGoalIds(linkedGoals.map((g) => g.id));
                     setGoalSaveError(null);
@@ -781,85 +864,94 @@ export default function ProjectsPage() {
                   }}
                 />
               ) : (
-                <div className="space-y-3">
-                  {linkedGoals.map((goalSummary) => {
-                    // Find the full goal object
-                    const fullGoal = goals.find((g) => g.id === goalSummary.id);
-                    if (!fullGoal) return null;
+                <div className="space-y-4">
+                  {(() => {
+                    const entries = linkedGoals
+                      .map((goalSummary) => {
+                        const fullGoal = goals.find((g) => g.id === goalSummary.id);
+                        return fullGoal ? { fullGoal } : null;
+                      })
+                      .filter((x): x is { fullGoal: Goal } => x != null);
+                    const pendingGoalRows = entries.filter((e) => e.fullGoal.status !== 'Achieved');
+                    const achievedGoalRows = entries.filter((e) => e.fullGoal.status === 'Achieved');
 
-                    // Calculate progress
-                    const criteriaProgress = (() => {
-                      if (Array.isArray(fullGoal.successCriteria)) {
-                        if (typeof fullGoal.successCriteria[0] === 'string') {
-                          const completed = (
-                            fullGoal.successCriteria as unknown as string[]
-                          ).filter((c) => c.includes('✓')).length;
-                          const total = fullGoal.successCriteria.length;
-                          return total > 0 ? Math.round((completed / total) * 100) : 0;
-                        }
-                        const completed = fullGoal.successCriteria.filter(
-                          (c) => c.isCompleted
-                        ).length;
-                        const total = fullGoal.successCriteria.length;
-                        return total > 0 ? Math.round((completed / total) * 100) : 0;
-                      }
-                      return 0;
-                    })();
+                    const renderGoalRow = (fullGoal: Goal) => {
+                      const criteriaProgress = getGoalCriteriaProgressPercent(fullGoal);
+                      return (
+                        <div
+                          key={fullGoal.id}
+                          className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-2.5 flex flex-wrap items-center gap-2 sm:gap-3">
+                                <PriorityIndicator
+                                  priority={fullGoal.priority}
+                                  size="sm"
+                                  variant="badge"
+                                />
+                                <Target className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                                <h3 className="min-w-0 flex-1 break-words text-base font-semibold leading-tight text-gray-900 dark:text-white sm:truncate">
+                                  {fullGoal.title}
+                                </h3>
+                                <StatusBadge status={fullGoal.status} size="sm" />
+                              </div>
 
-                    return (
-                      <div
-                        key={fullGoal.id}
-                        className="group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-2.5">
-                              <PriorityIndicator
-                                priority={fullGoal.priority}
-                                size="sm"
-                                variant="badge"
-                              />
-                              <Target className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                              <h3 className="font-semibold text-gray-900 dark:text-white truncate text-base leading-tight">
-                                {fullGoal.title}
-                              </h3>
-                              <StatusBadge status={fullGoal.status} size="sm" />
-                            </div>
-
-                            {fullGoal.description && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">
-                                {fullGoal.description}
-                              </p>
-                            )}
-
-                            <div className="flex flex-wrap items-center gap-2.5 text-sm">
-                              <AreaBadge area={fullGoal.area} size="sm" />
-                              <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
-                                {fullGoal.timeHorizon}
-                              </span>
-                              {criteriaProgress > 0 && (
-                                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                                  <span className="text-xs font-medium">{criteriaProgress}%</span>
-                                </div>
+                              {fullGoal.description && (
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2 leading-relaxed">
+                                  {fullGoal.description}
+                                </p>
                               )}
-                            </div>
-                          </div>
 
-                          <div className="flex items-center gap-1.5 transition-opacity opacity-0 group-hover:opacity-100">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleGoalChipRemove(fullGoal.id)}
-                              className="!p-2 hover:!bg-amber-50 hover:!text-amber-600 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-400"
-                              aria-label={`Unlink ${fullGoal.title} from ${selectedProject.name}`}
-                            >
-                              <Link2Off className="w-4 h-4" />
-                            </Button>
+                              <div className="flex flex-wrap items-center gap-2.5 text-sm">
+                                <AreaBadge area={fullGoal.area} size="sm" />
+                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                  {fullGoal.timeHorizon}
+                                </span>
+                                {criteriaProgress > 0 && (
+                                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                                    <span className="text-xs font-medium">{criteriaProgress}%</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleGoalChipRemove(fullGoal.id)}
+                                className="!p-2 hover:!bg-amber-50 hover:!text-amber-600 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-400"
+                                aria-label={`Unlink ${fullGoal.title} from ${selectedProject.name}`}
+                              >
+                                <Link2Off className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      );
+                    };
+
+                    return (
+                      <>
+                        {pendingGoalRows.length > 0 && (
+                          <div className="space-y-3">
+                            {pendingGoalRows.map(({ fullGoal }) => renderGoalRow(fullGoal))}
+                          </div>
+                        )}
+                        {achievedGoalRows.length > 0 && (
+                          <div className="space-y-2">
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                              Completed goals ({achievedGoalRows.length})
+                            </h3>
+                            <div className="space-y-3">
+                              {achievedGoalRows.map(({ fullGoal }) => renderGoalRow(fullGoal))}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
               )}
             </div>
@@ -999,22 +1091,28 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projects</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+              Projects
+            </h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 sm:text-base">
               Manage your projects and track progress
             </p>
           </div>
-          <Button variant="primary" onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="w-5 h-5 mr-2" />
+          <Button
+            variant="primary"
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="w-full shrink-0 sm:w-auto"
+          >
+            <Plus className="mr-2 h-5 w-5" />
             New Project
           </Button>
         </div>
 
-        <div className="mb-4 flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[300px]">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative min-w-0 flex-1 sm:min-w-[240px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
@@ -1028,7 +1126,7 @@ export default function ProjectsPage() {
           <Button
             variant="secondary"
             onClick={() => setShowFilters(!showFilters)}
-            className="relative"
+            className="relative w-full shrink-0 sm:w-auto"
           >
             <Filter className="w-4 h-4 mr-2" />
             Filters
@@ -1039,7 +1137,7 @@ export default function ProjectsPage() {
             )}
           </Button>
 
-          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
+          <div className="flex w-full items-center justify-between gap-1 rounded-lg border border-gray-300 bg-white p-1 dark:border-gray-600 dark:bg-gray-800 sm:w-auto sm:justify-start">
             <button
               onClick={() => setViewMode('grid')}
               className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
@@ -1189,42 +1287,106 @@ export default function ProjectsPage() {
             onAction={() => setIsCreateDialogOpen(true)}
           />
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
-            {filteredProjects.map((project) => {
-              const stats = getProjectStats(project.id);
-              return (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onClick={handleProjectClick}
-                  viewMode="grid"
-                  {...stats}
-                />
-              );
-            })}
+          <div className="space-y-8">
+            {incompleteProjects.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
+                {incompleteProjects.map((project) => {
+                  const stats = getProjectStats(project.id);
+                  const display = getProjectDisplay(project);
+                  return (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      onClick={handleProjectClick}
+                      viewMode="grid"
+                      display={display}
+                      linkedGoalCount={getLinkedGoalsFull(project).length}
+                      {...stats}
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {completeProjects.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                  Completed ({completeProjects.length})
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
+                  {completeProjects.map((project) => {
+                    const stats = getProjectStats(project.id);
+                    const display = getProjectDisplay(project);
+                    return (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        onClick={handleProjectClick}
+                        viewMode="grid"
+                        display={display}
+                        linkedGoalCount={getLinkedGoalsFull(project).length}
+                        {...stats}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         ) : viewMode === 'list' ? (
-          <div className="space-y-2 w-full">
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <div className="w-full space-y-2">
+            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
               Showing {filteredProjects.length}{' '}
               {filteredProjects.length === 1 ? 'project' : 'projects'}
             </div>
-            {filteredProjects.map((project) => {
-              const stats = getProjectStats(project.id);
-              return (
-                <ProjectListItem
-                  key={project.id}
-                  project={project}
-                  onClick={handleProjectClick}
-                  onEdit={(p) => {
-                    setSelectedProject(p);
-                    setIsEditDialogOpen(true);
-                  }}
-                  onDelete={setProjectToDelete}
-                  {...stats}
-                />
-              );
-            })}
+            {incompleteProjects.length > 0 && (
+              <div className="space-y-2">
+                {incompleteProjects.map((project) => {
+                  const stats = getProjectStats(project.id);
+                  const display = getProjectDisplay(project);
+                  return (
+                    <ProjectListItem
+                      key={project.id}
+                      project={project}
+                      onClick={handleProjectClick}
+                      onEdit={(p) => {
+                        setSelectedProject(p);
+                        setIsEditDialogOpen(true);
+                      }}
+                      onDelete={setProjectToDelete}
+                      display={display}
+                      linkedGoalCount={getLinkedGoalsFull(project).length}
+                      {...stats}
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {completeProjects.length > 0 && (
+              <div className="space-y-2 pt-4">
+                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                  Completed ({completeProjects.length})
+                </h2>
+                {completeProjects.map((project) => {
+                  const stats = getProjectStats(project.id);
+                  const display = getProjectDisplay(project);
+                  return (
+                    <ProjectListItem
+                      key={project.id}
+                      project={project}
+                      onClick={handleProjectClick}
+                      onEdit={(p) => {
+                        setSelectedProject(p);
+                        setIsEditDialogOpen(true);
+                      }}
+                      onDelete={setProjectToDelete}
+                      display={display}
+                      linkedGoalCount={getLinkedGoalsFull(project).length}
+                      {...stats}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : (
           <ProjectTimelineView
@@ -1232,6 +1394,7 @@ export default function ProjectsPage() {
             onProjectClick={handleProjectClick}
             projectHealthMap={projectHealthMap}
             isHealthLoading={isHealthLoading}
+            resolveProjectDisplay={getProjectDisplay}
           />
         )}
       </div>

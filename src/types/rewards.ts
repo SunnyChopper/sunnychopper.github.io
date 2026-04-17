@@ -33,8 +33,13 @@ export interface WalletTransaction {
   id: string;
   userId: string;
   amount: number;
-  type: 'earn' | 'spend' | 'refund' | 'adjustment';
-  source: 'task_completion' | 'reward_redemption' | 'manual' | 'system';
+  type: 'earn' | 'spend' | 'refund' | 'clawback' | 'adjustment';
+  source:
+    | 'task_completion'
+    | 'task_completion_reversal'
+    | 'reward_redemption'
+    | 'manual'
+    | 'system';
   sourceEntityType: 'task' | 'reward' | null;
   sourceEntityId: string | null;
   description: string;

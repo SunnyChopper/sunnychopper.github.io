@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { QueryKey } from '@tanstack/react-query';
 import {
   tasksService,
   habitsService,
@@ -41,6 +42,8 @@ import {
   upsertLogbookEntryCache,
   upsertProjectCache,
   upsertTaskCache,
+  mergeTaskWithUpdate,
+  findTaskInClientCache,
 } from '@/lib/react-query/growth-system-cache';
 
 // TODO: These hooks use React Query to fetch data from backend API
@@ -89,13 +92,117 @@ export const useTasks = () => {
     },
   });
 
+  type TaskUpdateContext = {
+    previousLists: [QueryKey, unknown][];
+    previousDashboards: [QueryKey, unknown][];
+    detailKey: ReturnType<typeof queryKeys.growthSystem.tasks.detail>;
+    previousDetail: unknown;
+  };
+
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateTaskInput }) =>
-      tasksService.update(id, input),
+    mutationFn: async ({ id, input }: { id: string; input: UpdateTaskInput }) => {
+      const response = await tasksService.update(id, input);
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || 'Failed to update task');
+      }
+      return response;
+    },
+    onMutate: async ({ id, input }): Promise<TaskUpdateContext> => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
+      await queryClient.cancelQueries({ queryKey: queryKeys.growthSystem.data() });
+
+      const previousLists = queryClient.getQueriesData({
+        queryKey: queryKeys.growthSystem.tasks.lists(),
+      });
+      const previousDashboards = queryClient.getQueriesData({
+        queryKey: queryKeys.growthSystem.data(),
+      });
+      const detailKey = queryKeys.growthSystem.tasks.detail(id);
+      const previousDetail = queryClient.getQueryData(detailKey);
+
+      const existing = findTaskInClientCache(queryClient, id);
+      if (existing) {
+        upsertTaskCache(queryClient, mergeTaskWithUpdate(existing, input));
+      }
+
+      return { previousLists, previousDashboards, detailKey, previousDetail };
+    },
+    onError: (_err, _variables, context) => {
+      if (!context) return;
+      context.previousLists.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+      context.previousDashboards.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+      queryClient.setQueryData(context.detailKey, context.previousDetail);
+    },
+    onSuccess: (response, variables) => {
+      if (response.success && response.data) {
+        upsertTaskCache(queryClient, response.data);
+        if (variables.input.status !== undefined) {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
+        }
+      }
+    },
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await tasksService.complete(id);
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || 'Failed to complete task');
+      }
+      return response;
+    },
+    onMutate: async (id): Promise<TaskUpdateContext> => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
+      await queryClient.cancelQueries({ queryKey: queryKeys.growthSystem.data() });
+
+      const previousLists = queryClient.getQueriesData({
+        queryKey: queryKeys.growthSystem.tasks.lists(),
+      });
+      const previousDashboards = queryClient.getQueriesData({
+        queryKey: queryKeys.growthSystem.data(),
+      });
+      const detailKey = queryKeys.growthSystem.tasks.detail(id);
+      const previousDetail = queryClient.getQueryData(detailKey);
+
+      const existing = findTaskInClientCache(queryClient, id);
+      if (existing) {
+        const now = new Date().toISOString();
+        const optimisticPointsAwarded =
+          existing.pointValue != null && existing.pointValue > 0
+            ? true
+            : (existing.pointsAwarded ?? false);
+        upsertTaskCache(queryClient, {
+          ...existing,
+          status: 'Done',
+          completedDate: now,
+          pointsAwarded: optimisticPointsAwarded,
+          rewardLedgerStatus: optimisticPointsAwarded
+            ? 'awarded'
+            : (existing.rewardLedgerStatus ?? 'none'),
+        });
+      }
+
+      return { previousLists, previousDashboards, detailKey, previousDetail };
+    },
+    onError: (_err, _id, context) => {
+      if (!context) return;
+      context.previousLists.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+      context.previousDashboards.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+      queryClient.setQueryData(context.detailKey, context.previousDetail);
+    },
     onSuccess: (response) => {
       if (response.success && response.data) {
         upsertTaskCache(queryClient, response.data);
       }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
     },
   });
 
@@ -118,6 +225,7 @@ export const useTasks = () => {
     error: apiError || error,
     createTask: createMutation.mutateAsync,
     updateTask: updateMutation.mutateAsync,
+    completeTask: completeMutation.mutateAsync,
     deleteTask: deleteMutation.mutateAsync,
   };
 };

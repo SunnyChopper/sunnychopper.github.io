@@ -38,7 +38,7 @@ interface MorningLaunchpadContentProps {
 
 function MorningLaunchpadContent({ isOpen, onClose }: MorningLaunchpadContentProps) {
   const navigate = useNavigate();
-  const { tasks, updateTask } = useTasks();
+  const { tasks, updateTask, completeTask } = useTasks();
   const { habits } = useHabits();
   const { goals } = useGoals();
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
@@ -112,13 +112,7 @@ function MorningLaunchpadContent({ isOpen, onClose }: MorningLaunchpadContentPro
     setCompletingTaskId(task.id);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    await updateTask({
-      id: task.id,
-      input: {
-        status: 'Done',
-        completedDate: new Date().toISOString(),
-      },
-    });
+    await completeTask(task.id);
 
     setCompletingTaskId(null);
   };
@@ -368,7 +362,7 @@ function MorningLaunchpadContent({ isOpen, onClose }: MorningLaunchpadContentPro
                               {task.size && (
                                 <div className="flex items-center gap-1.5 text-gray-400">
                                   <Clock className="w-4 h-4" />
-                                  <span className="text-sm">{task.size}h</span>
+                                  <span className="text-sm">{task.size}pts</span>
                                 </div>
                               )}
                               {task.dueDate && (

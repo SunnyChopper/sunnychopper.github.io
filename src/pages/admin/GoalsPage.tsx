@@ -9,6 +9,7 @@ import {
   Kanban,
   Filter,
   X,
+  Network,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type {
@@ -48,6 +49,8 @@ import { GoalDetailView } from '@/components/organisms/GoalDetailView';
 import { GoalKanbanView } from '@/components/organisms/GoalKanbanView';
 import { GoalTimelineView } from '@/components/organisms/GoalTimelineView';
 import { GoalHierarchicalTimeView } from '@/components/organisms/GoalHierarchicalTimeView';
+import { GoalMindmapView } from '@/components/organisms/GoalMindmapView';
+import { GoalMindmapLoadingSkeleton } from '@/components/organisms/GoalMindmapLoadingSkeleton';
 import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
@@ -60,7 +63,7 @@ const STATUSES: GoalStatus[] = [...GOAL_STATUSES];
 const AREA_OPTIONS: Area[] = [...AREAS];
 const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
 
-type ViewMode = 'timeHorizon' | 'area' | 'kanban' | 'timeline';
+type ViewMode = 'timeHorizon' | 'area' | 'kanban' | 'timeline' | 'mindmap';
 
 // Animation variants for mobile UI enhancements
 const containerVariants = {
@@ -110,7 +113,7 @@ type QuickFilter =
 export default function GoalsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({});
-  const [viewMode, setViewMode] = useState<ViewMode>('timeHorizon');
+  const [viewMode, setViewMode] = useState<ViewMode>('mindmap');
   const [quickFilters, setQuickFilters] = useState<QuickFilter[]>([]);
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -815,49 +818,54 @@ export default function GoalsPage() {
         </motion.div>
 
         <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-1">
-          {(['timeHorizon', 'area', 'kanban', 'timeline'] as ViewMode[]).map((mode, index) => {
-            const icons = {
-              timeHorizon: Layers,
-              area: LayoutGrid,
-              kanban: Kanban,
-              timeline: Calendar,
-            };
-            const labels = {
-              timeHorizon: 'Time',
-              area: 'Area',
-              kanban: 'Board',
-              timeline: 'Timeline',
-            };
-            const titles = {
-              timeHorizon: 'Time view',
-              area: 'Area view',
-              kanban: 'Kanban board',
-              timeline: 'Timeline view',
-            };
-            const Icon = icons[mode];
-            const isActive = viewMode === mode;
+          {(['timeHorizon', 'area', 'kanban', 'timeline', 'mindmap'] as ViewMode[]).map(
+            (mode, index) => {
+              const icons = {
+                timeHorizon: Layers,
+                area: LayoutGrid,
+                kanban: Kanban,
+                timeline: Calendar,
+                mindmap: Network,
+              };
+              const labels = {
+                timeHorizon: 'Time',
+                area: 'Area',
+                kanban: 'Board',
+                timeline: 'Timeline',
+                mindmap: 'Mindmap',
+              };
+              const titles = {
+                timeHorizon: 'Time view',
+                area: 'Area view',
+                kanban: 'Kanban board',
+                timeline: 'Timeline view',
+                mindmap: 'Mindmap view',
+              };
+              const Icon = icons[mode];
+              const isActive = viewMode === mode;
 
-            return (
-              <motion.button
-                key={mode}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-                whileTap={{ scale: 0.9 }}
-                whileHover={{ scale: 1.05 }}
-                onClick={() => setViewMode(mode)}
-                className={`flex items-center gap-2 px-3 py-2 rounded min-h-[44px] transition-colors ${
-                  isActive
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                title={titles[mode]}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium hidden sm:inline">{labels[mode]}</span>
-              </motion.button>
-            );
-          })}
+              return (
+                <motion.button
+                  key={mode}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileTap={{ scale: 0.9 }}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => setViewMode(mode)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded min-h-[44px] transition-colors ${
+                    isActive
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  title={titles[mode]}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm font-medium hidden sm:inline">{labels[mode]}</span>
+                </motion.button>
+              );
+            }
+          )}
         </div>
       </motion.div>
 
@@ -1000,60 +1008,66 @@ export default function GoalsPage() {
       </AnimatePresence>
 
       {isLoading ? (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-          {[1, 2, 3].map((areaIndex) => (
-            <div key={areaIndex}>
-              {/* Area header skeleton */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              </div>
-              {/* Goal cards skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1, 2].map((cardIndex) => (
-                  <motion.div
-                    key={cardIndex}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: (areaIndex - 1) * 0.1 + cardIndex * 0.05 }}
-                    className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 min-h-[280px]"
-                  >
-                    <div className="space-y-4">
-                      {/* Header skeleton */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                          <div className="space-y-2 flex-1">
-                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                            <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        viewMode === 'mindmap' ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <GoalMindmapLoadingSkeleton />
+          </motion.div>
+        ) : (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            {[1, 2, 3].map((areaIndex) => (
+              <div key={areaIndex}>
+                {/* Area header skeleton */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+                {/* Goal cards skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[1, 2].map((cardIndex) => (
+                    <motion.div
+                      key={cardIndex}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: (areaIndex - 1) * 0.1 + cardIndex * 0.05 }}
+                      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 min-h-[280px]"
+                    >
+                      <div className="space-y-4">
+                        {/* Header skeleton */}
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                            <div className="space-y-2 flex-1">
+                              <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                              <div className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                            </div>
                           </div>
+                          <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
                         </div>
-                        <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                        {/* Title skeleton */}
+                        <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        {/* Description skeleton */}
+                        <div className="space-y-2">
+                          <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </div>
+                        {/* Tags skeleton */}
+                        <div className="flex gap-2">
+                          <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                          <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                        </div>
+                        {/* Footer skeleton */}
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                          <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </div>
                       </div>
-                      {/* Title skeleton */}
-                      <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                      {/* Description skeleton */}
-                      <div className="space-y-2">
-                        <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                        <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                      </div>
-                      {/* Tags skeleton */}
-                      <div className="flex gap-2">
-                        <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
-                        <div className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
-                      </div>
-                      {/* Footer skeleton */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                        <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </motion.div>
+            ))}
+          </motion.div>
+        )
       ) : filteredGoals.length === 0 ? (
         <EmptyState
           icon={Target}
@@ -1111,6 +1125,17 @@ export default function GoalsPage() {
         />
       ) : viewMode === 'timeline' ? (
         <GoalTimelineView goals={filteredGoals} onGoalClick={handleGoalClick} />
+      ) : viewMode === 'mindmap' ? (
+        <GoalMindmapView
+          goals={filteredGoals}
+          goalsProgress={goalsProgress}
+          goalsHealth={goalsHealth}
+          onGoalClick={handleGoalClick}
+          onCreateSubgoal={(parentGoal) => {
+            setParentGoalForSubgoal(parentGoal);
+            setIsCreateDialogOpen(true);
+          }}
+        />
       ) : viewMode === 'timeHorizon' ? (
         <GoalHierarchicalTimeView
           goals={filteredGoals}

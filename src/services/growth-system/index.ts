@@ -5,3 +5,4 @@ export { goalsService } from './goals.service';
 export { projectsService } from './projects.service';
 export { logbookService } from './logbook.service';
 export { growthSystemService } from './growth-system.service';
+export { weeklyReviewService } from './weekly-review.service';
