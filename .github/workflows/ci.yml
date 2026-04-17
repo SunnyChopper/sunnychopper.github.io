@@ -33,6 +33,9 @@ jobs:
       - name: Format Check
         run: npm run format:check
 
+      - name: Build
+        run: npm run build
+
       - name: Architecture Validation
         run: npm run validate-architecture
         continue-on-error: true
