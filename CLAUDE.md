@@ -40,6 +40,8 @@ Quick mapping:
 
 ## Commands (source of truth: `package.json`)
 
+When this repo is opened inside the monorepo workspace (sibling `personal-os-backend/`, root `package.json`), prefer workspace-root **`npm run verify:frontend`** for the standard lint + type-check chain; use **`npm run verify:frontend:all`** for the stricter gate.
+
 - **Dev**: `npm run dev`
 - **Build/preview**: `npm run build`, `npm run preview`
 - **Quality**: `npm run lint`, `npm run type-check`, `npm run format:check`
