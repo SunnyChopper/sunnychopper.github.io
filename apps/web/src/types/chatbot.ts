@@ -1,3 +1,48 @@
+import type { KnowledgeSurfaceSuggestion } from './knowledge-surface';
+
+export type StaleEntityAction = 'archive' | 'kill' | 'revive';
+export type CoachEscalationAction = 'acknowledgeCost' | 'startNow' | 'scheduleToday' | 'breakDown';
+export type MetaProposalAction = 'approve' | 'reject' | 'later';
+export type DecisionAction = StaleEntityAction | CoachEscalationAction | MetaProposalAction;
+
+export interface AssistantDecisionRequest {
+  id: string;
+  kind: 'staleEntity' | 'coachEscalation' | 'metaProposal';
+  entityType: 'project' | 'goal' | 'habit' | 'task';
+  entityId: string;
+  title: string;
+  daysInactive?: number;
+  rationale: string;
+  suggestedNextAction: string;
+  costStatement?: string;
+  options: DecisionAction[];
+  status: 'pending' | 'resolved' | 'expired';
+  resolution?: {
+    action: DecisionAction;
+    resolvedAt: string;
+    clientHints?: {
+      deepLink?: string;
+    };
+  };
+}
+
+export interface CoachEscalationPendingItem {
+  id: string;
+  taskId: string;
+  threadId: string;
+  messageId: string;
+  decisionId: string;
+  level: string;
+  avoidanceScore: number;
+  taskTitle: string;
+  costStatement: string;
+  deepLink: string;
+  decisionRequest: AssistantDecisionRequest;
+  emailDelivered: boolean;
+  webhookDelivered: boolean;
+  createdAt: string;
+}
+
 export interface ChatThread {
   id: string;
   userId: string;
@@ -6,15 +51,32 @@ export interface ChatThread {
   updatedAt: string;
   /** Most recent persisted message time; drives sidebar ordering when set */
   lastMessageAt?: string;
+  /** Plain-text body of latest message (Markdown stripped server-side; max 200 chars) */
+  lastMessagePreview?: string;
+  /** Role of the latest message (`user` | `assistant`) */
+  lastMessageRole?: 'user' | 'assistant';
   /** True when the thread was created by proactive/scheduled automation */
   automationOriginated?: boolean;
+  /** True when the thread was created from an ambient whisper Ask flow */
+  whisperOriginated?: boolean;
   activeLeafMessageId?: string;
+}
+
+export interface SpecialistBrief {
+  specialistId: string;
+  displayName: string;
+  headline: string;
+  findings?: string[];
+  recommendations?: string[];
+  caveats?: string[];
+  confidence?: 'low' | 'medium' | 'high';
 }
 
 export interface StatusEntry {
   stage:
     | 'planning'
     | 'runningTools'
+    | 'consultingSpecialists'
     | 'responding'
     | 'persisting'
     | 'awaitingApproval'
@@ -35,6 +97,7 @@ export interface ChatMessage {
   executionSteps?: StatusEntry[];
   /** Persisted tool call input/output for expandable trace when response is done. */
   toolCallDetails?: WsToolCallCompletePayload[];
+  decisionRequests?: AssistantDecisionRequest[];
   clientStatus?: 'sending' | 'failed';
   clientError?: string;
   clientMessageId?: string;
@@ -64,6 +127,31 @@ export interface ChatMessage {
     skipLtmPriming?: boolean;
     /** Custom LTM search query for proactive daily briefing. */
     ltmPrimingQuery?: string;
+    /** JIT knowledge artifact suggestions for this assistant turn. */
+    knowledgeSurfaces?: KnowledgeSurfaceSuggestion[];
+    /** Delivery channel for proactive/outbound turns (email, webhook, chat, etc.). */
+    channel?: string;
+    /** When true, server skips living context snapshot priming for this turn. */
+    skipLivingSnapshot?: boolean;
+    /** Operator-local calendar date (YYYY-MM-DD) for tomorrowPrep anchor. */
+    prepTargetDate?: string;
+    /** Daily learning digest lane (theory or trends). */
+    dailyLearningDigestChannel?: string;
+    /** Advisory specialist briefs synthesized into the reply. */
+    specialistBriefs?: SpecialistBrief[];
+    /** Initiative outreach burst — shared across bubbles in one delivery. */
+    outreachId?: string;
+    burstIndex?: number;
+    burstTotal?: number;
+    initiativeOriginated?: boolean;
+    /** Initiative signal kind that triggered the outreach (e.g. metaProposal). */
+    signalKind?: string;
+    /** Inbound email action token type when source is emailAction. */
+    emailAction?: string;
+    /** Opaque token for one-click email action links. */
+    emailActionToken?: string;
+    /** Intervention id when seeded from convert-to-chat or intervention reply. */
+    interventionId?: string;
   };
   createdAt: string;
   parentId?: string;
@@ -81,6 +169,7 @@ export interface MessageTreeResponse {
 
 export interface CreateThreadRequest {
   title?: string;
+  whisperOriginated?: boolean;
 }
 
 export interface CreateMessageRequest {
@@ -255,7 +344,7 @@ export type AssistantReasoningPhase = 'planning' | 'runningTools' | 'replanning'
 export interface WsStatusUpdatePayload {
   runId: string;
   threadId: string;
-  stage: 'planning' | 'runningTools' | 'responding' | 'persisting';
+  stage: 'planning' | 'runningTools' | 'consultingSpecialists' | 'responding' | 'persisting';
   message?: string;
   reasoningPhase?: AssistantReasoningPhase;
   reasoningStreamEnabled?: boolean;
@@ -313,6 +402,8 @@ export interface WsThreadUpdatedPayload {
   title: string;
   updatedAt: string;
   lastMessageAt?: string;
+  lastMessagePreview?: string;
+  lastMessageRole?: 'user' | 'assistant';
   activeLeafMessageId?: string;
 }
 
@@ -322,4 +413,117 @@ export interface WsRunErrorPayload {
   message: string;
   code: string;
   details?: Record<string, unknown>;
+}
+
+export type RelevantNowKind =
+  | 'topTask'
+  | 'avoidanceCoach'
+  | 'blocker'
+  | 'nextHabit'
+  | 'knowledge'
+  | 'radarHit'
+  | 'healthConstraint';
+
+export type CoachNudgeLevel = 'supportive' | 'firm' | 'strict';
+
+export interface RelevantNowItem {
+  kind: RelevantNowKind;
+  entityId: string;
+  title: string;
+  subtitle: string;
+  href: string;
+  askPrompt: string;
+}
+
+export interface EscalationSlot extends RelevantNowItem {
+  kind: 'avoidanceCoach';
+  nudgeLevel: CoachNudgeLevel;
+}
+
+export interface AmbientCoachData {
+  generatedAt: string;
+  escalation: EscalationSlot;
+  healthConstraint: RelevantNowItem;
+  crossModuleSignal: RelevantNowItem;
+}
+
+/** @deprecated Use AmbientCoachData — kept for gradual migration of imports */
+export type RelevantNowData = AmbientCoachData;
+
+export type AmbientSurface =
+  | 'dashboard'
+  | 'growthTasks'
+  | 'growthProjects'
+  | 'personalBranding'
+  | 'health';
+
+export type AmbientWhisperKind =
+  | 'taskDeferral'
+  | 'goalAdvisory'
+  | 'projectStale'
+  | 'recoveryLow'
+  | 'recoveryMissing'
+  | 'brandingDrafts'
+  | 'focusOverload'
+  | 'ledgerAck';
+
+export type AmbientWhisperTone = 'info' | 'nudge' | 'alert';
+
+export type AmbientWhisperSource = 'aggregate' | 'ledger';
+
+export type AmbientActionId =
+  | 'dismiss'
+  | 'deprioritizeDeepWork'
+  | 'requestStrictPlan'
+  | 'openEntity'
+  | 'openQuickRecovery';
+
+export interface AmbientEntityRef {
+  type: 'task' | 'goal' | 'project';
+  id: string;
+}
+
+export interface AmbientWhisperAction {
+  id: AmbientActionId;
+  label: string;
+  style: 'primary' | 'secondary';
+  confirm?: string;
+}
+
+export interface AmbientWhisperItem {
+  id: string;
+  surface: AmbientSurface;
+  kind: AmbientWhisperKind;
+  tone: AmbientWhisperTone;
+  title: string;
+  body: string;
+  href: string;
+  askPrompt: string;
+  source: AmbientWhisperSource;
+  entityRef?: AmbientEntityRef;
+  actions: AmbientWhisperAction[];
+  dismissible: boolean;
+  expiresAt?: string;
+  ledgerEntryId?: string;
+}
+
+export interface AmbientPresenceData {
+  generatedAt: string;
+  surface: AmbientSurface;
+  items: AmbientWhisperItem[];
+}
+
+export interface AmbientActionResult {
+  ack: boolean;
+  resultSummary: string;
+  ledgerEntryId?: string;
+}
+
+export interface AmbientAskSession {
+  surface: AmbientSurface;
+  title: string;
+  askPrompt: string;
+  threadId: string | null;
+  isCreatingThread: boolean;
+  threadError: string | null;
 }
