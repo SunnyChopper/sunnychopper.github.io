@@ -21,16 +21,20 @@ export function useExecutionTraceAccordionSync(
     const active = new Set(Object.values(runs).map((r) => r.assistantMessageId));
     const prevActive = prevActiveAssistantIdsRef.current;
     setExecutionTraceExpanded((prev) => {
-      const next = { ...prev };
+      let next: typeof prev | null = null;
       for (const id of active) {
-        next[id] = true;
+        if (prev[id] !== true) {
+          if (!next) next = { ...prev };
+          next[id] = true;
+        }
       }
       for (const id of prevActive) {
-        if (!active.has(id)) {
+        if (!active.has(id) && prev[id] !== false) {
+          if (!next) next = { ...prev };
           next[id] = false;
         }
       }
-      return next;
+      return next ?? prev;
     });
     prevActiveAssistantIdsRef.current = active;
   }, [runs]);
