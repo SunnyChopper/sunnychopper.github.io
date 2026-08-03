@@ -1,10 +1,20 @@
 import { BookOpen, CheckCircle2, Clock, Layers } from 'lucide-react';
+import { FormCheckbox } from '@/components/atoms/FormCheckbox';
+import {
+  vaultItemCardSelectCheckboxClassName,
+  vaultItemCardShellClassName,
+} from '@/lib/knowledge-vault/vault-item-card-surfaces';
+import type { LibrarySelectableRef } from '@/lib/knowledge-vault/library-selection';
 import type { Course, CourseLesson } from '@/types/knowledge-vault';
+import { cn } from '@/lib/utils';
 
 interface CourseStackCardProps {
   course: Course;
   lessons: CourseLesson[];
   onClick?: () => void;
+  isSelected?: boolean;
+  selectionActive?: boolean;
+  onToggleSelect?: (ref: LibrarySelectableRef, event?: React.MouseEvent) => void;
 }
 
 function formatDate(dateString: string | null): string {
@@ -13,7 +23,14 @@ function formatDate(dateString: string | null): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function CourseStackCard({ course, lessons, onClick }: CourseStackCardProps) {
+export default function CourseStackCard({
+  course,
+  lessons,
+  onClick,
+  isSelected = false,
+  selectionActive = false,
+  onToggleSelect,
+}: CourseStackCardProps) {
   const completedLessons = lessons.filter((l) => l.completedAt).length;
   const totalLessons = lessons.length;
   const completionPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
@@ -37,8 +54,27 @@ export default function CourseStackCard({ course, lessons, onClick }: CourseStac
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       aria-label={onClick ? `View course: ${course.title}` : undefined}
-      className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg transition-all cursor-pointer"
+      className={cn(
+        vaultItemCardShellClassName({
+          multiSelected: isSelected,
+          interactive: Boolean(onClick),
+        }),
+        'cursor-pointer'
+      )}
     >
+      {onToggleSelect ? (
+        <div
+          data-vault-select
+          className={vaultItemCardSelectCheckboxClassName({ isSelected, selectionActive })}
+        >
+          <FormCheckbox
+            checked={isSelected}
+            onChange={() => onToggleSelect({ kind: 'course', id: course.id })}
+            onClick={(event) => event.stopPropagation()}
+            aria-label={`Select course ${course.title}`}
+          />
+        </div>
+      ) : null}
       <div className="flex-1">
         <div className="flex items-start gap-3 mb-3">
           <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">

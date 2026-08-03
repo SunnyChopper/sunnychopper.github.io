@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import DocumentForm from '@/components/organisms/DocumentForm';
 
@@ -35,6 +35,16 @@ vi.mock('@/services/knowledge-vault/document-upload.service', () => ({
   },
 }));
 
+vi.mock('@/lib/knowledge-vault/estimate-document-stats', () => ({
+  estimateDocumentStats: vi.fn().mockResolvedValue({ pageCount: 5, chunkCount: 4 }),
+}));
+
+const mockFetchUrlMetadata = vi.fn();
+
+vi.mock('@/services/knowledge-vault/url-metadata.service', () => ({
+  fetchUrlMetadata: (...args: unknown[]) => mockFetchUrlMetadata(...args),
+}));
+
 vi.mock('@/components/molecules/FileUploadZone', () => ({
   default: ({ onFilesSelected }: { onFilesSelected: (files: File[]) => void }) => (
     <button
@@ -52,22 +62,46 @@ vi.mock('@/components/molecules/FileUploadZone', () => ({
 describe('DocumentForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetchUrlMetadata.mockResolvedValue({
+      url: 'https://x.com/a.pdf',
+      title: 'Remote PDF Title',
+      faviconUrl: 'https://www.google.com/s2/favicons?domain=x.com&sz=32',
+      fileType: 'pdf',
+      fetchFailed: false,
+      warning: null,
+    });
   });
 
-  it('runs presign → PUT progress → from-file when creating with a file', async () => {
+  it('starts eager upload on file pick before Create', async () => {
+    const user = userEvent.setup();
+    render(<DocumentForm onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.click(screen.getByTestId('mock-pick-file'));
+
+    await waitFor(() => {
+      expect(mockGetPresignedUrl).toHaveBeenCalledTimes(1);
+      expect(mockUploadProgress).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockCreateFromFile).not.toHaveBeenCalled();
+  });
+
+  it('creates via from-file only after upload is ready', async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
     render(<DocumentForm onSuccess={onSuccess} onCancel={vi.fn()} />);
 
     await user.click(screen.getByTestId('mock-pick-file'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/ready to create/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByDisplayValue('5')).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: /create document/i }));
 
-    expect(mockGetPresignedUrl).toHaveBeenCalledTimes(1);
-    expect(mockUploadProgress).toHaveBeenCalledWith(
-      'https://s3.example/presigned',
-      expect.any(File),
-      expect.any(Function)
-    );
+    expect(mockUploadProgress).toHaveBeenCalledTimes(1);
     expect(mockCreateFromFile).toHaveBeenCalledWith(
       expect.objectContaining({
         fileId: 'file-id-1',
@@ -102,5 +136,57 @@ describe('DocumentForm', () => {
       })
     );
     expect(mockGetPresignedUrl).not.toHaveBeenCalled();
+  });
+
+  it('offers fetched title for URL paste when title is empty', async () => {
+    const user = userEvent.setup();
+    render(<DocumentForm onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: /paste a file url/i }));
+    await user.type(screen.getByPlaceholderText(/example\.com\/document/i), 'https://x.com/a.pdf');
+
+    await waitFor(() => {
+      expect(mockFetchUrlMetadata).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Remote PDF Title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /use title as document title/i }));
+    expect(screen.getByDisplayValue('Remote PDF Title')).toBeInTheDocument();
+  });
+
+  it('cancels upload and returns to dropzone', async () => {
+    let capturedSignal: AbortSignal | undefined;
+    mockUploadProgress.mockImplementation(
+      (
+        _url: string,
+        _file: File,
+        _onProgress: (n: number) => void,
+        opts?: { signal?: AbortSignal }
+      ) => {
+        capturedSignal = opts?.signal;
+        return new Promise(() => {
+          /* never resolves until abort */
+        });
+      }
+    );
+
+    const user = userEvent.setup();
+    render(<DocumentForm onSuccess={vi.fn()} onCancel={vi.fn()} />);
+
+    await user.click(screen.getByTestId('mock-pick-file'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/uploading/i)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /cancel upload/i }));
+
+    expect(capturedSignal?.aborted).toBe(true);
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-pick-file')).toBeInTheDocument();
+    });
   });
 });

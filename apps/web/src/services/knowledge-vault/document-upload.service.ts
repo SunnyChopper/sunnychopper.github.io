@@ -43,9 +43,10 @@ export const documentUploadService = {
   uploadToS3WithProgress(
     presignedUrl: string,
     file: File,
-    onProgress?: (percent: number) => void
+    onProgress?: (percent: number) => void,
+    options?: { signal?: AbortSignal }
   ): Promise<void> {
-    return putFileToS3WithProgress(presignedUrl, file, onProgress);
+    return putFileToS3WithProgress(presignedUrl, file, onProgress, options);
   },
 
   async createDocumentFromFile(body: CreateDocumentFromFileBody): Promise<Document> {

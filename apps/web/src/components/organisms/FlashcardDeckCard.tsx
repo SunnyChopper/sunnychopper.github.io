@@ -1,9 +1,26 @@
 import { BookOpen, Calendar, Layers, Target } from 'lucide-react';
+import Button from '@/components/atoms/Button';
+import {
+  flashcardOverduePillClassName,
+  formatOverdueCountLabel,
+  shouldShowDeckOverduePill,
+} from '@/lib/knowledge-vault/flashcard-deck-overdue';
+import {
+  vaultItemCardAccentBarClassName,
+  vaultItemCardSelectCheckboxClassName,
+  vaultItemCardShellClassName,
+} from '@/lib/knowledge-vault/vault-item-card-surfaces';
+import type { LibrarySelectableRef } from '@/lib/knowledge-vault/library-selection';
+import { FormCheckbox } from '@/components/atoms/FormCheckbox';
 import type { FlashcardDeck } from '@/types/knowledge-vault';
 
 interface FlashcardDeckCardProps {
   deck: FlashcardDeck;
   onClick?: () => void;
+  onStartReview?: () => void;
+  isSelected?: boolean;
+  selectionActive?: boolean;
+  onToggleSelect?: (ref: LibrarySelectableRef, event?: React.MouseEvent) => void;
 }
 
 function formatDate(dateString: string | null): string {
@@ -12,7 +29,17 @@ function formatDate(dateString: string | null): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function FlashcardDeckCard({ deck, onClick }: FlashcardDeckCardProps) {
+export default function FlashcardDeckCard({
+  deck,
+  onClick,
+  onStartReview,
+  isSelected = false,
+  selectionActive = false,
+  onToggleSelect,
+}: FlashcardDeckCardProps) {
+  const showOverdue = shouldShowDeckOverduePill(deck.cardsDue);
+  const interactive = Boolean(onClick);
+
   return (
     <div
       onClick={onClick}
@@ -25,8 +52,25 @@ export default function FlashcardDeckCard({ deck, onClick }: FlashcardDeckCardPr
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       aria-label={onClick ? `Open flashcard deck: ${deck.name}` : undefined}
-      className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg transition-all cursor-pointer"
+      className={vaultItemCardShellClassName({ interactive, multiSelected: isSelected })}
     >
+      <span
+        aria-hidden
+        className={vaultItemCardAccentBarClassName({ multiSelected: isSelected })}
+      />
+      {onToggleSelect ? (
+        <div
+          data-vault-select
+          className={vaultItemCardSelectCheckboxClassName({ isSelected, selectionActive })}
+        >
+          <FormCheckbox
+            checked={isSelected}
+            onChange={() => onToggleSelect({ kind: 'flashcard_deck', id: deck.id })}
+            onClick={(event) => event.stopPropagation()}
+            aria-label={`Select deck ${deck.name}`}
+          />
+        </div>
+      ) : null}
       <div className="flex-1">
         <div className="flex items-start gap-3 mb-3">
           <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
@@ -37,6 +81,29 @@ export default function FlashcardDeckCard({ deck, onClick }: FlashcardDeckCardPr
             <p className="text-sm text-gray-500 dark:text-gray-400">Flashcard deck</p>
           </div>
         </div>
+
+        {showOverdue && (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className={flashcardOverduePillClassName}>
+              {formatOverdueCountLabel(deck.cardsDue)}
+            </span>
+            {onStartReview && (
+              <Button
+                type="button"
+                variant="success"
+                size="sm"
+                className="rounded-lg"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStartReview();
+                }}
+                aria-label={`Start review for ${deck.name}`}
+              >
+                Start review
+              </Button>
+            )}
+          </div>
+        )}
 
         {deck.description && (
           <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3 whitespace-pre-wrap">

@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Tag as TagIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import FileUploadZone from '@/components/molecules/FileUploadZone';
+import DocumentUploadProgressCard from '@/components/molecules/knowledge-vault/DocumentUploadProgressCard';
+import UrlMetadataPreview from '@/components/molecules/knowledge-vault/UrlMetadataPreview';
+import type { DocumentUploadStatus } from '@/components/molecules/knowledge-vault/DocumentUploadProgressCard';
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import { useUrlMetadataPreview } from '@/hooks/useUrlMetadataPreview';
 import { documentUploadService } from '@/services/knowledge-vault/document-upload.service';
+import { estimateDocumentStats } from '@/lib/knowledge-vault/estimate-document-stats';
+import { isValidHttpUrl } from '@/lib/knowledge-vault/url-metadata';
 import type { Document, CreateDocumentInput, UpdateDocumentInput } from '@/types/knowledge-vault';
 import type { Area } from '@/types/growth-system';
 import { Select } from '@/components/atoms/Select';
@@ -35,6 +41,10 @@ function extFromFilename(file: File): string {
   return i > 0 ? n.slice(i + 1).toLowerCase() : '';
 }
 
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError';
+}
+
 interface DocumentFormProps {
   document?: Document;
   onSuccess: () => void;
@@ -45,9 +55,16 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
   const { createDocument, updateDocument, refreshVaultItems } = useKnowledgeVault();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [stagedFileId, setStagedFileId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<DocumentUploadStatus | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [estimatedPages, setEstimatedPages] = useState<number | null>(null);
+  const [estimatedChunks, setEstimatedChunks] = useState<number | null>(null);
   const [showAdvancedUrl, setShowAdvancedUrl] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const uploadGenerationRef = useRef(0);
 
   const [formData, setFormData] = useState({
     title: document?.title || '',
@@ -76,6 +93,24 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
     }
   }, [document]);
 
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const resetUploadState = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setPendingFile(null);
+    setStagedFileId(null);
+    setUploadProgress(0);
+    setUploadStatus(null);
+    setUploadError(null);
+    setEstimatedPages(null);
+    setEstimatedChunks(null);
+  }, []);
+
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim().toLowerCase();
     if (trimmedTag && !formData.tags.includes(trimmedTag)) {
@@ -94,30 +129,95 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
     }));
   };
 
+  const startEagerUpload = useCallback(
+    async (file: File) => {
+      const generation = ++uploadGenerationRef.current;
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setPendingFile(file);
+      setStagedFileId(null);
+      setUploadProgress(0);
+      setUploadStatus('uploading');
+      setUploadError(null);
+      setEstimatedPages(null);
+      setEstimatedChunks(null);
+      setError(null);
+
+      setFormData((prev) => ({
+        ...prev,
+        fileType: extFromFilename(file),
+        title: prev.title.trim() ? prev.title : titleFromFilename(file),
+        fileUrl: '',
+      }));
+      setShowAdvancedUrl(false);
+
+      const estimatePromise = estimateDocumentStats(file).then((stats) => {
+        if (generation !== uploadGenerationRef.current) return;
+        setEstimatedPages(stats.pageCount);
+        setEstimatedChunks(stats.chunkCount);
+        if (stats.pageCount != null) {
+          setFormData((prev) => ({ ...prev, pageCount: stats.pageCount }));
+        }
+      });
+
+      try {
+        const presign = await documentUploadService.getPresignedUrl(file);
+        if (generation !== uploadGenerationRef.current || controller.signal.aborted) return;
+
+        await documentUploadService.uploadToS3WithProgress(
+          presign.uploadUrl,
+          file,
+          (pct) => {
+            if (generation === uploadGenerationRef.current) {
+              setUploadProgress(pct);
+            }
+          },
+          { signal: controller.signal }
+        );
+
+        if (generation !== uploadGenerationRef.current) return;
+
+        await estimatePromise;
+
+        setStagedFileId(presign.fileId);
+        setUploadStatus('ready');
+        setUploadProgress(100);
+      } catch (err) {
+        if (generation !== uploadGenerationRef.current) return;
+        if (isAbortError(err)) {
+          resetUploadState();
+          return;
+        }
+        const message = err instanceof Error ? err.message : 'Upload failed';
+        setUploadStatus('error');
+        setUploadError(message);
+        setError(message);
+      }
+    },
+    [resetUploadState]
+  );
+
   const onFilesSelected = (files: File[]) => {
     const f = files[0];
     if (!f) return;
-    setPendingFile(f);
-    setFormData((prev) => ({
-      ...prev,
-      fileType: extFromFilename(f),
-      title: prev.title.trim() ? prev.title : titleFromFilename(f),
-      fileUrl: '',
-    }));
-    setShowAdvancedUrl(false);
-    setError(null);
+    void startEagerUpload(f);
   };
 
   const clearPendingFile = () => {
-    setPendingFile(null);
-    setUploadProgress(null);
+    resetUploadState();
+  };
+
+  const handleCancel = () => {
+    abortRef.current?.abort();
+    onCancel();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    setUploadProgress(null);
 
     try {
       if (!formData.title.trim()) {
@@ -135,14 +235,12 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
           tags: formData.tags,
         };
         await updateDocument(document.id, input);
-      } else if (pendingFile) {
-        setUploadProgress(0);
-        const presign = await documentUploadService.getPresignedUrl(pendingFile);
-        await documentUploadService.uploadToS3WithProgress(presign.uploadUrl, pendingFile, (pct) =>
-          setUploadProgress(pct)
-        );
+      } else if (pendingFile && stagedFileId) {
+        if (uploadStatus !== 'ready') {
+          throw new Error('Please wait for the file upload to finish');
+        }
         await documentUploadService.createDocumentFromFile({
-          fileId: presign.fileId,
+          fileId: stagedFileId,
           title: formData.title.trim(),
           area: formData.area,
           tags: formData.tags,
@@ -150,6 +248,8 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
           fileType: formData.fileType || undefined,
         });
         await refreshVaultItems();
+      } else if (pendingFile) {
+        throw new Error('File upload is not ready yet');
       } else {
         const input: CreateDocumentInput = {
           title: formData.title,
@@ -168,11 +268,15 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
       setError(err instanceof Error ? err.message : 'Failed to save document');
     } finally {
       setLoading(false);
-      setUploadProgress(null);
     }
   };
 
   const isCreate = !document;
+  const isUploading = uploadStatus === 'uploading';
+  const canSubmitWithFile = !pendingFile || (uploadStatus === 'ready' && stagedFileId != null);
+  const urlMetadataPreview = useUrlMetadataPreview(formData.fileUrl, {
+    enabled: isValidHttpUrl(formData.fileUrl) && !pendingFile,
+  });
 
   return (
     <form onSubmit={handleSubmit}>
@@ -256,19 +360,17 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
               PDF, DOCX, PPTX, PNG, JPG, TXT, Markdown (max 50 MB). Optional if you use a link
               below.
             </p>
-            {pendingFile ? (
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                <span className="text-sm text-gray-800 dark:text-gray-200 truncate pr-2">
-                  {pendingFile.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={clearPendingFile}
-                  className="text-sm text-red-600 dark:text-red-400 hover:underline shrink-0"
-                >
-                  Remove
-                </button>
-              </div>
+            {pendingFile && uploadStatus ? (
+              <DocumentUploadProgressCard
+                fileName={pendingFile.name}
+                fileSizeBytes={pendingFile.size}
+                progress={uploadProgress}
+                status={uploadStatus}
+                estimatedPageCount={estimatedPages}
+                estimatedChunkCount={estimatedChunks}
+                errorMessage={uploadError ?? undefined}
+                onCancel={clearPendingFile}
+              />
             ) : (
               <FileUploadZone
                 onFilesSelected={onFilesSelected}
@@ -278,36 +380,37 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
                 maxSizeMB={50}
               />
             )}
-            {uploadProgress !== null && uploadProgress < 100 && (
-              <div className="space-y-1">
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-purple-600 transition-all duration-150"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Uploading… {uploadProgress}%
-                </p>
-              </div>
-            )}
 
             <button
               type="button"
               onClick={() => setShowAdvancedUrl((v) => !v)}
               className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 hover:underline"
+              disabled={isUploading}
             >
               {showAdvancedUrl ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               Or paste a file URL
             </button>
             {showAdvancedUrl && (
-              <input
-                type="url"
-                value={formData.fileUrl}
-                onChange={(e) => setFormData((prev) => ({ ...prev, fileUrl: e.target.value }))}
-                className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
-                placeholder="https://example.com/document.pdf"
-              />
+              <>
+                <input
+                  type="url"
+                  value={formData.fileUrl}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, fileUrl: e.target.value }))}
+                  className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
+                  placeholder="https://example.com/document.pdf"
+                  disabled={isUploading || !!pendingFile}
+                />
+                <UrlMetadataPreview
+                  url={formData.fileUrl}
+                  status={urlMetadataPreview.status}
+                  title={urlMetadataPreview.title}
+                  faviconUrl={urlMetadataPreview.faviconUrl}
+                  warning={urlMetadataPreview.warning}
+                  currentTitle={formData.title}
+                  applyLabel="Use title as document title"
+                  onApplyTitle={(title) => setFormData((prev) => ({ ...prev, title }))}
+                />
+              </>
             )}
           </div>
         )}
@@ -323,6 +426,16 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
               onChange={(e) => setFormData((prev) => ({ ...prev, fileUrl: e.target.value }))}
               className="w-full px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-600"
               placeholder="https://example.com/document.pdf"
+            />
+            <UrlMetadataPreview
+              url={formData.fileUrl}
+              status={urlMetadataPreview.status}
+              title={urlMetadataPreview.title}
+              faviconUrl={urlMetadataPreview.faviconUrl}
+              warning={urlMetadataPreview.warning}
+              currentTitle={formData.title}
+              applyLabel="Use title as document title"
+              onApplyTitle={(title) => setFormData((prev) => ({ ...prev, title }))}
             />
           </div>
         )}
@@ -397,16 +510,15 @@ export default function DocumentForm({ document, onSuccess, onCancel }: Document
         <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-            disabled={loading}
           >
             Cancel
           </button>
           <button
             type="submit"
             className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading}
+            disabled={loading || !canSubmitWithFile || isUploading}
           >
             {loading ? 'Saving...' : document ? 'Update Document' : 'Create Document'}
           </button>

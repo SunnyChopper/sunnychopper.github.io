@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type ClipboardEvent } from 'react';
 import {
   Bold,
   Italic,
@@ -15,6 +15,7 @@ import {
   Check,
   AlertCircle,
   MonitorPlay,
+  X,
 } from 'lucide-react';
 import type { AutosaveStatus } from '@/hooks/markdown/useMarkdownAutosave';
 import { cn } from '@/lib/utils';
@@ -27,11 +28,34 @@ import {
   type PreviewBlock,
 } from '@/components/molecules/markdown-follow-scroll';
 import { Textarea } from '@/components/atoms/Textarea';
+import CopyIconButton from '@/components/atoms/CopyIconButton';
+import { useToast } from '@/hooks/use-toast';
+import {
+  detectSmartPasteKind,
+  formatSmartPaste,
+  SMART_PASTE_CHIP_DURATION_MS,
+  smartPasteChipLabel,
+  type SmartPasteKind,
+} from '@/lib/markdown/smart-paste';
+import {
+  clampSmartPasteChipPosition,
+  getTextareaCaretCoordinates,
+} from '@/lib/markdown/textarea-caret-position';
 
 const FOLLOW_STORAGE_KEY = 'markdown-editor-follow-mode';
 const RICH_EMBEDS_STORAGE_KEY = 'markdown-editor-rich-embeds';
+const PREVIEW_COPY_TOAST_DURATION_MS = 2000;
 
 type ViewMode = 'split' | 'edit' | 'preview';
+
+interface SmartPasteOffer {
+  kind: SmartPasteKind;
+  raw: string;
+  start: number;
+  end: number;
+  top: number;
+  left: number;
+}
 
 interface MarkdownEditorProps {
   value: string;
@@ -158,6 +182,7 @@ export default function MarkdownEditor({
   autosaveErrorMessage = null,
   enableRichEmbedsToggle = false,
 }: MarkdownEditorProps) {
+  const { showToast, ToastContainer } = useToast();
   const isFillHeight = minHeight === '100%';
   const paneMinHeightStyle = isFillHeight ? undefined : { minHeight };
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -208,10 +233,39 @@ export default function MarkdownEditor({
   }, [viewMode]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorPaneRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const blocksRef = useRef<PreviewBlock[]>([]);
   const isProgrammaticScrollRef = useRef(false);
   const programmaticScrollTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const smartPasteTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [smartPasteOffer, setSmartPasteOffer] = useState<SmartPasteOffer | null>(null);
+
+  const clearSmartPasteOffer = useCallback(() => {
+    if (smartPasteTimerRef.current !== undefined) {
+      clearTimeout(smartPasteTimerRef.current);
+      smartPasteTimerRef.current = undefined;
+    }
+    setSmartPasteOffer(null);
+  }, []);
+
+  const scheduleSmartPasteExpiry = useCallback(() => {
+    if (smartPasteTimerRef.current !== undefined) {
+      clearTimeout(smartPasteTimerRef.current);
+    }
+    smartPasteTimerRef.current = setTimeout(() => {
+      smartPasteTimerRef.current = undefined;
+      setSmartPasteOffer(null);
+    }, SMART_PASTE_CHIP_DURATION_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (smartPasteTimerRef.current !== undefined) {
+        clearTimeout(smartPasteTimerRef.current);
+      }
+    };
+  }, []);
 
   const followScrollActive = followMode && viewMode === 'split' && !isMobile;
   const { apiRef: lineMirrorApiRef, MirrorLayer } = useTextareaLineOffsets(
@@ -355,6 +409,11 @@ export default function MarkdownEditor({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape' && smartPasteOffer) {
+      e.preventDefault();
+      clearSmartPasteOffer();
+      return;
+    }
     // Cmd/Ctrl + B for bold
     if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
       e.preventDefault();
@@ -372,6 +431,66 @@ export default function MarkdownEditor({
     }
   };
 
+  const handlePaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const pastedText = e.clipboardData.getData('text/plain');
+    const kind = detectSmartPasteKind(pastedText);
+    if (!kind) return;
+
+    const textarea = e.currentTarget;
+    const start = textarea.selectionStart;
+
+    clearSmartPasteOffer();
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        let end = textarea.selectionEnd;
+        let inserted = textarea.value.slice(start, end);
+        if (!inserted) {
+          inserted = pastedText;
+          end = start + pastedText.length;
+        }
+
+        const caret = getTextareaCaretCoordinates(textarea, end);
+        const paneWidth = editorPaneRef.current?.clientWidth ?? textarea.clientWidth;
+        const position = clampSmartPasteChipPosition(caret, paneWidth);
+
+        setSmartPasteOffer({
+          kind,
+          raw: inserted,
+          start,
+          end,
+          top: position.top,
+          left: position.left,
+        });
+        scheduleSmartPasteExpiry();
+      });
+    });
+  };
+
+  const handleAcceptSmartPaste = () => {
+    if (!smartPasteOffer) return;
+
+    const { kind, raw, start, end } = smartPasteOffer;
+    const currentSlice = value.slice(start, end);
+    if (currentSlice !== raw) {
+      clearSmartPasteOffer();
+      return;
+    }
+
+    const formatted = formatSmartPaste(raw, kind);
+    const newValue = value.slice(0, start) + formatted + value.slice(end);
+    onChange(newValue);
+    clearSmartPasteOffer();
+
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const cursorPos = start + formatted.length;
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(cursorPos, cursorPos);
+    }, 0);
+  };
+
   const calculateReadingTime = (text: string): number => {
     const wordsPerMinute = 200;
     const words = text.trim().split(/\s+/).length;
@@ -386,6 +505,7 @@ export default function MarkdownEditor({
   const readingTime = calculateReadingTime(value);
 
   const showSplitChrome = viewMode === 'split' && !isMobile;
+  const showPreviewCopy = !isLoading && Boolean(value.trim());
 
   return (
     <div
@@ -567,18 +687,46 @@ export default function MarkdownEditor({
         {/* Editor */}
         {(viewMode === 'edit' || viewMode === 'split') && (
           <div
+            ref={editorPaneRef}
             className={cn(
               'flex-1 flex flex-col min-h-0',
               showSplitChrome && 'border-r border-gray-200 dark:border-gray-700',
-              followScrollActive && 'relative'
+              (followScrollActive || smartPasteOffer) && 'relative'
             )}
           >
             {MirrorLayer}
+            {smartPasteOffer && (
+              <div
+                className="absolute z-[2] flex items-center gap-1 rounded-md border border-gray-200 bg-white px-1 py-1 text-xs shadow-sm dark:border-gray-600 dark:bg-gray-800"
+                style={{ top: smartPasteOffer.top, left: smartPasteOffer.left }}
+                data-testid="smart-paste-chip"
+              >
+                <button
+                  type="button"
+                  role="button"
+                  className="rounded px-2 py-1 font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleAcceptSmartPaste}
+                >
+                  {smartPasteChipLabel(smartPasteOffer.kind)}
+                </button>
+                <button
+                  type="button"
+                  className="rounded p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+                  aria-label="Dismiss"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={clearSmartPasteOffer}
+                >
+                  <X size={14} aria-hidden />
+                </button>
+              </div>
+            )}
             <Textarea
               ref={textareaRef}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder={placeholder}
               className={cn(
                 'flex-1 w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm resize-none focus:outline-none overflow-y-auto',
@@ -596,11 +744,26 @@ export default function MarkdownEditor({
             ref={previewRef}
             data-testid="markdown-editor-preview"
             className={cn(
-              'flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900',
+              'relative flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900',
               viewMode === 'preview' && 'w-full',
               fullWidth ? 'px-8 pt-6 pb-32' : 'px-4 pt-3 pb-24'
             )}
           >
+            {showPreviewCopy && (
+              <CopyIconButton
+                value={value}
+                ariaLabel="Copy as Markdown"
+                alwaysVisible
+                className="absolute right-2 top-2 z-10 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                onCopied={() =>
+                  showToast({
+                    type: 'success',
+                    title: 'Copied',
+                    duration: PREVIEW_COPY_TOAST_DURATION_MS,
+                  })
+                }
+              />
+            )}
             {isLoading ? (
               <div className="flex items-center justify-center h-full min-h-[400px]">
                 <Loader className="w-8 h-8 animate-spin text-gray-400" />
@@ -625,6 +788,7 @@ export default function MarkdownEditor({
           errorMessage={autosaveErrorMessage}
         />
       )}
+      <ToastContainer />
     </div>
   );
 }

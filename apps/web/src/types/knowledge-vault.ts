@@ -400,6 +400,8 @@ export interface UpdateDocumentInput {
   pageCount?: number;
 }
 
+export type FlashcardDeckStatus = 'active' | 'archived';
+
 /** Deck summary from GET/POST `/knowledge/flashcards` (wire = camelCase). */
 export interface FlashcardDeck {
   id: string;
@@ -408,6 +410,7 @@ export interface FlashcardDeck {
   topic: string | null;
   area?: Area | null;
   tags?: string[];
+  status?: FlashcardDeckStatus;
   sourceItemIds?: string[];
   totalCards: number;
   cardsDue: number;
@@ -502,6 +505,7 @@ export interface UpdateCourseInput {
   description?: string;
   topic?: string;
   difficulty?: DifficultyLevel;
+  status?: string;
   lessons?: EmbeddedCourseLessonInput[];
 }
 
@@ -613,4 +617,22 @@ export interface VaultItemFilters {
   /** Backend list pagination (default 50) */
   page?: number;
   pageSize?: number;
+}
+
+export interface FeynmanJargonHighlight {
+  term: string;
+  note?: string | null;
+}
+
+export interface FeynmanLogicalGap {
+  gap: string;
+  note?: string | null;
+}
+
+export interface FeynmanRespondResult {
+  feedback: string;
+  jargonHighlights: FeynmanJargonHighlight[];
+  logicalGaps: FeynmanLogicalGap[];
+  clarityScore: number;
+  followUpQuestion: string;
 }

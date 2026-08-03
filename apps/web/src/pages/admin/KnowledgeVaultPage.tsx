@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { PageContainer } from '@/components/templates/PageContainer';
 import {
   Search,
@@ -21,10 +22,16 @@ import VaultItemCard from '@/components/organisms/VaultItemCard';
 import CourseStackCard from '@/components/organisms/CourseStackCard';
 import FlashcardDeckCard from '@/components/organisms/FlashcardDeckCard';
 import Dialog from '@/components/molecules/Dialog';
-import NoteForm from '@/components/organisms/NoteForm';
+import ConfirmDialog from '@/components/molecules/ConfirmDialog';
+import ArchiveVaultItemDialog from '@/components/molecules/knowledge-vault/ArchiveVaultItemDialog';
+import KeyboardShortcutsOverlay from '@/components/molecules/knowledge-vault/KeyboardShortcutsOverlay';
+import { LibraryBulkActionsBar } from '@/components/molecules/LibraryBulkActionsBar';
+import TagInput from '@/components/molecules/TagInput';
+import NoteForm, { type NoteFormHandle } from '@/components/organisms/NoteForm';
 import DocumentForm from '@/components/organisms/DocumentForm';
 import FlashcardDeckCreateDialog from '@/components/organisms/FlashcardDeckCreateDialog';
 import { PracticeArtifactCreateDialog } from '@/components/organisms/PracticeArtifactCreateDialog';
+import type { PracticeArtifactCreateKind } from '@/components/organisms/PracticeArtifactCreateDialog';
 import type {
   VaultItemType,
   VaultItem,
@@ -34,9 +41,36 @@ import type {
   HomeworkVaultItem,
   PracticeQuestionSetItem,
   QuizVaultItem,
+  Flashcard,
 } from '@/types/knowledge-vault';
 import type { Area } from '@/types/growth-system';
 import { Select } from '@/components/atoms/Select';
+import {
+  buildFlashcardsHubDeckUrl,
+  buildStudySessionDeckUrl,
+} from '@/lib/knowledge-vault/flashcard-deck-overdue';
+import { getLibraryVaultItemExit } from '@/lib/knowledge-vault/library-filter-motion';
+import { LibraryFilterGridShell } from '@/components/molecules/knowledge-vault/LibraryFilterGridShell';
+import {
+  clearLibrarySelection,
+  isRefSelected,
+  toggleLibrarySelection,
+  type LibrarySelectableRef,
+} from '@/lib/knowledge-vault/library-selection';
+import {
+  bulkAddTags,
+  bulkChangeArea,
+  bulkSoftArchive,
+  summarizeBulkOutcome,
+  type LibraryBulkMutations,
+} from '@/lib/knowledge-vault/library-bulk-actions';
+import {
+  getKnowledgeVaultShortcutSections,
+  isKeyboardShortcutsChord,
+} from '@/lib/knowledge-vault/keyboard-shortcuts';
+import type { OverlayLayer } from '@/lib/overlay-layer';
+import { practiceArtifactsService } from '@/services/knowledge-vault/practice-artifacts.service';
+import { useToast } from '@/hooks/use-toast';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 
@@ -53,23 +87,77 @@ export default function KnowledgeVaultPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const highlightId = searchParams.get('highlight');
   const editNoteId = searchParams.get('editNote');
-  const { vaultItems, courses, flashcardDecks, loading, refreshVaultItems, deleteItem } =
-    useKnowledgeVault();
+  const {
+    vaultItems,
+    courses,
+    flashcardDecks,
+    loading,
+    refreshVaultItems,
+    deleteItem,
+    updateNote,
+    updateDocument,
+    updateCourse,
+    updateFlashcardDeck,
+  } = useKnowledgeVault();
+  const { showToast, ToastContainer } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [selectedArea, setSelectedArea] = useState<Area | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [createDialogType, setCreateDialogType] = useState<VaultItemType | null>(null);
+  const [createInitialSourceIds, setCreateInitialSourceIds] = useState<string[] | null>(null);
   const [itemToArchive, setItemToArchive] = useState<VaultItem | null>(null);
   const [archiving, setArchiving] = useState(false);
   const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [hiddenArchiveIds, setHiddenArchiveIds] = useState<string[]>([]);
+  const [selectedRefs, setSelectedRefs] = useState<LibrarySelectableRef[]>([]);
+  const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
+  const [bulkTagsDraft, setBulkTagsDraft] = useState<string[]>([]);
+  const [bulkAreaDraft, setBulkAreaDraft] = useState<Area>('Operations');
+  const [addTagsDialogOpen, setAddTagsDialogOpen] = useState(false);
+  const [changeAreaDialogOpen, setChangeAreaDialogOpen] = useState(false);
+  const [bulkConfirmMode, setBulkConfirmMode] = useState<'archive' | 'delete' | null>(null);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const shouldReduceMotion = useReducedMotion() ?? false;
+  const noteFormRef = useRef<NoteFormHandle>(null);
 
   const editingNote = useMemo(() => {
     if (!editNoteId) return null;
     const item = vaultItems.find((v) => v.id === editNoteId && v.type === 'note');
     return (item as Note | undefined) ?? null;
   }, [editNoteId, vaultItems]);
+
+  const libraryDialogOpen =
+    createDialogType !== null ||
+    editingNote !== null ||
+    itemToArchive !== null ||
+    bulkConfirmMode !== null ||
+    addTagsDialogOpen ||
+    changeAreaDialogOpen;
+
+  const shortcutsLayer: OverlayLayer = libraryDialogOpen ? 'nested' : 'default';
+
+  const shortcutSections = useMemo(
+    () =>
+      getKnowledgeVaultShortcutSections({
+        editNoteOpen: editingNote !== null,
+        flashcardCreateOpen: createDialogType === 'flashcard',
+      }),
+    [createDialogType, editingNote]
+  );
+
+  useEffect(() => {
+    const onChord = (event: KeyboardEvent) => {
+      if (!isKeyboardShortcutsChord(event)) return;
+      event.preventDefault();
+      setShortcutsOpen((open) => !open);
+    };
+
+    window.addEventListener('keydown', onChord, true);
+    return () => window.removeEventListener('keydown', onChord, true);
+  }, []);
 
   const setEditingNote = useCallback(
     (note: Note | null) => {
@@ -132,6 +220,9 @@ export default function KnowledgeVaultPage() {
       if (item.type === 'course_lesson') {
         return !courseIdsWithLessons.has((item as CourseLesson).courseId);
       }
+      if (item.type === 'flashcard') {
+        return !(item as Flashcard).deckId;
+      }
       return true;
     });
 
@@ -158,9 +249,16 @@ export default function KnowledgeVaultPage() {
     return filtered.filter((item) => item.status === 'active');
   }, [vaultItems, filterType, selectedArea, searchQuery, courseIdsWithLessons]);
 
+  const visibleVaultItems = useMemo(
+    () => filteredItems.filter((item) => !hiddenArchiveIds.includes(item.id)),
+    [filteredItems, hiddenArchiveIds]
+  );
+
+  const vaultCardExit = getLibraryVaultItemExit(shouldReduceMotion);
+
   // Filter course stacks based on search and area
   const filteredFlashcardDecks = useMemo(() => {
-    let d = flashcardDecks;
+    let d = flashcardDecks.filter((deck) => deck.status !== 'archived');
 
     if (selectedArea !== 'all') {
       d = d.filter((deck) => {
@@ -208,6 +306,203 @@ export default function KnowledgeVaultPage() {
     return filtered;
   }, [courseStacks, selectedArea, searchQuery]);
 
+  const visibleCourseStacks = useMemo(
+    () => filteredCourseStacks.filter((stack) => !hiddenArchiveIds.includes(stack.course.id)),
+    [filteredCourseStacks, hiddenArchiveIds]
+  );
+
+  const visibleFlashcardDecks = useMemo(
+    () => filteredFlashcardDecks.filter((deck) => !hiddenArchiveIds.includes(deck.id)),
+    [filteredFlashcardDecks, hiddenArchiveIds]
+  );
+
+  const isLibraryFilterEmpty = useMemo(
+    () =>
+      filteredItems.length === 0 &&
+      visibleCourseStacks.length === 0 &&
+      !((filterType === 'all' || filterType === 'flashcard') && visibleFlashcardDecks.length > 0),
+    [filteredItems.length, visibleCourseStacks.length, filterType, visibleFlashcardDecks.length]
+  );
+
+  const visibleLibraryEntries = useMemo(() => {
+    const entries: LibrarySelectableRef[] = [];
+    if (filterType === 'all' || filterType === 'course_lesson') {
+      for (const stack of visibleCourseStacks) {
+        entries.push({ kind: 'course', id: stack.course.id });
+      }
+    }
+    if (filterType === 'all' || filterType === 'flashcard') {
+      for (const deck of visibleFlashcardDecks) {
+        entries.push({ kind: 'flashcard_deck', id: deck.id });
+      }
+    }
+    for (const item of visibleVaultItems) {
+      if (item.type === 'flashcard') continue;
+      entries.push({ kind: item.type as LibrarySelectableRef['kind'], id: item.id });
+    }
+    return entries;
+  }, [filterType, visibleCourseStacks, visibleFlashcardDecks, visibleVaultItems]);
+
+  const selectionActive = selectedRefs.length > 0;
+
+  const bulkMutations = useMemo<LibraryBulkMutations>(
+    () => ({
+      updateNote: (id, input) => updateNote(id, input),
+      updateDocument: (id, input) => updateDocument(id, input),
+      updateFlashcardDeck: (id, input) => updateFlashcardDeck(id, input),
+      updateCourse: (id, input) => updateCourse(id, input),
+      updatePracticeSet: async (id, input) => {
+        const res = await practiceArtifactsService.updatePracticeSet(id, input);
+        if (!res.success) throw new Error(res.error?.message || 'Failed to update practice set');
+      },
+      updateQuiz: async (id, input) => {
+        const res = await practiceArtifactsService.updateQuiz(id, input);
+        if (!res.success) throw new Error(res.error?.message || 'Failed to update quiz');
+      },
+      updateHomework: async (id, input) => {
+        const res = await practiceArtifactsService.updateHomework(id, input);
+        if (!res.success) throw new Error(res.error?.message || 'Failed to update homework');
+      },
+      deleteVaultItem: (id) => deleteItem(id),
+    }),
+    [updateNote, updateDocument, updateFlashcardDeck, updateCourse, deleteItem]
+  );
+
+  const handleToggleSelect = useCallback(
+    (ref: LibrarySelectableRef, event?: React.MouseEvent) => {
+      const result = toggleLibrarySelection(selectedRefs, ref, visibleLibraryEntries, {
+        shiftKey: event?.shiftKey,
+        anchorIndex: selectionAnchorIndex,
+      });
+      setSelectedRefs(result.selected);
+      setSelectionAnchorIndex(result.anchorIndex);
+    },
+    [selectedRefs, visibleLibraryEntries, selectionAnchorIndex]
+  );
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedRefs(clearLibrarySelection());
+    setSelectionAnchorIndex(null);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || selectedRefs.length === 0 || shortcutsOpen) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('[role="dialog"]')) return;
+      handleClearSelection();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedRefs.length, handleClearSelection, shortcutsOpen]);
+
+  const applyOptimisticHide = useCallback((refs: LibrarySelectableRef[]) => {
+    const ids = refs.map((ref) => ref.id);
+    setHiddenArchiveIds((prev) => [...prev, ...ids.filter((id) => !prev.includes(id))]);
+  }, []);
+
+  const handleBulkAddTags = async () => {
+    if (!bulkTagsDraft.length || bulkActionLoading) return;
+    setBulkActionLoading(true);
+    try {
+      const outcome = await bulkAddTags(
+        selectedRefs,
+        bulkTagsDraft,
+        { vaultItems, flashcardDecks },
+        bulkMutations
+      );
+      showToast({
+        title: 'Tags added',
+        message: summarizeBulkOutcome(outcome),
+        type: outcome.failed.length ? 'warning' : 'success',
+      });
+      if (outcome.failed.length) {
+        setSelectedRefs(outcome.failed.map((f) => f.ref));
+      } else {
+        handleClearSelection();
+      }
+      setAddTagsDialogOpen(false);
+      setBulkTagsDraft([]);
+      await refreshVaultItems();
+    } catch (err) {
+      showToast({
+        message: err instanceof Error ? err.message : 'Failed to add tags',
+        title: 'Bulk tags failed',
+        type: 'error',
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkChangeArea = async () => {
+    if (bulkActionLoading) return;
+    setBulkActionLoading(true);
+    try {
+      const outcome = await bulkChangeArea(
+        selectedRefs,
+        bulkAreaDraft,
+        { vaultItems, flashcardDecks },
+        bulkMutations
+      );
+      showToast({
+        title: 'Area updated',
+        message: summarizeBulkOutcome(outcome),
+        type: outcome.failed.length ? 'warning' : 'success',
+      });
+      if (outcome.failed.length) {
+        setSelectedRefs(outcome.failed.map((f) => f.ref));
+      } else {
+        handleClearSelection();
+      }
+      setChangeAreaDialogOpen(false);
+      await refreshVaultItems();
+    } catch (err) {
+      showToast({
+        title: 'Bulk area failed',
+        message: err instanceof Error ? err.message : 'Failed to change area',
+        type: 'error',
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkSoftArchive = async () => {
+    if (!bulkConfirmMode || bulkActionLoading) return;
+    const refs = [...selectedRefs];
+    setBulkActionLoading(true);
+    setBulkConfirmMode(null);
+    applyOptimisticHide(refs);
+    handleClearSelection();
+    try {
+      const outcome = await bulkSoftArchive(refs, bulkMutations);
+      showToast({
+        title: 'Items archived',
+        message: summarizeBulkOutcome(outcome),
+        type: outcome.failed.length ? 'warning' : 'success',
+      });
+      if (outcome.failed.length) {
+        const failedIds = new Set(outcome.failed.map((f) => f.ref.id));
+        setHiddenArchiveIds((prev) => prev.filter((id) => !failedIds.has(id)));
+        setSelectedRefs(outcome.failed.map((f) => f.ref));
+      }
+      await refreshVaultItems();
+      setHiddenArchiveIds((prev) =>
+        prev.filter((id) => !outcome.succeeded.some((s) => s.id === id))
+      );
+    } catch (err) {
+      setHiddenArchiveIds((prev) => prev.filter((id) => !refs.some((r) => r.id === id)));
+      showToast({
+        title: 'Bulk archive failed',
+        message: err instanceof Error ? err.message : 'Bulk archive failed',
+        type: 'error',
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   const typeCounts = useMemo(() => {
     const counts: Record<VaultItemType, number> = {
       note: 0,
@@ -253,21 +548,49 @@ export default function KnowledgeVaultPage() {
 
   const handleCreateClick = (type: VaultItemType) => {
     setShowCreateMenu(false);
+    setCreateInitialSourceIds(null);
     setCreateDialogType(type);
   };
 
+  const handleGenerateArtifactFromNote = useCallback(
+    (kind: PracticeArtifactCreateKind) => {
+      if (!editingNote) return;
+      setCreateInitialSourceIds([editingNote.id]);
+      setCreateDialogType(kind);
+    },
+    [editingNote]
+  );
+
+  const handleCloseCreateDialog = useCallback(() => {
+    setCreateDialogType(null);
+    setCreateInitialSourceIds(null);
+  }, []);
+
+  const handleCloseArchiveDialog = useCallback(() => {
+    if (!archiving) {
+      setItemToArchive(null);
+      setArchiveError(null);
+    }
+  }, [archiving]);
+
   const handleConfirmArchive = async () => {
-    if (!itemToArchive) return;
+    if (!itemToArchive || archiving) return;
+    const item = itemToArchive;
     setArchiving(true);
     setArchiveError(null);
+    setItemToArchive(null);
+    setHiddenArchiveIds((prev) => [...prev, item.id]);
+
     try {
-      await deleteItem(itemToArchive.id);
-      if (editingNote?.id === itemToArchive.id) {
+      await deleteItem(item.id);
+      if (editingNote?.id === item.id) {
         setEditingNote(null);
       }
-      setItemToArchive(null);
       await refreshVaultItems();
+      setHiddenArchiveIds((prev) => prev.filter((id) => id !== item.id));
     } catch (err) {
+      setHiddenArchiveIds((prev) => prev.filter((id) => id !== item.id));
+      setItemToArchive(item);
       setArchiveError(err instanceof Error ? err.message : 'Failed to archive item');
     } finally {
       setArchiving(false);
@@ -448,104 +771,137 @@ export default function KnowledgeVaultPage() {
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
         </div>
-      ) : filteredItems.length === 0 &&
-        filteredCourseStacks.length === 0 &&
-        !(filterType === 'flashcard' && filteredFlashcardDecks.length > 0) ? (
-        <div className="text-center py-12">
-          <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            {searchQuery ? 'No items found' : 'Your vault is empty'}
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {searchQuery
-              ? 'Try adjusting your search or filters'
-              : 'Start building your knowledge base by adding your first item'}
-          </p>
-          {!searchQuery && (
-            <button
-              onClick={() => setShowCreateMenu(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
-            >
-              <Plus size={20} />
-              <span>Add Your First Item</span>
-            </button>
-          )}
-        </div>
       ) : (
-        <div
-          className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
-              : 'space-y-3'
-          }
-        >
-          {/* Show course stacks when filter is 'all' or 'course_lesson' */}
-          {(filterType === 'all' || filterType === 'course_lesson') &&
-            filteredCourseStacks.map((stack) => (
-              <CourseStackCard
-                key={stack.course.id}
-                course={stack.course}
-                lessons={stack.lessons}
-                onClick={() => {
-                  navigate(`/admin/knowledge-vault/courses/${stack.course.id}`);
-                }}
-              />
-            ))}
-
-          {filterType === 'flashcard' &&
-            filteredFlashcardDecks.map((deck) => (
-              <FlashcardDeckCard
-                key={deck.id}
-                deck={deck}
-                onClick={() => {
-                  navigate(
-                    `${ROUTES.admin.knowledgeVaultFlashcards}?deck=${encodeURIComponent(deck.id)}`
-                  );
-                }}
-              />
-            ))}
-
-          {/* Show regular vault items */}
-          {filteredItems.map((item) => (
-            <VaultItemCard
-              key={item.id}
-              item={item}
-              highlighted={item.id === highlightId}
-              onClick={() => {
-                if (item.type === 'note') {
-                  setEditingNote(item as Note);
-                } else if (item.type === 'document') {
-                  navigate(`/admin/knowledge-vault/documents/${encodeURIComponent(item.id)}`);
-                } else if (
-                  item.type === 'practice_question_set' ||
-                  item.type === 'quiz' ||
-                  item.type === 'homework_assignment'
-                ) {
-                  const linked = item as
-                    | PracticeQuestionSetItem
-                    | QuizVaultItem
-                    | HomeworkVaultItem;
-                  if (linked.courseId) {
-                    navigate(
-                      `${ROUTES.admin.knowledgeVaultCourses}/${encodeURIComponent(linked.courseId)}`
-                    );
-                  }
-                }
-              }}
-              onDelete={
-                item.type === 'note' || item.type === 'document'
-                  ? () => setItemToArchive(item)
-                  : undefined
+        <LibraryFilterGridShell filterKey={filterType} shouldReduceMotion={shouldReduceMotion}>
+          {isLibraryFilterEmpty ? (
+            <div className="text-center py-12">
+              <BookOpen size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                {searchQuery ? 'No items found' : 'Your vault is empty'}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                {searchQuery
+                  ? 'Try adjusting your search or filters'
+                  : 'Start building your knowledge base by adding your first item'}
+              </p>
+              {!searchQuery && (
+                <button
+                  onClick={() => setShowCreateMenu(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                >
+                  <Plus size={20} />
+                  <span>Add Your First Item</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div
+              className={
+                viewMode === 'grid'
+                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+                  : 'space-y-3'
               }
-            />
-          ))}
-        </div>
+            >
+              {/* Show course stacks when filter is 'all' or 'course_lesson' */}
+              {(filterType === 'all' || filterType === 'course_lesson') &&
+                visibleCourseStacks.map((stack) => (
+                  <CourseStackCard
+                    key={stack.course.id}
+                    course={stack.course}
+                    lessons={stack.lessons}
+                    isSelected={isRefSelected(selectedRefs, {
+                      kind: 'course',
+                      id: stack.course.id,
+                    })}
+                    selectionActive={selectionActive}
+                    onToggleSelect={handleToggleSelect}
+                    onClick={() => {
+                      navigate(`/admin/knowledge-vault/courses/${stack.course.id}`);
+                    }}
+                  />
+                ))}
+
+              {(filterType === 'all' || filterType === 'flashcard') &&
+                visibleFlashcardDecks.map((deck) => (
+                  <FlashcardDeckCard
+                    key={deck.id}
+                    deck={deck}
+                    isSelected={isRefSelected(selectedRefs, {
+                      kind: 'flashcard_deck',
+                      id: deck.id,
+                    })}
+                    selectionActive={selectionActive}
+                    onToggleSelect={handleToggleSelect}
+                    onClick={() => {
+                      navigate(buildFlashcardsHubDeckUrl(deck.id));
+                    }}
+                    onStartReview={() => {
+                      navigate(buildStudySessionDeckUrl(deck.id));
+                    }}
+                  />
+                ))}
+
+              {/* Show regular vault items */}
+              <AnimatePresence mode="popLayout" initial={false}>
+                {visibleVaultItems.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    layout={!shouldReduceMotion}
+                    initial={false}
+                    exit={vaultCardExit}
+                    className={viewMode === 'grid' ? 'h-full' : undefined}
+                  >
+                    <VaultItemCard
+                      item={item}
+                      highlighted={item.id === highlightId}
+                      selected={editingNote?.id === item.id}
+                      isSelected={isRefSelected(selectedRefs, {
+                        kind: item.type as LibrarySelectableRef['kind'],
+                        id: item.id,
+                      })}
+                      selectionActive={selectionActive}
+                      onToggleSelect={handleToggleSelect}
+                      onClick={() => {
+                        if (item.type === 'note') {
+                          setEditingNote(item as Note);
+                        } else if (item.type === 'document') {
+                          navigate(
+                            `/admin/knowledge-vault/documents/${encodeURIComponent(item.id)}`
+                          );
+                        } else if (
+                          item.type === 'practice_question_set' ||
+                          item.type === 'quiz' ||
+                          item.type === 'homework_assignment'
+                        ) {
+                          const linked = item as
+                            | PracticeQuestionSetItem
+                            | QuizVaultItem
+                            | HomeworkVaultItem;
+                          if (linked.courseId) {
+                            navigate(
+                              `${ROUTES.admin.knowledgeVaultCourses}/${encodeURIComponent(linked.courseId)}`
+                            );
+                          }
+                        }
+                      }}
+                      onDelete={
+                        item.type === 'note' || item.type === 'document'
+                          ? () => setItemToArchive(item)
+                          : undefined
+                      }
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </LibraryFilterGridShell>
       )}
 
       {/* Create Dialog */}
       <Dialog
         isOpen={createDialogType !== null}
-        onClose={() => setCreateDialogType(null)}
+        onClose={handleCloseCreateDialog}
         title={`Create ${
           createDialogType === 'note'
             ? 'Note'
@@ -567,28 +923,28 @@ export default function KnowledgeVaultPage() {
           {createDialogType === 'note' && (
             <NoteForm
               onSuccess={() => {
-                setCreateDialogType(null);
+                handleCloseCreateDialog();
                 refreshVaultItems();
               }}
-              onCancel={() => setCreateDialogType(null)}
+              onCancel={handleCloseCreateDialog}
             />
           )}
           {createDialogType === 'document' && (
             <DocumentForm
               onSuccess={() => {
-                setCreateDialogType(null);
+                handleCloseCreateDialog();
                 refreshVaultItems();
               }}
-              onCancel={() => setCreateDialogType(null)}
+              onCancel={handleCloseCreateDialog}
             />
           )}
           {createDialogType === 'flashcard' && (
             <FlashcardDeckCreateDialog
               onSuccess={() => {
-                setCreateDialogType(null);
+                handleCloseCreateDialog();
                 refreshVaultItems();
               }}
-              onCancel={() => setCreateDialogType(null)}
+              onCancel={handleCloseCreateDialog}
             />
           )}
           {(createDialogType === 'practice_question_set' ||
@@ -596,79 +952,159 @@ export default function KnowledgeVaultPage() {
             createDialogType === 'homework_assignment') && (
             <PracticeArtifactCreateDialog
               kind={createDialogType}
+              initialSourceIds={createInitialSourceIds ?? undefined}
               onSuccess={() => {
-                setCreateDialogType(null);
+                handleCloseCreateDialog();
                 refreshVaultItems();
               }}
-              onCancel={() => setCreateDialogType(null)}
+              onCancel={handleCloseCreateDialog}
             />
           )}
         </div>
       </Dialog>
 
-      {/* Archive Confirmation Dialog */}
-      <Dialog
+      <ArchiveVaultItemDialog
         isOpen={itemToArchive !== null}
-        onClose={() => {
-          if (!archiving) {
-            setItemToArchive(null);
-            setArchiveError(null);
-          }
-        }}
-        title="Archive item?"
+        item={itemToArchive}
+        isLoading={archiving}
+        error={archiveError}
+        onClose={handleCloseArchiveDialog}
+        onConfirm={handleConfirmArchive}
+      />
+
+      <ConfirmDialog
+        isOpen={bulkConfirmMode === 'archive'}
+        onClose={() => setBulkConfirmMode(null)}
+        onConfirm={handleBulkSoftArchive}
+        title={`Archive ${selectedRefs.length} item${selectedRefs.length === 1 ? '' : 's'}?`}
+        confirmLabel="Archive"
+        isLoading={bulkActionLoading}
+        variant="default"
+      >
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Selected items will be hidden from your active Library. You can restore them later from
+          archived views when available.
+        </p>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        isOpen={bulkConfirmMode === 'delete'}
+        onClose={() => setBulkConfirmMode(null)}
+        onConfirm={handleBulkSoftArchive}
+        title={`Remove ${selectedRefs.length} item${selectedRefs.length === 1 ? '' : 's'} from Library?`}
+        confirmLabel="Delete"
+        isLoading={bulkActionLoading}
+        variant="danger"
+      >
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          This will soft-delete the selected items and hide them from active Library views. This
+          action cannot be undone from this screen without restoring archived content.
+        </p>
+      </ConfirmDialog>
+
+      <Dialog
+        isOpen={addTagsDialogOpen}
+        onClose={() => !bulkActionLoading && setAddTagsDialogOpen(false)}
+        title="Add tags"
         size="sm"
       >
-        <div className="p-6 space-y-4">
-          <p className="text-gray-600 dark:text-gray-300">
-            Are you sure you want to archive{' '}
-            <span className="font-medium text-gray-900 dark:text-white">
-              {itemToArchive?.title}
-            </span>
-            ? It will be hidden from your vault but can be restored later.
-          </p>
-          {archiveError && <p className="text-sm text-red-600 dark:text-red-400">{archiveError}</p>}
-          <div className="flex gap-3 justify-end">
+        <div className="space-y-4 p-6">
+          <TagInput
+            value={bulkTagsDraft}
+            onChange={setBulkTagsDraft}
+            placeholder="Add tags to apply"
+          />
+          <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => {
-                setItemToArchive(null);
-                setArchiveError(null);
-              }}
-              disabled={archiving}
-              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition disabled:opacity-50"
+              className="rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              onClick={() => setAddTagsDialogOpen(false)}
+              disabled={bulkActionLoading}
             >
               Cancel
             </button>
             <button
               type="button"
-              onClick={handleConfirmArchive}
-              disabled={archiving}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition disabled:opacity-50 flex items-center gap-2"
+              className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+              onClick={handleBulkAddTags}
+              disabled={bulkActionLoading || bulkTagsDraft.length === 0}
             >
-              {archiving ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                  <span>Archiving...</span>
-                </>
-              ) : (
-                <span>Archive</span>
-              )}
+              Apply tags
             </button>
           </div>
         </div>
       </Dialog>
 
+      <Dialog
+        isOpen={changeAreaDialogOpen}
+        onClose={() => !bulkActionLoading && setChangeAreaDialogOpen(false)}
+        title="Change area"
+        size="sm"
+      >
+        <div className="space-y-4 p-6">
+          <Select
+            value={bulkAreaDraft}
+            onChange={(e) => setBulkAreaDraft(e.target.value as Area)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
+          >
+            {AREAS.map((area) => (
+              <option key={area} value={area}>
+                {area}
+              </option>
+            ))}
+          </Select>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              className="rounded-lg px-4 py-2 text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              onClick={() => setChangeAreaDialogOpen(false)}
+              disabled={bulkActionLoading}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
+              onClick={handleBulkChangeArea}
+              disabled={bulkActionLoading}
+            >
+              Apply area
+            </button>
+          </div>
+        </div>
+      </Dialog>
+
+      <LibraryBulkActionsBar
+        selectedCount={selectedRefs.length}
+        onAddTags={() => setAddTagsDialogOpen(true)}
+        onChangeArea={() => setChangeAreaDialogOpen(true)}
+        onArchive={() => setBulkConfirmMode('archive')}
+        onDelete={() => setBulkConfirmMode('delete')}
+        onClearSelection={handleClearSelection}
+      />
+
+      <ToastContainer />
+
+      <KeyboardShortcutsOverlay
+        isOpen={shortcutsOpen}
+        layer={shortcutsLayer}
+        onClose={() => setShortcutsOpen(false)}
+        sections={shortcutSections}
+      />
+
       {/* Edit Note Dialog */}
       <Dialog
         isOpen={editingNote !== null}
-        onClose={() => setEditingNote(null)}
+        onClose={() => noteFormRef.current?.requestClose()}
         title="Edit Note"
         size="full"
       >
         <div className="p-6">
           {editingNote && (
             <NoteForm
+              ref={noteFormRef}
               note={editingNote}
+              onGenerateArtifact={handleGenerateArtifactFromNote}
               onSuccess={() => {
                 setEditingNote(null);
                 refreshVaultItems();

@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle, XCircle, RotateCcw, Sparkles } from 'lucide-react';
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 import { aiFlashcardGeneratorService, spacedRepetitionService } from '@/services/knowledge-vault';
+import { applyFlashcardReviewToCache } from '@/lib/knowledge-vault/apply-flashcard-review-cache';
 import type { Flashcard } from '@/types/knowledge-vault';
 import { ROUTES } from '@/routes';
 
@@ -10,8 +12,11 @@ type ReviewQuality = 0 | 1 | 2 | 3 | 4 | 5;
 
 export default function StudySessionPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const cramMode = searchParams.get('mode') === 'cram';
+  const deckFilterId = searchParams.get('deckId')?.trim() || '';
+  const startReview = searchParams.get('startReview') === '1';
 
   const { flashcards: allFlashcards, loading, refreshVaultItems } = useKnowledgeVault();
   const [dueFlashcards, setDueFlashcards] = useState<Flashcard[]>([]);
@@ -24,32 +29,47 @@ export default function StudySessionPage() {
     incorrect: 0,
     total: 0,
   });
+  const lastQueueKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (allFlashcards.length > 0) {
-      const flashcardsWithData = allFlashcards.map((fc: Flashcard) => ({
-        ...fc,
-        spacedRepetitionData: {
-          easinessFactor: fc.easeFactor,
-          repetitionCount: fc.repetitions,
-          intervalDays: fc.interval,
-          nextReviewDate: fc.nextReviewDate,
-          lastReviewDate: fc.lastAccessedAt,
-          reviewHistory: [],
-        },
-      }));
+    if (allFlashcards.length === 0) return;
 
-      const cards = cramMode
-        ? flashcardsWithData
-        : spacedRepetitionService.getDueFlashcards(flashcardsWithData);
+    const queueKey = `${cramMode}|${deckFilterId}|${startReview}`;
+    const isNewQueue = lastQueueKeyRef.current !== queueKey;
 
-      setDueFlashcards(cards as Flashcard[]);
+    const flashcardsWithData = allFlashcards.map((fc: Flashcard) => ({
+      ...fc,
+      spacedRepetitionData: {
+        easinessFactor: fc.easeFactor,
+        repetitionCount: fc.repetitions,
+        intervalDays: fc.interval,
+        nextReviewDate: fc.nextReviewDate,
+        lastReviewDate: fc.lastAccessedAt,
+        reviewHistory: [],
+      },
+    }));
 
-      if (cards.length === 0) {
-        setSessionComplete(true);
-      }
+    const cards = cramMode
+      ? flashcardsWithData
+      : spacedRepetitionService.getDueFlashcards(flashcardsWithData);
+
+    const filtered = deckFilterId
+      ? cards.filter((card: Flashcard) => card.deckId === deckFilterId)
+      : cards;
+
+    if (!isNewQueue) return;
+
+    setDueFlashcards(filtered as Flashcard[]);
+    lastQueueKeyRef.current = queueKey;
+
+    if (filtered.length === 0) {
+      setSessionComplete(true);
+    } else if (startReview && deckFilterId) {
+      setShowAnswer(false);
+      setCurrentIndex(0);
+      setSessionComplete(false);
     }
-  }, [allFlashcards, cramMode]);
+  }, [allFlashcards, cramMode, deckFilterId, startReview]);
 
   const currentCard = dueFlashcards[currentIndex];
 
@@ -60,7 +80,26 @@ export default function StudySessionPage() {
       setReviewing(true);
 
       try {
-        await aiFlashcardGeneratorService.reviewFlashcard(currentCard.id, quality);
+        const result = await aiFlashcardGeneratorService.reviewFlashcard(
+          currentCard.id,
+          quality,
+          currentCard.deckId
+        );
+
+        if (result.success && result.data) {
+          applyFlashcardReviewToCache(queryClient, {
+            flashcardId: currentCard.id,
+            deckId: currentCard.deckId,
+            previousNextReviewDate: currentCard.nextReviewDate,
+            updatedFlashcard: {
+              nextReviewDate: result.data.nextReviewDate,
+              interval: result.data.interval,
+              easeFactor: result.data.easeFactor,
+              repetitions: result.data.repetitions,
+              updatedAt: result.data.updatedAt,
+            },
+          });
+        }
 
         setStats((prev) => ({
           correct: prev.correct + (quality >= 3 ? 1 : 0),
@@ -81,7 +120,7 @@ export default function StudySessionPage() {
         setReviewing(false);
       }
     },
-    [currentCard, reviewing, currentIndex, dueFlashcards.length, refreshVaultItems]
+    [currentCard, reviewing, currentIndex, dueFlashcards.length, refreshVaultItems, queryClient]
   );
 
   useEffect(() => {
@@ -116,6 +155,7 @@ export default function StudySessionPage() {
   }, [showAnswer, reviewing, sessionComplete, handleReview]);
 
   const handleReset = async () => {
+    lastQueueKeyRef.current = null;
     await refreshVaultItems();
     setCurrentIndex(0);
     setShowAnswer(false);

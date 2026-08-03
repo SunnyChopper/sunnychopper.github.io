@@ -1,13 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import StudyDashboard from '@/components/organisms/StudyDashboard';
 import FlashcardDeckCreateDialog from '@/components/organisms/FlashcardDeckCreateDialog';
 import Dialog from '@/components/molecules/Dialog';
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
+import { ROUTES } from '@/routes';
 
 export default function FlashcardsPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { refreshVaultItems } = useKnowledgeVault();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+  useEffect(() => {
+    const deckId = searchParams.get('deckId')?.trim();
+    const startReview = searchParams.get('startReview') === '1';
+    if (deckId && startReview) {
+      navigate(
+        `${ROUTES.admin.knowledgeVaultFeynmanStudy}?deckId=${encodeURIComponent(deckId)}&startReview=1`,
+        { replace: true }
+      );
+    }
+  }, [navigate, searchParams]);
 
   return (
     <div className="space-y-6">

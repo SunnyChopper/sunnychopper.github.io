@@ -1,4 +1,6 @@
 import { apiClient } from '@/lib/api-client';
+import type { DevilsAdvocatePayload } from '@/lib/knowledge-vault/devils-advocate-result';
+import type { FeynmanRespondResult } from '@/types/knowledge-vault';
 
 export const vaultPrimitivesService = {
   async rewrite(vaultItemId: string, mode: 'expert' | 'beginner' | 'analogy', section?: string) {
@@ -13,14 +15,14 @@ export const vaultPrimitivesService = {
     vaultItemId: string,
     conversation: Array<{ role: string; content: string }>
   ) {
-    return apiClient.post<Record<string, unknown>>('/knowledge/ai/feynman/respond', {
+    return apiClient.post<FeynmanRespondResult>('/knowledge/ai/feynman/respond', {
       vaultItemId,
       conversation,
     });
   },
 
   async devilsAdvocate(vaultItemId: string) {
-    return apiClient.post<Record<string, unknown>>('/knowledge/ai/devils-advocate', {
+    return apiClient.post<DevilsAdvocatePayload>('/knowledge/ai/devils-advocate', {
       vaultItemId,
     });
   },

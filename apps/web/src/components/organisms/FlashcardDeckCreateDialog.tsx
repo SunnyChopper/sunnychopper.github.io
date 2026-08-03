@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
@@ -19,6 +19,12 @@ import type { DeckFlashcardInput } from '@/types/knowledge-vault';
 import type { Area } from '@/types/growth-system';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
+import { FlashcardSideCharCounter } from '@/components/molecules/knowledge-vault/FlashcardSideCharCounter';
+import {
+  canSaveFlashcardDeckWithSoftLimits,
+  findFirstFlashcardSideOverLimit,
+} from '@/lib/knowledge-vault/flashcard-deck-save';
+import { cn } from '@/lib/utils';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
 
@@ -50,6 +56,7 @@ export default function FlashcardDeckCreateDialog({
   const [error, setError] = useState<string | null>(null);
 
   const [deckName, setDeckName] = useState('');
+  const [titleAutoFilled, setTitleAutoFilled] = useState(false);
   const [description, setDescription] = useState('');
   const [area, setArea] = useState<Area | ''>('');
   const [tags, setTags] = useState<string[]>([]);
@@ -67,6 +74,15 @@ export default function FlashcardDeckCreateDialog({
   const [sourceTypeFilter, setSourceTypeFilter] = useState<
     'all' | 'note' | 'document' | 'course_lesson' | 'course'
   >('all');
+  const [selectedCardIndex, setSelectedCardIndex] = useState(0);
+
+  const cardShellRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const frontFieldRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
+  const aiSelectTitleRef = useRef<HTMLInputElement | null>(null);
+  const reviewTitleRef = useRef<HTMLInputElement | null>(null);
+
+  const canSaveDeck = useMemo(() => canSaveFlashcardDeckWithSoftLimits(cards), [cards]);
+  const firstOverLimit = useMemo(() => findFirstFlashcardSideOverLimit(cards), [cards]);
 
   const selectableSources = useMemo(() => {
     const notesAndDocs = vaultItems.filter(
@@ -117,11 +133,31 @@ export default function FlashcardDeckCreateDialog({
   };
 
   const removeCardRow = (localId: string) => {
-    setCards((prev) => prev.filter((c) => c.localId !== localId));
+    setCards((prev) => {
+      const next = prev.filter((c) => c.localId !== localId);
+      setSelectedCardIndex((index) => Math.min(index, Math.max(0, next.length - 1)));
+      return next;
+    });
   };
 
   const updateCard = (localId: string, field: 'front' | 'back', value: string) => {
     setCards((prev) => prev.map((c) => (c.localId === localId ? { ...c, [field]: value } : c)));
+  };
+
+  const handleDeckTitleChange = (value: string) => {
+    if (titleAutoFilled) {
+      setTitleAutoFilled(false);
+    }
+    setDeckName(value);
+  };
+
+  const handleClearAutoFilledTitle = () => {
+    setDeckName('');
+    setTitleAutoFilled(false);
+    const titleInput = step === 'review' ? reviewTitleRef.current : aiSelectTitleRef.current;
+    requestAnimationFrame(() => {
+      titleInput?.focus();
+    });
   };
 
   const handleGenerateFromSources = async () => {
@@ -140,6 +176,7 @@ export default function FlashcardDeckCreateDialog({
       setSourceItemIds(selectedSourceIds);
       if (!deckName.trim()) {
         setDeckName(resolved.title.slice(0, 200));
+        setTitleAutoFilled(true);
       }
       const res = await aiFlashcardGeneratorService.generateFromText(
         resolved.title,
@@ -156,6 +193,7 @@ export default function FlashcardDeckCreateDialog({
           back: c.back,
         }))
       );
+      setSelectedCardIndex(0);
       setStep('review');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Generation failed');
@@ -197,6 +235,9 @@ export default function FlashcardDeckCreateDialog({
   };
 
   const handleSave = async () => {
+    if (!canSaveDeck) {
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -226,6 +267,101 @@ export default function FlashcardDeckCreateDialog({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (step !== 'review' || cards.length === 0) {
+      return;
+    }
+    setSelectedCardIndex((index) => Math.min(index, cards.length - 1));
+  }, [step, cards.length]);
+
+  useEffect(() => {
+    if (step !== 'review' || cards.length === 0) {
+      return;
+    }
+    setSelectedCardIndex(0);
+    const frame = requestAnimationFrame(() => {
+      cardShellRefs.current[0]?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [step]);
+
+  const focusCardShell = (index: number) => {
+    setSelectedCardIndex(index);
+    requestAnimationFrame(() => {
+      cardShellRefs.current[index]?.focus();
+    });
+  };
+
+  const focusCardFront = (index: number) => {
+    setSelectedCardIndex(index);
+    requestAnimationFrame(() => {
+      frontFieldRefs.current[index]?.focus();
+    });
+  };
+
+  const handleReviewCardShellKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    index: number
+  ) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (index < cards.length - 1) {
+        focusCardShell(index + 1);
+      }
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (index > 0) {
+        focusCardShell(index - 1);
+      }
+      return;
+    }
+    if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey) {
+      event.preventDefault();
+      focusCardFront(index);
+      return;
+    }
+    if (event.key === 'Tab' && !event.shiftKey) {
+      event.preventDefault();
+      focusCardFront(index);
+    }
+  };
+
+  const handleReviewFieldKeyDown = (
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+    index: number
+  ) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      focusCardShell(index);
+    }
+  };
+
+  const handleReviewFieldsetKeyDown = (event: React.KeyboardEvent<HTMLFieldSetElement>) => {
+    if (step !== 'review') {
+      return;
+    }
+    if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      if (canSaveDeck && !loading) {
+        void handleSave();
+      }
+    }
+  };
+
+  const titleAutoFillBadge = titleAutoFilled ? (
+    <button
+      type="button"
+      onClick={handleClearAutoFilledTitle}
+      aria-label="Clear auto-filled title"
+      title="Click to clear and enter your own title"
+      className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-600 transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus-visible:ring-blue-400/40"
+    >
+      Auto-filled from sources
+    </button>
+  ) : null;
 
   const metadataSection = (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700">
@@ -309,56 +445,101 @@ export default function FlashcardDeckCreateDialog({
       {cards.map((c, index) => (
         <div
           key={c.localId}
-          className="space-y-3 rounded-lg border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/30"
+          ref={(el) => {
+            cardShellRefs.current[index] = el;
+          }}
+          role={showRegenerate ? 'group' : undefined}
+          aria-label={showRegenerate ? `Card ${index + 1}` : undefined}
+          tabIndex={showRegenerate ? (index === selectedCardIndex ? 0 : -1) : undefined}
+          onKeyDown={
+            showRegenerate ? (event) => handleReviewCardShellKeyDown(event, index) : undefined
+          }
+          className={cn(
+            'space-y-3 rounded-lg border border-gray-200 bg-gray-50/50 p-4 outline-none dark:border-gray-700 dark:bg-gray-900/30',
+            showRegenerate &&
+              index === selectedCardIndex &&
+              'border-blue-400 ring-2 ring-blue-500/40 dark:border-blue-500',
+            showRegenerate && 'focus:ring-2 focus:ring-blue-500/40 dark:focus:ring-blue-400/40'
+          )}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-gray-500">Card {index + 1}</span>
             <button
               type="button"
               onClick={() => removeCardRow(c.localId)}
-              className="p-1 text-gray-500 hover:text-red-600"
+              className="rounded p-1 text-gray-500 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:focus:ring-blue-400/40"
               aria-label="Remove card"
             >
               <Trash2 size={16} />
             </button>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-600 dark:text-gray-400">Front</label>
+            <label
+              htmlFor={`card-${c.localId}-front`}
+              className="mb-1 block text-xs text-gray-600 dark:text-gray-400"
+            >
+              Front
+            </label>
             <Textarea
+              id={`card-${c.localId}-front`}
+              ref={(el) => {
+                frontFieldRefs.current[index] = el;
+              }}
               value={c.front}
               onChange={(e) => updateCard(c.localId, 'front', e.target.value)}
+              onKeyDown={
+                showRegenerate ? (event) => handleReviewFieldKeyDown(event, index) : undefined
+              }
               rows={2}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
+              className="text-sm"
+              aria-describedby={`card-${c.localId}-front-counter`}
             />
+            <FlashcardSideCharCounter id={`card-${c.localId}-front-counter`} value={c.front} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-600 dark:text-gray-400">Back</label>
+            <label
+              htmlFor={`card-${c.localId}-back`}
+              className="mb-1 block text-xs text-gray-600 dark:text-gray-400"
+            >
+              Back
+            </label>
             <Textarea
+              id={`card-${c.localId}-back`}
               value={c.back}
               onChange={(e) => updateCard(c.localId, 'back', e.target.value)}
+              onKeyDown={
+                showRegenerate ? (event) => handleReviewFieldKeyDown(event, index) : undefined
+              }
               rows={2}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
+              className="text-sm"
+              aria-describedby={`card-${c.localId}-back-counter`}
             />
+            <FlashcardSideCharCounter id={`card-${c.localId}-back-counter`} value={c.back} />
           </div>
           {showRegenerate && (
             <div className="space-y-2 border-t border-gray-200 pt-3 dark:border-gray-700">
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+              <label
+                htmlFor={`card-${c.localId}-feedback`}
+                className="block text-xs font-medium text-gray-600 dark:text-gray-400"
+              >
                 Regeneration feedback
               </label>
               <Textarea
+                id={`card-${c.localId}-feedback`}
                 value={regenFeedback[c.localId] || ''}
                 onChange={(e) =>
                   setRegenFeedback((prev) => ({ ...prev, [c.localId]: e.target.value }))
                 }
+                onKeyDown={(event) => handleReviewFieldKeyDown(event, index)}
                 rows={2}
                 placeholder="e.g. Make the answer more concise"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
+                className="text-sm"
               />
               <button
                 type="button"
                 onClick={() => handleRegenerateCard(c.localId)}
                 disabled={regeneratingId === c.localId}
-                className="text-sm text-blue-600 hover:underline disabled:opacity-50 dark:text-blue-400"
+                className="rounded text-sm text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50 dark:text-blue-400 dark:focus:ring-blue-400/40"
               >
                 {regeneratingId === c.localId ? 'Regenerating…' : 'Regenerate with feedback'}
               </button>
@@ -380,6 +561,7 @@ export default function FlashcardDeckCreateDialog({
   return (
     <fieldset
       disabled={loading}
+      onKeyDown={handleReviewFieldsetKeyDown}
       className="m-0 min-w-0 max-h-[85vh] space-y-6 overflow-y-auto border-0 p-0 pr-1 disabled:opacity-60"
     >
       {error && (
@@ -452,11 +634,18 @@ export default function FlashcardDeckCreateDialog({
       {step === 'ai-select' && (
         <div className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium">Deck title</label>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <label htmlFor="flashcard-deck-title-ai-select" className="text-sm font-medium">
+                Deck title
+              </label>
+              {titleAutoFillBadge}
+            </div>
             <input
+              id="flashcard-deck-title-ai-select"
+              ref={aiSelectTitleRef}
               type="text"
               value={deckName}
-              onChange={(e) => setDeckName(e.target.value)}
+              onChange={(e) => handleDeckTitleChange(e.target.value)}
               className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-800"
               placeholder="Auto-filled from sources if left blank"
             />
@@ -542,12 +731,19 @@ export default function FlashcardDeckCreateDialog({
       {step === 'review' && (
         <div className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium">Deck title *</label>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <label htmlFor="flashcard-deck-title" className="text-sm font-medium">
+                Deck title *
+              </label>
+              {titleAutoFillBadge}
+            </div>
             <input
+              id="flashcard-deck-title"
+              ref={reviewTitleRef}
               type="text"
               value={deckName}
-              onChange={(e) => setDeckName(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-800"
+              onChange={(e) => handleDeckTitleChange(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-gray-700 dark:bg-gray-800 dark:focus:ring-blue-400/40"
             />
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -558,52 +754,59 @@ export default function FlashcardDeckCreateDialog({
         </div>
       )}
 
-      <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={() => {
-            if (step === 'mode') {
-              onCancel();
-            } else if (step === 'review') {
-              setStep('ai-select');
-            } else {
-              setStep('mode');
-            }
-          }}
-          className="rounded-lg bg-gray-100 px-6 py-2 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-        >
-          {step === 'mode' ? 'Cancel' : 'Back'}
-        </button>
-        {step === 'manual' && (
+      <div className="flex flex-col items-end gap-2 border-t border-gray-200 pt-4 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-end">
+        {firstOverLimit && (step === 'manual' || step === 'review') && (
+          <p className="w-full text-sm text-red-600 dark:text-red-400 sm:mr-auto" role="status">
+            Card {firstOverLimit.cardIndex}: Shorten this side
+          </p>
+        )}
+        <div className="flex justify-end gap-3">
           <button
             type="button"
-            onClick={handleSave}
-            disabled={loading}
-            className="rounded-lg bg-amber-600 px-6 py-2 text-white hover:bg-amber-700 disabled:opacity-50"
+            onClick={() => {
+              if (step === 'mode') {
+                onCancel();
+              } else if (step === 'review') {
+                setStep('ai-select');
+              } else {
+                setStep('mode');
+              }
+            }}
+            className="rounded-lg bg-gray-100 px-6 py-2 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
           >
-            {loading ? 'Saving…' : 'Create deck'}
+            {step === 'mode' ? 'Cancel' : 'Back'}
           </button>
-        )}
-        {step === 'ai-select' && (
-          <button
-            type="button"
-            onClick={handleGenerateFromSources}
-            disabled={aiLoading}
-            className="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {aiLoading ? 'Generating…' : 'Generate cards'}
-          </button>
-        )}
-        {step === 'review' && (
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={loading}
-            className="rounded-lg bg-amber-600 px-6 py-2 text-white hover:bg-amber-700 disabled:opacity-50"
-          >
-            {loading ? 'Saving…' : 'Save deck'}
-          </button>
-        )}
+          {step === 'manual' && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading || !canSaveDeck}
+              className="rounded-lg bg-amber-600 px-6 py-2 text-white hover:bg-amber-700 disabled:opacity-50"
+            >
+              {loading ? 'Saving…' : 'Create deck'}
+            </button>
+          )}
+          {step === 'ai-select' && (
+            <button
+              type="button"
+              onClick={handleGenerateFromSources}
+              disabled={aiLoading}
+              className="rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {aiLoading ? 'Generating…' : 'Generate cards'}
+            </button>
+          )}
+          {step === 'review' && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={loading || !canSaveDeck}
+              className="rounded-lg bg-amber-600 px-6 py-2 text-white hover:bg-amber-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+            >
+              {loading ? 'Saving…' : 'Save deck'}
+            </button>
+          )}
+        </div>
       </div>
     </fieldset>
   );
