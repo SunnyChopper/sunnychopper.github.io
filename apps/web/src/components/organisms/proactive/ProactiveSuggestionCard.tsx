@@ -1,4 +1,7 @@
 import Button from '@/components/atoms/Button';
+import { cardSurfaceClassName } from '@/components/atoms/Card';
+import { StatusBadge } from '@/components/atoms/StatusBadge';
+import { cn } from '@/lib/utils';
 import {
   readChannelEmailEnabled,
   readChannelWebhookEnabled,
@@ -27,8 +30,8 @@ export interface ProactiveSuggestionCardProps {
   onApproveRejected?: () => void;
 }
 
-const subcardClass =
-  'rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2 dark:border-gray-800 dark:bg-gray-950/40 flex-1 min-w-[200px] text-xs';
+const metaChipClass =
+  'rounded-md bg-gray-50/90 px-2.5 py-1.5 text-xs text-gray-700 dark:bg-gray-950/50 dark:text-gray-300';
 
 function effectivePayload(suggestion: ProactiveSuggestion): Record<string, unknown> {
   const r = suggestion.resolvedPayload;
@@ -64,27 +67,38 @@ export default function ProactiveSuggestionCard({
   const isPending = variant === 'pending';
   const isRejected = variant === 'rejected';
 
-  const actionBtnClass =
+  const secondaryBtnClass =
     'rounded-lg !px-3 !py-2 text-xs w-full min-w-0 flex-1 sm:w-auto sm:flex-none sm:shrink-0';
+  const primaryBtnClass =
+    'rounded-lg !px-4 !py-2.5 text-sm font-medium w-full min-w-0 flex-1 sm:w-auto sm:flex-none sm:shrink-0';
 
   const statusBadge =
     variant === 'approved' ? (
-      <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-green-800 dark:bg-green-900/40 dark:text-green-200">
-        Accepted
-      </span>
+      <StatusBadge status="Accepted" size="sm" className="uppercase tracking-wide text-[10px]" />
     ) : variant === 'rejected' ? (
-      <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-red-800 dark:bg-red-900/40 dark:text-red-200">
-        Rejected
-      </span>
+      <StatusBadge status="Rejected" size="sm" className="uppercase tracking-wide text-[10px]" />
     ) : null;
 
   const feedback = suggestion.resolutionFeedback?.trim();
 
   return (
-    <li className="flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900/40">
-      <div className="min-w-0 flex-1 p-4">
+    <div
+      className={cn(
+        cardSurfaceClassName,
+        'flex flex-col overflow-hidden',
+        isPending ? 'shadow-sm' : 'shadow-none border-gray-100 dark:border-gray-800/80'
+      )}
+    >
+      <div className={cn('min-w-0 flex-1', isPending ? 'p-5' : 'p-4')}>
         <div className="flex flex-wrap items-center gap-2 gap-y-1">
-          <h3 className="font-semibold text-gray-900 dark:text-white">{summary.title}</h3>
+          <h3
+            className={cn(
+              'font-semibold leading-snug text-gray-900 dark:text-white',
+              isPending ? 'text-base' : 'text-sm'
+            )}
+          >
+            {summary.title}
+          </h3>
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-600 dark:bg-gray-800 dark:text-gray-300">
             {summary.kindLabel}
           </span>
@@ -110,24 +124,24 @@ export default function ProactiveSuggestionCard({
             <p className="text-[11px] font-medium text-gray-600 dark:text-gray-400">
               Your feedback
             </p>
-            <p className="mt-0.5 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+            <p className="mt-0.5 whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">
               {feedback}
             </p>
           </div>
         ) : null}
 
-        <div className="mt-4 flex flex-col gap-2">
+        <div className={cn('mt-3 flex flex-col', isPending ? 'gap-3' : 'gap-2')}>
           <div className="flex flex-wrap gap-2">
-            <div className={subcardClass}>
-              <p className="font-medium text-gray-500 dark:text-gray-400">Schedule</p>
-              <p className="mt-0.5 text-gray-900 dark:text-gray-100">
+            <div className={metaChipClass}>
+              <span className="font-medium text-gray-500 dark:text-gray-400">Schedule · </span>
+              <span className="text-gray-900 dark:text-gray-100">
                 {summary.displayTime12h} · {String(payload.timeZone ?? '—')}
                 <span className="text-gray-500 dark:text-gray-400"> · {scheduleDays}</span>
-              </p>
+              </span>
             </div>
-            <div className={subcardClass}>
-              <p className="font-medium text-gray-500 dark:text-gray-400">Delivery</p>
-              <p className="mt-0.5 text-gray-900 dark:text-gray-100">
+            <div className={metaChipClass}>
+              <span className="font-medium text-gray-500 dark:text-gray-400">Delivery · </span>
+              <span className="text-gray-900 dark:text-gray-100">
                 Email {emailOn ? 'on' : 'off'} · Webhook {webhookOn ? 'on' : 'off'} · {threadLabel}
                 {modelsLine ? (
                   <>
@@ -135,16 +149,16 @@ export default function ProactiveSuggestionCard({
                     {modelsLine}
                   </>
                 ) : null}
-              </p>
+              </span>
             </div>
           </div>
 
           {customPrompt ? (
-            <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 dark:bg-primary/10">
-              <p className="mb-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 dark:bg-primary/10">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary/80 dark:text-primary/70">
                 Instructions
               </p>
-              <p className="whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800 dark:text-gray-200">
                 {customPrompt}
               </p>
             </div>
@@ -173,12 +187,12 @@ export default function ProactiveSuggestionCard({
       </div>
 
       {isPending ? (
-        <div className="flex flex-col gap-2 border-t border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-gray-800 dark:bg-gray-950/30 sm:flex-row sm:flex-wrap sm:justify-end">
+        <div className="flex flex-col gap-2 border-t border-gray-200 bg-gray-50/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/40 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="sm"
-            className={actionBtnClass}
+            className={secondaryBtnClass}
             disabled={resolvePending}
             onClick={onEdit}
           >
@@ -186,9 +200,9 @@ export default function ProactiveSuggestionCard({
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="sm"
-            className={actionBtnClass}
+            className={secondaryBtnClass}
             disabled={resolvePending}
             onClick={onReject}
           >
@@ -197,8 +211,8 @@ export default function ProactiveSuggestionCard({
           <Button
             type="button"
             variant="success"
-            size="sm"
-            className={actionBtnClass}
+            size="default"
+            className={primaryBtnClass}
             disabled={resolvePending}
             onClick={onApprove}
           >
@@ -207,12 +221,12 @@ export default function ProactiveSuggestionCard({
         </div>
       ) : null}
       {isRejected ? (
-        <div className="flex flex-col gap-2 border-t border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-gray-800 dark:bg-gray-950/30 sm:flex-row sm:flex-wrap sm:justify-end">
+        <div className="flex flex-col gap-2 border-t border-gray-200 bg-gray-50/50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/30 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="sm"
-            className={actionBtnClass}
+            className={secondaryBtnClass}
             disabled={resolvePending}
             onClick={onEdit}
           >
@@ -220,9 +234,9 @@ export default function ProactiveSuggestionCard({
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="sm"
-            className={actionBtnClass}
+            className={secondaryBtnClass}
             disabled={resolvePending}
             onClick={onUpdateFeedback}
           >
@@ -232,7 +246,7 @@ export default function ProactiveSuggestionCard({
             type="button"
             variant="success"
             size="sm"
-            className={actionBtnClass}
+            className={secondaryBtnClass}
             disabled={resolvePending}
             onClick={onApproveRejected}
           >
@@ -240,6 +254,6 @@ export default function ProactiveSuggestionCard({
           </Button>
         </div>
       ) : null}
-    </li>
+    </div>
   );
 }

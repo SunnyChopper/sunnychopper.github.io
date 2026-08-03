@@ -1,16 +1,30 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
 import Dialog from '@/components/molecules/Dialog';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import AutomationRunHistoryItem from '@/components/molecules/proactive/AutomationRunHistoryItem';
 import { proactiveService } from '@/services/proactive.service';
 import { queryKeys } from '@/lib/react-query/query-keys';
-import { ROUTES } from '@/routes';
-import type { ProactiveAutomation, ProactiveAutomationRun } from '@/types/api-contracts';
-import { cn } from '@/lib/utils';
+import { findMostRecentFailedRunId } from '@/lib/proactive/automation-run-history';
+import type { ProactiveAutomation } from '@/types/api-contracts';
+import { History } from 'lucide-react';
 
-const RUN_SOURCE_LABELS: Record<string, string> = {
-  scheduled: 'Scheduled',
-  manual_batch: 'Manual (all enabled)',
-  single_automation_test: 'Test run',
+const runListContainerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05, delayChildren: 0.02 },
+  },
+};
+
+const runListItemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] as const },
+  },
 };
 
 export interface AutomationRunHistoryDialogProps {
@@ -27,6 +41,8 @@ export default function AutomationRunHistoryDialog({
   kindLabel,
 }: AutomationRunHistoryDialogProps) {
   const aid = automation?.id;
+  const shouldReduceMotion = useReducedMotion();
+  const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
 
   const runsQ = useQuery({
     queryKey: queryKeys.proactive.automationRuns(aid ?? ''),
@@ -41,10 +57,26 @@ export default function AutomationRunHistoryDialog({
 
   const runs = runsQ.data ?? [];
 
-  const title = automation ? `${kindLabel} — run history` : 'Run history';
+  useEffect(() => {
+    if (!isOpen) {
+      setExpandedRunId(null);
+      return;
+    }
+    if (runsQ.isSuccess && runsQ.data && runsQ.data.length > 0) {
+      setExpandedRunId(findMostRecentFailedRunId(runsQ.data));
+    }
+  }, [isOpen, aid, runsQ.isSuccess, runsQ.data]);
+
+  const toggleError = (runId: string) => {
+    setExpandedRunId((current) => (current === runId ? null : runId));
+  };
 
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title={title} size="lg">
+    <Dialog isOpen={isOpen} onClose={onClose} title="Run history" size="lg">
+      {automation && kindLabel ? (
+        <p className="-mt-2 mb-4 text-sm text-gray-500 dark:text-gray-400">{kindLabel}</p>
+      ) : null}
+
       {runsQ.isPending ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : runsQ.isError ? (
@@ -52,57 +84,41 @@ export default function AutomationRunHistoryDialog({
           {(runsQ.error as Error).message}
         </p>
       ) : runs.length === 0 ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          No recorded runs yet. History is saved for each execution after this feature is deployed.
-        </p>
-      ) : (
-        <ul className="space-y-3 max-h-[min(70vh,32rem)] overflow-y-auto pr-1">
-          {runs.map((run: ProactiveAutomationRun) => (
-            <li
+        <EmptyState
+          icon={History}
+          title="No runs yet"
+          description="Run history appears here after the first scheduled or test execution."
+        />
+      ) : shouldReduceMotion ? (
+        <ul className="max-h-[min(70vh,32rem)] space-y-3 overflow-y-auto pr-1">
+          {runs.map((run) => (
+            <AutomationRunHistoryItem
               key={run.id}
-              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-950/40 p-3 text-sm"
-            >
-              <div className="flex flex-wrap items-center gap-2 justify-between">
-                <span className="font-medium text-gray-900 dark:text-white tabular-nums">
-                  {new Date(run.ranAt).toLocaleString()}
-                </span>
-                <span
-                  className={cn(
-                    'text-xs font-medium px-2 py-0.5 rounded-full',
-                    run.status === 'succeeded'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-200'
-                      : 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200'
-                  )}
-                >
-                  {run.status === 'succeeded' ? 'Succeeded' : 'Failed'}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                Source: {RUN_SOURCE_LABELS[run.runSource] ?? run.runSource}
-              </p>
-              {run.threadId ? (
-                <a
-                  href={`${ROUTES.admin.assistant}/${encodeURIComponent(run.threadId)}`}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open thread <ExternalLink className="h-3 w-3" />
-                </a>
-              ) : null}
-              {run.responsePreview ? (
-                <div className="mt-2 text-xs text-gray-700 dark:text-gray-300 rounded bg-white/80 dark:bg-gray-900/50 p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
-                  {run.responsePreview}
-                </div>
-              ) : null}
-              {run.errorMessage ? (
-                <div className="mt-2 text-xs text-red-800 dark:text-red-200 rounded bg-red-50 dark:bg-red-950/40 p-2 max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
-                  {run.errorMessage}
-                </div>
-              ) : null}
-            </li>
+              run={run}
+              errorExpanded={expandedRunId === run.id}
+              onToggleError={() => toggleError(run.id)}
+              reduceMotion
+            />
           ))}
         </ul>
+      ) : (
+        <motion.ul
+          className="max-h-[min(70vh,32rem)] space-y-3 overflow-y-auto pr-1"
+          variants={runListContainerVariants}
+          initial="hidden"
+          animate="show"
+        >
+          {runs.map((run) => (
+            <AutomationRunHistoryItem
+              key={run.id}
+              run={run}
+              errorExpanded={expandedRunId === run.id}
+              onToggleError={() => toggleError(run.id)}
+              reduceMotion={false}
+              itemVariants={runListItemVariants}
+            />
+          ))}
+        </motion.ul>
       )}
     </Dialog>
   );
