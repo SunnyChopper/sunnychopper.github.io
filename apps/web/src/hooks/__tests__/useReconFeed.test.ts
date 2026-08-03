@@ -1,12 +1,39 @@
-import { describe, expect, it } from 'vitest';
-import { applyOptimisticReconPostStatusUpdate, flattenReconFeedPages } from '@/hooks/useReconFeed';
+import { createElement, type ReactNode } from 'react';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  applyOptimisticReconPostStatusUpdate,
+  buildReconScarcityMessage,
+  flattenReconFeedPages,
+  isReconScarce,
+  postedAfterForScarcityWindow,
+  RECON_SCARCITY_MAX_COUNT,
+  RECON_SCARCITY_WINDOW_MS,
+  useReconFeed,
+} from '@/hooks/useReconFeed';
 import type { PaginatedPersonalBranding, ReconPost } from '@/types/api/personal-branding.dto';
+import { personalBrandingService } from '@/services/personal-branding.service';
+
+vi.mock('@/services/personal-branding.service', () => ({
+  personalBrandingService: {
+    getReconFeedSettings: vi.fn(),
+    listReconPosts: vi.fn(),
+    listReconRuns: vi.fn(),
+    listFollowSuggestions: vi.fn(),
+  },
+}));
+
+function wrapper({ children }: { children: ReactNode }) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return createElement(QueryClientProvider, { client }, children);
+}
 
 function page(
-  data: Array<{ id: string }>,
+  data: Array<{ id: string; platformPostId?: string | null }>,
   total: number,
   pageNum = 1
-): PaginatedPersonalBranding<{ id: string }> {
+): PaginatedPersonalBranding<{ id: string; platformPostId?: string | null }> {
   return {
     data,
     total,
@@ -54,6 +81,23 @@ describe('flattenReconFeedPages', () => {
     expect(result.items.map((item) => item.id)).toEqual(['a', 'b', 'c']);
     expect(result.total).toBe(3);
   });
+
+  it('dedupes items by platformPostId across pages', () => {
+    const pages = [
+      page(
+        [
+          { id: 'a', platformPostId: 'tweet-1' },
+          { id: 'b', platformPostId: 'tweet-2' },
+        ],
+        2,
+        1
+      ),
+      page([{ id: 'c', platformPostId: 'tweet-1' }], 2, 2),
+    ];
+    const result = flattenReconFeedPages(pages);
+    expect(result.items.map((item) => item.id)).toEqual(['a', 'b']);
+    expect(result.total).toBe(2);
+  });
 });
 
 describe('applyOptimisticReconPostStatusUpdate', () => {
@@ -79,5 +123,102 @@ describe('applyOptimisticReconPostStatusUpdate', () => {
     const result = applyOptimisticReconPostStatusUpdate(active, processed, 'a', 'ACTIONED');
     expect(result.processed?.pages[0].data[0]).toMatchObject({ id: 'a', status: 'ACTIONED' });
     expect(result.active?.pages[0].data).toEqual([]);
+  });
+});
+
+describe('recon scarcity helpers', () => {
+  it('postedAfterForScarcityWindow uses a 48h lookback', () => {
+    const now = Date.parse('2026-07-23T12:00:00.000Z');
+    const postedAfter = postedAfterForScarcityWindow(now);
+    expect(postedAfter).toBe('2026-07-21T12:00:00.000Z');
+    expect(RECON_SCARCITY_WINDOW_MS).toBe(48 * 60 * 60 * 1000);
+  });
+
+  it('isReconScarce is true at or below the max count', () => {
+    expect(isReconScarce(0)).toBe(true);
+    expect(isReconScarce(RECON_SCARCITY_MAX_COUNT)).toBe(true);
+    expect(isReconScarce(RECON_SCARCITY_MAX_COUNT + 1)).toBe(false);
+  });
+
+  it('buildReconScarcityMessage varies copy for tracked X handles', () => {
+    expect(buildReconScarcityMessage(2, 0.5, true)).toContain(
+      'Only 2 posts from the last 48 h scored at or above your relevance threshold (0.5)'
+    );
+    expect(buildReconScarcityMessage(1, 0.6, false)).toContain('Only 1 post from the last 48 h');
+    expect(buildReconScarcityMessage(1, 0.6, false)).toContain(
+      'add X handles in Connection Directory'
+    );
+  });
+});
+
+describe('useReconFeed scarcity query', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(personalBrandingService.getReconFeedSettings).mockResolvedValue({
+      minRelevanceScore: 0.55,
+      maxPostsPerConnection: 10,
+      maxPostAgeDays: 7,
+      syncCadence: 'MANUAL_ONLY',
+      enabled: false,
+      hasRapidApiKey: true,
+      syncStartTime: '09:00',
+      syncTimezone: 'America/Chicago',
+      userId: 'user-1',
+      createdAt: '2026-07-21T00:00:00.000Z',
+      updatedAt: '2026-07-21T00:00:00.000Z',
+    });
+    vi.mocked(personalBrandingService.listReconPosts).mockResolvedValue({
+      success: true,
+      data: {
+        data: [],
+        total: 2,
+        page: 1,
+        pageSize: 1,
+        hasMore: false,
+      },
+    });
+    vi.mocked(personalBrandingService.listReconRuns).mockResolvedValue({
+      success: true,
+      data: { data: [], total: 0, page: 1, pageSize: 20, hasMore: false },
+    });
+    vi.mocked(personalBrandingService.listFollowSuggestions).mockResolvedValue({
+      success: true,
+      data: { data: [], total: 0, page: 1, pageSize: 50, hasMore: false },
+    });
+  });
+
+  it('loads scarcity stats with 48h postedAfter and settings minScore', async () => {
+    const { result } = renderHook(() => useReconFeed(), { wrapper });
+    await waitFor(() => expect(result.current.scarcity.isSuccess).toBe(true));
+
+    expect(personalBrandingService.listReconPosts).toHaveBeenCalledWith(
+      1,
+      1,
+      expect.objectContaining({
+        status: 'NEW',
+        minScore: 0.55,
+        postedAfter: expect.any(String),
+      })
+    );
+    expect(result.current.scarcity.recentHighSignalCount).toBe(2);
+    expect(result.current.scarcity.isScarce).toBe(true);
+    expect(result.current.scarcity.threshold).toBe(0.55);
+  });
+
+  it('marks scarcity false when high-signal count exceeds the threshold', async () => {
+    vi.mocked(personalBrandingService.listReconPosts).mockResolvedValue({
+      success: true,
+      data: {
+        data: [],
+        total: 4,
+        page: 1,
+        pageSize: 1,
+        hasMore: false,
+      },
+    });
+
+    const { result } = renderHook(() => useReconFeed(), { wrapper });
+    await waitFor(() => expect(result.current.scarcity.isSuccess).toBe(true));
+    expect(result.current.scarcity.isScarce).toBe(false);
   });
 });

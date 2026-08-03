@@ -82,4 +82,28 @@ describe('chatbot thread recency cache', () => {
     const list = qc.getQueryData<{ data: ChatThread[] }>(queryKeys.chatbot.threads.lists());
     expect(list?.data?.[0]?.activeLeafMessageId).toBe('leaf-new');
   });
+
+  it('merges lastMessagePreview and lastMessageRole from WS metadata patch', () => {
+    const qc = new QueryClient();
+    const thread: ChatThread = {
+      id: 't1',
+      userId: 'u1',
+      title: 'Chat',
+      createdAt: '2026-05-01T00:00:00Z',
+      updatedAt: '2026-05-10T00:00:00Z',
+    };
+    qc.setQueryData(queryKeys.chatbot.threads.detail('t1'), thread);
+    qc.setQueryData(queryKeys.chatbot.threads.lists(), { data: [thread] });
+
+    upsertThreadMetadataFromWs(qc, 't1', {
+      title: 'Chat',
+      updatedAt: '2026-05-10T00:00:00Z',
+      lastMessagePreview: 'Hello from coach',
+      lastMessageRole: 'assistant',
+    });
+
+    const detail = qc.getQueryData<ChatThread>(queryKeys.chatbot.threads.detail('t1'));
+    expect(detail?.lastMessagePreview).toBe('Hello from coach');
+    expect(detail?.lastMessageRole).toBe('assistant');
+  });
 });

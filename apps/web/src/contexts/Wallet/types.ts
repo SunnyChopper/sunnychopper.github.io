@@ -1,6 +1,11 @@
 import { createContext } from 'react';
 import type { WalletBalance, WalletTransaction } from '@/types/rewards';
 
+export type WalletEarnPulse = {
+  id: number;
+  amount: number;
+};
+
 export interface WalletContextType {
   balance: WalletBalance | null;
   transactions: WalletTransaction[];
@@ -8,6 +13,9 @@ export interface WalletContextType {
   /** Wallet queries refetching after invalidation (e.g. task status → clawback). */
   isRefreshing: boolean;
   error: string | null;
+  /** Active earn pulse for sidebar badge animation (manual claim success). */
+  earnPulse: WalletEarnPulse | null;
+  triggerEarnPulse: (amount: number) => void;
   refreshWallet: () => Promise<void>;
   addPoints: (
     amount: number,

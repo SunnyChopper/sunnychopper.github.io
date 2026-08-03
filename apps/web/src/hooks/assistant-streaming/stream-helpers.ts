@@ -18,6 +18,9 @@ export function getRunProgressLabel(
   if (run.statusStage === 'runningTools') {
     return 'Running tools...';
   }
+  if (run.statusStage === 'consultingSpecialists') {
+    return 'Consulting specialists...';
+  }
   if (run.statusStage === 'responding') {
     return 'Generating response...';
   }

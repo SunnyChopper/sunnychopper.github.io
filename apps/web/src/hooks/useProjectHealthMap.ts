@@ -25,6 +25,24 @@ const runWithLimit = async <T, R>(items: T[], limit: number, task: (item: T) => 
   return results;
 };
 
+const toHealthSummary = (data: {
+  healthScore: number;
+  progressScore: number;
+  velocityScore: number;
+  riskScore: number;
+  totalTasks: number;
+  completedTasks: number;
+  completionPercentage: number;
+}): ProjectHealthSummary => ({
+  healthScore: data.healthScore,
+  progressScore: data.progressScore,
+  velocityScore: data.velocityScore,
+  riskScore: data.riskScore,
+  taskCount: data.totalTasks,
+  completedTaskCount: data.completedTasks,
+  percentComplete: data.completionPercentage,
+});
+
 export const useProjectHealthMap = (projectIds: string[]) => {
   const { recordError, recordSuccess } = useBackendStatus();
   const ids = useMemo(() => Array.from(new Set(projectIds)).sort(), [projectIds]);
@@ -39,11 +57,7 @@ export const useProjectHealthMap = (projectIds: string[]) => {
             if (response.success && response.data) {
               return {
                 projectId,
-                health: {
-                  taskCount: response.data.tasksTotal,
-                  completedTaskCount: response.data.tasksCompleted,
-                  percentComplete: response.data.percentComplete,
-                } as ProjectHealthSummary,
+                health: toHealthSummary(response.data),
               };
             }
           } catch (error) {

@@ -14,7 +14,7 @@ This repository is a **Bun + Turborepo** workspace: `apps/web` (Vite admin SPA),
 
 If you are new to the codebase or debugging app behavior, start here for the fastest context.
 
-- **App bootstrap + providers**: `apps/web/src/main.tsx` (provider tree, `configureAmplify()`, theme init).
+- **App bootstrap + providers**: `apps/web/src/main.tsx` (provider tree, `configureAmplify()`, theme init). Dual-theme UI: `.cursor/skills/admin-dual-theme/SKILL.md` + `lib/**/**-surfaces.ts` modules.
 - **Routes/layouts**: `apps/web/src/App.tsx` + `apps/web/src/routes.ts` (routing ownership, layouts, `ProtectedRoute`). Admin **Memory Audit** route: `ROUTES.admin.memoryAudit` → `/admin/memory-audit` (`MemoryAuditPage`).
 - **HTTP + auth header wiring**: `apps/web/src/lib/api-client.ts` (baseURL, auth header, 401 refresh/redirect, response wrapping).
 - **Auth + token lifecycle**: `apps/web/src/lib/auth/auth.service.ts` (Cognito sign-in/out, token storage, refresh, `apiClient` sync).

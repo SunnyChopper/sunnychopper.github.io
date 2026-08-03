@@ -6,8 +6,6 @@ import {
   applyGoalUpsertToCache,
 } from '@/lib/react-query/growth-system-cache';
 import { queryKeys } from '@/lib/react-query/query-keys';
-
-/** Assistant tools that mutate Growth System tasks or dependencies. */
 export const GROWTH_SYSTEM_TASK_MUTATION_TOOLS = new Set<string>([
   'complete_task',
   'update_task',
@@ -67,6 +65,7 @@ export function invalidateGrowthSystemCachesAfterTaskTool(
   void queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.all() });
   void queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.data() });
   void queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.relevantNow() });
 }
 
 /**
@@ -105,4 +104,7 @@ export async function invalidateGrowthSystemCachesAfterMutationTool(
 ): Promise<void> {
   invalidateGrowthSystemCachesAfterTaskTool(queryClient, payload);
   await invalidateGrowthSystemCachesAfterGoalTool(queryClient, payload);
+  if (payload.status === 'ok') {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.relevantNow() });
+  }
 }

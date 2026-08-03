@@ -84,7 +84,7 @@ export function shouldSkipQueryErrorReport(code?: string, message?: string): boo
 export function shouldSkipQueryCacheErrorReport(
   queryKey: unknown,
   code?: string,
-  message?: string,
+  message?: string
 ): boolean {
   if (shouldSkipQueryErrorReport(code, message)) return true;
   if (isContextUsageQueryKey(queryKey) && isTimeoutError(code, message)) return true;

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { personalBrandingService } from '@/services/personal-branding.service';
 import { LOCAL_DRAFT_PROFILE_ID } from '@/pages/admin/personal-branding/brand-identity/brand-identity.constants';
@@ -10,6 +10,7 @@ import type {
   StartProfileExtractionRerunInput,
   ExtractionJobStatus,
   ProfileExtractionClientProgress,
+  ProfileExtractionSourceRun,
   UpdateBrandProfileInput,
   UpdatePlatformRuleInput,
 } from '@/types/api/personal-branding.dto';
@@ -123,6 +124,42 @@ export function usePersonalBrandingBrandIdentity(options?: {
       return data?.pollAfterMs ?? 2000;
     },
   });
+
+  const extractionJobStatus = extractionJob.data?.status;
+  const extractionJobActive =
+    Boolean(pollExtractionJobId) &&
+    Boolean(extractionJobStatus) &&
+    !TERMINAL_EXTRACTION.includes(extractionJobStatus!);
+
+  const extractionSourceRunsPageSize = Math.min(
+    Math.max(extractionJob.data?.sourceCount ?? 50, 50),
+    100
+  );
+
+  const extractionSourceRunsQuery = useQuery({
+    queryKey: queryKeys.personalBranding.extractions.sources(pollExtractionJobId ?? ''),
+    queryFn: () =>
+      personalBrandingService.listProfileExtractionSources(
+        pollExtractionJobId!,
+        1,
+        extractionSourceRunsPageSize
+      ),
+    enabled: extractionJobActive,
+    refetchOnWindowFocus: false,
+    refetchIntervalInBackground: false,
+    refetchInterval: () => {
+      if (!extractionJobActive) return false;
+      return extractionJob.data?.pollAfterMs ?? 2000;
+    },
+  });
+
+  const extractionSourceRuns = useMemo(() => {
+    const map = new Map<string, ProfileExtractionSourceRun>();
+    for (const run of extractionSourceRunsQuery.data?.data ?? []) {
+      map.set(run.sourceId, run);
+    }
+    return map;
+  }, [extractionSourceRunsQuery.data?.data]);
 
   const platformRules = useQuery({
     queryKey: queryKeys.personalBranding.platformRules.list(),
@@ -325,6 +362,7 @@ export function usePersonalBrandingBrandIdentity(options?: {
     profileVersions,
     profileOutputTests,
     extractionJob,
+    extractionSourceRuns,
     clientExtractionProgress,
     platformRules,
     platformRuleCatalog,

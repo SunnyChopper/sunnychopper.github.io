@@ -3,12 +3,23 @@ import { ToastContainer } from '@/components/molecules/Toast';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface Toast {
   id: string;
   type: ToastType;
   title: string;
   message?: string;
   duration?: number;
+  action?: ToastAction;
+}
+
+function resolveToastDuration(toast: Omit<Toast, 'id'>): number {
+  if (toast.duration != null) return toast.duration;
+  return toast.action ? 8000 : 5000;
 }
 
 let toastListeners: Array<(toasts: Toast[]) => void> = [];
@@ -28,7 +39,7 @@ export function pushToastNotification(toast: Omit<Toast, 'id'>): string {
   toasts = [...toasts, newToast];
   notifyListeners();
 
-  const duration = toast.duration ?? 5000;
+  const duration = resolveToastDuration(toast);
   setTimeout(() => {
     toasts = toasts.filter((t) => t.id !== id);
     notifyListeners();
@@ -54,7 +65,7 @@ export function useToast() {
     toasts = [...toasts, newToast];
     notifyListeners();
 
-    const duration = toast.duration || 5000;
+    const duration = resolveToastDuration(toast);
     setTimeout(() => {
       toasts = toasts.filter((t) => t.id !== id);
       notifyListeners();

@@ -7,6 +7,8 @@ import { initDeferredAnalytics } from './lib/analytics';
 import { AuthProvider } from './contexts/Auth';
 import { BackendStatusProvider } from './contexts/BackendStatusContext';
 import { logger, queryLogger } from './lib/logger';
+import { reportClientError } from './lib/client-telemetry';
+import { reportMutationCacheError, reportQueryCacheError } from './lib/report-query-error';
 import { markStartup } from './lib/startup/startup-telemetry';
 import {
   CHATBOT_CACHE_BUSTER,
@@ -47,12 +49,42 @@ window.addEventListener('error', (event) => {
     columnNumber: event.colno,
     error: event.error,
   });
+  void reportClientError(
+    {
+      message: event.message || 'Unhandled window error',
+      source: 'web',
+      stack: event.error?.stack,
+      fileName: event.filename || undefined,
+      lineNumber: event.lineno || undefined,
+      columnNumber: event.colno || undefined,
+      metadata: {
+        kind: 'window.onerror',
+      },
+    },
+    { flush: 'immediate' }
+  );
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   logger.error('Unhandled promise rejection', {
     reason: event.reason,
   });
+  const reason = event.reason;
+  const message =
+    reason instanceof Error
+      ? reason.message
+      : typeof reason === 'string'
+        ? reason
+        : 'Unhandled promise rejection';
+  void reportClientError(
+    {
+      message,
+      source: 'web',
+      stack: reason instanceof Error ? reason.stack : undefined,
+      metadata: { kind: 'unhandledrejection' },
+    },
+    { flush: 'immediate' }
+  );
 });
 
 const queryClient = new QueryClient({
@@ -62,6 +94,7 @@ const queryClient = new QueryClient({
         queryKey: query.queryKey,
         error,
       });
+      reportQueryCacheError(error, query.queryKey);
     },
   }),
   mutationCache: new MutationCache({
@@ -70,6 +103,7 @@ const queryClient = new QueryClient({
         mutationKey: mutation.options.mutationKey,
         error,
       });
+      reportMutationCacheError(error, mutation.options.mutationKey);
     },
   }),
   defaultOptions: {

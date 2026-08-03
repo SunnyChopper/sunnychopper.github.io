@@ -153,6 +153,20 @@ export function useMarkdownCollapseState(filePath?: string) {
     }
   }, [storageKey]);
 
+  const collapseAll = useCallback(
+    (ids: string[]) => {
+      setState((prev) => {
+        const newState: CollapseState = {
+          ...prev,
+          collapsedHeadings: new Set(ids),
+        };
+        saveToStorage(newState);
+        return newState;
+      });
+    },
+    [saveToStorage]
+  );
+
   // Check if an item is collapsed
   // Logic: item is collapsed if it's in the collapsed set
   // Default: all items are expanded (empty collapsed set)
@@ -188,6 +202,7 @@ export function useMarkdownCollapseState(filePath?: string) {
     toggleHeading,
     toggleCodeBlock,
     resetState,
+    collapseAll,
     isHeadingCollapsed,
     isCodeBlockCollapsed,
   };

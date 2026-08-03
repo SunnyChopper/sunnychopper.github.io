@@ -146,6 +146,54 @@ describe('useAssistantStreaming WebSocket lifecycle', () => {
     expect(result.current.error?.code).toBe('WS_BACKEND_REJECTED');
     expect(result.current.error?.details?.errorName).toBe('WsHandshakeRefusedError');
     expect(result.current.error?.details?.handshakePhase).toBe('onerror');
+    expect(result.current.error?.details?.wsUrlHost).toBe('localhost');
+  });
+
+  it('clears connection error when WebSocket reconnects successfully', async () => {
+    class MockWsFailThenOk {
+      static CONNECTING = 0;
+      static OPEN = 1;
+      static instances: MockWsFailThenOk[] = [];
+      static attempt = 0;
+      readyState = MockWsFailThenOk.CONNECTING;
+      onopen: ((event: Event) => void) | null = null;
+      onclose: ((event: CloseEvent) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      onmessage: ((event: MessageEvent) => void) | null = null;
+      send = vi.fn();
+      close = vi.fn();
+      constructor(_url: string) {
+        MockWsFailThenOk.instances.push(this);
+        const attempt = ++MockWsFailThenOk.attempt;
+        queueMicrotask(() => {
+          if (attempt === 1) {
+            this.onerror?.(new Event('error'));
+            return;
+          }
+          this.readyState = MockWsFailThenOk.OPEN;
+          this.onopen?.(new Event('open'));
+        });
+      }
+    }
+
+    MockWsFailThenOk.attempt = 0;
+    vi.stubGlobal('WebSocket', MockWsFailThenOk as unknown as typeof WebSocket);
+    vi.resetModules();
+    const { useAssistantStreaming } = await import('./useAssistantStreaming');
+
+    const { result } = renderHook(() => useAssistantStreaming('thread-retry'), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.connectionState).toBe('failed');
+    });
+    expect(result.current.error?.code).toBe('WS_BACKEND_REJECTED');
+
+    result.current.reconnect();
+
+    await waitFor(() => {
+      expect(result.current.connectionState).toBe('connected');
+    });
+    expect(result.current.error).toBeNull();
   });
 
   it('maps WS onclose before open to WS_BACKEND_REJECTED with closeCode in details', async () => {

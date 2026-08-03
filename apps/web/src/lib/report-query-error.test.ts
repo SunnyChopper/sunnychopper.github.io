@@ -35,7 +35,7 @@ describe('report-query-error', () => {
           kind: 'react-query',
           queryKey: expect.stringContaining('chatbot'),
         }),
-      }),
+      })
     );
   });
 
@@ -51,21 +51,21 @@ describe('report-query-error', () => {
     expect(reportClientError).toHaveBeenCalledWith(
       expect.objectContaining({
         metadata: expect.objectContaining({ kind: 'react-mutation' }),
-      }),
+      })
     );
   });
 
   it('skips context-usage ETIMEDOUT telemetry', () => {
     const err = Object.assign(
       new Error('Request timed out. The server may be slow or unavailable.'),
-      { code: 'ETIMEDOUT' },
+      { code: 'ETIMEDOUT' }
     );
     expect(
       shouldSkipQueryCacheErrorReport(
         ['chatbot', 'context-usage', 'thread-1', 'msg-1'],
         'ETIMEDOUT',
-        err.message,
-      ),
+        err.message
+      )
     ).toBe(true);
     reportQueryCacheError(err, ['chatbot', 'context-usage', 'thread-1', 'msg-1']);
     expect(reportClientError).not.toHaveBeenCalled();
@@ -74,7 +74,7 @@ describe('report-query-error', () => {
   it('still reports unrelated query ETIMEDOUT', () => {
     const err = Object.assign(
       new Error('Request timed out. The server may be slow or unavailable.'),
-      { code: 'ETIMEDOUT' },
+      { code: 'ETIMEDOUT' }
     );
     reportQueryCacheError(err, ['chatbot', 'unread-summary']);
     expect(reportClientError).toHaveBeenCalledOnce();

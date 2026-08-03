@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 import typography from '@tailwindcss/typography';
+import containerQueries from '@tailwindcss/container-queries';
 
 export default {
   darkMode: 'class',
@@ -38,5 +39,5 @@ export default {
       },
     },
   },
-  plugins: [typography],
+  plugins: [typography, containerQueries],
 };

@@ -20,6 +20,7 @@ describe('invalidateGrowthSystemCachesAfterTaskTool', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.growthSystem.tasks.all() });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.growthSystem.data() });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.wallet.all });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.chatbot.relevantNow() });
   });
 
   it('does nothing when tool status is not ok', () => {
