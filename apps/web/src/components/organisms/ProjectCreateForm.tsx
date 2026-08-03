@@ -11,12 +11,13 @@ import { ProjectCoreFormFields } from '@/components/molecules/ProjectCoreFormFie
 import { ImpactScoreSelector } from '@/components/molecules/ImpactScoreSelector';
 import {
   PRIORITIES,
-  PROJECT_STATUSES,
+  PROJECT_CREATE_STATUSES,
   PROJECT_STATUS_LABELS,
   SUBCATEGORIES_BY_AREA,
 } from '@/constants/growth-system';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
+import { toLocalDateKey } from '@/utils/date-formatters';
 
 interface ProjectCreateFormProps {
   onSubmit: (input: CreateProjectInput) => void;
@@ -32,7 +33,7 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
     subCategory: undefined,
     priority: 'P3',
     status: 'Planning',
-    impact: 5,
+    impact: 3,
     startDate: '',
     targetEndDate: '',
     notes: '',
@@ -60,6 +61,17 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
           onChange={(field, value) => {
             if (field === 'area') {
               setFormData({ ...formData, area: value as Area, subCategory: undefined });
+              return;
+            }
+            if (field === 'name') {
+              const name = value as string;
+              setFormData((prev) => ({
+                ...prev,
+                name,
+                ...(name.trim() && !prev.startDate
+                  ? { startDate: toLocalDateKey(new Date()) }
+                  : {}),
+              }));
               return;
             }
             setFormData({ ...formData, [field]: value });
@@ -121,7 +133,7 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
               }
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {PROJECT_STATUSES.map((status) => (
+              {PROJECT_CREATE_STATUSES.map((status) => (
                 <option key={status} value={status}>
                   {PROJECT_STATUS_LABELS[status]}
                 </option>
@@ -133,18 +145,23 @@ export function ProjectCreateForm({ onSubmit, onCancel, isLoading }: ProjectCrea
         <div>
           <ImpactScoreSelector
             label="Impact Score (1-5)"
-            value={formData.impact ?? 5}
+            value={formData.impact ?? 3}
             onChange={(value) => setFormData({ ...formData, impact: value })}
             disabled={isLoading}
+            helperText="Impact is relative to your current active P1s."
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="project-start-date"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Start Date
             </label>
             <input
+              id="project-start-date"
               type="date"
               value={formData.startDate}
               onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}

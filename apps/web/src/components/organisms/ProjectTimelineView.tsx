@@ -1,5 +1,13 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Calendar } from 'lucide-react';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import {
+  isProjectTimelineSparse,
+  PROJECT_TIMELINE_AFFORDANCE_HINT,
+  PROJECT_TIMELINE_SPARSE_DESCRIPTION,
+  PROJECT_TIMELINE_SPARSE_TITLE,
+  shouldShowProjectTimelineCompactStrip,
+} from '@/lib/growth-system/project-timeline-sparse';
 import type { Project, ProjectDependency } from '@/types/growth-system';
 import type { ProjectDisplayModel } from '@/utils/project-summary';
 import type { ProjectHealthSummary } from '@/types/project-health';
@@ -356,33 +364,170 @@ export function ProjectTimelineView({
     onAddDependency,
   ]);
 
-  if (projects.filter((p) => p.targetEndDate).length === 0) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-        <Calendar className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          No projects with target end dates
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Add target end dates to your projects to see them on the timeline. Optional start dates
-          refine scheduling.
-        </p>
-      </div>
-    );
-  }
-
+  const datedCount = projectsWithDates.length;
+  const isSparse = isProjectTimelineSparse(datedCount);
+  const showCompactStrip = shouldShowProjectTimelineCompactStrip(datedCount);
   const chartHeight = laneCount * LANE_HEIGHT + 24;
 
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <Calendar className="w-5 h-5" />
-          Project Timeline ({projectsWithDates.length} projects)
-          {isSaving && (
-            <span className="text-xs font-normal text-blue-600 dark:text-blue-400">Saving…</span>
-          )}
-        </h3>
+  const renderTodayLine = () => {
+    const today = new Date();
+    const totalRange = maxDate.getTime() - minDate.getTime();
+    if (totalRange <= 0) return null;
+    const todayPos = ((today.getTime() - minDate.getTime()) / totalRange) * 100;
+    if (todayPos < 0 || todayPos > 100) return null;
+    return (
+      <div
+        className="absolute top-0 bottom-0 w-0.5 bg-blue-500 dark:bg-blue-400 z-20 pointer-events-none"
+        style={{ left: `${todayPos}%` }}
+      >
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 px-2 py-0.5 bg-blue-500 dark:bg-blue-400 text-white text-xs rounded whitespace-nowrap font-medium">
+          Today
+        </div>
+      </div>
+    );
+  };
+
+  const renderGanttBars = () =>
+    projectsWithDates.map((project) => {
+      const layout = layouts.get(project.id);
+      if (!layout) return null;
+      const isDragging = dragState?.projectId === project.id;
+      const display = resolveProjectDisplay?.(project);
+      const health = projectHealthMap?.get(project.id);
+      return (
+        <div key={project.id} data-gantt-project-id={project.id}>
+          <ProjectGanttBar
+            project={project}
+            layout={layout}
+            colorClasses={getProjectTimelineBarColorClasses(project.status, {
+              isStale: display?.isStale ?? project.isStale,
+              isWorkComplete: display?.isWorkComplete,
+            })}
+            isPreview={isDragging && !!previewProjects}
+            isConnecting={connectState?.fromProjectId === project.id}
+            health={health}
+            isHealthLoading={isHealthLoading}
+            display={display}
+            onProjectClick={onProjectClick}
+            onDragStart={handleDragStart}
+          />
+        </div>
+      );
+    });
+
+  const renderChartBody = () => (
+    <div ref={chartRef} className="relative select-none" style={{ minHeight: chartHeight }}>
+      <ProjectDependencyArrowLayer
+        dependencies={dependencies}
+        layouts={layouts}
+        dateMap={dateMap}
+        containerHeight={chartHeight}
+        connectPreview={
+          connectState && connectPointer
+            ? {
+                fromProjectId: connectState.fromProjectId,
+                toX: connectPointer.x,
+                toY: connectPointer.y,
+              }
+            : null
+        }
+      />
+      {renderTodayLine()}
+      {renderGanttBars()}
+    </div>
+  );
+
+  const renderMonthAxis = () => (
+    <div className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700">
+      {(() => {
+        const totalRange = maxDate.getTime() - minDate.getTime();
+        const validMonths = monthsBetween
+          .map((month) => ({
+            month,
+            rawPosition: ((month.getTime() - minDate.getTime()) / totalRange) * 100,
+          }))
+          .filter((m) => m.rawPosition >= 0 && m.rawPosition <= 100);
+        const visibleMonths: typeof validMonths = [];
+        for (let i = 0; i < validMonths.length; i++) {
+          const current = validMonths[i];
+          const isLast = i === validMonths.length - 1;
+          if (visibleMonths.length === 0) {
+            visibleMonths.push(current);
+          } else {
+            const lastVisible = visibleMonths[visibleMonths.length - 1];
+            const distance = current.rawPosition - lastVisible.rawPosition;
+            if (distance >= 8) {
+              visibleMonths.push(current);
+            } else if (isLast && visibleMonths.length > 1) {
+              visibleMonths.pop();
+              visibleMonths.push(current);
+            }
+          }
+        }
+        return visibleMonths.map(({ month, rawPosition }) => {
+          let textStyle: React.CSSProperties = {
+            left: '0',
+            transform: 'translateX(-50%)',
+          };
+          if (rawPosition < 5) textStyle = { left: '0.5rem' };
+          else if (rawPosition > 95) textStyle = { right: '0.5rem' };
+          return (
+            <div
+              key={month.toISOString()}
+              className="absolute top-0 bottom-0"
+              style={{ left: `${rawPosition}%` }}
+            >
+              <div className="absolute top-0 bottom-0 left-0 border-l border-gray-300 dark:border-gray-600" />
+              <span
+                className="absolute top-0 text-xs text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap"
+                style={textStyle}
+              >
+                {month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              </span>
+            </div>
+          );
+        });
+      })()}
+    </div>
+  );
+
+  const renderLegend = () => (
+    <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center gap-6 flex-wrap text-xs text-gray-600 dark:text-gray-400">
+        {PROJECT_TIMELINE_LEGEND.map(({ label, swatchClass }) => (
+          <div key={label} className="flex items-center gap-2">
+            <div className={`w-3 h-3 ${swatchClass} rounded`} />
+            <span>{label}</span>
+          </div>
+        ))}
+        <div className="flex items-center gap-2">
+          <div className="w-0.5 h-3 bg-blue-500" />
+          <span>Today</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-red-500">—</span>
+          <span>Violated dependency</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const affordanceHint = (
+    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+      {PROJECT_TIMELINE_AFFORDANCE_HINT}
+    </p>
+  );
+
+  const timelineHeader = (
+    <div className={`flex items-center justify-between ${isSparse ? 'mb-4' : 'mb-6'}`}>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <Calendar className="w-5 h-5" />
+        Project Timeline ({datedCount} projects)
+        {isSaving && (
+          <span className="text-xs font-normal text-blue-600 dark:text-blue-400">Saving…</span>
+        )}
+      </h3>
+      {!isSparse && (
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             {(['1M', '3M', '6M', '1Y', 'All'] as ZoomLevel[]).map((level) => (
@@ -405,149 +550,39 @@ export function ProjectTimelineView({
             {maxDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
           </span>
         </div>
-      </div>
+      )}
+    </div>
+  );
 
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-        Drag bars to reschedule; drag the right connector to another project to add a
-        finish-to-start dependency. Downstream projects shift automatically.
-      </p>
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      {timelineHeader}
 
-      <div ref={containerRef} className="relative overflow-x-visible">
-        <div className="relative mb-4 h-8 border-b border-gray-200 dark:border-gray-700">
-          {(() => {
-            const totalRange = maxDate.getTime() - minDate.getTime();
-            const validMonths = monthsBetween
-              .map((month) => ({
-                month,
-                rawPosition: ((month.getTime() - minDate.getTime()) / totalRange) * 100,
-              }))
-              .filter((m) => m.rawPosition >= 0 && m.rawPosition <= 100);
-            const visibleMonths: typeof validMonths = [];
-            for (let i = 0; i < validMonths.length; i++) {
-              const current = validMonths[i];
-              const isLast = i === validMonths.length - 1;
-              if (visibleMonths.length === 0) {
-                visibleMonths.push(current);
-              } else {
-                const lastVisible = visibleMonths[visibleMonths.length - 1];
-                const distance = current.rawPosition - lastVisible.rawPosition;
-                if (distance >= 8) {
-                  visibleMonths.push(current);
-                } else if (isLast && visibleMonths.length > 1) {
-                  visibleMonths.pop();
-                  visibleMonths.push(current);
-                }
-              }
-            }
-            return visibleMonths.map(({ month, rawPosition }) => {
-              let textStyle: React.CSSProperties = {
-                left: '0',
-                transform: 'translateX(-50%)',
-              };
-              if (rawPosition < 5) textStyle = { left: '0.5rem' };
-              else if (rawPosition > 95) textStyle = { right: '0.5rem' };
-              return (
-                <div
-                  key={month.toISOString()}
-                  className="absolute top-0 bottom-0"
-                  style={{ left: `${rawPosition}%` }}
-                >
-                  <div className="absolute top-0 bottom-0 left-0 border-l border-gray-300 dark:border-gray-600" />
-                  <span
-                    className="absolute top-0 text-xs text-gray-600 dark:text-gray-400 font-medium whitespace-nowrap"
-                    style={textStyle}
-                  >
-                    {month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
-              );
-            });
-          })()}
-        </div>
-
-        <div ref={chartRef} className="relative select-none" style={{ minHeight: chartHeight }}>
-          <ProjectDependencyArrowLayer
-            dependencies={dependencies}
-            layouts={layouts}
-            dateMap={dateMap}
-            containerHeight={chartHeight}
-            connectPreview={
-              connectState && connectPointer
-                ? {
-                    fromProjectId: connectState.fromProjectId,
-                    toX: connectPointer.x,
-                    toY: connectPointer.y,
-                  }
-                : null
-            }
+      {isSparse ? (
+        <>
+          <EmptyState
+            scene="queueEmpty"
+            title={PROJECT_TIMELINE_SPARSE_TITLE}
+            description={PROJECT_TIMELINE_SPARSE_DESCRIPTION}
+            className="py-6 [&_h3]:text-base [&_h3]:font-medium"
           />
-
-          {(() => {
-            const today = new Date();
-            const totalRange = maxDate.getTime() - minDate.getTime();
-            const todayPos = ((today.getTime() - minDate.getTime()) / totalRange) * 100;
-            if (todayPos >= 0 && todayPos <= 100) {
-              return (
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-blue-500 dark:bg-blue-400 z-20 pointer-events-none"
-                  style={{ left: `${todayPos}%` }}
-                >
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 px-2 py-0.5 bg-blue-500 dark:bg-blue-400 text-white text-xs rounded whitespace-nowrap font-medium">
-                    Today
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          {projectsWithDates.map((project) => {
-            const layout = layouts.get(project.id);
-            if (!layout) return null;
-            const isDragging = dragState?.projectId === project.id;
-            const display = resolveProjectDisplay?.(project);
-            const health = projectHealthMap?.get(project.id);
-            return (
-              <div key={project.id} data-gantt-project-id={project.id}>
-                <ProjectGanttBar
-                  project={project}
-                  layout={layout}
-                  colorClasses={getProjectTimelineBarColorClasses(project.status, {
-                    isStale: display?.isStale ?? project.isStale,
-                    isWorkComplete: display?.isWorkComplete,
-                  })}
-                  isPreview={isDragging && !!previewProjects}
-                  isConnecting={connectState?.fromProjectId === project.id}
-                  health={health}
-                  isHealthLoading={isHealthLoading}
-                  display={display}
-                  onProjectClick={onProjectClick}
-                  onDragStart={handleDragStart}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-6 flex-wrap text-xs text-gray-600 dark:text-gray-400">
-          {PROJECT_TIMELINE_LEGEND.map(({ label, swatchClass }) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className={`w-3 h-3 ${swatchClass} rounded`} />
-              <span>{label}</span>
+          {affordanceHint}
+          {showCompactStrip && (
+            <div ref={containerRef} className="relative overflow-x-visible mt-2">
+              {renderChartBody()}
             </div>
-          ))}
-          <div className="flex items-center gap-2">
-            <div className="w-0.5 h-3 bg-blue-500" />
-            <span>Today</span>
+          )}
+        </>
+      ) : (
+        <>
+          {affordanceHint}
+          <div ref={containerRef} className="relative overflow-x-visible">
+            {renderMonthAxis()}
+            {renderChartBody()}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-red-500">—</span>
-            <span>Violated dependency</span>
-          </div>
-        </div>
-      </div>
+          {renderLegend()}
+        </>
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import type { PlannerAutoSchedulePreview, PlannerWeek } from '@/types/planner';
 
 const mockPreviewMutateAsync = vi.fn();
 const mockCommitMutateAsync = vi.fn();
+const mockPreviewIsPending = vi.hoisted(() => ({ value: false }));
 
 const sampleWeek: PlannerWeek = {
   weekStart: '2026-05-18',
@@ -54,7 +55,18 @@ const samplePreview: PlannerAutoSchedulePreview = {
       reason: 'test',
     },
   ],
+  adjustedToFit: false,
+  leftInBacklogCount: 0,
 };
+
+const mockShowToast = vi.fn();
+
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({
+    showToast: mockShowToast,
+    ToastContainer: () => null,
+  }),
+}));
 
 vi.mock('@/hooks/useGrowthSystemDashboard', () => ({
   useGrowthSystemDashboard: () => ({ tasks: [] }),
@@ -80,13 +92,25 @@ vi.mock('@/hooks/usePlanner', async (importOriginal) => {
     }),
     usePlannerAutoSchedulePreview: () => ({
       mutateAsync: mockPreviewMutateAsync,
-      isPending: false,
+      isPending: mockPreviewIsPending.value,
     }),
     usePlannerAutoScheduleCommit: () => ({
       mutateAsync: mockCommitMutateAsync,
       isPending: false,
     }),
     usePatchPlannerBlock: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+    }),
+    useCreateSchedulingException: () => ({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    }),
+    useDeleteSchedulingException: () => ({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    }),
+    usePlannerRolloverDecision: () => ({
       mutate: vi.fn(),
       isPending: false,
     }),
@@ -109,8 +133,23 @@ function renderPage() {
 describe('PlannerPage auto-schedule draft', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockPreviewIsPending.value = false;
     mockPreviewMutateAsync.mockResolvedValue(samplePreview);
     mockCommitMutateAsync.mockResolvedValue(sampleWeek);
+  });
+
+  it('shows drafting progress and keeps backlog/week nav enabled while preview is pending', () => {
+    mockPreviewIsPending.value = true;
+    renderPage();
+
+    const autoScheduleButton = screen.getByRole('button', { name: /drafting/i });
+    expect(autoScheduleButton).toBeDisabled();
+    expect(autoScheduleButton).toHaveAttribute('aria-busy', 'true');
+
+    expect(screen.getByRole('button', { name: /open backlog/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /previous week/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /next week/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /refresh week/i })).toBeEnabled();
   });
 
   it('shows draft banner and ghost block after preview', async () => {
@@ -121,6 +160,19 @@ describe('PlannerPage auto-schedule draft', () => {
     expect(screen.getByText('Draft task')).toBeInTheDocument();
     expect(screen.getAllByText('Draft').length).toBeGreaterThan(0);
     expect(mockPreviewMutateAsync).toHaveBeenCalled();
+  });
+
+  it('disables backlog and week nav during draft review', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole('button', { name: /auto-schedule/i }));
+    await screen.findByRole('region', { name: /draft confirmation/i });
+
+    expect(screen.getByRole('button', { name: /drafting/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /open backlog/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /previous week/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /next week/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /refresh week/i })).toBeDisabled();
   });
 
   it('clears draft on cancel', async () => {
@@ -148,6 +200,23 @@ describe('PlannerPage auto-schedule draft', () => {
     });
     await waitFor(() => {
       expect(screen.queryByRole('region', { name: /draft confirmation/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows Adjusted to fit toast when preview omits tasks for capacity', async () => {
+    const user = userEvent.setup();
+    mockPreviewMutateAsync.mockResolvedValue({
+      ...samplePreview,
+      adjustedToFit: true,
+      leftInBacklogCount: 2,
+    });
+    renderPage();
+    await user.click(screen.getByRole('button', { name: /auto-schedule/i }));
+    await screen.findByRole('region', { name: /draft confirmation/i });
+    expect(mockShowToast).toHaveBeenCalledWith({
+      type: 'info',
+      title: 'Adjusted to fit',
+      message: '2 tasks left in backlog',
     });
   });
 });

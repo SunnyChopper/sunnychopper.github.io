@@ -21,6 +21,18 @@ import type {
   QuizVaultItem,
   HomeworkVaultItem,
 } from '@/types/knowledge-vault';
+import {
+  flashcardOverduePillClassName,
+  formatOverdueCountLabel,
+  isFlashcardDueForReview,
+} from '@/lib/knowledge-vault/flashcard-deck-overdue';
+import {
+  vaultItemCardAccentBarClassName,
+  vaultItemCardSelectCheckboxClassName,
+  vaultItemCardShellClassName,
+} from '@/lib/knowledge-vault/vault-item-card-surfaces';
+import { FormCheckbox } from '@/components/atoms/FormCheckbox';
+import type { LibrarySelectableRef } from '@/lib/knowledge-vault/library-selection';
 
 interface VaultItemCardProps {
   item: VaultItem;
@@ -28,6 +40,10 @@ interface VaultItemCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   highlighted?: boolean;
+  selected?: boolean;
+  isSelected?: boolean;
+  selectionActive?: boolean;
+  onToggleSelect?: (ref: LibrarySelectableRef, event?: React.MouseEvent) => void;
 }
 
 function formatDate(dateString: string | null): string {
@@ -175,7 +191,7 @@ function LessonCardContent({ lesson }: { lesson: CourseLesson }) {
 }
 
 function FlashcardCardContent({ flashcard }: { flashcard: Flashcard }) {
-  const isOverdue = new Date(flashcard.nextReviewDate) < new Date();
+  const isOverdue = isFlashcardDueForReview(flashcard.nextReviewDate);
 
   return (
     <>
@@ -203,12 +219,16 @@ function FlashcardCardContent({ flashcard }: { flashcard: Flashcard }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Calendar size={14} className={isOverdue ? 'text-red-500' : 'text-gray-400'} />
-        <p
-          className={`text-xs ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}
-        >
-          {isOverdue ? 'Review overdue' : `Review ${formatDate(flashcard.nextReviewDate)}`}
-        </p>
+        {isOverdue ? (
+          <span className={flashcardOverduePillClassName}>{formatOverdueCountLabel(1)}</span>
+        ) : (
+          <>
+            <Calendar size={14} className="text-gray-400" />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Review {formatDate(flashcard.nextReviewDate)}
+            </p>
+          </>
+        )}
       </div>
     </>
   );
@@ -274,11 +294,21 @@ export default function VaultItemCard({
   onClick,
   onDelete,
   highlighted,
+  selected,
+  isSelected = false,
+  selectionActive = false,
+  onToggleSelect,
 }: VaultItemCardProps) {
   const handleClick = () => {
     if (onClick) {
       onClick();
     }
+  };
+
+  const interactive = Boolean(onClick);
+  const selectableRef: LibrarySelectableRef = {
+    kind: item.type as LibrarySelectableRef['kind'],
+    id: item.id,
   };
 
   return (
@@ -298,12 +328,30 @@ export default function VaultItemCard({
           ? `View ${item.type}: ${item.type === 'note' ? (item as Note).title : item.type === 'document' ? (item as Document).title : 'item'}`
           : undefined
       }
-      className={`group relative flex flex-col h-full rounded-lg p-4 transition-all cursor-pointer ${
-        highlighted
-          ? 'bg-white dark:bg-gray-800 border-2 border-violet-500 ring-2 ring-violet-500/20 shadow-lg dark:shadow-violet-900/20'
-          : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-lg'
-      }`}
+      className={vaultItemCardShellClassName({
+        selected,
+        multiSelected: isSelected,
+        highlighted,
+        interactive,
+      })}
     >
+      <span
+        aria-hidden
+        className={vaultItemCardAccentBarClassName({ selected, multiSelected: isSelected })}
+      />
+      {onToggleSelect ? (
+        <div
+          data-vault-select
+          className={vaultItemCardSelectCheckboxClassName({ isSelected, selectionActive })}
+        >
+          <FormCheckbox
+            checked={isSelected}
+            onChange={() => onToggleSelect(selectableRef)}
+            onClick={(event) => event.stopPropagation()}
+            aria-label={`Select ${item.title}`}
+          />
+        </div>
+      ) : null}
       {onDelete && (
         <button
           type="button"

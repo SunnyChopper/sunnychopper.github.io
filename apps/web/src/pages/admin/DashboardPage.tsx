@@ -13,12 +13,16 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { DashboardStatCard } from '@/components/molecules/dashboard/DashboardStatCard';
+import { dashboardKpiGridClassName } from '@/components/molecules/dashboard/dashboard-stat-card-surfaces';
 import { PageContainer } from '@/components/templates/PageContainer';
 import { AIInsightsWidget } from '@/components/organisms/AIInsightsWidget';
+import { AmbientPresenceStrip } from '@/components/organisms/assistant/AmbientPresenceStrip';
 import { HealthActionWidget } from '@/components/organisms/HealthActionWidget';
 import { StaleVelocityAdvisoryCard } from '@/components/molecules/StaleVelocityAdvisoryCard';
 import { DailyPlanningAssistant } from '@/components/organisms/DailyPlanningAssistant';
 import { MorningLaunchpad } from '@/components/organisms/MorningLaunchpad';
+import { DailyRecoveryDialog } from '@/components/organisms/fitness/DailyRecoveryDialog';
 import { GoalsDashboardWidget } from '@/components/organisms/GoalsDashboardWidget';
 import { useMode } from '@/contexts/Mode';
 import { ROUTES } from '@/routes';
@@ -29,55 +33,9 @@ import {
 } from '@/lib/growth-system/dashboard-active-projects';
 import type { Task } from '@/types/growth-system';
 
-interface StatCardProps {
-  title: string;
-  value: number;
-  icon: React.ReactNode;
-  link: string;
-  description: string;
-  /** When true, shows skeleton placeholders for value and description instead of misleading zeros */
-  isLoading?: boolean;
-}
-
-const StatCard = ({ title, value, icon, link, description, isLoading = false }: StatCardProps) => {
-  return (
-    <Link
-      to={link}
-      aria-busy={isLoading}
-      className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:accent-border-300 dark:hover:accent-border-600 hover:shadow-md transition group"
-    >
-      <div className="flex items-center gap-4">
-        <div className="p-3 accent-bg-50 dark:bg-green-900/30 rounded-lg accent-text-600 dark:accent-text-400 group-hover:accent-bg-100 dark:group-hover:bg-green-900/50 transition flex-shrink-0">
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          {isLoading ? (
-            <>
-              <div
-                className="h-9 w-16 rounded-md bg-gray-200 dark:bg-gray-700 animate-pulse mb-2"
-                aria-hidden
-              />
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{title}</p>
-              <div
-                className="mt-1 h-3 max-w-[85%] rounded bg-gray-200 dark:bg-gray-700 animate-pulse"
-                aria-hidden
-              />
-            </>
-          ) : (
-            <>
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{value}</h3>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{title}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{description}</p>
-            </>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-};
-
 export default function DashboardPage() {
   const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
+  const [quickRecoveryOpen, setQuickRecoveryOpen] = useState(false);
   const [topTasksForDay, setTopTasksForDay] = useState<Task[]>([]);
   const { isLeisureMode } = useMode();
   const { status: backendStatus } = useBackendStatus();
@@ -162,10 +120,10 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div className={dashboardKpiGridClassName}>
         {!isLeisureMode && (
           <>
-            <StatCard
+            <DashboardStatCard
               title="Active Tasks"
               value={activeTasks.length}
               icon={<CheckSquare size={24} />}
@@ -173,7 +131,7 @@ export default function DashboardPage() {
               description={dashboardError ? 'Connection error' : `${tasks.length} total tasks`}
               isLoading={dashboardLoading}
             />
-            <StatCard
+            <DashboardStatCard
               title="Metrics Tracked"
               value={metrics.length}
               icon={<TrendingUp size={24} />}
@@ -181,7 +139,7 @@ export default function DashboardPage() {
               description={dashboardError ? 'Connection error' : 'Key performance indicators'}
               isLoading={dashboardLoading}
             />
-            <StatCard
+            <DashboardStatCard
               title="Active Goals"
               value={activeGoals.length}
               icon={<Target size={24} />}
@@ -189,7 +147,7 @@ export default function DashboardPage() {
               description={dashboardError ? 'Connection error' : `${goals.length} total goals`}
               isLoading={dashboardLoading}
             />
-            <StatCard
+            <DashboardStatCard
               title="Active Projects"
               value={activeProjects.length}
               icon={<FolderKanban size={24} />}
@@ -201,7 +159,7 @@ export default function DashboardPage() {
             />
           </>
         )}
-        <StatCard
+        <DashboardStatCard
           title="Active Habits"
           value={activeHabits.length}
           icon={<Calendar size={24} />}
@@ -209,7 +167,7 @@ export default function DashboardPage() {
           description={dashboardError ? 'Connection error' : `${habits.length} total habits`}
           isLoading={dashboardLoading}
         />
-        <StatCard
+        <DashboardStatCard
           title="Journal Entries"
           value={entries.length}
           icon={<BookOpen size={24} />}
@@ -219,21 +177,21 @@ export default function DashboardPage() {
         />
         {isLeisureMode && (
           <>
-            <StatCard
+            <DashboardStatCard
               title="Recovery Score"
               value={85}
               icon={<Heart size={24} />}
               link={ROUTES.admin.dashboard}
               description="Well-being indicator"
             />
-            <StatCard
+            <DashboardStatCard
               title="Media Backlog"
               value={0}
               icon={<Film size={24} />}
               link={ROUTES.admin.mediaBacklog}
               description="Movies, shows & books"
             />
-            <StatCard
+            <DashboardStatCard
               title="Hobby Quests"
               value={0}
               icon={<Star size={24} />}
@@ -257,6 +215,10 @@ export default function DashboardPage() {
           />
         )}
         <HealthActionWidget />
+        <AmbientPresenceStrip
+          surface="dashboard"
+          onQuickRecovery={() => setQuickRecoveryOpen(true)}
+        />
         <AIInsightsWidget />
         {!isLeisureMode && <StaleVelocityAdvisoryCard />}
       </div>
@@ -265,6 +227,12 @@ export default function DashboardPage() {
         isOpen={isLaunchpadOpen}
         onClose={() => setIsLaunchpadOpen(false)}
         topTasks={topTasksForDay}
+      />
+
+      <DailyRecoveryDialog
+        isOpen={quickRecoveryOpen}
+        onClose={() => setQuickRecoveryOpen(false)}
+        quickMode
       />
 
       {!isLeisureMode ? (

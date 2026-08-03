@@ -1,18 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Smile, Meh, Frown, Loader2 } from 'lucide-react';
+import { Smile, Meh, Frown, Loader2, Sparkles } from 'lucide-react';
 import type {
   LogbookEntry,
   CreateLogbookEntryInput,
   UpdateLogbookEntryInput,
   LogbookMood,
+  LogbookLinkedEntity,
+  LogbookEntityLinkSuggestion,
+  Project,
+  Goal,
 } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
 import { parseDateInput } from '@/utils/date-formatters';
 import { Textarea } from '@/components/atoms/Textarea';
+import { projectsService } from '@/services/growth-system/projects.service';
+import { goalsService } from '@/services/growth-system/goals.service';
+import { LogbookLinkSuggestionsPanel } from '@/components/molecules/LogbookLinkSuggestionsPanel';
+import { LogbookLinkedEntityAreaPicker } from '@/components/molecules/LogbookLinkedEntityAreaPicker';
+import { useLogbookLinkSuggestions } from '@/hooks/growth-system/useLogbookLinkSuggestions';
+import {
+  filterLinkableGoals,
+  filterLinkableProjects,
+} from '@/lib/growth-system/logbook-linkable-entities';
 
 interface LogbookEditorProps {
   entry?: LogbookEntry;
   defaultDate?: string;
+  defaultTitle?: string;
+  defaultNotes?: string;
+  defaultLinkedEntities?: LogbookLinkedEntity[];
   onSubmit: (input: CreateLogbookEntryInput | UpdateLogbookEntryInput) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -78,6 +94,9 @@ const extractDateOnly = (dateString: string): string => {
 export function LogbookEditor({
   entry,
   defaultDate,
+  defaultTitle,
+  defaultNotes,
+  defaultLinkedEntities,
   onSubmit,
   onCancel,
   isLoading,
@@ -96,11 +115,82 @@ export function LogbookEditor({
 
   const [formData, setFormData] = useState<CreateLogbookEntryInput>({
     date: getInitialDate(),
-    title: entry?.title || '',
-    notes: entry?.notes || '',
+    title: entry?.title || defaultTitle || '',
+    notes: entry?.notes || defaultNotes || '',
     mood: entry?.mood || undefined,
     energy: entry?.energy ?? undefined,
+    linkedEntities: entry?.linkedEntities || defaultLinkedEntities || [],
   });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [hasRequestedSuggestions, setHasRequestedSuggestions] = useState(false);
+  const { suggestLinks, suggestions, isSuggesting, resetSuggestions } = useLogbookLinkSuggestions();
+
+  const notesText = formData.notes?.trim() ?? '';
+  const linkableProjects = filterLinkableProjects(projects);
+  const linkableGoals = filterLinkableGoals(goals);
+  const showLinkingSection = linkableProjects.length > 0 || linkableGoals.length > 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([projectsService.getAll(), goalsService.getAll()])
+      .then(([projectRes, goalRes]) => {
+        if (cancelled) return;
+        if (projectRes.success) setProjects(projectRes.data ?? []);
+        if (goalRes.success) setGoals(goalRes.data ?? []);
+      })
+      .catch(() => {
+        /* optional picker — ignore load errors */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleLinkedEntity = (entity: LogbookLinkedEntity) => {
+    setFormData((prev) => {
+      const current = prev.linkedEntities || [];
+      const exists = current.some(
+        (row) => row.entityType === entity.entityType && row.entityId === entity.entityId
+      );
+      return {
+        ...prev,
+        linkedEntities: exists
+          ? current.filter(
+              (row) => !(row.entityType === entity.entityType && row.entityId === entity.entityId)
+            )
+          : [...current, entity],
+      };
+    });
+  };
+
+  const toggleSuggestionLink = (suggestion: LogbookEntityLinkSuggestion) => {
+    toggleLinkedEntity({
+      entityType: suggestion.entityType,
+      entityId: suggestion.entityId,
+      entityName: suggestion.title,
+    });
+  };
+
+  const handleSuggestLinks = async () => {
+    if (!notesText) return;
+    setHasRequestedSuggestions(true);
+    await suggestLinks({
+      notes: notesText,
+      title: formData.title || undefined,
+      mood: formData.mood,
+      energy: formData.energy,
+      limit: 3,
+      useCache: true,
+    });
+  };
+
+  useEffect(() => {
+    if (!notesText) {
+      setHasRequestedSuggestions(false);
+      resetSuggestions();
+    }
+  }, [notesText, resetSuggestions]);
 
   // Update form data when entry prop changes
   // This is necessary to sync form state when editing different entries
@@ -112,6 +202,7 @@ export function LogbookEditor({
         notes: entry.notes || '',
         mood: entry.mood || undefined,
         energy: entry.energy ?? undefined,
+        linkedEntities: entry.linkedEntities || [],
       });
     } else if (defaultDate) {
       setFormData((prev) => ({
@@ -137,6 +228,7 @@ export function LogbookEditor({
         notes: formData.notes || undefined,
         mood: formData.mood,
         energy: formData.energy,
+        linkedEntities: formData.linkedEntities,
       };
       // Remove undefined values to keep the request clean
       Object.keys(updateData).forEach((key) => {
@@ -153,6 +245,7 @@ export function LogbookEditor({
         notes: formData.notes || undefined,
         mood: formData.mood,
         energy: formData.energy,
+        linkedEntities: formData.linkedEntities,
       };
       onSubmit(createData);
     }
@@ -292,6 +385,45 @@ export function LogbookEditor({
               placeholder="What happened today? What are you grateful for? What did you learn?"
             />
           </div>
+
+          {showLinkingSection && (
+            <div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Link to projects or goals
+                </label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={!notesText || isSuggesting}
+                  onClick={() => void handleSuggestLinks()}
+                >
+                  {isSuggesting ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-1.5 h-4 w-4 text-violet-500" />
+                  )}
+                  Suggest links
+                </Button>
+              </div>
+
+              <LogbookLinkSuggestionsPanel
+                suggestions={suggestions}
+                linkedEntities={formData.linkedEntities}
+                isLoading={isSuggesting}
+                hasRequested={hasRequestedSuggestions}
+                onToggle={toggleSuggestionLink}
+              />
+
+              <LogbookLinkedEntityAreaPicker
+                projects={projects}
+                goals={goals}
+                linkedEntities={formData.linkedEntities}
+                onToggle={toggleLinkedEntity}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>

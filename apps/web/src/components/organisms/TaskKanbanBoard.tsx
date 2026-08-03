@@ -13,10 +13,14 @@ interface TaskKanbanBoardProps {
   projects?: Project[];
   cardDensity?: KanbanCardDensity;
   isLoading?: boolean;
+  trashMode?: boolean;
   onTaskUpdate: (id: string, input: UpdateTaskInput) => void;
   onTaskEdit: (task: Task) => void;
   onTaskCreate: (status: TaskStatus) => void;
   onTaskClick?: (task: Task) => void;
+  onTaskDelete?: (task: Task) => void;
+  onTaskRestore?: (task: Task) => void;
+  activeTaskId?: string | null;
 }
 
 export function TaskKanbanBoard({
@@ -24,10 +28,14 @@ export function TaskKanbanBoard({
   projects = [],
   cardDensity = 'cards',
   isLoading = false,
+  trashMode = false,
   onTaskUpdate,
   onTaskEdit,
   onTaskCreate,
   onTaskClick,
+  onTaskDelete,
+  onTaskRestore,
+  activeTaskId = null,
 }: TaskKanbanBoardProps) {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
@@ -77,6 +85,8 @@ export function TaskKanbanBoard({
     setDragOverColumn(null);
   };
 
+  const trashTotalEffort = tasks.reduce((sum, task) => sum + (task.size || 0), 0);
+
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col self-stretch bg-slate-100/95 pt-3 dark:bg-gray-950">
       <div className="flex min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
@@ -86,30 +96,62 @@ export function TaskKanbanBoard({
           transition={{ duration: 0.25 }}
           className="flex h-full min-h-0 min-w-max flex-1 gap-3 px-6 pb-5 sm:gap-4 lg:px-12"
         >
-          {KANBAN_STATUSES.map((status, columnIndex) => (
+          {trashMode ? (
             <KanbanColumn
-              key={status}
-              status={status}
+              key="trash"
+              status="Cancelled"
               projects={projects}
               cardDensity={cardDensity}
-              accentClassName={KANBAN_STATUS_ACCENTS[status]}
-              statusTasks={getTasksByStatus(status)}
-              totalEffort={getTotalEffort(status)}
+              accentClassName="bg-gray-400 dark:bg-gray-500"
+              statusTasks={tasks}
+              totalEffort={trashTotalEffort}
               isLoading={isLoading}
-              isDragOver={dragOverColumn === status}
-              columnIndex={columnIndex}
+              isDragOver={false}
+              columnIndex={0}
               draggedTask={draggedTask}
               onTaskCreate={onTaskCreate}
               onTaskUpdate={onTaskUpdate}
               onTaskEdit={onTaskEdit}
               onTaskClick={onTaskClick}
+              onTaskDelete={onTaskDelete}
+              onTaskRestore={onTaskRestore}
+              activeTaskId={activeTaskId}
+              isTrashColumn
+              columnLabel="Trash"
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeaveColumn}
               onDrop={handleDrop}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             />
-          ))}
+          ) : (
+            KANBAN_STATUSES.map((status, columnIndex) => (
+              <KanbanColumn
+                key={status}
+                status={status}
+                projects={projects}
+                cardDensity={cardDensity}
+                accentClassName={KANBAN_STATUS_ACCENTS[status]}
+                statusTasks={getTasksByStatus(status)}
+                totalEffort={getTotalEffort(status)}
+                isLoading={isLoading}
+                isDragOver={dragOverColumn === status}
+                columnIndex={columnIndex}
+                draggedTask={draggedTask}
+                onTaskCreate={onTaskCreate}
+                onTaskUpdate={onTaskUpdate}
+                onTaskEdit={onTaskEdit}
+                onTaskClick={onTaskClick}
+                onTaskDelete={onTaskDelete}
+                activeTaskId={activeTaskId}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeaveColumn}
+                onDrop={handleDrop}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              />
+            ))
+          )}
         </motion.div>
       </div>
     </div>

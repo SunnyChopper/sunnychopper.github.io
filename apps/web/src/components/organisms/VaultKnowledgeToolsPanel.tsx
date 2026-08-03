@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FlaskConical, MessageCircleWarning, Wand2 } from 'lucide-react';
+import { DevilsAdvocateResult } from '@/components/molecules/knowledge-vault/DevilsAdvocateResult';
 import { vaultPrimitivesService } from '@/services/knowledge-vault/vault-primitives.service';
+import type { DevilsAdvocatePayload } from '@/lib/knowledge-vault/devils-advocate-result';
+import type { FeynmanRespondResult } from '@/types/knowledge-vault';
 import Button from '@/components/atoms/Button';
 import { ROUTES } from '@/routes';
 
@@ -16,9 +19,9 @@ export function VaultKnowledgeToolsPanel({ vaultItemId }: VaultKnowledgeToolsPan
   const [loadingRw, setLoadingRw] = useState(false);
   const [feynmanLog, setFeynmanLog] = useState<Array<{ role: string; content: string }>>([]);
   const [feynmanInput, setFeynmanInput] = useState('');
-  const [feynmanOut, setFeynmanOut] = useState<Record<string, unknown> | null>(null);
+  const [feynmanOut, setFeynmanOut] = useState<FeynmanRespondResult | null>(null);
   const [loadingF, setLoadingF] = useState(false);
-  const [devils, setDevils] = useState<Record<string, unknown> | null>(null);
+  const [devils, setDevils] = useState<DevilsAdvocatePayload | null>(null);
   const [loadingD, setLoadingD] = useState(false);
 
   const runRewrite = async () => {
@@ -43,7 +46,7 @@ export function VaultKnowledgeToolsPanel({ vaultItemId }: VaultKnowledgeToolsPan
     setLoadingF(true);
     try {
       const res = await vaultPrimitivesService.feynmanRespond(vaultItemId, next);
-      if (res.success && res.data) setFeynmanOut(res.data as Record<string, unknown>);
+      if (res.success && res.data) setFeynmanOut(res.data);
     } finally {
       setLoadingF(false);
     }
@@ -53,7 +56,7 @@ export function VaultKnowledgeToolsPanel({ vaultItemId }: VaultKnowledgeToolsPan
     setLoadingD(true);
     try {
       const res = await vaultPrimitivesService.devilsAdvocate(vaultItemId);
-      if (res.success && res.data) setDevils(res.data as Record<string, unknown>);
+      if (res.success && res.data) setDevils(res.data);
     } finally {
       setLoadingD(false);
     }
@@ -142,11 +145,7 @@ export function VaultKnowledgeToolsPanel({ vaultItemId }: VaultKnowledgeToolsPan
           <MessageCircleWarning className="w-4 h-4" />
           Devil&apos;s advocate
         </Button>
-        {devils && (
-          <pre className="text-xs bg-red-50 dark:bg-red-900/20 p-2 rounded max-h-40 overflow-auto">
-            {JSON.stringify(devils, null, 2)}
-          </pre>
-        )}
+        {devils && <DevilsAdvocateResult data={devils} />}
       </div>
     </div>
   );

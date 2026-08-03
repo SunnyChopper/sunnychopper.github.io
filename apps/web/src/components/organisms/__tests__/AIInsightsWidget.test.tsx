@@ -94,6 +94,6 @@ describe('AIInsightsWidget', () => {
     });
 
     renderWidget();
-    expect(screen.getByText(/Insights are generated daily/)).toBeInTheDocument();
+    expect(screen.getByText(/Insights refresh several times a day/)).toBeInTheDocument();
   });
 });
