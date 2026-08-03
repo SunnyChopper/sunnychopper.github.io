@@ -39,7 +39,13 @@ export type TaskStatus =
   | 'On Hold'
   | 'Done'
   | 'Cancelled';
-export type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed' | 'Cancelled';
+export type ProjectStatus =
+  | 'Planning'
+  | 'Active'
+  | 'On Hold'
+  | 'Completed'
+  | 'Cancelled'
+  | 'Archived';
 export type GoalStatus = 'Planning' | 'Active' | 'Achieved' | 'Abandoned';
 /** Computed server-side for Active goals; null otherwise. */
 export type GoalHealth = 'onTrack' | 'atRisk' | 'behind' | 'stagnant' | 'dormant';
@@ -123,6 +129,8 @@ export interface Task {
   publishedAt?: string | null;
   lastPublishSyncedAt?: string | null;
   publishSyncStatus?: string | null;
+  /** ISO timestamp when soft-deleted (trash); null when active. */
+  deletedAt?: string | null;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -167,6 +175,18 @@ export interface Project {
   actualEndDate: string | null;
   /** Computed on read: Planning/On Hold with targetEndDate in the past. */
   isStale?: boolean;
+  /** When true, weekly review auto-runs Risk Assessment for this project (max 5 pins). */
+  weeklyRiskAssessmentPinned?: boolean;
+  /** Cached deterministic health score from last health calculation (0–100). */
+  healthScore?: number | null;
+  /** Wallet completion bonus awarded on explicit status → Completed. */
+  completionBonusPoints?: number;
+  pointsAwarded?: boolean;
+  rewardLedgerStatus?: 'none' | 'awarded' | 'reversed';
+  rewardAwardTransactionId?: string | null;
+  rewardReversalTransactionId?: string | null;
+  rewardReversedAt?: string | null;
+  completedDate?: string | null;
   notes: string | null;
   goalIds?: string[];
   userId: string;
@@ -178,6 +198,22 @@ export interface ProjectGoal {
   projectId: string;
   goalId: string;
   createdAt: string;
+  contributionWeight?: number;
+}
+
+export interface GoalLinkedEntity {
+  entityId: string;
+  entityType: 'task' | 'metric' | 'habit' | 'project';
+  entityTitle: string;
+  linkedAt: string;
+  contributionWeight?: number | null;
+}
+
+export interface GoalLinkedEntities {
+  tasks: GoalLinkedEntity[];
+  metrics: GoalLinkedEntity[];
+  habits: GoalLinkedEntity[];
+  projects: GoalLinkedEntity[];
 }
 
 // Enhanced Success Criterion (replaces string[])
@@ -232,7 +268,22 @@ export interface GoalProgressConfig {
   tasksWeight: number; // 0-100
   metricsWeight: number; // 0-100
   habitsWeight: number; // 0-100
+  projectsWeight: number; // 0-100, default 0
   manualOverride: number | null;
+}
+
+export interface GoalProjectProgressItem {
+  projectId: string;
+  title: string;
+  completionPercentage: number;
+  contributionWeight: number;
+  normalizedShare: number;
+}
+
+export interface GoalProjectsProgress {
+  linkedCount: number;
+  percentage: number;
+  items: GoalProjectProgressItem[];
 }
 
 // Computed Progress (for display; canonical from GET /goals/{id}/progress)
@@ -242,6 +293,7 @@ export interface GoalProgressBreakdown {
   tasks: { completed: number; total: number; percentage: number };
   metrics: { atTarget: number; total: number; percentage: number };
   habits: { streakDays: number; consistency: number };
+  projects?: GoalProjectsProgress;
   weights?: GoalProgressConfig;
   daysElapsed?: number;
   daysRemaining?: number | null;
@@ -415,6 +467,43 @@ export interface HabitLog {
   createdAt: string;
 }
 
+export interface LogbookLinkedEntity {
+  entityType: 'project' | 'goal' | 'task' | 'habit' | 'metric';
+  entityId: string;
+  entityName: string;
+}
+
+export interface LogbookEntityLinkSuggestion {
+  entityId: string;
+  entityType: 'project' | 'goal';
+  title: string;
+  reason: string;
+  confidence: number;
+}
+
+export interface LogbookEntityLinkSuggestions {
+  suggestions: LogbookEntityLinkSuggestion[];
+}
+
+export interface EntityMemoryThreadItem {
+  sourceType: 'stmNote' | 'logbookEntry';
+  sourceKey: string;
+  occurredAt: string;
+  category: string;
+  excerpt: string;
+  matchMethod: 'explicit' | 'nameMatch';
+  stmFileDate?: string | null;
+  logbookDate?: string | null;
+}
+
+export interface EntityMemoryThread {
+  entityType: 'project' | 'goal';
+  entityId: string;
+  entityName: string;
+  items: EntityMemoryThreadItem[];
+  totalItems: number;
+}
+
 export interface LogbookEntry {
   id: string;
   date: string;
@@ -422,6 +511,7 @@ export interface LogbookEntry {
   notes: string | null;
   mood: LogbookMood | null;
   energy: number | null;
+  linkedEntities?: LogbookLinkedEntity[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -628,6 +718,7 @@ export interface UpdateProjectInput {
   targetEndDate?: string;
   actualEndDate?: string;
   notes?: string;
+  weeklyRiskAssessmentPinned?: boolean;
 }
 
 /** Finish-to-start dependency between goals (Gantt timeline). */
@@ -793,6 +884,7 @@ export interface CreateLogbookEntryInput {
   notes?: string;
   mood?: LogbookMood;
   energy?: number;
+  linkedEntities?: LogbookLinkedEntity[];
 }
 
 export interface UpdateLogbookEntryInput {
@@ -801,6 +893,7 @@ export interface UpdateLogbookEntryInput {
   notes?: string;
   mood?: LogbookMood;
   energy?: number;
+  linkedEntities?: LogbookLinkedEntity[];
 }
 
 export type TaskListSortField =
@@ -842,6 +935,10 @@ export interface FilterOptions {
   dueDateFrom?: string;
   /** Inclusive upper bound on task dueDate. */
   dueDateTo?: string;
+  /** Include soft-deleted (trash) tasks in list responses. */
+  includeDeleted?: boolean;
+  /** Return only soft-deleted tasks (trash). */
+  deletedOnly?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -896,6 +993,8 @@ export interface EntitySummary {
   targetDate?: string | null;
   /** When set on a goal, overdue styling is suppressed. */
   completedDate?: string | null;
+  /** Picker relevance ranking (mapped from entity updatedAt when available). */
+  updatedAt?: string | null;
 }
 
 export interface DailyBriefing {
@@ -944,6 +1043,8 @@ export interface WeeklyReviewStats {
   goalsActive: number;
   goalsAtRisk: number;
   journalEntries: number;
+  projectsCompleted?: number;
+  projectCompletionPoints?: number;
 }
 
 export interface WeeklyReviewOverdueTask {
@@ -982,6 +1083,42 @@ export interface WeeklyReviewTechDebtCandidate {
   scheduledDate?: string | null;
   rolloverCount: number;
   dueDate?: string | null;
+  /** Monday YYYY-MM-DD for roll-badge hover; snapshot field from generate. */
+  rolledFromWeekStart?: string | null;
+}
+
+export interface WeeklyReviewProjectMoved {
+  projectId: string;
+  projectName: string;
+  status: string;
+  healthScore: number;
+  healthScoreDelta: number;
+  completionPercentage: number;
+  completionPercentageDelta: number;
+  tasksCompletedInWeek: number;
+}
+
+export interface WeeklyReviewProjectRiskAssessment {
+  projectId: string;
+  projectName: string;
+  status: 'ok' | 'skipped' | 'failed';
+  skipReason?: 'no_tasks' | null;
+  errorMessage?: string | null;
+  assessment?: {
+    overallRiskLevel: 'low' | 'moderate' | 'high' | 'critical';
+    risks: Array<{
+      riskTitle: string;
+      description: string;
+      category: string;
+      probability: string;
+      impact: string;
+      riskScore: number;
+      mitigationStrategies: string[];
+      contingencyPlan: string;
+    }>;
+    topPriorityRisk: string;
+    riskMitigationRoadmap: string[];
+  } | null;
 }
 
 export interface WeeklyReviewSuggestedTask {
@@ -991,6 +1128,49 @@ export interface WeeklyReviewSuggestedTask {
   area?: string | null;
   goalIds: string[];
   projectIds: string[];
+}
+
+export interface WeeklyReviewWowHabitUplift {
+  habitName: string;
+  upliftPct: number;
+}
+
+export interface WeeklyReviewWeekOverWeekEvidence {
+  comparisonWeeksUsed: number;
+  hasComparablePriorWeek: boolean;
+  velocity: {
+    current: WeeklyReviewVelocityWeek;
+    priorWeek?: WeeklyReviewVelocityWeek | null;
+    priorTwoWeeks?: WeeklyReviewVelocityWeek | null;
+    storyPointsDeltaVsPrior?: number | null;
+    storyPointsDeltaPctVsPrior?: number | null;
+    storyPointsDeltaVsPriorTwo?: number | null;
+  };
+  goals: {
+    currentGoalsActive: number;
+    currentGoalsAtRisk: number;
+    priorGoalsActive?: number | null;
+    priorGoalsAtRisk?: number | null;
+    goalsAtRiskDelta?: number | null;
+  };
+  leverageRoi?: {
+    current: {
+      coreWins: number;
+      strategicInvestments: number;
+      necessaryFriction: number;
+      bikesheddingTrap: number;
+      untaggedEnergyCount: number;
+    };
+    prior: {
+      coreWins: number;
+      strategicInvestments: number;
+      necessaryFriction: number;
+      bikesheddingTrap: number;
+      untaggedEnergyCount: number;
+    };
+    bikesheddingTrapDelta: number;
+  } | null;
+  habitUplifts: WeeklyReviewWowHabitUplift[];
 }
 
 export interface WeeklyReviewAiAnalysis {
@@ -1008,13 +1188,41 @@ export interface WeeklyReviewAiAnalysis {
   reflectionPrompt?: string | null;
   quarantineCandidates: WeeklyReviewQuarantineCandidate[];
   techDebtCandidates?: WeeklyReviewTechDebtCandidate[];
+  projectRiskAssessments?: WeeklyReviewProjectRiskAssessment[];
   suggestedTasks: WeeklyReviewSuggestedTask[];
   hypeSummary: string;
+  weekOverWeekNarrative?: string;
+  weekOverWeekEvidence?: WeeklyReviewWeekOverWeekEvidence | null;
 }
 
 export interface WeeklyReviewTechDebtDecision {
   taskId: string;
   action: 'purge' | 'refactor';
+}
+
+export interface WeeklyReviewDeScopeDecision {
+  taskId: string;
+  action: 'backlog';
+}
+
+export interface WeeklyReviewCapacityDeScopeCandidate {
+  taskId: string;
+  title: string;
+  size: number;
+  priority: string;
+  scheduledDate?: string | null;
+  rolloverCount: number;
+}
+
+export interface WeeklyReviewCapacityAdvisory {
+  softWeeklyCapacityStoryPoints: number;
+  trailingWeeklyAverageStoryPoints: number;
+  recoveryMultiplier: number;
+  marginBuffer: number;
+  nextWeekStart: string;
+  nextWeekEnd: string;
+  scheduledStoryPoints: number;
+  candidates: WeeklyReviewCapacityDeScopeCandidate[];
 }
 
 export interface WeeklyReviewQuarantineDecision {
@@ -1043,6 +1251,7 @@ export interface WeeklyReviewPlanActions {
   quarantineDecisions: WeeklyReviewQuarantineDecision[];
   blockerResolutions: WeeklyReviewBlockerResolution[];
   techDebtDecisions?: WeeklyReviewTechDebtDecision[];
+  deScopeDecisions?: WeeklyReviewDeScopeDecision[];
   suggestedTasksAccepted: WeeklyReviewAcceptedTask[];
 }
 
@@ -1087,7 +1296,9 @@ export interface WeeklyReview {
   stats: WeeklyReviewStats;
   velocityData: WeeklyReviewVelocityWeek[];
   habitVelocityCorrelations?: HabitVelocityCorrelation[];
+  projectsMoved?: WeeklyReviewProjectMoved[];
   aiAnalysis: WeeklyReviewAiAnalysis;
+  capacityAdvisory?: WeeklyReviewCapacityAdvisory | null;
   planActions?: WeeklyReviewPlanActions | null;
   completionSummary?: WeeklyReviewCompletionSummary | null;
   generatedAt?: string | null;
@@ -1096,6 +1307,8 @@ export interface WeeklyReview {
   /** True when closed by automated weekly-review job without applied plan actions. */
   autoCompleted?: boolean | null;
   autoCompletedAt?: string | null;
+  ritualPointsAwarded?: number | null;
+  rewardAwardTransactionId?: string | null;
   closedEarly?: boolean | null;
   closeoutDate?: string | null;
   statsPeriodStart?: string | null;
@@ -1116,6 +1329,7 @@ export interface WeeklyReviewListResult {
 export interface WeeklyReviewCurrentDashboard {
   weekStart: string;
   weekEnd: string;
+  weeklyReviewDate: string;
   isMidWeek: boolean;
   hasGeneratedReview: boolean;
   pendingReview: boolean;
@@ -1170,6 +1384,16 @@ export interface LeverageRoiDataQuality {
   totalCompleted: number;
 }
 
+export interface LeverageRoiEnergyPatternInsight {
+  lookbackDays: number;
+  leverageThreshold: number;
+  taggedHighLeverageCount: number;
+  sampleWeeks: number;
+  dominantEnergyLevel: TaskEnergyLevel;
+  dominantCount: number;
+  sharePct: number;
+}
+
 export interface LeverageRoiSummary {
   headline: string;
   bikesheddingCount: number;
@@ -1188,4 +1412,5 @@ export interface WeeklyReviewLeverageRoiResponse {
   quadrants: LeverageRoiQuadrantBlock[];
   summary: LeverageRoiSummary;
   dataQuality: LeverageRoiDataQuality;
+  energyPatternInsight?: LeverageRoiEnergyPatternInsight | null;
 }

@@ -6,6 +6,12 @@ import type { ProjectHealthSummary } from '@/types/project-health';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { projectBarStart, projectBarEnd } from '@/utils/project-gantt-cascade';
+import { resolveProjectBadgeStatus } from '@/utils/project-summary';
+import {
+  formatProjectTimelineBarAriaLabel,
+  formatProjectTimelineBarTooltip,
+  timelineBarTooltipPanelClassName,
+} from '@/utils/timeline-bar-tooltip';
 import type { GanttDragMode } from './GoalGanttBar';
 
 export interface ProjectGanttBarLayout {
@@ -57,6 +63,22 @@ export function ProjectGanttBar({
   const start = projectBarStart(project);
   const end = projectBarEnd(project);
   const progress = display?.progressPercent ?? health?.percentComplete ?? 0;
+  const badgeStatus = resolveProjectBadgeStatus(project, display);
+  const hasProgressSource = display != null || health != null;
+  const showProgress = !isHealthLoading && hasProgressSource;
+  const startLabel = start?.toLocaleDateString() ?? '';
+  const endLabel = end?.toLocaleDateString() ?? '';
+  const tooltipText = formatProjectTimelineBarTooltip(project.name, badgeStatus, {
+    progressPercent: progress,
+    showProgress,
+  });
+  const ariaLabel = formatProjectTimelineBarAriaLabel(
+    project.name,
+    badgeStatus,
+    startLabel,
+    endLabel,
+    { progressPercent: progress, showProgress }
+  );
 
   return (
     <motion.div
@@ -94,7 +116,7 @@ export function ProjectGanttBar({
           aria-label="Draw dependency"
         />
         <div
-          className="absolute inset-0 px-2 py-2 cursor-grab active:cursor-grabbing z-10"
+          className="absolute inset-0 px-2 py-2 cursor-grab active:cursor-grabbing z-10 group/gantt-bar"
           style={{ left: EDGE_HIT_PX, right: EDGE_HIT_PX + 8 }}
           onPointerDown={(e) => handlePointerDown(e, 'move')}
           onClick={() => onProjectClick(project)}
@@ -106,22 +128,21 @@ export function ProjectGanttBar({
           }}
           role="button"
           tabIndex={0}
-          aria-label={`Project: ${project.name}, ${start?.toLocaleDateString() ?? ''} to ${end?.toLocaleDateString() ?? ''}`}
+          aria-label={ariaLabel}
         >
+          <div className={timelineBarTooltipPanelClassName} role="tooltip">
+            {tooltipText}
+          </div>
           <div className="flex items-center justify-between h-full pointer-events-none">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <PriorityIndicator priority={project.priority} size="sm" />
               <span className="text-xs font-medium text-white truncate">{project.name}</span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              {!isHealthLoading && (display || health) && (
+              {!isHealthLoading && hasProgressSource && (
                 <span className="text-[10px] text-white/90 font-medium">{progress}%</span>
               )}
-              <StatusBadge
-                status={display?.effectiveStatus ?? project.status}
-                size="sm"
-                appearance="onSolid"
-              />
+              <StatusBadge status={badgeStatus} size="sm" appearance="onSolid" />
             </div>
           </div>
           {!display && !isHealthLoading && health && (

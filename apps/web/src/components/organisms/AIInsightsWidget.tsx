@@ -184,7 +184,7 @@ export function AIInsightsWidget() {
         <div className="text-center py-8">
           <Sparkles className="w-12 h-12 text-amber-400 dark:text-amber-600 mx-auto mb-3 opacity-50" />
           <p className="text-gray-600 dark:text-gray-400 mb-3">
-            Insights are generated daily. Refresh to analyze now.
+            Insights refresh several times a day. Tap below to analyze now.
           </p>
           <Button variant="secondary" size="sm" onClick={() => void handleRefresh()}>
             Refresh Insights

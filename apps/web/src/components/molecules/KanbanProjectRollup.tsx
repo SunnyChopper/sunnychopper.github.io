@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, FolderKanban } from 'lucide-react';
 import type { Project, Task, TaskStatus, UpdateTaskInput } from '@/types/growth-system';
 import { KanbanCard } from '@/components/molecules/KanbanCard';
@@ -8,6 +8,12 @@ import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { sumKanbanStoryPoints } from '@/lib/growth-system/kanban-story-points';
 import type { KanbanCardDensity } from '@/lib/growth-system/kanban-constants';
+import {
+  kanbanChevronButtonClassName,
+  kanbanMetaRowClassName,
+  kanbanProjectHeaderButtonClassName,
+  kanbanProjectRollupShellClassName,
+} from '@/lib/growth-system/kanban-card-surfaces';
 
 const rollupVariants = {
   hidden: { opacity: 0, y: 10, scale: 0.98 },
@@ -27,10 +33,12 @@ export interface KanbanProjectRollupProps {
   columnStatus: TaskStatus;
   itemIndex: number;
   draggedTask: Task | null;
+  activeTaskId?: string | null;
   onDragStart: (e: React.DragEvent, task: Task) => void;
   onDragEnd: () => void;
   onTaskEdit: (task: Task) => void;
   onTaskClick?: (task: Task) => void;
+  onTaskDelete?: (task: Task) => void;
   onTaskUpdate: (id: string, input: UpdateTaskInput) => void;
 }
 
@@ -41,14 +49,17 @@ export function KanbanProjectRollup({
   columnStatus,
   itemIndex,
   draggedTask,
+  activeTaskId = null,
   onDragStart,
   onDragEnd,
   onTaskEdit,
   onTaskClick,
+  onTaskDelete,
   onTaskUpdate,
 }: KanbanProjectRollupProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const panelId = useId();
+  const reduceMotion = useReducedMotion();
   const useCompactRows = cardDensity === 'compact';
   const isBacklogColumn = columnStatus === 'Backlog';
   const totalStoryPoints = sumKanbanStoryPoints(tasks);
@@ -60,18 +71,18 @@ export function KanbanProjectRollup({
   return (
     <motion.div
       variants={rollupVariants}
-      initial="hidden"
+      initial={false}
       animate="visible"
       exit="exit"
       transition={{ delay: itemIndex * 0.035 }}
-      className="overflow-hidden rounded-lg border border-gray-200/90 bg-white shadow-sm dark:border-gray-700/90 dark:bg-gray-900"
+      className={kanbanProjectRollupShellClassName}
     >
       <button
         type="button"
         onClick={() => setIsExpanded((open) => !open)}
         aria-expanded={isExpanded}
         aria-controls={panelId}
-        className="flex w-full items-start gap-2 px-3 py-2.5 text-left transition-colors hover:bg-gray-50/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/80 dark:hover:bg-gray-800/80"
+        className={kanbanProjectHeaderButtonClassName}
       >
         <PriorityIndicator priority={highestPriority} size="sm" className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
@@ -84,7 +95,7 @@ export function KanbanProjectRollup({
               <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {project.name}
               </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <div className={`mt-1.5 ${kanbanMetaRowClassName}`}>
                 <AreaBadge area={project.area} size="sm" />
                 <span className="text-xs text-gray-500 dark:text-gray-400">
                   {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
@@ -96,11 +107,11 @@ export function KanbanProjectRollup({
         </div>
         <motion.span
           animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="mt-0.5 shrink-0 text-gray-500 dark:text-gray-400"
+          transition={{ duration: reduceMotion ? 0 : 0.2 }}
+          className={kanbanChevronButtonClassName}
           aria-hidden
         >
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="h-5 w-5" />
         </motion.span>
       </button>
 
@@ -111,7 +122,7 @@ export function KanbanProjectRollup({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden border-t border-gray-200/80 dark:border-gray-700/80"
           >
             <div className={useCompactRows ? 'space-y-1 p-2 pt-1.5' : 'space-y-2 p-2 pt-1.5'}>
@@ -122,10 +133,12 @@ export function KanbanProjectRollup({
                     task={task}
                     taskIndex={taskIndex}
                     isBeingDragged={draggedTask?.id === task.id}
+                    isSelected={task.id === activeTaskId}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
                     onEdit={onTaskEdit}
                     onOpen={onTaskClick}
+                    onDelete={onTaskDelete}
                     onPromote={
                       isBacklogColumn
                         ? (t) => onTaskUpdate(t.id, { status: 'Not Started' })
@@ -138,10 +151,12 @@ export function KanbanProjectRollup({
                     task={task}
                     taskIndex={taskIndex}
                     isBeingDragged={draggedTask?.id === task.id}
+                    isSelected={task.id === activeTaskId}
                     onDragStart={onDragStart}
                     onDragEnd={onDragEnd}
                     onEdit={onTaskEdit}
                     onOpen={onTaskClick}
+                    onDelete={onTaskDelete}
                   />
                 )
               )}

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import dagre from '@dagrejs/dagre';
 import {
   Background,
-  Controls,
   MarkerType,
   MiniMap,
+  Panel,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
@@ -14,15 +14,19 @@ import {
   type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { GitBranch, Loader2 } from 'lucide-react';
 import type { Task, TaskDependency } from '@/types/growth-system';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import { GraphCanvasToolbar } from '@/components/molecules/GraphCanvasToolbar';
+import { TaskGraphNode, type TaskGraphRfNode } from '@/components/molecules/TaskGraphNode';
 import {
-  TaskGraphNode,
+  buildDependencyEdges,
+  computeGraphStructureKey,
+  minimapNodeColor,
   TASK_GRAPH_NODE_HEIGHT,
   TASK_GRAPH_NODE_WIDTH,
-  type TaskGraphRfNode,
-} from '@/components/molecules/TaskGraphNode';
+} from '@/lib/task-graph-utils';
 import { cn } from '@/lib/utils';
 
 interface DependencyGraphProps {
@@ -36,16 +40,19 @@ interface DependencyGraphProps {
 const nodeTypes = { taskGraph: TaskGraphNode };
 
 const GRAPH_SHELL_CLASS =
-  'h-[min(70vh,600px)] min-h-96 w-full rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden';
+  'relative h-[min(70vh,600px)] min-h-96 w-full rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden';
+
+const FIT_VIEW_PADDING = 0.18;
+const FIT_VIEW_DURATION_MS = 280;
 
 function layoutElements(nodes: Node[], edges: Edge[]): Node[] {
   const g = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
   g.setGraph({
     rankdir: 'TB',
-    nodesep: 48,
-    ranksep: 80,
-    marginx: 24,
-    marginy: 24,
+    nodesep: 40,
+    ranksep: 64,
+    marginx: 20,
+    marginy: 20,
   });
 
   for (const node of nodes) {
@@ -69,38 +76,19 @@ function layoutElements(nodes: Node[], edges: Edge[]): Node[] {
   });
 }
 
-function buildFlowGraph(
+function buildLayoutedGraph(
   tasks: Task[],
-  dependencies: TaskDependency[],
-  selectedNodeId: string | null
+  dependencies: TaskDependency[]
 ): { nodes: TaskGraphRfNode[]; edges: Edge[] } {
-  const taskIds = new Set(tasks.map((t) => t.id));
-
   const flowNodes: TaskGraphRfNode[] = tasks.map((task) => ({
     id: task.id,
     type: 'taskGraph',
     position: { x: 0, y: 0 },
     data: { task },
-    selected: selectedNodeId === task.id,
+    selected: false,
   }));
 
-  const flowEdges: Edge[] = dependencies
-    .filter((dep) => taskIds.has(dep.taskId) && taskIds.has(dep.dependsOnTaskId))
-    .map((dep) => {
-      const highlighted = selectedNodeId === dep.taskId || selectedNodeId === dep.dependsOnTaskId;
-      return {
-        id: `dep-${dep.dependsOnTaskId}-${dep.taskId}`,
-        source: dep.dependsOnTaskId,
-        target: dep.taskId,
-        type: 'smoothstep',
-        markerEnd: { type: MarkerType.ArrowClosed },
-        animated: highlighted,
-        style: highlighted
-          ? { stroke: '#3b82f6', strokeWidth: 2.5 }
-          : { stroke: '#9ca3af', strokeWidth: 2 },
-      };
-    });
-
+  const flowEdges = buildDependencyEdges(tasks, dependencies, null, true);
   const layoutedNodes = layoutElements(flowNodes, flowEdges) as TaskGraphRfNode[];
   return { nodes: layoutedNodes, edges: flowEdges };
 }
@@ -112,28 +100,64 @@ function DependencyGraphFlow({
   className,
 }: Omit<DependencyGraphProps, 'isLoading'>) {
   const { fitView } = useReactFlow();
+  const reduceMotion = useReducedMotion() ?? false;
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
 
-  const { nodes: layoutNodes, edges: layoutEdges } = useMemo(
-    () => buildFlowGraph(tasks, dependencies, selectedNode),
-    [tasks, dependencies, selectedNode]
+  const structureKey = useMemo(
+    () => computeGraphStructureKey(tasks, dependencies),
+    [tasks, dependencies]
   );
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
+  const layoutedNodes = useMemo(
+    () => buildLayoutedGraph(tasks, dependencies).nodes,
+    [structureKey, tasks, dependencies]
+  );
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  const prevStructureKey = useRef(structureKey);
 
   useEffect(() => {
-    setNodes(layoutNodes);
-    setEdges(layoutEdges);
-  }, [layoutNodes, layoutEdges, setNodes, setEdges]);
+    const structureChanged = prevStructureKey.current !== structureKey;
+    if (structureChanged) {
+      prevStructureKey.current = structureKey;
+      setNodes(layoutedNodes);
+    } else {
+      setNodes((current) =>
+        current.map((node) => {
+          const task = tasks.find((t) => t.id === node.id);
+          if (!task) return node;
+          return {
+            ...node,
+            data: { task },
+            selected: node.id === selectedNode,
+          };
+        })
+      );
+    }
+    setEdges(buildDependencyEdges(tasks, dependencies, selectedNode, reduceMotion));
+  }, [
+    structureKey,
+    layoutedNodes,
+    tasks,
+    dependencies,
+    selectedNode,
+    reduceMotion,
+    setNodes,
+    setEdges,
+  ]);
 
   useEffect(() => {
     if (nodes.length === 0) return;
     const id = requestAnimationFrame(() => {
-      void fitView({ padding: 0.2, duration: 280 });
+      void fitView({
+        padding: FIT_VIEW_PADDING,
+        duration: reduceMotion ? 0 : FIT_VIEW_DURATION_MS,
+      });
     });
     return () => cancelAnimationFrame(id);
-  }, [nodes, fitView]);
+  }, [structureKey, nodes.length, fitView, reduceMotion]);
 
   const onNodeClick = useCallback(
     (_event: MouseEvent, node: Node) => {
@@ -148,11 +172,17 @@ function DependencyGraphFlow({
     [tasks, selectedNode]
   );
 
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+
+  const hasDependencies = dependencies.length > 0;
+  const motionDuration = reduceMotion ? 0 : 0.3;
+  const detailMotionDuration = reduceMotion ? 0 : 0.2;
+
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={{ opacity: reduceMotion ? 1 : 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: motionDuration }}
       className={cn('bg-white dark:bg-gray-800', className)}
     >
       <div className={GRAPH_SHELL_CLASS}>
@@ -163,36 +193,55 @@ function DependencyGraphFlow({
           onEdgesChange={onEdgesChange}
           onNodeClick={onNodeClick}
           nodeTypes={nodeTypes}
-          nodesDraggable={false}
+          nodesDraggable
           nodesConnectable={false}
           elementsSelectable
           fitView
           proOptions={{ hideAttribution: true }}
           className="bg-gray-50 dark:bg-gray-900/50"
+          defaultEdgeOptions={{
+            type: 'smoothstep',
+            markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+          }}
         >
-          <Background gap={16} size={1} />
-          <Controls />
+          <Background gap={16} size={1} className="!bg-gray-50 dark:!bg-gray-900/50" />
+          <Panel position="top-left" className="!m-3">
+            <GraphCanvasToolbar reduceMotion={reduceMotion} />
+          </Panel>
+          {!hasDependencies && tasks.length > 0 ? (
+            <Panel position="top-center" className="!m-3">
+              <p className="rounded-md border border-gray-200/80 bg-white/90 px-3 py-1.5 text-xs text-gray-600 shadow-sm backdrop-blur-sm dark:border-gray-600/80 dark:bg-gray-800/90 dark:text-gray-400">
+                No dependency links yet — tasks shown as standalone nodes
+              </p>
+            </Panel>
+          ) : null}
           <MiniMap
+            pannable
+            zoomable
             nodeStrokeWidth={2}
-            className="!bg-white/90 dark:!bg-gray-800/90"
-            maskColor="rgba(0,0,0,0.08)"
+            nodeColor={(node) => {
+              const task = taskById.get(node.id);
+              return task ? minimapNodeColor(task) : '#94a3b8';
+            }}
+            className="!rounded-lg !border !border-gray-200 !bg-white/90 !shadow-sm dark:!border-gray-600 dark:!bg-gray-800/90"
+            maskColor="rgba(0,0,0,0.06)"
           />
         </ReactFlow>
       </div>
 
       <AnimatePresence>
-        {selectedTask && (
+        {selectedTask ? (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 12 }}
+            transition={{ duration: detailMotionDuration }}
             className="border-t border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900"
           >
             <h4 className="mb-2 font-semibold text-gray-900 dark:text-white">Selected Task</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400">{selectedTask.title}</p>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </motion.div>
   );
@@ -205,11 +254,15 @@ export default function DependencyGraph({
   onTaskClick,
   className,
 }: DependencyGraphProps) {
+  const reduceMotion = useReducedMotion() ?? false;
+  const motionDuration = reduceMotion ? 0 : 0.3;
+
   if (isLoading) {
     return (
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={{ opacity: reduceMotion ? 1 : 0 }}
         animate={{ opacity: 1 }}
+        transition={{ duration: motionDuration }}
         className={cn(
           'flex min-h-96 flex-col items-center justify-center gap-4 rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800',
           className
@@ -217,40 +270,33 @@ export default function DependencyGraph({
         aria-busy="true"
         aria-label="Loading dependency graph"
       >
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
+        <Loader2
+          className={cn(
+            'h-10 w-10 text-blue-600 dark:text-blue-400',
+            !reduceMotion && 'animate-spin'
+          )}
+        />
         <p className="text-sm text-gray-600 dark:text-gray-400">Loading dependency graph…</p>
-        <div className="h-32 w-full max-w-md animate-pulse rounded-lg bg-gray-200/80 dark:bg-gray-700/80" />
+        <div
+          className={cn(
+            'h-32 w-full max-w-md rounded-lg bg-gray-200/80 dark:bg-gray-700/80',
+            !reduceMotion && 'animate-pulse'
+          )}
+        />
       </motion.div>
     );
   }
 
   if (tasks.length === 0) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className={cn(
-          'flex h-96 items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800',
-          className
-        )}
-      >
-        <p className="text-gray-500 dark:text-gray-400">No tasks to display</p>
-      </motion.div>
-    );
-  }
-
-  if (dependencies.length === 0) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className={cn(
-          'flex h-96 items-center justify-center rounded-lg bg-gray-50 dark:bg-gray-800',
-          className
-        )}
-      >
-        <p className="text-gray-500 dark:text-gray-400">No dependencies to visualize</p>
-      </motion.div>
+      <div className={cn('rounded-lg border border-gray-200 dark:border-gray-700', className)}>
+        <EmptyState
+          icon={GitBranch}
+          title="No tasks to map"
+          description="Create tasks or adjust filters to see them on the dependency graph."
+          className="py-16"
+        />
+      </div>
     );
   }
 

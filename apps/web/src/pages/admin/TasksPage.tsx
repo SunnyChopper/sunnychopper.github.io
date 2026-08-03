@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -47,16 +48,16 @@ import { TaskDetailDialog } from '@/components/organisms/TaskDetailDialog';
 import Dialog from '@/components/molecules/Dialog';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
+import { AmbientPresenceStrip } from '@/components/organisms/assistant/AmbientPresenceStrip';
 import { useToast } from '@/hooks/use-toast';
 import { addCalendarDays, localCalendarDate } from '@/lib/date/local-calendar';
+import TasksFiltersBar, { TASKS_FILTERS_PANEL_ID } from '@/components/molecules/TasksFiltersBar';
+import type { DuePreset } from '@/lib/growth-system/tasks-filters';
+import { countTasksActiveFilters } from '@/lib/growth-system/tasks-filters';
 import {
-  AREAS,
-  PRIORITIES,
-  TASK_STATUSES,
-  AREA_LABELS,
-  TASK_STATUS_LABELS,
-} from '@/constants/growth-system';
-import { Select } from '@/components/atoms/Select';
+  parseTasksDeepLinkParams,
+  type TasksEnergyTagFilter,
+} from '@/lib/growth-system/tasks-deep-links';
 import type { KanbanCardDensity } from '@/lib/growth-system/kanban-constants';
 import {
   persistKanbanCardDensity,
@@ -64,12 +65,6 @@ import {
 } from '@/components/organisms/kanban/kanban-density';
 
 type ViewMode = 'list' | 'kanban' | 'calendar' | 'graph';
-
-const AREA_OPTIONS: Area[] = [...AREAS];
-const STATUS_OPTIONS: TaskStatus[] = [...TASK_STATUSES];
-const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
-
-type DuePreset = 'none' | 'today' | 'tomorrow' | 'week' | 'month';
 
 // Animation variants for mobile UI enhancements
 const containerVariants = {
@@ -117,14 +112,26 @@ const filterPanelVariants = {
 export default function TasksPage() {
   const { showToast, ToastContainer } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArea, setSelectedArea] = useState<Area | undefined>();
-  const [selectedStatus, setSelectedStatus] = useState<TaskStatus | undefined>();
+  const [selectedStatus, setSelectedStatus] = useState<TaskStatus | undefined>(
+    () => parseTasksDeepLinkParams(searchParams).status
+  );
   const [selectedPriority, setSelectedPriority] = useState<Priority | undefined>();
   const [duePreset, setDuePreset] = useState<DuePreset>('none');
+  const [energyTag, setEnergyTag] = useState<TasksEnergyTagFilter>(
+    () => parseTasksDeepLinkParams(searchParams).energyTag ?? 'any'
+  );
+  const [showDeletedOnly, setShowDeletedOnly] = useState(false);
   const [taskSortField, setTaskSortField] = useState<TaskListSortField>('priority');
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
-  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    () => parseTasksDeepLinkParams(searchParams).view ?? 'kanban'
+  );
+  const [showFilters, setShowFilters] = useState(() => {
+    const deepLink = parseTasksDeepLinkParams(searchParams);
+    return Boolean(deepLink.status || deepLink.energyTag);
+  });
   const [cardDensity, setCardDensity] = useState<KanbanCardDensity>(() => readKanbanCardDensity());
 
   const isKanbanCompact = cardDensity === 'compact';
@@ -146,6 +153,8 @@ export default function TasksPage() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [splitDragError, setSplitDragError] = useState<string | null>(null);
 
+  const activeKanbanTaskId = taskToView?.id ?? selectedTask?.id ?? null;
+
   const apiTaskFilters = useMemo<FilterOptions>(() => {
     const f: FilterOptions = {
       pageSize: 100,
@@ -155,6 +164,7 @@ export default function TasksPage() {
     if (selectedArea) f.area = selectedArea;
     if (selectedStatus) f.status = selectedStatus;
     if (selectedPriority) f.priority = selectedPriority;
+    if (showDeletedOnly) f.deletedOnly = true;
 
     const todayKey = localCalendarDate();
     if (duePreset === 'today') {
@@ -180,7 +190,7 @@ export default function TasksPage() {
       f.dueDateTo = lastDom;
     }
     return f;
-  }, [selectedArea, selectedStatus, selectedPriority, duePreset, taskSortField]);
+  }, [selectedArea, selectedStatus, selectedPriority, duePreset, taskSortField, showDeletedOnly]);
 
   // Use individual hooks for data fetching and mutations
   const {
@@ -190,6 +200,7 @@ export default function TasksPage() {
     updateTask,
     completeTask,
     deleteTask,
+    restoreTask,
     splitDraggedTask,
     isSplittingDraggedTask,
   } = useTasks(apiTaskFilters);
@@ -274,16 +285,58 @@ export default function TasksPage() {
   );
 
   // Primary filters + sort applied server-side; search stays client-side (no backend full-text contract).
-  const filteredTasks = useMemo(() => {
+  const visibleWithoutSearch = useMemo(() => {
     let result = tasks;
+    if (!showDeletedOnly) {
+      result = result.filter((task) => !task.deletedAt);
+    }
     // List/calendar/graph: hide capture-only Backlog unless user filters by status (contract §5).
-    if (!selectedStatus && viewMode !== 'kanban') {
+    if (!selectedStatus && viewMode !== 'kanban' && !showDeletedOnly) {
       result = result.filter((task) => task.status !== 'Backlog');
     }
+    if (energyTag === 'untagged') {
+      result = result.filter((task) => !task.energyLevel);
+    }
+    return result;
+  }, [tasks, selectedStatus, viewMode, energyTag, showDeletedOnly]);
+
+  const filteredTasks = useMemo(() => {
     const sq = searchQuery.trim().toLowerCase();
-    if (!sq) return result;
-    return result.filter((task) => task.title.toLowerCase().includes(sq));
-  }, [tasks, searchQuery, selectedStatus, viewMode]);
+    if (!sq) return visibleWithoutSearch;
+    return visibleWithoutSearch.filter((task) => task.title.toLowerCase().includes(sq));
+  }, [visibleWithoutSearch, searchQuery]);
+
+  const listSummaryCounts = useMemo(() => {
+    let openCount = 0;
+    let doneCount = 0;
+    for (const task of filteredTasks) {
+      if (task.status === 'Done') doneCount += 1;
+      else openCount += 1;
+    }
+    return { openCount, doneCount };
+  }, [filteredTasks]);
+
+  useEffect(() => {
+    const taskId = searchParams.get('taskId');
+    if (!taskId || tasksDataLoading) return;
+    const match = tasks.find((task) => task.id === taskId);
+    if (!match) return;
+    setTaskToView(match);
+    setIsDetailDialogOpen(true);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('taskId');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams, tasks, tasksDataLoading]);
+
+  useEffect(() => {
+    const deepLink = parseTasksDeepLinkParams(searchParams);
+    if (!deepLink.hasDeepLinkParams) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('status');
+    nextParams.delete('energyTag');
+    nextParams.delete('view');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Graph dependencies for currently visible tasks
   const taskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks]);
@@ -472,6 +525,19 @@ export default function TasksPage() {
     await handleUpdateTask(id, input, { trackSubmitting: false, notifyOnError: true });
   };
 
+  const handleCompleteTask = async (task: Task) => {
+    try {
+      await completeTask(task.id);
+    } catch (error) {
+      console.error('Failed to complete task:', error);
+      showToast({
+        type: 'error',
+        title: "Couldn't complete task",
+        message: extractErrorMessage(error, 'Failed to complete task. Please try again.'),
+      });
+    }
+  };
+
   const handleDeleteTask = (task: Task) => {
     setTaskToDelete(task);
   };
@@ -487,8 +553,8 @@ export default function TasksPage() {
       // Success: show toast and close dialog
       showToast({
         type: 'success',
-        title: 'Task deleted',
-        message: `"${taskToDelete.title}" has been deleted successfully.`,
+        title: 'Task moved to trash',
+        message: `"${taskToDelete.title}" can be restored from Deleted filters.`,
       });
 
       setTaskToDelete(null);
@@ -508,6 +574,23 @@ export default function TasksPage() {
     }
   };
 
+  const handleRestoreTask = async (task: Task) => {
+    try {
+      await restoreTask(task.id);
+      showToast({
+        type: 'success',
+        title: 'Task restored',
+        message: `"${task.title}" is back on your board.`,
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        title: 'Failed to restore task',
+        message: extractErrorMessage(error, 'Failed to restore task. Please try again.'),
+      });
+    }
+  };
+
   const handleEditTask = (task: Task) => {
     setSelectedTask(task);
     setIsEditPanelOpen(true);
@@ -523,6 +606,8 @@ export default function TasksPage() {
     setSelectedStatus(undefined);
     setSelectedPriority(undefined);
     setDuePreset('none');
+    setEnergyTag('any');
+    setShowDeletedOnly(false);
   };
 
   const handleDependencyAdd = async (taskId: string, dependsOnId: string) => {
@@ -563,19 +648,25 @@ export default function TasksPage() {
     return allGoals.filter((g) => goalIdSet.has(g.id));
   };
 
-  const activeFilterCount = [
+  const activeFilterCount = countTasksActiveFilters({
     selectedArea,
     selectedStatus,
     selectedPriority,
-    duePreset !== 'none' ? duePreset : null,
-  ].filter(Boolean).length;
+    duePreset,
+    energyTag,
+    showDeletedOnly,
+  });
+
+  const hasSearchQuery = !!searchQuery.trim();
 
   const hasTaskRefinements =
-    !!searchQuery.trim() ||
+    hasSearchQuery ||
     !!selectedArea ||
     !!selectedStatus ||
     !!selectedPriority ||
-    duePreset !== 'none';
+    duePreset !== 'none' ||
+    energyTag === 'untagged' ||
+    showDeletedOnly;
 
   return (
     <PageContainer
@@ -610,6 +701,8 @@ export default function TasksPage() {
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
               className="relative min-h-[44px] xl:min-h-[36px]"
+              aria-expanded={showFilters}
+              aria-controls={TASKS_FILTERS_PANEL_ID}
             >
               <Filter className="mr-2 h-4 w-4" />
               Filters
@@ -723,120 +816,33 @@ export default function TasksPage() {
             animate="show"
             exit="exit"
             transition={{ duration: 0.3 }}
-            className="mb-3 overflow-hidden rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800"
+            className="mb-3 min-w-0 overflow-hidden"
           >
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
-              <div className="flex items-center gap-2">
-                {activeFilterCount > 0 && (
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleClearFilters}
-                    className="min-h-[36px] px-2 text-sm text-blue-600 hover:underline dark:text-blue-400"
-                  >
-                    Clear all
-                  </motion.button>
-                )}
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => setShowFilters(false)}
-                  className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <X className="h-4 w-4" />
-                </motion.button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Sort by
-                </label>
-                <Select
-                  value={taskSortField}
-                  onChange={(e) => setTaskSortField(e.target.value as TaskListSortField)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="priority">Priority</option>
-                  <option value="size">Story points</option>
-                  <option value="pointValue">Reward points</option>
-                  <option value="dueDate">Due date</option>
-                  <option value="createdAt">Created</option>
-                  <option value="updatedAt">Updated</option>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Due date
-                </label>
-                <Select
-                  value={duePreset}
-                  onChange={(e) => setDuePreset(e.target.value as DuePreset)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="none">Any due date</option>
-                  <option value="today">Due today</option>
-                  <option value="tomorrow">Due tomorrow</option>
-                  <option value="week">Due this week</option>
-                  <option value="month">Due this month</option>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Area
-                </label>
-                <Select
-                  value={selectedArea || ''}
-                  onChange={(e) => setSelectedArea((e.target.value as Area) || undefined)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">All Areas</option>
-                  {AREA_OPTIONS.map((area) => (
-                    <option key={area} value={area}>
-                      {AREA_LABELS[area]}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Status
-                </label>
-                <Select
-                  value={selectedStatus || ''}
-                  onChange={(e) => setSelectedStatus((e.target.value as TaskStatus) || undefined)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">All Statuses</option>
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>
-                      {TASK_STATUS_LABELS[status]}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Priority
-                </label>
-                <Select
-                  value={selectedPriority || ''}
-                  onChange={(e) => setSelectedPriority((e.target.value as Priority) || undefined)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">All Priorities</option>
-                  {PRIORITY_OPTIONS.map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priority}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            </div>
+            <TasksFiltersBar
+              taskSortField={taskSortField}
+              onTaskSortFieldChange={setTaskSortField}
+              duePreset={duePreset}
+              onDuePresetChange={setDuePreset}
+              selectedArea={selectedArea}
+              onAreaChange={setSelectedArea}
+              selectedStatus={selectedStatus}
+              onStatusChange={setSelectedStatus}
+              selectedPriority={selectedPriority}
+              onPriorityChange={setSelectedPriority}
+              energyTag={energyTag}
+              onEnergyTagChange={setEnergyTag}
+              showDeletedOnly={showDeletedOnly}
+              onShowDeletedOnlyChange={setShowDeletedOnly}
+              activeFilterCount={activeFilterCount}
+              onClearAll={handleClearFilters}
+              onClose={() => setShowFilters(false)}
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className={viewMode === 'kanban' ? 'shrink-0' : undefined}>
+      <div className={viewMode === 'kanban' ? 'shrink-0 space-y-2' : 'space-y-2'}>
+        <AmbientPresenceStrip surface="growthTasks" />
         <AISuggestionBanner entityType="task" />
       </div>
 
@@ -846,37 +852,34 @@ export default function TasksPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="space-y-3"
+              className="space-y-1.5"
               aria-busy="true"
               aria-label="Loading tasks"
             >
-              <div className="h-4 w-48 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mb-4" />
-              {Array.from({ length: 6 }).map((_, i) => (
+              <div className="mb-3 h-4 w-56 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+              {Array.from({ length: 8 }).map((_, i) => (
                 <div
                   key={i}
-                  className="animate-pulse rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800 lg:p-5"
+                  className="animate-pulse rounded-md border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800 lg:py-1.5"
                 >
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-0">
-                    <div className="min-w-0 flex-1 space-y-3 lg:pr-6 xl:pr-8">
-                      <div className="flex flex-wrap items-start gap-3">
-                        <div className="h-7 w-10 shrink-0 rounded bg-gray-200 dark:bg-gray-600" />
-                        <div className="h-5 min-w-[8rem] flex-1 rounded bg-gray-200 dark:bg-gray-600 lg:h-6" />
-                        <div className="h-6 w-20 shrink-0 rounded-full bg-gray-200 dark:bg-gray-600 lg:hidden" />
-                      </div>
-                      <div className="h-3.5 w-full max-w-3xl rounded bg-gray-200 dark:bg-gray-600" />
-                      <div className="h-3.5 w-4/5 max-w-2xl rounded bg-gray-200 dark:bg-gray-600 lg:hidden" />
+                  <div className="hidden grid-cols-[auto_minmax(0,1fr)_7.5rem_5rem_6.5rem_auto] items-center gap-x-3 lg:grid">
+                    <div className="h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-gray-600" />
+                    <div className="h-4 rounded bg-gray-200 dark:bg-gray-600" />
+                    <div className="h-5 rounded-full bg-gray-200 dark:bg-gray-600" />
+                    <div className="h-4 w-8 rounded bg-gray-200 dark:bg-gray-600" />
+                    <div className="h-4 w-12 rounded bg-gray-200 dark:bg-gray-600" />
+                    <div className="ml-auto flex gap-1">
+                      <div className="h-8 w-8 rounded-md bg-gray-200 dark:bg-gray-600" />
+                      <div className="h-8 w-8 rounded-md bg-gray-200 dark:bg-gray-600" />
+                      <div className="h-8 w-8 rounded-md bg-gray-200 dark:bg-gray-600" />
                     </div>
-                    <div className="flex flex-col gap-2 border-t border-gray-100 pt-3 dark:border-gray-700/80 lg:min-w-[10rem] lg:max-w-xs lg:border-t-0 lg:border-l lg:border-gray-200 lg:pt-0 xl:max-w-md dark:lg:border-gray-700">
-                      <div className="hidden h-6 w-24 shrink-0 rounded-full bg-gray-200 dark:bg-gray-600 lg:ml-auto lg:block" />
-                      <div className="flex flex-wrap gap-2 lg:justify-end">
-                        <div className="h-5 w-14 rounded-full bg-gray-200 dark:bg-gray-600" />
-                        <div className="h-5 w-16 rounded bg-gray-200 dark:bg-gray-600" />
-                        <div className="h-5 w-20 rounded bg-gray-200 dark:bg-gray-600" />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-700/80 lg:flex-col lg:items-end lg:border-t-0 lg:border-l lg:border-gray-200 lg:pt-0 lg:pl-6 xl:pl-8 dark:lg:border-gray-700">
-                      <div className="h-11 w-11 rounded-lg bg-gray-200 dark:bg-gray-600" />
-                      <div className="h-11 w-11 rounded-lg bg-gray-200 dark:bg-gray-600" />
+                  </div>
+                  <div className="flex items-center gap-2 lg:hidden">
+                    <div className="h-6 w-8 shrink-0 rounded bg-gray-200 dark:bg-gray-600" />
+                    <div className="h-4 min-w-0 flex-1 rounded bg-gray-200 dark:bg-gray-600" />
+                    <div className="flex shrink-0 gap-1">
+                      <div className="h-9 w-9 rounded-md bg-gray-200 dark:bg-gray-600" />
+                      <div className="h-9 w-9 rounded-md bg-gray-200 dark:bg-gray-600" />
                     </div>
                   </div>
                 </div>
@@ -904,14 +907,31 @@ export default function TasksPage() {
               variants={containerVariants}
               initial="hidden"
               animate="show"
-              className="space-y-3"
+              className="space-y-1.5"
             >
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-sm text-gray-600 dark:text-gray-400 mb-4"
+                className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm text-gray-600 dark:text-gray-400"
+                aria-live="polite"
               >
-                Showing {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                <span className="tabular-nums">
+                  Showing {filteredTasks.length}
+                  {hasSearchQuery && filteredTasks.length !== visibleWithoutSearch.length
+                    ? ` of ${visibleWithoutSearch.length}`
+                    : ''}{' '}
+                  {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                </span>
+                {filteredTasks.length > 0 ? (
+                  <span className="text-gray-400 dark:text-gray-500" aria-hidden>
+                    ·
+                  </span>
+                ) : null}
+                {filteredTasks.length > 0 ? (
+                  <span className="tabular-nums text-gray-500 dark:text-gray-500">
+                    {listSummaryCounts.openCount} open · {listSummaryCounts.doneCount} done
+                  </span>
+                ) : null}
               </motion.div>
               {filteredTasks.map((task) => (
                 <motion.div key={task.id} variants={itemVariants} layoutId={`task-${task.id}`}>
@@ -919,6 +939,8 @@ export default function TasksPage() {
                     task={task}
                     onEdit={handleEditTask}
                     onDelete={handleDeleteTask}
+                    onRestore={showDeletedOnly ? handleRestoreTask : undefined}
+                    onComplete={showDeletedOnly ? undefined : handleCompleteTask}
                     onClick={handleViewTask}
                     dependencyCount={taskDependencies.get(task.id)?.length || 0}
                     blockedByCount={taskBlockedBy.get(task.id)?.length || 0}
@@ -948,9 +970,13 @@ export default function TasksPage() {
               projects={projects}
               cardDensity={cardDensity}
               isLoading={boardIsLoading}
+              trashMode={showDeletedOnly}
+              activeTaskId={activeKanbanTaskId}
               onTaskUpdate={handleKanbanTaskUpdate}
               onTaskEdit={handleEditTask}
               onTaskClick={handleViewTask}
+              onTaskDelete={handleDeleteTask}
+              onTaskRestore={showDeletedOnly ? handleRestoreTask : undefined}
               onTaskCreate={(status) => {
                 setCreateStatus(status);
                 setIsCreateDialogOpen(true);
@@ -1043,7 +1069,7 @@ export default function TasksPage() {
       <Dialog
         isOpen={!!taskToDelete}
         onClose={() => !isDeleting && setTaskToDelete(null)}
-        title="Delete Task"
+        title="Move to trash"
       >
         <div className="space-y-4 relative">
           {/* Loading Overlay */}
@@ -1056,7 +1082,7 @@ export default function TasksPage() {
               <div className="flex flex-col items-center gap-4">
                 <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-blue-400" />
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Deleting task...
+                  Moving to trash...
                 </p>
               </div>
             </div>
@@ -1084,7 +1110,8 @@ export default function TasksPage() {
           )}
 
           <p className="text-gray-700 dark:text-gray-300">
-            Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone.
+            Move &quot;{taskToDelete?.title}&quot; to trash? You can restore it later from the
+            Deleted filter.
           </p>
           <div
             className={`flex justify-end gap-3 ${isDeleting ? 'pointer-events-none opacity-60' : ''}`}
@@ -1105,7 +1132,7 @@ export default function TasksPage() {
               className="bg-red-600 hover:bg-red-700"
               disabled={isDeleting}
             >
-              {isDeleting ? 'Deleting...' : 'Delete'}
+              {isDeleting ? 'Moving...' : 'Move to trash'}
             </Button>
           </div>
         </div>

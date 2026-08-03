@@ -14,6 +14,8 @@ import type {
   GoalActivity,
   SuccessCriterion,
   GoalLinkSuggestions,
+  GoalLinkedEntities,
+  EntityMemoryThread,
 } from '@/types/growth-system';
 
 interface BackendPaginatedResponse<T> {
@@ -241,9 +243,26 @@ export const goalsService = {
     return response;
   },
 
-  async linkProject(goalId: string, projectId: string): Promise<ApiResponse<void>> {
-    // Note: Backend may not have this endpoint, using tasks endpoint pattern
-    const response = await apiClient.post<void>(`/goals/${goalId}/projects`, { projectId });
+  async linkProject(
+    goalId: string,
+    projectId: string,
+    contributionWeight = 1
+  ): Promise<ApiResponse<void>> {
+    const response = await apiClient.post<void>(`/goals/${goalId}/projects`, {
+      projectId,
+      contributionWeight,
+    });
+    return response;
+  },
+
+  async updateProjectLinkWeight(
+    goalId: string,
+    projectId: string,
+    contributionWeight: number
+  ): Promise<ApiResponse<void>> {
+    const response = await apiClient.patch<void>(`/goals/${goalId}/projects/${projectId}`, {
+      contributionWeight,
+    });
     return response;
   },
 
@@ -264,6 +283,11 @@ export const goalsService = {
       };
     }
     throw new Error(response.error?.message || 'Failed to fetch linked metrics');
+  },
+
+  async getLinks(goalId: string): Promise<ApiResponse<GoalLinkedEntities>> {
+    const response = await apiClient.get<GoalLinkedEntities>(`/goals/${goalId}/links`);
+    return response;
   },
 
   async getLinkedProjects(
@@ -409,5 +433,15 @@ export const goalsService = {
       opts ?? {}
     );
     return response;
+  },
+
+  async getMemoryThread(goalId: string, days = 30): Promise<EntityMemoryThread | null> {
+    const response = await apiClient.get<EntityMemoryThread>(
+      `/goals/${goalId}/memory-thread?days=${days}`
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    return null;
   },
 };

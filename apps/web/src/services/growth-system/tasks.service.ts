@@ -39,6 +39,8 @@ export const tasksService = {
     if (filters?.pageSize) queryParams.append('pageSize', String(filters.pageSize));
     if (filters?.sortBy) queryParams.append('sortBy', filters.sortBy);
     if (filters?.sortOrder) queryParams.append('sortOrder', filters.sortOrder);
+    if (filters?.includeDeleted) queryParams.append('includeDeleted', 'true');
+    if (filters?.deletedOnly) queryParams.append('deletedOnly', 'true');
 
     const endpoint = `/tasks${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await apiClient.get<BackendPaginatedResponse<Task>>(endpoint);
@@ -155,6 +157,11 @@ export const tasksService = {
 
   async delete(id: string): Promise<ApiResponse<void>> {
     const response = await apiClient.delete<void>(`/tasks/${id}`);
+    return response;
+  },
+
+  async restore(id: string): Promise<ApiResponse<Task>> {
+    const response = await apiClient.post<Task>(`/tasks/${id}/restore`, {});
     return response;
   },
 

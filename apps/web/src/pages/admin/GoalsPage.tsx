@@ -179,6 +179,9 @@ export default function GoalsPage() {
   const [attachingSuggestionId, setAttachingSuggestionId] = useState<string | null>(null);
 
   const [goalProjects, setGoalProjects] = useState<Map<string, EntitySummary[]>>(new Map());
+  const [goalProjectContributionWeights, setGoalProjectContributionWeights] = useState<
+    Map<string, Record<string, number>>
+  >(new Map());
   const [goalTasks, setGoalTasks] = useState<Map<string, Task[]>>(new Map());
   const [goalMetrics, setGoalMetrics] = useState<Map<string, Metric[]>>(new Map());
   const [goalMetricLogs, setGoalMetricLogs] = useState<Map<string, MetricLog[]>>(new Map());
@@ -277,6 +280,15 @@ export default function GoalsPage() {
         status: project.status,
       }));
       setGoalProjects((prev) => new Map(prev).set(goalId, projectEntities));
+
+      const linksResponse = await goalsService.getLinks(goalId);
+      if (linksResponse.success && linksResponse.data) {
+        const weights: Record<string, number> = {};
+        for (const link of linksResponse.data.projects) {
+          weights[link.entityId] = link.contributionWeight ?? 1;
+        }
+        setGoalProjectContributionWeights((prev) => new Map(prev).set(goalId, weights));
+      }
 
       // Calculate linked counts from data we already have (avoid duplicate API calls)
       const counts = {
@@ -772,6 +784,32 @@ export default function GoalsPage() {
     [selectedGoal, logCompletion, showToast]
   );
 
+  const handleProjectContributionWeightChange = useCallback(
+    async (projectId: string, contributionWeight: number) => {
+      if (!selectedGoal) return;
+      const goalId = selectedGoal.id;
+      const response = await goalsService.updateProjectLinkWeight(
+        goalId,
+        projectId,
+        contributionWeight
+      );
+      if (!response.success) {
+        showToast({
+          type: 'error',
+          title: 'Failed to update weight',
+          message: response.error?.message ?? 'Please try again.',
+        });
+        return;
+      }
+      setGoalProjectContributionWeights((prev) => {
+        const current = prev.get(goalId) ?? {};
+        return new Map(prev).set(goalId, { ...current, [projectId]: contributionWeight });
+      });
+      await loadGoalData(goalId, selectedGoal);
+    },
+    [selectedGoal, loadGoalData, showToast]
+  );
+
   const openLinkPicker = useCallback(
     (entityType: LinkPickerEntityType) => {
       if (!selectedGoal) return;
@@ -1001,6 +1039,7 @@ export default function GoalsPage() {
 
   if (selectedGoal && goalDetailData) {
     const { tasks, metrics, habits, projects } = goalDetailData;
+    const projectContributionWeights = goalProjectContributionWeights.get(selectedGoal.id) ?? {};
 
     return (
       <>
@@ -1012,6 +1051,8 @@ export default function GoalsPage() {
             metrics={metrics}
             habits={habits}
             projects={projects}
+            projectContributionWeights={projectContributionWeights}
+            onProjectContributionWeightChange={handleProjectContributionWeightChange}
             onBack={handleBackToGrid}
             onEdit={() => setIsEditDialogOpen(true)}
             onDelete={() => setGoalToDelete(selectedGoal)}

@@ -7,6 +7,7 @@ interface ImpactScoreSelectorProps {
   onChange: (value: number) => void;
   disabled?: boolean;
   label?: string;
+  helperText?: string;
 }
 
 const IMPACT_LABELS: Record<number, string> = {
@@ -22,6 +23,7 @@ export function ImpactScoreSelector({
   onChange,
   disabled = false,
   label,
+  helperText,
 }: ImpactScoreSelectorProps) {
   const [hoveredValue, setHoveredValue] = useState<number | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -162,6 +164,7 @@ export function ImpactScoreSelector({
       >
         {IMPACT_LABELS[displayValue]}
       </div>
+      {helperText ? <p className="text-xs text-gray-500 dark:text-gray-400">{helperText}</p> : null}
     </div>
   );
 }

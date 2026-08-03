@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Calendar, Pencil, Trash2, ChevronRight } from 'lucide-react';
+import { Calendar, Pencil, Trash2, ChevronRight, Archive, RotateCcw } from 'lucide-react';
 import type { Project } from '@/types/growth-system';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
@@ -9,9 +9,12 @@ import Button from '@/components/atoms/Button';
 import { formatDateString } from '@/utils/date-formatters';
 import {
   getDateUrgency,
+  resolveProjectBadgeStatus,
   getProjectCardAccentBarClasses,
+  projectProgressRingColor,
   type ProjectDisplayModel,
 } from '@/utils/project-summary';
+import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
 import { cn } from '@/lib/utils';
 
 interface ProjectListItemProps {
@@ -19,6 +22,8 @@ interface ProjectListItemProps {
   onClick: (project: Project) => void;
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
+  onArchive?: (project: Project) => void;
+  onRevive?: (project: Project) => void;
   taskCount?: number;
   completedTaskCount?: number;
   hasHealthData?: boolean;
@@ -32,12 +37,14 @@ export function ProjectListItem({
   onClick,
   onEdit,
   onDelete,
+  onArchive,
+  onRevive,
   taskCount = 0,
   completedTaskCount = 0,
   hasHealthData: _hasHealthData = false,
   isHealthLoading: _isHealthLoading = false,
   display,
-  linkedGoalCount = 0,
+  linkedGoalCount: _linkedGoalCount = 0,
 }: ProjectListItemProps) {
   const handleClick = () => {
     onClick(project);
@@ -46,13 +53,15 @@ export function ProjectListItem({
   const progress =
     display?.progressPercent ??
     (taskCount > 0 ? Math.round(((completedTaskCount || 0) / taskCount) * 100) : 0);
-  const effectiveStatus = display?.effectiveStatus ?? project.status;
   const isWorkComplete = display?.isWorkComplete ?? project.status === 'Completed';
+  const badgeStatus = resolveProjectBadgeStatus(project, display);
+  const progressRingColor = projectProgressRingColor(badgeStatus);
   const { showBar, barBgClass } = getProjectCardAccentBarClasses(project, isWorkComplete);
   const dateUrgency = getDateUrgency(project.targetEndDate, {
-    hideWhenComplete: isWorkComplete || project.status === 'Cancelled',
+    hideWhenComplete:
+      isWorkComplete || project.status === 'Cancelled' || project.status === 'Archived',
   });
-  const showProgressRing = taskCount > 0 || linkedGoalCount > 0;
+  const cardOpacity = dateUrgency?.dimCard ? 0.75 : 1;
   const startDate = project.startDate ? formatDateString(project.startDate) : null;
   const endDate = project.targetEndDate ? formatDateString(project.targetEndDate) : null;
   const dateLabel =
@@ -61,9 +70,9 @@ export function ProjectListItem({
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      animate={{ opacity: cardOpacity, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="group relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 overflow-hidden"
+      className="group relative cursor-pointer overflow-hidden rounded-lg border border-gray-200 bg-white p-3 transition-colors duration-200 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-400"
       onClick={(e) => {
         // Don't trigger click if clicking on action buttons
         if ((e.target as HTMLElement).closest('button')) {
@@ -92,36 +101,45 @@ export function ProjectListItem({
             <h3 className="font-semibold text-base text-gray-900 dark:text-white truncate mb-1">
               {project.name}
             </h3>
-            <div className="flex items-center gap-2 flex-wrap">
-              <StatusBadge status={effectiveStatus} size="sm" />
-              <AreaBadge area={project.area} size="sm" />
+            <div className="flex flex-wrap items-center gap-1.5">
+              <StatusBadge status={badgeStatus} size="sm" appearance="quiet" />
+              <AreaBadge area={project.area} size="sm" appearance="quiet" />
+              {project.subCategory && (
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                  {SUBCATEGORY_LABELS[project.subCategory]}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Center: Progress */}
-        <div className="hidden md:flex items-center gap-3 shrink-0">
-          {showProgressRing ? (
-            <>
-              <ProgressRing progress={progress} size="sm" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white w-10 text-right">
-                {progress}%
-              </span>
-            </>
-          ) : (
-            <span className="text-sm text-gray-500 dark:text-gray-400">--</span>
-          )}
-        </div>
+        {/* Meta rail: progress + date/overdue (fixed slots for scan rhythm) */}
+        <div className="flex shrink-0 items-center gap-4">
+          {/* Progress slot — always visible at all breakpoints */}
+          <div className="flex w-[4.5rem] items-center justify-end gap-2">
+            <ProgressRing
+              progress={progress}
+              size="sm"
+              color={progressRingColor}
+              showLabel={false}
+            />
+            <span className="w-10 text-right text-sm font-medium tabular-nums text-gray-900 dark:text-white">
+              {progress}%
+            </span>
+          </div>
 
-        {/* Center-Right: Date */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0 min-w-[140px]">
-          <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-sm text-gray-600 dark:text-gray-400">{dateLabel}</span>
+          {/* Date + overdue slot */}
+          <div className="hidden lg:flex w-[13.5rem] flex-col items-end">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 shrink-0 text-gray-400" />
+              <span className="text-right text-sm text-gray-600 dark:text-gray-400">
+                {dateLabel}
+              </span>
+            </div>
             {dateUrgency && dateUrgency.text && (
               <span
                 className={cn(
-                  'text-xs font-medium mt-0.5 px-2 py-0.5 rounded-full inline-block w-fit',
+                  'mt-0.5 inline-block self-end rounded-full px-2 py-0.5 text-xs font-medium text-right',
                   dateUrgency.color
                 )}
               >
@@ -149,6 +167,27 @@ export function ProjectListItem({
             >
               <Pencil className="w-4 h-4" />
             </Button>
+            {project.status === 'Archived' && onRevive ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onRevive(project)}
+                className="!p-2 hover:!bg-green-50 hover:!text-green-600 dark:hover:!bg-green-900/20 dark:hover:!text-green-400"
+                aria-label={`Revive project: ${project.name}`}
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+            ) : project.status !== 'Archived' && onArchive ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onArchive(project)}
+                className="!p-2 hover:!bg-amber-50 hover:!text-amber-700 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-300"
+                aria-label={`Archive project: ${project.name}`}
+              >
+                <Archive className="w-4 h-4" />
+              </Button>
+            ) : null}
             <Button
               variant="ghost"
               size="sm"

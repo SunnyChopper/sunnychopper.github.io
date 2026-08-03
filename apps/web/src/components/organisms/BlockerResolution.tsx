@@ -1,3 +1,5 @@
+import { CheckCircle2 } from 'lucide-react';
+
 import type { Task, WeeklyReviewBlockerResolution } from '@/types/growth-system';
 
 interface BlockerResolutionProps {
@@ -26,7 +28,18 @@ export function BlockerResolution({
   const valueFor = (id: string) => resolutions.find((r) => r.taskId === id)?.nextAction ?? '';
 
   if (!tasks.length) {
-    return <p className="text-sm text-slate-500">No blocked tasks right now.</p>;
+    return (
+      <div
+        className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"
+        role="status"
+      >
+        <CheckCircle2
+          className="h-4 w-4 shrink-0 text-emerald-600/70 dark:text-emerald-400/60"
+          aria-hidden
+        />
+        <p>No open blockers — clear path for the week.</p>
+      </div>
+    );
   }
 
   return (

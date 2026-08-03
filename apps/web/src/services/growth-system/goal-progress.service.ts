@@ -47,19 +47,25 @@ function computeLocalOverall(
   tasksPct: number,
   metricsPct: number,
   habitsPct: number,
+  projectsPct: number,
   weights: GoalProgressConfig
 ): number {
   if (weights.manualOverride != null) {
     return Math.round(weights.manualOverride);
   }
   const totalWeight =
-    weights.criteriaWeight + weights.tasksWeight + weights.metricsWeight + weights.habitsWeight;
+    weights.criteriaWeight +
+    weights.tasksWeight +
+    weights.metricsWeight +
+    weights.habitsWeight +
+    (weights.projectsWeight ?? 0);
   if (totalWeight <= 0) return 0;
   const overall =
     ((criteriaPct * weights.criteriaWeight) / 100 +
       (tasksPct * weights.tasksWeight) / 100 +
       (metricsPct * weights.metricsWeight) / 100 +
-      (habitsPct * weights.habitsWeight) / 100) /
+      (habitsPct * weights.habitsWeight) / 100 +
+      (projectsPct * (weights.projectsWeight ?? 0)) / 100) /
     (totalWeight / 100);
   return Math.round(overall);
 }
@@ -131,6 +137,7 @@ export const goalProgressService = {
       tasksProgress.percentage,
       metricsProgress.percentage,
       habitsProgress.consistency,
+      0,
       weights
     );
 
@@ -140,6 +147,7 @@ export const goalProgressService = {
       tasks: tasksProgress,
       metrics: metricsProgress,
       habits: habitsProgress,
+      projects: { linkedCount: 0, percentage: 0, items: [] },
       weights,
     };
   },

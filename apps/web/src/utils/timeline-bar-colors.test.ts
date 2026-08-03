@@ -19,4 +19,9 @@ describe('getProjectTimelineBarColorClasses', () => {
     expect(classes).toContain('rose');
     expect(classes).not.toContain('yellow');
   });
+
+  it('uses gray styling for archived status', () => {
+    const classes = getProjectTimelineBarColorClasses('Archived');
+    expect(classes).toContain('gray');
+  });
 });

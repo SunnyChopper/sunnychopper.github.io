@@ -13,7 +13,11 @@ export function GoalProgressWeightsFields({
   onToggleAdvanced,
 }: GoalProgressWeightsFieldsProps) {
   const weightSum =
-    value.criteriaWeight + value.tasksWeight + value.metricsWeight + value.habitsWeight;
+    value.criteriaWeight +
+    value.tasksWeight +
+    value.metricsWeight +
+    value.habitsWeight +
+    (value.projectsWeight ?? 0);
   const sumWarning = weightSum !== 100;
 
   const updateField = (field: keyof GoalProgressConfig, raw: string) => {
@@ -37,8 +41,9 @@ export function GoalProgressWeightsFields({
       {showAdvanced && (
         <div className="mt-4 space-y-3">
           <p className="text-xs text-gray-600 dark:text-gray-400">
-            Default: Criteria 35%, Tasks 35%, Metrics 10%, Habits 20%. Metrics and criteria drive
-            achievement; habits add a consistency layer.
+            Default: Criteria 35%, Tasks 35%, Metrics 10%, Habits 20%, Projects 0%. Set Projects
+            weight &gt; 0 and per-link contribution weights to roll project completion into goal
+            progress.
           </p>
           <div className="grid grid-cols-2 gap-3">
             {(
@@ -47,6 +52,7 @@ export function GoalProgressWeightsFields({
                 ['tasksWeight', 'Tasks'],
                 ['metricsWeight', 'Metrics'],
                 ['habitsWeight', 'Habits'],
+                ['projectsWeight', 'Projects'],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="block text-xs">

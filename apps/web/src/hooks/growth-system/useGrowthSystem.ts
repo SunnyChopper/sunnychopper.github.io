@@ -51,6 +51,7 @@ import {
   mergeTaskWithUpdate,
   findTaskInClientCache,
 } from '@/lib/react-query/growth-system-cache';
+import { invalidateRelevantNowAfterGrowthTaskMutation } from '@/hooks/assistant-streaming/growth-system-mutation-invalidation';
 
 // TODO: These hooks use React Query to fetch data from backend API
 // Currently will fail until backend is implemented or mock data is provided
@@ -164,6 +165,7 @@ export const useTasks = (filters?: FilterOptions) => {
         if (variables.input.status !== undefined) {
           void queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
         }
+        invalidateRelevantNowAfterGrowthTaskMutation(queryClient);
       }
     },
   });
@@ -224,6 +226,7 @@ export const useTasks = (filters?: FilterOptions) => {
         upsertTaskCache(queryClient, response.data);
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
+      invalidateRelevantNowAfterGrowthTaskMutation(queryClient);
     },
   });
 
@@ -231,6 +234,24 @@ export const useTasks = (filters?: FilterOptions) => {
     mutationFn: (id: string) => tasksService.delete(id),
     onSuccess: (_response, taskId) => {
       removeTaskCache(queryClient, taskId);
+      invalidateRelevantNowAfterGrowthTaskMutation(queryClient);
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await tasksService.restore(id);
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || 'Failed to restore task');
+      }
+      return response;
+    },
+    onSuccess: (response) => {
+      if (response.success && response.data) {
+        upsertTaskCache(queryClient, response.data);
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.growthSystem.tasks.lists() });
+      invalidateRelevantNowAfterGrowthTaskMutation(queryClient);
     },
   });
 
@@ -261,6 +282,7 @@ export const useTasks = (filters?: FilterOptions) => {
     updateTask: updateMutation.mutateAsync,
     completeTask: completeMutation.mutateAsync,
     deleteTask: deleteMutation.mutateAsync,
+    restoreTask: restoreMutation.mutateAsync,
     splitDraggedTask: splitDraggedTaskMutation.mutateAsync,
     isSplittingDraggedTask: splitDraggedTaskMutation.isPending,
   };
@@ -562,7 +584,7 @@ export const useProjects = () => {
     queryKey: queryKeys.growthSystem.projects.lists(),
     queryFn: async () => {
       try {
-        const result = await projectsService.getAll();
+        const result = await projectsService.getAll({ includeArchived: true });
         if (result.success || result.data) {
           recordSuccess();
         }
@@ -594,10 +616,14 @@ export const useProjects = () => {
       projectsService.update(id, input),
     onSuccess: (response) => {
       if (!response.success || !response.data) return;
+      const project = 'project' in response.data ? response.data.project : response.data;
       if ('project' in response.data) {
         upsertProjectCache(queryClient, response.data.project);
       } else {
         upsertProjectCache(queryClient, response.data);
+      }
+      if (project.status === 'Completed') {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.wallet.all });
       }
     },
   });

@@ -1,18 +1,26 @@
-import { useState } from 'react';
-import { Sparkles, Wand2, X, Check, AlertCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Sparkles, Wand2, X, Check, AlertCircle, Plus, NotebookPen, Pin } from 'lucide-react';
 import { llmService } from '@/services/llm.service';
 import { llmConfig } from '@/lib/llm';
 import type { Project, Task, CreateTaskInput } from '@/types/growth-system';
 import type {
   GeneratedProjectTask,
   ProjectHealthOutput,
+  ProjectHealthPriorityAction,
   ProjectRiskOutput,
   ProjectTaskGenOutput,
 } from '@/types/llm';
 import Button from '@/components/atoms/Button';
-import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
 import { AIFeatureModelRecovery } from '@/components/molecules/AIFeatureModelRecovery';
+import { AIProjectAssistLoadingSkeleton } from '@/components/molecules/AIProjectAssistLoadingSkeleton';
 import type { AIFeature } from '@/lib/llm/config/feature-types';
+import {
+  AI_PROJECT_ASSIST_PANEL_ID,
+  aiProjectAssistPanelShellClassName,
+  type AIProjectToolMode,
+} from '@/lib/projects/ai-project-tools-surfaces';
+import { getDateUrgency } from '@/utils/project-summary';
+import { cn } from '@/lib/utils';
 
 function riskSeverityFromScore(score: number): 'low' | 'medium' | 'high' {
   if (score <= 3) return 'low';
@@ -54,20 +62,23 @@ function overallHealthBadgeClass(overallHealth: ProjectHealthOutput['overallHeal
   }
 }
 
-type AssistMode = 'health' | 'generate' | 'risks';
-
-const MODE_FEATURE: Record<AssistMode, AIFeature> = {
+const MODE_FEATURE: Record<AIProjectToolMode, AIFeature> = {
   health: 'projectHealth',
   generate: 'projectTaskGen',
   risks: 'projectRisk',
 };
 
 interface AIProjectAssistPanelProps {
-  mode: AssistMode;
+  mode: AIProjectToolMode;
   project: Project;
   tasks: Task[];
   onClose: () => void;
   onCreateTasks?: (tasks: CreateTaskInput[]) => void;
+  onCreateTaskFromAction?: (action: ProjectHealthPriorityAction) => void;
+  onLogActivityFromAction?: (action: ProjectHealthPriorityAction) => void;
+  onRequestGenerateTasks?: () => void;
+  onWeeklyRiskPinChange?: (pinned: boolean) => Promise<boolean>;
+  labelledBy?: string;
 }
 
 export function AIProjectAssistPanel({
@@ -76,8 +87,14 @@ export function AIProjectAssistPanel({
   tasks,
   onClose,
   onCreateTasks,
+  onCreateTaskFromAction,
+  onLogActivityFromAction,
+  onRequestGenerateTasks,
+  onWeeklyRiskPinChange,
+  labelledBy,
 }: AIProjectAssistPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [pinBusy, setPinBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [healthResult, setHealthResult] = useState<ProjectHealthOutput | null>(null);
@@ -90,6 +107,14 @@ export function AIProjectAssistPanel({
 
   const isConfigured = llmConfig.isConfigured();
   const activeFeature = MODE_FEATURE[mode];
+
+  useEffect(() => {
+    setHealthResult(null);
+    setTasksResult(null);
+    setRisksResult(null);
+    setError(null);
+    setModelNotFound(null);
+  }, [mode]);
 
   const applyResponseError = (response: {
     success: boolean;
@@ -115,6 +140,10 @@ export function AIProjectAssistPanel({
   };
 
   const handleAnalyzeHealth = async () => {
+    if (tasks.length === 0) {
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -159,6 +188,21 @@ export function AIProjectAssistPanel({
     setIsLoading(false);
   };
 
+  const handleWeeklyRiskPinToggle = async () => {
+    if (!onWeeklyRiskPinChange || pinBusy) return;
+    const nextPinned = !project.weeklyRiskAssessmentPinned;
+    setPinBusy(true);
+    setError(null);
+    try {
+      const ok = await onWeeklyRiskPinChange(nextPinned);
+      if (!ok) {
+        setError('Could not update weekly pin. You may already have five pinned projects.');
+      }
+    } finally {
+      setPinBusy(false);
+    }
+  };
+
   const getModeTitle = () => {
     switch (mode) {
       case 'health':
@@ -178,6 +222,28 @@ export function AIProjectAssistPanel({
         return 'AI will suggest additional tasks needed to complete this project.';
       case 'risks':
         return 'AI will identify potential risks and blockers for this project.';
+    }
+  };
+
+  const getModeCtaLabel = () => {
+    switch (mode) {
+      case 'health':
+        return 'Analyze';
+      case 'generate':
+        return 'Generate';
+      case 'risks':
+        return 'Assess';
+    }
+  };
+
+  const getLoadingStatusMessage = () => {
+    switch (mode) {
+      case 'health':
+        return 'Analyzing project health…';
+      case 'generate':
+        return 'Generating task suggestions…';
+      case 'risks':
+        return 'Assessing project risks…';
     }
   };
 
@@ -225,6 +291,23 @@ export function AIProjectAssistPanel({
     }
   };
 
+  const modeHasResult =
+    (mode === 'health' && healthResult !== null) ||
+    (mode === 'generate' && tasksResult !== null) ||
+    (mode === 'risks' && risksResult !== null);
+
+  const hasNoTasks = tasks.length === 0;
+  const showHealthZeroTaskSoftFail =
+    mode === 'health' &&
+    hasNoTasks &&
+    !isLoading &&
+    !error &&
+    !modelNotFound &&
+    healthResult === null;
+
+  const showIdleCta =
+    !isLoading && !error && !modelNotFound && !modeHasResult && !(mode === 'health' && hasNoTasks);
+
   if (!isConfigured) {
     return (
       <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
@@ -249,16 +332,32 @@ export function AIProjectAssistPanel({
     );
   }
 
+  const dateUrgency = getDateUrgency(project.targetEndDate, {
+    hideWhenComplete:
+      project.status === 'Completed' ||
+      project.status === 'Cancelled' ||
+      project.status === 'Archived',
+  });
+  const showAbandonedRiskBanner =
+    healthResult?.overallHealth === 'critical' && Boolean(dateUrgency?.dimCard);
+
   return (
-    <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+    <div
+      id={AI_PROJECT_ASSIST_PANEL_ID}
+      role="tabpanel"
+      aria-labelledby={labelledBy}
+      className={cn(aiProjectAssistPanelShellClassName)}
+    >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           <span className="font-medium text-gray-900 dark:text-white">{getModeTitle()}</span>
         </div>
         <button
+          type="button"
           onClick={onClose}
           className="p-1 hover:bg-amber-200/50 dark:hover:bg-amber-800/50 rounded transition-colors"
+          aria-label="Close AI project tools"
         >
           <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
@@ -266,7 +365,49 @@ export function AIProjectAssistPanel({
 
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{getModeDescription()}</p>
 
-      {!isLoading && !error && !modelNotFound && !healthResult && !tasksResult && !risksResult && (
+      {mode === 'risks' && onWeeklyRiskPinChange ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-900/30">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              Weekly review ritual
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Auto-run Risk Assessment when your weekly review generates (max 5 pins).
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant={project.weeklyRiskAssessmentPinned ? 'primary' : 'secondary'}
+            size="sm"
+            disabled={pinBusy}
+            onClick={handleWeeklyRiskPinToggle}
+            className={
+              project.weeklyRiskAssessmentPinned ? 'bg-amber-600 hover:bg-amber-700' : undefined
+            }
+          >
+            <Pin className="mr-1 h-4 w-4" />
+            {project.weeklyRiskAssessmentPinned ? 'Pinned' : 'Pin for weekly review'}
+          </Button>
+        </div>
+      ) : null}
+
+      {showHealthZeroTaskSoftFail ? (
+        <div className="rounded-lg border border-amber-200 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10 p-4">
+          <p className="text-sm text-gray-700 dark:text-gray-300">
+            Health analysis needs at least one linked task. Generate first tasks to get a meaningful
+            score and factors.
+          </p>
+          <Button
+            onClick={() => onRequestGenerateTasks?.()}
+            variant="primary"
+            size="sm"
+            className="mt-3 bg-amber-600 hover:bg-amber-700"
+          >
+            <Wand2 className="w-4 h-4 mr-1" />
+            Generate first tasks
+          </Button>
+        </div>
+      ) : showIdleCta ? (
         <Button
           onClick={handleInvoke}
           variant="primary"
@@ -274,15 +415,13 @@ export function AIProjectAssistPanel({
           className="bg-amber-600 hover:bg-amber-700"
         >
           <Wand2 className="w-4 h-4 mr-1" />
-          Analyze
+          {getModeCtaLabel()}
         </Button>
-      )}
+      ) : null}
 
-      {isLoading && (
-        <div className="py-4">
-          <AIThinkingIndicator message="Analyzing project..." />
-        </div>
-      )}
+      {isLoading ? (
+        <AIProjectAssistLoadingSkeleton mode={mode} statusMessage={getLoadingStatusMessage()} />
+      ) : null}
 
       {modelNotFound ? (
         <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -301,7 +440,7 @@ export function AIProjectAssistPanel({
         </div>
       ) : null}
 
-      {healthResult && (
+      {mode === 'health' && healthResult ? (
         <div className="mt-4 space-y-4">
           <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -325,6 +464,12 @@ export function AIProjectAssistPanel({
               </span>
             </div>
           </div>
+
+          {showAbandonedRiskBanner ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+              Stale / Abandoned risk — target date is far past with incomplete work remaining.
+            </div>
+          ) : null}
 
           {healthResult.healthFactors.length > 0 && (
             <div className="space-y-2">
@@ -378,17 +523,54 @@ export function AIProjectAssistPanel({
               <span className="text-sm font-medium text-gray-900 dark:text-white">
                 Priority actions
               </span>
-              <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                {healthResult.priorityActions.map((rec, i) => (
-                  <li key={i}>{rec}</li>
-                ))}
+              <ul className="space-y-2">
+                {healthResult.priorityActions.map((action, i) => {
+                  const isCreateTask = action.kind === 'createTask';
+                  const canAct = isCreateTask
+                    ? Boolean(onCreateTaskFromAction)
+                    : Boolean(onLogActivityFromAction);
+
+                  return (
+                    <li
+                      key={i}
+                      className="flex flex-col gap-2 rounded-lg border border-amber-200/80 bg-white p-3 dark:border-amber-800/80 dark:bg-gray-800 sm:flex-row sm:items-start sm:justify-between"
+                    >
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{action.text}</p>
+                      {canAct ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="shrink-0 self-start"
+                          onClick={() =>
+                            isCreateTask
+                              ? onCreateTaskFromAction?.(action)
+                              : onLogActivityFromAction?.(action)
+                          }
+                        >
+                          {isCreateTask ? (
+                            <>
+                              <Plus className="mr-1 h-4 w-4" />
+                              Create task
+                            </>
+                          ) : (
+                            <>
+                              <NotebookPen className="mr-1 h-4 w-4" />
+                              Log activity
+                            </>
+                          )}
+                        </Button>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
         </div>
-      )}
+      ) : null}
 
-      {tasksResult && (
+      {mode === 'generate' && tasksResult ? (
         <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700 space-y-3">
           <div>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
@@ -444,9 +626,9 @@ export function AIProjectAssistPanel({
             </Button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {risksResult && (
+      {mode === 'risks' && risksResult ? (
         <div className="mt-4 space-y-4">
           <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700">
             <div className="flex items-center justify-between mb-3">
@@ -517,7 +699,7 @@ export function AIProjectAssistPanel({
             </div>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
