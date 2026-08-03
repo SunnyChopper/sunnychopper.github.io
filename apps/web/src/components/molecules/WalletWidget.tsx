@@ -1,6 +1,7 @@
 import { Coins, TrendingUp, History, Loader2 } from 'lucide-react';
 import { useWallet } from '@/contexts/Wallet';
 import { signedWalletDisplayAmount } from '@/lib/wallet-transaction-display';
+import { PointsEarnBurst } from '@/components/molecules/PointsEarnBurst';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -20,7 +21,7 @@ function computePanelPosition(trigger: DOMRect): { top: number; left: number; wi
 }
 
 export const WalletWidget = () => {
-  const { balance, transactions, loading, isRefreshing } = useWallet();
+  const { balance, transactions, loading, isRefreshing, earnPulse } = useWallet();
   const [showHistory, setShowHistory] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number } | null>(
@@ -88,19 +89,21 @@ export const WalletWidget = () => {
           }
         }}
         className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 rounded-full transition-colors"
-        aria-busy={isRefreshing}
+        aria-busy={isRefreshing && !earnPulse}
       >
         <Coins size={16} className="text-yellow-600 dark:text-yellow-500" />
-        {isRefreshing ? (
+        {isRefreshing && !earnPulse ? (
           <Loader2
             size={16}
             className="animate-spin text-yellow-800 dark:text-yellow-200"
             aria-label="Updating wallet balance"
           />
         ) : (
-          <span className="text-sm font-bold text-yellow-900 dark:text-yellow-300">
-            {balance.totalPoints.toLocaleString()}
-          </span>
+          <PointsEarnBurst pulseKey={earnPulse?.id ?? 0} delta={earnPulse?.amount ?? 0}>
+            <span className="text-sm font-bold text-yellow-900 dark:text-yellow-300">
+              {balance.totalPoints.toLocaleString()}
+            </span>
+          </PointsEarnBurst>
         )}
       </button>
 

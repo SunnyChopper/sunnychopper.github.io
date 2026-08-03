@@ -1,6 +1,14 @@
-import type { Task } from '@/types/growth-system';
+import type { Project, Task } from '@/types/growth-system';
 
 export type PointBadgeStatus = 'available' | 'earned' | 'reversed';
+
+export function pointBadgeStatusFromProject(
+  project: Pick<Project, 'status' | 'pointsAwarded' | 'rewardLedgerStatus'>
+): PointBadgeStatus {
+  if (project.rewardLedgerStatus === 'reversed') return 'reversed';
+  if (project.status === 'Completed' && project.pointsAwarded) return 'earned';
+  return 'available';
+}
 
 export function pointBadgeStatusFromTask(
   task: Pick<Task, 'status' | 'pointsAwarded' | 'rewardLedgerStatus'>

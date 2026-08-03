@@ -3,7 +3,12 @@
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
 export type WorkoutSessionStatus = 'in_progress' | 'completed' | 'abandoned';
 export type SetType = 'warmup' | 'working';
-export type AuraXMetric = 'sleepHours' | 'sleepQuality' | 'energyLevel' | 'recoveryScore';
+export type AuraXMetric =
+  | 'sleepHours'
+  | 'sleepQuality'
+  | 'energyLevel'
+  | 'recoveryScore'
+  | 'sleepDebt';
 
 export interface PaginatedFitness<T> {
   data: T[];
@@ -114,6 +119,10 @@ export interface DailyRecovery {
   notes: string | null;
   recoveryScore: number | null;
   linkedFields?: RecoveryMetricLinks;
+  /** Linked fields overlayed from Growth metric logs for this date (read-only in UI). */
+  metricResolvedFields?: RecoveryLinkableField[];
+  /** False when the row is an ephemeral single-day shell (not yet saved). */
+  isPersisted?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -127,6 +136,15 @@ export interface OverloadSuggestion {
   basedOnSessionId: string | null;
   consecutiveFailedSessions: number;
   unit: string;
+  lastSuccessfulWeight: number | null;
+  lastSuccessfulCompletedReps: number | null;
+  lastSuccessfulSessionId: string | null;
+  lastSuccessfulSessionDate: string | null;
+}
+
+export interface TemplateOverloadHints {
+  templateId: string;
+  suggestions: OverloadSuggestion[];
 }
 
 export interface AuraPoint {
@@ -142,6 +160,16 @@ export interface AuraSeries {
   endDate: string;
   points: AuraPoint[];
   correlationCoefficient: number | null;
+}
+
+export interface SleepDebtSummary {
+  targetHours: number;
+  windowDays: number;
+  debtHours: number;
+  loggedDays: number;
+  startDate: string;
+  endDate: string;
+  source: 'manual';
 }
 
 export interface ParsedNutritionFoodItem {

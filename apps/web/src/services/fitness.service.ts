@@ -13,6 +13,7 @@ import type {
   PaginatedFitness,
   PantryItem,
   SetType,
+  TemplateOverloadHints,
   WorkoutSession,
   WorkoutSet,
   WorkoutTemplate,
@@ -131,6 +132,11 @@ export const fitnessService = {
   overloadSuggestion: async (exerciseId: string): Promise<ApiResponse<OverloadSuggestion>> =>
     apiClient.get(`/fitness/overload-suggestion?exerciseId=${encodeURIComponent(exerciseId)}`),
 
+  overloadHintsForTemplate: async (
+    templateId: string
+  ): Promise<ApiResponse<TemplateOverloadHints>> =>
+    apiClient.get(`/fitness/workout-templates/${encodeURIComponent(templateId)}/overload-hints`),
+
   listNutrition: async (opts?: {
     page?: number;
     pageSize?: number;
@@ -147,6 +153,9 @@ export const fitnessService = {
 
   createNutrition: async (body: Record<string, unknown>): Promise<ApiResponse<NutritionEntry>> =>
     apiClient.post('/fitness/nutrition', body),
+
+  deleteNutrition: async (id: string): Promise<ApiResponse<{ deleted: boolean }>> =>
+    apiClient.delete(`/fitness/nutrition/${id}`),
 
   parseNutrition: async (body: {
     text: string;
@@ -229,6 +238,13 @@ export const fitnessService = {
     links: Record<string, string | null>
   ): Promise<ApiResponse<{ links: Record<string, string> }>> =>
     apiClient.put('/fitness/recovery/metric-links', { links }),
+
+  getSleepDebt: async (
+    asOf?: string
+  ): Promise<ApiResponse<import('@/types/fitness').SleepDebtSummary>> => {
+    const q = asOf ? `?asOf=${encodeURIComponent(asOf)}` : '';
+    return apiClient.get(`/fitness/recovery/sleep-debt${q}`);
+  },
 
   aura: async (
     startDate: string,

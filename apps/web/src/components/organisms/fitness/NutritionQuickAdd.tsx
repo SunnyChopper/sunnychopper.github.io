@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MealType, NutritionParseAiData, ParsedNutritionResult } from '@/types/fitness';
 import { useCreateNutritionMutation, useParseNutritionMutation } from '@/hooks/useFitness';
-import { cn } from '@/lib/utils';
+import { FormInput } from '@/components/atoms/FormInput';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
+import { FormField } from '@/components/molecules/FormField';
+import { NutritionParsePreviewCard } from '@/components/molecules/fitness/NutritionParsePreviewCard';
+import { NutritionParseSkeleton } from '@/components/molecules/fitness/NutritionParseSkeleton';
+import { focusFirstIncompleteControl } from '@/lib/forms/focusFirstIncompleteControl';
+import { cn } from '@/lib/utils';
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
+
+type PanelMode = 'preview' | 'edit' | null;
 
 function defaultParsed(): ParsedNutritionResult {
   return {
@@ -33,20 +40,77 @@ export function NutritionQuickAdd({ plannerQueryExample, className }: NutritionQ
   const [mealType, setMealType] = useState<MealType>('other');
   const [preview, setPreview] = useState<ParsedNutritionResult | null>(null);
   const [aiEnvelope, setAiEnvelope] = useState<NutritionParseAiData | null>(null);
+  const [panelMode, setPanelMode] = useState<PanelMode>(null);
+  const [lastParsedText, setLastParsedText] = useState('');
   const [manualMode, setManualMode] = useState(false);
+
+  const sourceTextRef = useRef<HTMLTextAreaElement>(null);
+  const labelInputRef = useRef<HTMLInputElement>(null);
 
   const parseMut = useParseNutritionMutation();
   const saveMut = useCreateNutritionMutation();
 
   const effective = preview ?? defaultParsed();
+  const showEditPanel = panelMode === 'edit';
+  const showPreviewPanel = panelMode === 'preview' && preview != null;
+
+  const focusNutritionFields = () => {
+    if (showEditPanel) {
+      focusFirstIncompleteControl([
+        {
+          id: 'foodNameSummary',
+          isComplete: () => effective.foodNameSummary.trim() !== '',
+          focus: () => labelInputRef.current?.focus(),
+        },
+      ]);
+      return;
+    }
+
+    focusFirstIncompleteControl([
+      {
+        id: 'sourceText',
+        isComplete: () => text.trim() !== '',
+        focus: () => sourceTextRef.current?.focus(),
+      },
+    ]);
+  };
+
+  useEffect(() => {
+    focusNutritionFields();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount + panel mode only
+  }, []);
+
+  useEffect(() => {
+    if (!showEditPanel) return;
+    focusNutritionFields();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- edit panel open
+  }, [showEditPanel]);
+
+  const clearPreviewState = () => {
+    setPreview(null);
+    setAiEnvelope(null);
+    setPanelMode(null);
+    setLastParsedText('');
+    setManualMode(false);
+  };
+
+  const handleTextChange = (value: string) => {
+    setText(value);
+    if (preview && value.trim() !== lastParsedText) {
+      clearPreviewState();
+    }
+  };
 
   const handleParse = async () => {
-    if (!text.trim()) return;
-    const res = await parseMut.mutateAsync({ text: text.trim(), useCache: true });
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const res = await parseMut.mutateAsync({ text: trimmed, useCache: true });
     if (res.success && res.data) {
       setAiEnvelope(res.data);
       setPreview(res.data.result);
+      setLastParsedText(trimmed);
       setManualMode(false);
+      setPanelMode('preview');
     }
   };
 
@@ -69,8 +133,14 @@ export function NutritionQuickAdd({ plannerQueryExample, className }: NutritionQ
     const res = await saveMut.mutateAsync(body);
     if (res.success) {
       setText('');
-      setPreview(null);
-      setAiEnvelope(null);
+      clearPreviewState();
+      focusFirstIncompleteControl([
+        {
+          id: 'sourceText',
+          isComplete: () => false,
+          focus: () => sourceTextRef.current?.focus(),
+        },
+      ]);
     }
   };
 
@@ -82,6 +152,16 @@ export function NutritionQuickAdd({ plannerQueryExample, className }: NutritionQ
       ...(prev ?? defaultParsed()),
       [key]: value,
     }));
+  };
+
+  const handleManualEntry = () => {
+    setManualMode(true);
+    setPreview((p) => p ?? defaultParsed());
+    setPanelMode('edit');
+  };
+
+  const handleDismiss = () => {
+    clearPreviewState();
   };
 
   return (
@@ -97,11 +177,11 @@ export function NutritionQuickAdd({ plannerQueryExample, className }: NutritionQ
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm text-gray-600 dark:text-gray-300">
-          Meal
+      <div className="flex flex-wrap items-end gap-3">
+        <FormField label="Meal" htmlFor="nutrition-meal-type" className="min-w-[140px]">
           <Select
-            className="ml-2 rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900"
+            id="nutrition-meal-type"
+            className="w-full"
             value={mealType}
             onChange={(e) => setMealType(e.target.value as MealType)}
           >
@@ -111,25 +191,26 @@ export function NutritionQuickAdd({ plannerQueryExample, className }: NutritionQ
               </option>
             ))}
           </Select>
-        </label>
+        </FormField>
         <button
           type="button"
-          onClick={() => {
-            setManualMode(true);
-            setPreview((p) => p ?? defaultParsed());
-          }}
+          onClick={handleManualEntry}
           className="text-sm text-blue-600 hover:underline dark:text-blue-400"
         >
           Manual entry
         </button>
       </div>
 
-      <Textarea
-        className="min-h-[100px] w-full rounded-xl border border-gray-300 bg-white p-3 text-sm dark:border-gray-600 dark:bg-gray-900"
-        placeholder="e.g. 8 oz chicken breast, rice, broccoli, olive oil"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
+      <FormField label="What did you eat?" htmlFor="nutrition-source-text">
+        <Textarea
+          ref={sourceTextRef}
+          id="nutrition-source-text"
+          className="min-h-[100px] w-full"
+          placeholder="e.g. 8 oz chicken breast, rice, broccoli, olive oil"
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
+        />
+      </FormField>
 
       <div className="flex flex-wrap gap-2">
         <button
@@ -146,65 +227,79 @@ export function NutritionQuickAdd({ plannerQueryExample, className }: NutritionQ
         <p className="text-sm text-red-600">Could not parse. Try manual entry.</p>
       )}
 
-      {(preview || manualMode) && (
+      {parseMut.isPending && <NutritionParseSkeleton />}
+
+      {showPreviewPanel && preview && (
+        <NutritionParsePreviewCard
+          result={preview}
+          aiEnvelope={aiEnvelope}
+          isLogging={saveMut.isPending}
+          onConfirm={handleSave}
+          onEdit={() => setPanelMode('edit')}
+          onDismiss={handleDismiss}
+        />
+      )}
+
+      {showEditPanel && (
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-800/50">
           <h4 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {manualMode && !preview ? 'Manual macros' : 'Editable preview'}
+            {manualMode && !aiEnvelope ? 'Manual macros' : 'Edit entry'}
           </h4>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-xs text-gray-600 dark:text-gray-400">
-              Label
-              <input
-                className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900"
+            <FormField label="Label" htmlFor="nutrition-food-label" required>
+              <FormInput
+                ref={labelInputRef}
+                id="nutrition-food-label"
+                className="w-full"
                 value={effective.foodNameSummary}
                 onChange={(e) => updateField('foodNameSummary', e.target.value)}
               />
-            </label>
-            <label className="text-xs text-gray-600 dark:text-gray-400">
-              Calories
-              <input
+            </FormField>
+            <FormField label="Calories" htmlFor="nutrition-calories">
+              <FormInput
+                id="nutrition-calories"
                 type="number"
-                className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900"
+                className="w-full"
                 value={effective.calories}
                 onChange={(e) => updateField('calories', Number(e.target.value))}
               />
-            </label>
-            <label className="text-xs text-gray-600 dark:text-gray-400">
-              Protein (g)
-              <input
+            </FormField>
+            <FormField label="Protein (g)" htmlFor="nutrition-protein">
+              <FormInput
+                id="nutrition-protein"
                 type="number"
-                className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900"
+                className="w-full"
                 value={effective.proteinGrams}
                 onChange={(e) => updateField('proteinGrams', Number(e.target.value))}
               />
-            </label>
-            <label className="text-xs text-gray-600 dark:text-gray-400">
-              Carbs (g)
-              <input
+            </FormField>
+            <FormField label="Carbs (g)" htmlFor="nutrition-carbs">
+              <FormInput
+                id="nutrition-carbs"
                 type="number"
-                className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900"
+                className="w-full"
                 value={effective.carbGrams}
                 onChange={(e) => updateField('carbGrams', Number(e.target.value))}
               />
-            </label>
-            <label className="text-xs text-gray-600 dark:text-gray-400">
-              Fat (g)
-              <input
+            </FormField>
+            <FormField label="Fat (g)" htmlFor="nutrition-fat">
+              <FormInput
+                id="nutrition-fat"
                 type="number"
-                className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900"
+                className="w-full"
                 value={effective.fatGrams}
                 onChange={(e) => updateField('fatGrams', Number(e.target.value))}
               />
-            </label>
-            <label className="text-xs text-gray-600 dark:text-gray-400">
-              Fiber (g)
-              <input
+            </FormField>
+            <FormField label="Fiber (g)" htmlFor="nutrition-fiber">
+              <FormInput
+                id="nutrition-fiber"
                 type="number"
-                className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-600 dark:bg-gray-900"
+                className="w-full"
                 value={effective.fiberGrams}
                 onChange={(e) => updateField('fiberGrams', Number(e.target.value))}
               />
-            </label>
+            </FormField>
           </div>
 
           {effective.assumptions.length > 0 && (
@@ -223,14 +318,34 @@ export function NutritionQuickAdd({ plannerQueryExample, className }: NutritionQ
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saveMut.isPending}
-            className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {saveMut.isPending ? 'Saving…' : 'Save entry'}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saveMut.isPending}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {saveMut.isPending ? 'Logging…' : 'Confirm & log'}
+            </button>
+            {aiEnvelope && preview ? (
+              <button
+                type="button"
+                onClick={() => setPanelMode('preview')}
+                disabled={saveMut.isPending}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm dark:border-gray-600"
+              >
+                Back to preview
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleDismiss}
+              disabled={saveMut.isPending}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-600 dark:border-gray-600 dark:text-gray-300"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
     </div>

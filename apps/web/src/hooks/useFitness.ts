@@ -1,17 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fitnessService } from '@/services/fitness.service';
 import { queryKeys } from '@/lib/react-query/query-keys';
+import { prependNutritionEntriesToCache } from '@/lib/fitness/nutrition-cache';
 import type {
   AuraXMetric,
   CreateFitnessRewardRuleInput,
   MealPlanMeal,
   MealType,
+  NutritionEntry,
   PatchScheduledWorkoutDayInput,
   SetType,
-  ScheduleDayType,
   UpdateFitnessRewardRuleInput,
   UpsertWorkoutScheduleInput,
-  WorkoutScheduleWeekdayEntry,
 } from '@/types/fitness';
 
 export function useFitnessExercises(page = 1, pageSize = 50) {
@@ -80,11 +80,60 @@ export function useOverloadSuggestion(exerciseId: string | null) {
   });
 }
 
+export function useTemplateOverloadHints(templateId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.fitness.templateOverloadHints(templateId ?? ''),
+    queryFn: () => fitnessService.overloadHintsForTemplate(templateId!),
+    enabled: Boolean(templateId),
+  });
+}
+
 export function useAuraSeries(startDate: string, endDate: string, xMetric: AuraXMetric) {
   return useQuery({
     queryKey: queryKeys.fitness.aura(startDate, endDate, xMetric),
     queryFn: () => fitnessService.aura(startDate, endDate, xMetric),
     enabled: Boolean(startDate && endDate),
+  });
+}
+
+export function useSleepDebt(asOf?: string) {
+  return useQuery({
+    queryKey: queryKeys.fitness.recovery.sleepDebt(asOf),
+    queryFn: () => fitnessService.getSleepDebt(asOf),
+  });
+}
+
+export function useSleepDebtPreferences() {
+  return useQuery({
+    queryKey: queryKeys.preferences.sleepDebt(),
+    queryFn: async () => {
+      const res = await import('@/lib/api-client').then((m) =>
+        m.apiClient.getSleepDebtPreferences()
+      );
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message ?? 'Failed to load sleep debt preferences');
+      }
+      return res.data;
+    },
+  });
+}
+
+export function useSetSleepDebtPreferencesMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (targetHours: number) => {
+      const { apiClient } = await import('@/lib/api-client');
+      const res = await apiClient.setSleepDebtPreferences({ targetHours });
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message ?? 'Failed to save sleep target');
+      }
+      return res.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.preferences.sleepDebt() });
+      qc.invalidateQueries({ queryKey: queryKeys.fitness.recovery.all() });
+      qc.invalidateQueries({ queryKey: queryKeys.fitness.all });
+    },
   });
 }
 
@@ -203,6 +252,19 @@ export function useCreateNutritionMutation() {
       sourceMealSlotId?: string;
       sourceRecipeId?: string;
     }) => fitnessService.createNutrition(body),
+    onSuccess: (res) => {
+      if (res.success && res.data) {
+        prependNutritionEntriesToCache(qc, [res.data as NutritionEntry]);
+      }
+      void qc.invalidateQueries({ queryKey: queryKeys.fitness.nutrition.all() });
+    },
+  });
+}
+
+export function useDeleteNutritionMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fitnessService.deleteNutrition(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.fitness.nutrition.all() });
     },
@@ -212,8 +274,13 @@ export function useCreateNutritionMutation() {
 export function useUpsertRecoveryMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ date, body }: { date: string; body: Record<string, unknown> }) =>
-      fitnessService.upsertRecovery(date, body),
+    mutationFn: async ({ date, body }: { date: string; body: Record<string, unknown> }) => {
+      const res = await fitnessService.upsertRecovery(date, body);
+      if (!res.success) {
+        throw new Error(res.error?.message ?? 'Failed to save recovery');
+      }
+      return res;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.fitness.all });
     },
@@ -245,6 +312,7 @@ export function useCreateSessionMutation() {
       fitnessService.createSession(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.fitness.sessions.all() });
+      qc.invalidateQueries({ queryKey: queryKeys.fitness.workoutSchedule.all() });
     },
   });
 }
@@ -261,6 +329,7 @@ export function useUpdateSessionMutation() {
     }) => fitnessService.updateSession(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.fitness.sessions.all() });
+      qc.invalidateQueries({ queryKey: queryKeys.fitness.workoutSchedule.all() });
     },
   });
 }
@@ -467,10 +536,19 @@ export function useSubmitWorkoutSkipReasonMutation() {
 
 export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 
-export function defaultWeekdayEntries(): WorkoutScheduleWeekdayEntry[] {
-  return WEEKDAY_LABELS.map((_, weekday) => ({
-    weekday,
-    dayType: 'rest' as ScheduleDayType,
-    templateId: null,
-  }));
-}
+export {
+  BEGINNER_SCHEDULE_ROLES,
+  SCHEDULE_ROLE_CYCLE,
+  SCHEDULE_ROLE_LABELS,
+  cycleScheduleRole,
+  defaultWeekdayEntries,
+  entryFromRole,
+  inferRoleFromEntry,
+  matchTemplateForRole,
+  roleToDayType,
+  swapWeekdayEntries,
+  rolesFromWeekdayEntries,
+  weekdayEntriesFromRoles,
+  swapScheduleRoles,
+} from '@/lib/fitness/workout-schedule-roles';
+export type { ScheduleRole } from '@/lib/fitness/workout-schedule-roles';
