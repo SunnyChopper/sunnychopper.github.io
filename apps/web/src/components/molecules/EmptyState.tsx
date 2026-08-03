@@ -9,6 +9,8 @@ import {
 
 export type { EmptyStateSceneId };
 
+export type EmptyStateDensity = 'default' | 'compact';
+
 interface EmptyStateProps {
   icon?: LucideIcon;
   scene?: EmptyStateSceneId;
@@ -16,9 +18,11 @@ interface EmptyStateProps {
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
+  actionDisabled?: boolean;
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
   variant?: 'default' | 'onboarding';
+  density?: EmptyStateDensity;
   onboardingSteps?: string[];
   proTips?: string[];
   className?: string;
@@ -58,6 +62,11 @@ function EmptyStateGraphic({
   );
 }
 
+const DENSITY_PADDING_CLASS: Record<EmptyStateDensity, string> = {
+  default: 'py-14',
+  compact: 'py-8',
+};
+
 export function EmptyState({
   icon: Icon,
   scene,
@@ -65,9 +74,11 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
+  actionDisabled = false,
   secondaryActionLabel,
   onSecondaryAction,
   variant = 'default',
+  density = 'default',
   onboardingSteps = [],
   proTips = [],
   className = '',
@@ -174,7 +185,7 @@ export function EmptyState({
             className="flex gap-3 justify-center"
           >
             {actionLabel && onAction && (
-              <Button onClick={onAction} variant="primary" size="lg">
+              <Button onClick={onAction} variant="primary" size="lg" disabled={actionDisabled}>
                 {actionLabel}
               </Button>
             )}
@@ -195,7 +206,7 @@ export function EmptyState({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className={`flex flex-col items-center justify-center py-14 px-4 text-center ${className}`}
+      className={`flex flex-col items-center justify-center px-4 text-center ${DENSITY_PADDING_CLASS[density]} ${className}`}
     >
       <EmptyStateGraphic scene={scene} icon={Icon} />
 
@@ -210,7 +221,7 @@ export function EmptyState({
       {(actionLabel || secondaryActionLabel) && (
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           {actionLabel && onAction && (
-            <Button onClick={onAction} variant="primary">
+            <Button onClick={onAction} variant="primary" disabled={actionDisabled}>
               {actionLabel}
             </Button>
           )}

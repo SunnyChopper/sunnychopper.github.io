@@ -4,6 +4,8 @@ import { AREA_LABELS } from '@/constants/growth-system';
 interface AreaBadgeProps {
   area: Area;
   size?: 'sm' | 'md' | 'lg';
+  /** Pastel pill (default) or quiet text+ring for dense card meta rows. */
+  appearance?: 'default' | 'quiet';
   className?: string;
 }
 
@@ -30,7 +32,12 @@ const defaultColors = {
   text: 'text-gray-700 dark:text-gray-400',
 };
 
-export function AreaBadge({ area, size = 'md', className = '' }: AreaBadgeProps) {
+export function AreaBadge({
+  area,
+  size = 'md',
+  appearance = 'default',
+  className = '',
+}: AreaBadgeProps) {
   const colors = areaColors[area] || defaultColors;
   const label = AREA_LABELS[area] || area;
 
@@ -38,9 +45,14 @@ export function AreaBadge({ area, size = 'md', className = '' }: AreaBadgeProps)
     console.warn(`AreaBadge: Unknown area "${area}". Using default colors.`);
   }
 
+  const appearanceClasses =
+    appearance === 'quiet'
+      ? `bg-transparent ${colors.text} ring-1 ring-inset ring-black/10 dark:ring-white/15`
+      : `${colors.bg} ${colors.text}`;
+
   return (
     <span
-      className={`inline-flex items-center rounded-full font-medium ${colors.bg} ${colors.text} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center rounded-full font-medium ${appearanceClasses} ${sizeClasses[size]} ${className}`}
     >
       {label}
     </span>

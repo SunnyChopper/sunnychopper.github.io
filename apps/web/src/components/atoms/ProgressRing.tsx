@@ -1,9 +1,11 @@
+export type ProgressRingColor = 'blue' | 'green' | 'orange' | 'red' | 'purple' | 'amber' | 'muted';
+
 interface ProgressRingProps {
   progress: number;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   strokeWidth?: number;
   showLabel?: boolean;
-  color?: 'blue' | 'green' | 'orange' | 'red' | 'purple';
+  color?: ProgressRingColor;
   className?: string;
 }
 
@@ -14,12 +16,14 @@ const sizeConfig = {
   xl: { dimension: 128, fontSize: 'text-lg' },
 };
 
-const colorClasses = {
+const colorClasses: Record<ProgressRingColor, string> = {
   blue: 'text-blue-600 dark:text-blue-400',
   green: 'text-green-600 dark:text-green-400',
   orange: 'text-orange-600 dark:text-orange-400',
   red: 'text-red-600 dark:text-red-400',
   purple: 'text-purple-600 dark:text-purple-400',
+  amber: 'text-amber-600 dark:text-amber-400',
+  muted: 'text-gray-400 dark:text-gray-500',
 };
 
 export function ProgressRing({
@@ -47,7 +51,7 @@ export function ProgressRing({
           stroke="currentColor"
           strokeWidth={strokeWidth}
           fill="none"
-          className="text-gray-200 dark:text-gray-700"
+          className="text-gray-300 dark:text-gray-600"
         />
         <circle
           cx={dimension / 2}

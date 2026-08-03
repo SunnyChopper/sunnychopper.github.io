@@ -1,3 +1,4 @@
+import { getPriorityAccessibleName } from '@/constants/growth-system';
 import type { Priority } from '@/types/growth-system';
 
 interface PriorityIndicatorProps {
@@ -39,6 +40,7 @@ export function PriorityIndicator({
   const normalizedPriority: Priority =
     priority && priority in priorityColors ? priority : DEFAULT_PRIORITY;
   const colors = priorityColors[normalizedPriority];
+  const accessibleName = getPriorityAccessibleName(normalizedPriority);
 
   if (variant === 'dot') {
     const dotSizes = {
@@ -47,7 +49,12 @@ export function PriorityIndicator({
       lg: 'w-3 h-3',
     };
     return (
-      <span className={`inline-block rounded-full ${colors.bg} ${dotSizes[size]} ${className}`} />
+      <span
+        role="img"
+        aria-label={accessibleName}
+        title={accessibleName}
+        className={`inline-block rounded-full ${colors.bg} ${dotSizes[size]} ${className}`}
+      />
     );
   }
 
@@ -58,7 +65,12 @@ export function PriorityIndicator({
       lg: 'w-1.5 h-8',
     };
     return (
-      <span className={`inline-block rounded-full ${colors.bg} ${barSizes[size]} ${className}`} />
+      <span
+        role="img"
+        aria-label={accessibleName}
+        title={accessibleName}
+        className={`inline-block rounded-full ${colors.bg} ${barSizes[size]} ${className}`}
+      />
     );
   }
 
@@ -70,6 +82,8 @@ export function PriorityIndicator({
 
   return (
     <span
+      aria-label={accessibleName}
+      title={accessibleName}
       className={`inline-flex items-center rounded font-semibold ${colors.text} border ${colors.border} bg-opacity-10 ${badgeSizes[size]} ${className}`}
     >
       {normalizedPriority}

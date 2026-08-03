@@ -4,12 +4,13 @@ import {
   PROJECT_STATUS_LABELS,
   GOAL_STATUS_LABELS,
 } from '@/constants/growth-system';
+import { PROJECT_STATUS_BADGE_COLORS } from '@/lib/growth-system/project-status-surfaces';
 
 interface StatusBadgeProps {
   status: TaskStatus | ProjectStatus | GoalStatus | string;
   size?: 'sm' | 'md' | 'lg';
-  /** Pastel pill (default) or high-contrast label for saturated timeline bars. */
-  appearance?: 'default' | 'onSolid';
+  /** Pastel pill (default), high-contrast label for saturated timeline bars, or quiet text+ring for dense cards. */
+  appearance?: 'default' | 'onSolid' | 'quiet';
   className?: string;
 }
 
@@ -30,24 +31,31 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   },
   Done: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400' },
   Cancelled: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-500' },
-  Planning: {
-    bg: 'bg-purple-100 dark:bg-purple-900/30',
-    text: 'text-purple-700 dark:text-purple-400',
-  },
-  Active: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' },
-  Completed: {
-    bg: 'bg-green-100 dark:bg-green-900/30',
-    text: 'text-green-700 dark:text-green-400',
-  },
+  Planning: PROJECT_STATUS_BADGE_COLORS.Planning,
+  Active: PROJECT_STATUS_BADGE_COLORS.Active,
+  Completed: PROJECT_STATUS_BADGE_COLORS.Completed,
   Achieved: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400' },
   Abandoned: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-500' },
-  Stale: {
-    bg: 'bg-rose-100 dark:bg-rose-900/30',
-    text: 'text-rose-700 dark:text-rose-400',
-  },
+  Stale: PROJECT_STATUS_BADGE_COLORS.Stale,
   Paused: {
     bg: 'bg-yellow-100 dark:bg-yellow-900/30',
     text: 'text-yellow-700 dark:text-yellow-400',
+  },
+  Throttling: {
+    bg: 'bg-orange-100 dark:bg-orange-900/30',
+    text: 'text-orange-700 dark:text-orange-400',
+  },
+  Approaching: {
+    bg: 'bg-amber-100 dark:bg-amber-900/30',
+    text: 'text-amber-700 dark:text-amber-300',
+  },
+  Exceeded: {
+    bg: 'bg-red-100 dark:bg-red-900/30',
+    text: 'text-red-700 dark:text-red-400',
+  },
+  Disabled: {
+    bg: 'bg-gray-100 dark:bg-gray-800',
+    text: 'text-gray-500 dark:text-gray-500',
   },
   Archived: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-500' },
   // Observability execution statuses
@@ -85,6 +93,31 @@ const statusColors: Record<string, { bg: string; text: string }> = {
     text: 'text-orange-700 dark:text-orange-400',
   },
   cancelled: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-500' },
+  Error: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400' },
+  Healthy: {
+    bg: 'bg-green-100 dark:bg-green-900/30',
+    text: 'text-green-700 dark:text-green-400',
+  },
+  Accepted: {
+    bg: 'bg-green-100 dark:bg-green-900/30',
+    text: 'text-green-700 dark:text-green-400',
+  },
+  Rejected: {
+    bg: 'bg-red-100 dark:bg-red-900/30',
+    text: 'text-red-700 dark:text-red-400',
+  },
+  Succeeded: {
+    bg: 'bg-green-100 dark:bg-green-900/30',
+    text: 'text-green-700 dark:text-green-400',
+  },
+  Failed: {
+    bg: 'bg-red-100 dark:bg-red-900/30',
+    text: 'text-red-700 dark:text-red-400',
+  },
+  'Not run yet': {
+    bg: 'bg-gray-100 dark:bg-gray-800',
+    text: 'text-gray-600 dark:text-gray-400',
+  },
 };
 
 const sizeClasses = {
@@ -105,7 +138,9 @@ export function StatusBadge({
   const appearanceClasses =
     appearance === 'onSolid'
       ? 'bg-white/20 text-white ring-1 ring-inset ring-white/30'
-      : `${colors.bg} ${colors.text}`;
+      : appearance === 'quiet'
+        ? `bg-transparent ${colors.text} ring-1 ring-inset ring-black/10 dark:ring-white/15`
+        : `${colors.bg} ${colors.text}`;
 
   // Get the formatted label with proper spacing
   const getLabel = (status: string): string => {

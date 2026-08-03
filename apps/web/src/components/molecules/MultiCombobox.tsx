@@ -15,6 +15,8 @@ export interface MultiComboboxProps {
   maxItems?: number;
   /** Optional map value -> label for selected pills */
   labelLookup?: Record<string, string>;
+  /** When true, hide selected pills (search/add only). */
+  hideSelectedPills?: boolean;
   className?: string;
 }
 
@@ -35,6 +37,7 @@ export default function MultiCombobox({
   minItems = 0,
   maxItems = Number.POSITIVE_INFINITY,
   labelLookup = {},
+  hideSelectedPills = false,
   className,
 }: MultiComboboxProps) {
   const [query, setQuery] = useState('');
@@ -126,7 +129,7 @@ export default function MultiCombobox({
 
   return (
     <div ref={wrapRef} className={cn('space-y-2', className)}>
-      {value.length > 0 ? (
+      {!hideSelectedPills && value.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {value.map((id) => (
             <span

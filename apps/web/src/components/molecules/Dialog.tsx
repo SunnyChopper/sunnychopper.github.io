@@ -1,12 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
 import OverlayPortal from '@/components/molecules/OverlayPortal';
-import { overlayBackdropClassName, overlaySurfaceClassName } from '@/lib/overlay-layer';
+import { overlayLayerClassNames, type OverlayLayer } from '@/lib/overlay-layer';
 import { cn } from '@/lib/utils';
 
 type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const DIALOG_MOTION_MS = 0.18;
 
 interface DialogProps {
   isOpen: boolean;
@@ -15,6 +20,14 @@ interface DialogProps {
   children: ReactNode;
   className?: string;
   size?: DialogSize;
+  /** When true, Tab cycles within the dialog and focus restores to the opener on close. */
+  trapFocus?: boolean;
+  /** Renders below the title row, stays visible while body scrolls (sticky within dialog). */
+  stickySubheader?: ReactNode;
+  /** Pinned below scroll body; never covers form fields. */
+  footer?: ReactNode;
+  /** Overlay z-index tier. `nested` sits above Note AI panel inside Edit Note. */
+  layer?: OverlayLayer;
 }
 
 const sizeClasses: Record<DialogSize, string> = {
@@ -32,9 +45,16 @@ export default function Dialog({
   children,
   className,
   size = 'md',
+  trapFocus = false,
+  stickySubheader,
+  footer,
+  layer = 'default',
 }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const shouldReduceMotion = useReducedMotion();
+  const layerClasses = overlayLayerClassNames(layer);
 
   useEffect(() => {
     if (isOpen) {
@@ -47,35 +67,107 @@ export default function Dialog({
     };
   }, [isOpen]);
 
-  // Handle Escape key and focus management
+  useLayoutEffect(() => {
+    if (!isOpen || !trapFocus) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+  }, [isOpen, trapFocus]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (layer === 'nested') {
+          e.stopImmediatePropagation();
+        }
         onClose();
+        return;
+      }
+
+      if (!trapFocus || e.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter((el) => !el.hasAttribute('disabled'));
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (!active || !dialogRef.current.contains(active)) {
+        e.preventDefault();
+        first.focus();
+        return;
+      }
+
+      if (e.shiftKey) {
+        if (active === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+    const useCapture = layer === 'nested';
+    document.addEventListener('keydown', handleKeyDown, useCapture);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, useCapture);
+
+      if (trapFocus && previousFocusRef.current?.focus) {
+        previousFocusRef.current.focus();
+        previousFocusRef.current = null;
+      }
+    };
+  }, [isOpen, onClose, trapFocus, layer]);
+
+  const panelMotion = shouldReduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: DIALOG_MOTION_MS, ease: 'easeOut' as const },
+      }
+    : {
+        initial: { opacity: 0, scale: 0.98 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.98 },
+        transition: { duration: DIALOG_MOTION_MS, ease: 'easeOut' as const },
+      };
+
+  const backdropMotion = shouldReduceMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: DIALOG_MOTION_MS, ease: 'easeOut' as const },
+      }
+    : {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: DIALOG_MOTION_MS, ease: 'easeOut' as const },
+      };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <OverlayPortal>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...backdropMotion}
             onClick={onClose}
-            className={cn('fixed inset-0 bg-black/50', overlayBackdropClassName)}
+            className={cn('fixed inset-0 bg-black/50', layerClasses.backdrop)}
           />
           <div
             className={cn(
               'fixed inset-0 flex items-center justify-center p-4 pointer-events-none overflow-y-auto',
-              overlaySurfaceClassName
+              layerClasses.surface
             )}
           >
             <motion.div
@@ -83,10 +175,7 @@ export default function Dialog({
               role="dialog"
               aria-modal="true"
               aria-labelledby={title ? 'dialog-title' : undefined}
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', duration: 0.5 }}
+              {...panelMotion}
               className={cn(
                 'bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full min-w-0 pointer-events-auto relative my-4 flex flex-col',
                 sizeClasses[size],
@@ -116,9 +205,20 @@ export default function Dialog({
                 )}
               </div>
 
+              {stickySubheader ? <div className="flex-shrink-0">{stickySubheader}</div> : null}
+
               <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-6 py-4 text-gray-700 dark:text-gray-300">
                 {children}
               </div>
+
+              {footer ? (
+                <div
+                  data-testid="dialog-footer"
+                  className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] bg-gray-50/90 backdrop-blur-sm dark:bg-gray-800/90"
+                >
+                  {footer}
+                </div>
+              ) : null}
             </motion.div>
           </div>
         </OverlayPortal>
