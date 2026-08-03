@@ -1,6 +1,11 @@
 import { useId, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { EnergyPatternInsightCallout } from '@/components/molecules/EnergyPatternInsightCallout';
 import { AlertTriangle, HelpCircle, Loader2, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { tasksUntaggedCompletedHref } from '@/lib/growth-system/tasks-deep-links';
+import { weeklyReviewWarningActionLinkClassName } from '@/lib/growth-system/weekly-review-warning-banner-surfaces';
+import { ROUTES } from '@/routes';
 import type {
   LeverageRoiQuadrantBlock,
   LeverageRoiQuadrantKey,
@@ -54,6 +59,48 @@ const QUADRANT_STYLES: Record<
     badge: 'bg-amber-500/20 text-amber-950 dark:text-amber-100',
   },
 };
+
+const quadrantDeepLinkClassName =
+  'font-medium text-violet-700 underline decoration-violet-400/60 underline-offset-2 transition-colors hover:text-violet-900 hover:decoration-violet-600 dark:text-violet-300 dark:hover:text-violet-200';
+
+function EmptyQuadrantPrompt({ quadrantKey }: { quadrantKey: LeverageRoiQuadrantKey }) {
+  switch (quadrantKey) {
+    case 'coreWins':
+      return (
+        <p className="text-xs text-gray-500 dark:text-gray-500">
+          <Link to={tasksUntaggedCompletedHref()} className={quadrantDeepLinkClassName}>
+            Tag energy on completed high-leverage tasks to land Quick Wins here →
+          </Link>
+        </p>
+      );
+    case 'strategicInvestments':
+      return (
+        <p className="text-xs text-gray-500 dark:text-gray-500">
+          <Link to={ROUTES.admin.planner} className={quadrantDeepLinkClassName}>
+            Protect Deep Work time for a high-leverage goal to fill this quadrant →
+          </Link>
+        </p>
+      );
+    case 'necessaryFriction':
+      return (
+        <p className="text-xs text-gray-500 dark:text-gray-500">
+          <Link to={tasksUntaggedCompletedHref()} className={quadrantDeepLinkClassName}>
+            Tag Admin or Low Kinetic on routine completions to show maintenance load →
+          </Link>
+        </p>
+      );
+    case 'bikesheddingTrap':
+      return (
+        <p className="text-xs text-gray-500 dark:text-gray-500">
+          Empty is healthy — keep Deep Work off low-leverage chores →
+        </p>
+      );
+    default: {
+      const _exhaustive: never = quadrantKey;
+      return _exhaustive;
+    }
+  }
+}
 
 function formatShortDate(iso: string): string {
   const d = new Date(`${iso.slice(0, 10)}T12:00:00`);
@@ -169,7 +216,7 @@ function QuadrantCard({ block }: { block: LeverageRoiQuadrantBlock }) {
         </span>
       </div>
       {block.tasks.length === 0 ? (
-        <p className="text-xs text-gray-500 dark:text-gray-500">No tasks in this quadrant.</p>
+        <EmptyQuadrantPrompt quadrantKey={block.key} />
       ) : (
         <ul className="max-h-48 space-y-2 overflow-y-auto pr-1">
           {block.tasks.map((t) => (
@@ -247,14 +294,21 @@ export function LeverageRoiRetrospectiveWidget({
         <div className="space-y-4">
           <p className="text-sm text-gray-700 dark:text-gray-300">{data.summary.headline}</p>
 
+          <EnergyPatternInsightCallout insight={data.energyPatternInsight} />
+
           {data.dataQuality.untaggedEnergyCount > 0 ? (
             <div
               className="rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-950 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-100"
               role="status"
             >
               {data.dataQuality.untaggedEnergyCount} of {data.dataQuality.totalCompleted} completed
-              tasks lack an energy tag — ROI uses a default weight until you tag them in Tasks or
-              Planner.
+              tasks lack an energy tag — ROI uses a default weight.{' '}
+              <Link
+                to={tasksUntaggedCompletedHref()}
+                className={weeklyReviewWarningActionLinkClassName}
+              >
+                Tag untagged tasks
+              </Link>
             </div>
           ) : null}
 

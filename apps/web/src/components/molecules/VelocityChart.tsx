@@ -3,6 +3,11 @@ import type { WeeklyReviewVelocityWeek } from '@/types/growth-system';
 import { computeRollingAverages } from '@/utils/velocity-chart-math';
 import { cn } from '@/lib/utils';
 
+/** Dashed outline height for zero-story-point weeks (visual only). */
+const EMPTY_WEEK_PLACEHOLDER_H = 8;
+/** Transparent hover target above the baseline for empty weeks. */
+const EMPTY_WEEK_HIT_H = 14;
+
 interface VelocityChartProps {
   /** Newest week first (index 0 = current). */
   weeks: WeeklyReviewVelocityWeek[];
@@ -47,8 +52,9 @@ export function VelocityChart({
   const slotW = (w - pad * 2) / n;
   const barW = slotW - 4;
   const plotH = h - pad * 2;
+  const baselineY = h - pad;
 
-  const yAt = (value: number) => h - pad - (value / maxY) * plotH;
+  const yAt = (value: number) => h - pad - (Math.max(0, value) / maxY) * plotH;
   const xCenter = (i: number) => pad + i * slotW + 2 + barW / 2;
 
   const polylinePoints = useMemo(() => {
@@ -98,31 +104,69 @@ export function VelocityChart({
         )}
         {ordered.map((week, i) => {
           const x = pad + i * slotW + 2;
-          const bhRaw = (week.storyPointsCompleted / maxY) * plotH;
-          const barDisplayH = Math.max(bhRaw, 2);
+          const pts = week.storyPointsCompleted;
+          const isEmptyWeek = pts === 0;
+          const bhRaw = (pts / maxY) * plotH;
+          const barDisplayH = isEmptyWeek ? 0 : Math.max(bhRaw, 2);
           const isCurrent = week.weekStart === currentWeekStart;
           const hovered = hoveredIndex === i;
           const barTop = h - pad - barDisplayH;
-          const pts = week.storyPointsCompleted;
-          const labelY = Math.max(pad + 10, barTop - 5);
+          const placeholderTop = baselineY - EMPTY_WEEK_PLACEHOLDER_H;
+          const labelY = isEmptyWeek
+            ? Math.max(pad + 10, placeholderTop - 5)
+            : Math.max(pad + 10, barTop - 5);
           const rollingAtBar = rollingSeries[i] ?? 0;
+          const tooltip = isEmptyWeek
+            ? 'No story points completed'
+            : `${pts} story points · rolling avg ${rollingAtBar.toFixed(1)} · week of ${week.weekStart}`;
 
           return (
             <g key={week.weekStart}>
-              <title>{`${pts} story points · rolling avg ${rollingAtBar.toFixed(1)} · week of ${week.weekStart}`}</title>
-              <rect
-                x={x}
-                y={barTop}
-                width={barW}
-                height={barDisplayH}
-                rx={3}
-                fill={isCurrent ? 'rgb(59 130 246)' : 'rgb(51 65 85)'}
-                opacity={hovered ? 1 : isCurrent ? 1 : 0.85}
-                className="transition-opacity duration-150"
-                onMouseEnter={() => setHoveredIndex(i)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                style={{ cursor: 'default' }}
-              />
+              <title>{tooltip}</title>
+              {isEmptyWeek ? (
+                <>
+                  <rect
+                    x={x}
+                    y={placeholderTop}
+                    width={barW}
+                    height={EMPTY_WEEK_PLACEHOLDER_H}
+                    rx={3}
+                    fill="none"
+                    stroke="rgb(148 163 184)"
+                    strokeWidth="1"
+                    strokeDasharray="3 2"
+                    opacity={hovered ? 1 : 0.85}
+                    data-empty-week="true"
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  <rect
+                    x={x}
+                    y={baselineY - EMPTY_WEEK_HIT_H}
+                    width={barW}
+                    height={EMPTY_WEEK_HIT_H}
+                    fill="transparent"
+                    data-empty-week="true"
+                    onMouseEnter={() => setHoveredIndex(i)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                    style={{ cursor: 'default' }}
+                  />
+                </>
+              ) : (
+                <rect
+                  x={x}
+                  y={barTop}
+                  width={barW}
+                  height={barDisplayH}
+                  rx={3}
+                  fill={isCurrent ? 'rgb(59 130 246)' : 'rgb(51 65 85)'}
+                  opacity={hovered ? 1 : isCurrent ? 1 : 0.85}
+                  className="transition-opacity duration-150"
+                  data-velocity-bar="true"
+                  onMouseEnter={() => setHoveredIndex(i)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  style={{ cursor: 'default' }}
+                />
+              )}
               <text
                 x={x + barW / 2}
                 y={labelY}

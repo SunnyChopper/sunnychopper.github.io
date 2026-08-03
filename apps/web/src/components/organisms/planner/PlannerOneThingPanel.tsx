@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Moon } from 'lucide-react';
 
 import Button from '@/components/atoms/Button';
@@ -17,11 +17,11 @@ export interface PlannerOneThingPanelProps {
 }
 
 function sortCandidatesByScore(items: OneThingCandidate[]): OneThingCandidate[] {
-  return [...items].sort((a, b) => b.plannerScore - a.plannerScore).slice(0, 3);
+  return [...items].sort((a, b) => b.plannerScore - a.plannerScore).slice(0, 2);
 }
 
 /**
- * Tomorrow’s single focus task: load selection, fetch top-3 suggestions if empty, save via API.
+ * Tomorrow's single focus task: load selection, fetch top-2 suggestions if empty, pin on click.
  * Lives on the main Planner page so scheduling and commitment stay in one place.
  */
 export function PlannerOneThingPanel({ onSaved }: PlannerOneThingPanelProps) {
@@ -30,55 +30,65 @@ export function PlannerOneThingPanel({ onSaved }: PlannerOneThingPanelProps) {
   const suggest = useSuggestOneThing();
   const save = useSetOneThing();
   const [candidates, setCandidates] = useState<OneThingCandidate[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [pinningTaskId, setPinningTaskId] = useState<string | null>(null);
+  const [suggestionsReady, setSuggestionsReady] = useState(false);
   const fetched = useRef(false);
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (existing?.selectedTaskId) {
-      setSelected(existing.selectedTaskId);
+  const loadSuggestions = useCallback(async () => {
+    setSuggestionsReady(false);
+    try {
+      const res = await suggest.mutateAsync(tomorrow);
+      setCandidates(sortCandidatesByScore(res.candidates));
+      setSuggestionsReady(true);
+    } catch {
+      fetched.current = false;
+      setSuggestionsReady(false);
     }
-  }, [existing, isLoading]);
+  }, [suggest, tomorrow]);
 
   useEffect(() => {
     if (isLoading || fetched.current) return;
     if (existing?.selectedTaskId) return;
     fetched.current = true;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await suggest.mutateAsync(tomorrow);
-        const sorted = sortCandidatesByScore(res.candidates);
-        if (!cancelled) {
-          setCandidates(sorted);
-          if (sorted.length > 0) setSelected(sorted[0].taskId);
-        }
-      } catch {
-        fetched.current = false;
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoading, tomorrow, suggest, existing]);
+    void loadSuggestions();
+  }, [isLoading, tomorrow, existing, loadSuggestions]);
 
-  const handleSave = () => {
-    if (!selected) return;
+  const handleRetrySuggestions = () => {
+    fetched.current = true;
+    void loadSuggestions();
+  };
+
+  const handlePinSuggestion = (candidate: OneThingCandidate) => {
+    setPinningTaskId(candidate.taskId);
     save.mutate(
-      { targetDate: tomorrow, taskId: selected, selectionReason: 'Planner — one thing' },
       {
-        onSuccess: () => onSaved?.(),
+        targetDate: tomorrow,
+        taskId: candidate.taskId,
+        selectionReason: 'Planner — suggested pin',
+      },
+      {
+        onSuccess: () => {
+          setPinningTaskId(null);
+          onSaved?.();
+        },
+        onError: () => setPinningTaskId(null),
       }
     );
   };
 
-  const primaryCandidate = candidates[0] ?? null;
-  const alternateCandidates = candidates.slice(1);
   const lockedTaskId = existing?.selectedTaskId ?? null;
   const lockedCandidate = lockedTaskId
     ? candidates.find((c) => c.taskId === lockedTaskId)
     : undefined;
-  const showSuggestionPicker = !isLoading && !lockedTaskId && primaryCandidate !== null;
+  const showSuggestions =
+    !isLoading && !lockedTaskId && candidates.length > 0 && !suggest.isPending;
+  const showEmptySuggestions =
+    !isLoading &&
+    !lockedTaskId &&
+    !suggest.isPending &&
+    suggestionsReady &&
+    candidates.length === 0 &&
+    !suggest.isError;
 
   return (
     <section
@@ -108,72 +118,58 @@ export function PlannerOneThingPanel({ onSaved }: PlannerOneThingPanelProps) {
       )}
 
       {suggest.isError && !isLoading && !lockedTaskId && candidates.length === 0 && (
-        <p className="text-sm text-red-600 dark:text-red-400">
-          Could not load suggestions. Refresh the page or try again later.
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-red-600 dark:text-red-400">
+            Could not load suggestions. Try again or refresh the page.
+          </p>
+          <Button variant="secondary" size="sm" onClick={handleRetrySuggestions}>
+            Retry suggestions
+          </Button>
+        </div>
       )}
 
-      {showSuggestionPicker && primaryCandidate && (
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={() => setSelected(primaryCandidate.taskId)}
-            className={`w-full text-left rounded-xl border-2 p-4 transition ${
-              selected === primaryCandidate.taskId
-                ? 'border-indigo-400 bg-indigo-50 shadow-md ring-1 ring-indigo-500/30 dark:bg-indigo-950/50'
-                : 'border-indigo-500/40 bg-white/80 dark:bg-gray-900/60 hover:border-indigo-400/60'
-            }`}
-          >
-            <p className="text-xs font-medium uppercase tracking-wide text-indigo-400">
-              Recommended focus
-            </p>
-            <h3 className="mt-1 text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
-              {primaryCandidate.title}
-            </h3>
-            <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-              <span className="font-medium text-gray-900 dark:text-gray-200">
-                Why this is the bottleneck:
-              </span>{' '}
-              {primaryCandidate.reason}
-            </p>
-            <p className="mt-2 text-[10px] text-gray-500">
-              Score {primaryCandidate.plannerScore.toFixed(1)}
-            </p>
-          </button>
-
-          {alternateCandidates.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                Switch focus to:
-              </p>
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {alternateCandidates.map((c) => (
-                  <li key={c.taskId}>
-                    <button
-                      type="button"
-                      onClick={() => setSelected(c.taskId)}
-                      className={`w-full text-left rounded-lg border p-3 transition text-sm ${
-                        selected === c.taskId
-                          ? 'border-indigo-500 bg-white dark:bg-gray-900 shadow-sm'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white/70 dark:bg-gray-900/40'
-                      }`}
-                    >
-                      <div className="font-medium text-gray-900 dark:text-white line-clamp-2">
-                        {c.title}
-                      </div>
+      {showSuggestions && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+            Suggested focus — tap to pin:
+          </p>
+          <ul className="space-y-2">
+            {candidates.map((candidate) => {
+              const isPinning = pinningTaskId === candidate.taskId && save.isPending;
+              return (
+                <li key={candidate.taskId}>
+                  <button
+                    type="button"
+                    onClick={() => handlePinSuggestion(candidate)}
+                    disabled={save.isPending}
+                    className="w-full text-left rounded-lg border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 p-3 transition hover:border-indigo-400/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <div className="font-medium text-gray-900 dark:text-white line-clamp-2">
+                      {candidate.title}
+                    </div>
+                    {candidate.reason ? (
                       <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-                        {c.reason}
+                        {candidate.reason}
                       </div>
-                      <div className="text-[10px] text-gray-500 mt-1">
-                        Score {c.plannerScore.toFixed(1)}
+                    ) : null}
+                    {isPinning ? (
+                      <div className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                        Pinning…
                       </div>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
+      )}
+
+      {showEmptySuggestions && (
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          No high-priority items to suggest yet. Add or prioritize tasks in your backlog, then check
+          back.
+        </p>
       )}
 
       {lockedTaskId && !isLoading && (
@@ -197,12 +193,6 @@ export function PlannerOneThingPanel({ onSaved }: PlannerOneThingPanelProps) {
           )}
         </div>
       )}
-
-      <div className="flex flex-wrap gap-2 pt-1">
-        <Button variant="primary" disabled={!selected || save.isPending} onClick={handleSave}>
-          Save one thing
-        </Button>
-      </div>
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import {
   plannerEmphasisClassName,
   plannerListItemClassName,
@@ -28,8 +29,18 @@ export function PlannerBacklogPanel({ tasks, scheduledTaskIds }: PlannerBacklogP
       </p>
       <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
         {backlog.slice(0, 60).map((t) => (
-          <li key={t.id} className={`truncate ${plannerListItemClassName}`}>
-            <span className={`font-medium ${plannerMutedClassName}`}>{t.priority}</span> · {t.title}
+          <li key={t.id} className={`min-w-0 ${plannerListItemClassName}`}>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <PriorityIndicator
+                priority={t.priority}
+                variant="badge"
+                size="sm"
+                className="shrink-0"
+              />
+              <p className="truncate" title={t.title} aria-label={t.title}>
+                {t.title}
+              </p>
+            </div>
           </li>
         ))}
         {backlog.length === 0 && (

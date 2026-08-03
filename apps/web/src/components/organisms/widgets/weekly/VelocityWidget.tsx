@@ -20,6 +20,16 @@ export function VelocityWidget({ widget, data }: VelocityWidgetProps) {
         rollingAverages={data.rollingAverageStoryPoints}
         rollingWindow={rollingWindow}
       />
+      {(data.statsPartial.projectsCompleted ?? 0) > 0 ||
+      (data.statsPartial.projectCompletionPoints ?? 0) > 0 ? (
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          {data.statsPartial.projectsCompleted ?? 0} project
+          {(data.statsPartial.projectsCompleted ?? 0) === 1 ? '' : 's'} completed
+          {(data.statsPartial.projectCompletionPoints ?? 0) > 0
+            ? ` · +${data.statsPartial.projectCompletionPoints} wallet bonus`
+            : ''}
+        </p>
+      ) : null}
       <HabitVelocityInsightCallout correlations={data.habitVelocityCorrelations} />
     </div>
   );

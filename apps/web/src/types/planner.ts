@@ -177,6 +177,10 @@ export interface PlannerAutoSchedulePreview {
   proposedBlocks: PlannerProposedBlock[];
   velocity: PlannerVelocity;
   blockedDates?: string[];
+  /** True when preview omitted suggestions that could not fit capacity. */
+  adjustedToFit?: boolean;
+  /** Distinct task ids left unscheduled due to capacity (soft-fail). */
+  leftInBacklogCount?: number;
 }
 
 export interface PlannerSchedulingExceptionCreatePayload {

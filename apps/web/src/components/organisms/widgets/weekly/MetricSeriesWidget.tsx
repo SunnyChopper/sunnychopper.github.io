@@ -33,7 +33,9 @@ export function MetricSeriesWidget({ widget }: MetricSeriesWidgetProps) {
       {hasData ? (
         <MetricSparkline logs={logs} days={weeks * 7} height={64} width={280} color="orange" />
       ) : (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No logs in this window yet.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No logs this window — chart waits for entries.
+        </p>
       )}
     </div>
   );

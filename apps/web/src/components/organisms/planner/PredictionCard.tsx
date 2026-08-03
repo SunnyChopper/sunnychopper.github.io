@@ -1,13 +1,27 @@
+import { canClearManualOutOfOffice, nonManualBlockedHint } from '@/lib/planner/blocked-days';
 import type { PlanDayPrediction } from '@/types/planner';
 
 const WEEKDAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export interface PredictionCardProps {
   prediction: PlanDayPrediction;
+  focusDateISO: string;
+  onClearOutOfOffice?: () => void;
+  clearOutOfOfficePending?: boolean;
 }
 
-export function PredictionCard({ prediction }: PredictionCardProps) {
+export function PredictionCard({
+  prediction,
+  focusDateISO,
+  onClearOutOfOffice,
+  clearOutOfOfficePending,
+}: PredictionCardProps) {
   const blocked = Boolean(prediction.isBlocked || prediction.predictedCapacityPoints <= 0);
+  const canClearManual = canClearManualOutOfOffice(
+    { blockingContexts: prediction.blockingContexts },
+    focusDateISO
+  );
+  const nonManualBlocked = blocked && !canClearManual;
   const dow = WEEKDAY_SHORT[prediction.dayOfWeek] ?? '—';
   const histSelf = prediction.dayOfWeekHistory.find((h) => h.dayOfWeek === prediction.dayOfWeek);
   const samples = histSelf?.samples ?? 0;
@@ -31,6 +45,22 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           {label}. Auto-schedule and plan-day commits are disabled for this date.
         </p>
+        {canClearManual && onClearOutOfOffice ? (
+          <button
+            type="button"
+            className="mt-3 inline-flex items-center rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
+            onClick={onClearOutOfOffice}
+            disabled={clearOutOfOfficePending}
+            aria-label="Clear Out of Office for this day"
+          >
+            {clearOutOfOfficePending ? 'Clearing…' : 'Clear Out of Office'}
+          </button>
+        ) : null}
+        {nonManualBlocked ? (
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            {nonManualBlockedHint({ blockingContexts: prediction.blockingContexts })}
+          </p>
+        ) : null}
       </section>
     );
   }

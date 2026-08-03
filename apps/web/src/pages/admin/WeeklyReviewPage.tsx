@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
   AlertCircle,
@@ -8,7 +9,6 @@ import {
   Calendar,
   CheckCircle,
   CheckSquare,
-  ChevronDown,
   ListChecks,
   Loader2,
   Lock,
@@ -32,8 +32,12 @@ import { VelocityChart } from '@/components/molecules/VelocityChart';
 import { AISuggestedTasks } from '@/components/organisms/AISuggestedTasks';
 import { BlockerResolution } from '@/components/organisms/BlockerResolution';
 import { AccumulatedTechDebt } from '@/components/organisms/AccumulatedTechDebt';
+import { CapacityDeScopeAdvisory } from '@/components/organisms/CapacityDeScopeAdvisory';
 import { QuarantineZone } from '@/components/organisms/QuarantineZone';
+import { WeeklyReviewProjectRisksSection } from '@/components/organisms/WeeklyReviewProjectRisks';
+import { WeeklyReviewProjectsMovedStrip } from '@/components/organisms/WeeklyReviewProjectsMovedStrip';
 import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
+import { useGoals } from '@/hooks/growth-system';
 import {
   useWeeklyReviewCurrent,
   useWeeklyReviewLeverageRoi,
@@ -46,17 +50,41 @@ import { LeverageRoiRetrospectiveWidget } from '@/components/organisms/widgets/w
 import { useWeeklyDashboardConfig } from '@/hooks/useWeeklyDashboardConfig';
 import { maxComparisonWeeks, velocityRollingWindow } from '@/types/weekly-dashboard';
 import { useToast } from '@/hooks/use-toast';
+import { queryKeys } from '@/lib/react-query/query-keys';
+import {
+  buildWeeklyReviewRitualToast,
+  markWeeklyReviewRitualToastShown,
+  shouldShowWeeklyReviewRitualToast,
+} from '@/lib/growth-system/weekly-review-ritual-feedback';
 import { cn } from '@/lib/utils';
+import {
+  isWeeklyStatTileZero,
+  weeklyStatTileAccentClassName,
+  weeklyStatTileShellClassName,
+} from '@/lib/growth-system/weekly-stat-tile-surfaces';
+import {
+  normalizeWeeklyReviewInsightCards,
+  weeklyReviewNoSignalLabel,
+  type WeeklyReviewInsightDomainId,
+  type WeeklyReviewInsightEmptyDomainLink,
+} from '@/lib/growth-system/weekly-review-insight-cards';
+import { weeklyReviewPendingBannerCopy } from '@/lib/growth-system/weekly-review-pending-banner';
 import { ROUTES } from '@/routes';
 import type {
   WeeklyReviewBlockerResolution,
   WeeklyReviewQuarantineDecision,
   WeeklyReviewTechDebtDecision,
+  WeeklyReviewDeScopeDecision,
   WeeklyReviewAcceptedTask,
   WeeklyReviewSuggestedTask,
   WeeklyReviewCurrentDashboard,
+  Goal,
 } from '@/types/growth-system';
-import { Select } from '@/components/atoms/Select';
+import type { GoalGroundingLookup } from '@/lib/growth-system/ai-suggested-tasks-grounding';
+import { PastReviewsDropdown } from '@/components/molecules/PastReviewsDropdown';
+import { WeeklyReviewHistoricalLockStrip } from '@/components/molecules/WeeklyReviewHistoricalLockStrip';
+import { WeeklyReviewAutoCompletedBadge } from '@/components/molecules/WeeklyReviewAutoCompletedBadge';
+import { WeeklyReviewWeekSwitchSkeleton } from '@/components/molecules/WeeklyReviewWeekSwitchSkeleton';
 
 type Step = 'review' | 'plan' | 'complete';
 
@@ -74,6 +102,7 @@ function shellClass(isHistorical: boolean) {
 
 export default function WeeklyReviewPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const weekFromUrl = searchParams.get('week');
   const { showToast, ToastContainer } = useToast();
@@ -131,6 +160,18 @@ export default function WeeklyReviewPage() {
 
   const { tasks } = useGrowthSystemDashboard({ includeCompleted: true });
   const blockedTasks = useMemo(() => tasks.filter((t) => t.status === 'Blocked'), [tasks]);
+  const { goals } = useGoals();
+
+  const goalById = useMemo(() => {
+    const map: Record<string, GoalGroundingLookup> = {};
+    for (const goal of goals as Goal[]) {
+      map[goal.id] = {
+        title: goal.title,
+        successCriteria: goal.successCriteria,
+      };
+    }
+    return map;
+  }, [goals]);
 
   const { generate, savePlan, complete, suggestTasks, discard } =
     useWeeklyReviewMutations(effectiveWeekStart);
@@ -147,10 +188,16 @@ export default function WeeklyReviewPage() {
   const [stepOverride, setStepOverride] = useState<Step | null>(null);
   const step = stepOverride ?? derivedStep;
 
+  const insightCardsView = useMemo(
+    () => (snapshot ? normalizeWeeklyReviewInsightCards(snapshot.aiAnalysis) : null),
+    [snapshot]
+  );
+
   const [quarantineDecisions, setQuarantineDecisions] = useState<WeeklyReviewQuarantineDecision[]>(
     []
   );
   const [techDebtDecisions, setTechDebtDecisions] = useState<WeeklyReviewTechDebtDecision[]>([]);
+  const [deScopeDecisions, setDeScopeDecisions] = useState<WeeklyReviewDeScopeDecision[]>([]);
   const [blockerResolutions, setBlockerResolutions] = useState<WeeklyReviewBlockerResolution[]>([]);
   const [suggestedAccepted, setSuggestedAccepted] = useState<WeeklyReviewAcceptedTask[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState<WeeklyReviewSuggestedTask[]>([]);
@@ -169,11 +216,13 @@ export default function WeeklyReviewPage() {
     if (snapshot.planActions) {
       setQuarantineDecisions(snapshot.planActions.quarantineDecisions ?? []);
       setTechDebtDecisions(snapshot.planActions.techDebtDecisions ?? []);
+      setDeScopeDecisions(snapshot.planActions.deScopeDecisions ?? []);
       setBlockerResolutions(snapshot.planActions.blockerResolutions ?? []);
       setSuggestedAccepted(snapshot.planActions.suggestedTasksAccepted ?? []);
     } else {
       setQuarantineDecisions([]);
       setTechDebtDecisions([]);
+      setDeScopeDecisions([]);
       setBlockerResolutions([]);
       setSuggestedAccepted([]);
     }
@@ -245,18 +294,44 @@ export default function WeeklyReviewPage() {
     await savePlan.mutateAsync({
       quarantineDecisions,
       techDebtDecisions,
+      deScopeDecisions,
       blockerResolutions,
       suggestedTasksAccepted: suggestedAccepted,
     });
     setStepOverride('complete');
   };
 
+  const showRitualWalletToast = useCallback(
+    (ritualPointsAwarded?: number | null, autoCompleted?: boolean | null, weekStart?: string) => {
+      const toast = buildWeeklyReviewRitualToast(ritualPointsAwarded ?? 0, { autoCompleted });
+      if (!toast) return;
+      showToast({ type: 'success', ...toast, duration: 8000 });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.wallet.detail() });
+      if (weekStart) {
+        markWeeklyReviewRitualToastShown(weekStart);
+      }
+    },
+    [queryClient, showToast]
+  );
+
   const handleComplete = async () => {
     if (!effectiveWeekStart || isHistorical) return;
-    await complete.mutateAsync();
+    const completed = await complete.mutateAsync();
     await refetchSnapshot();
+    showRitualWalletToast(
+      completed.ritualPointsAwarded,
+      completed.autoCompleted,
+      effectiveWeekStart
+    );
     setCelebrateComplete(true);
   };
+
+  useEffect(() => {
+    if (!snapshot || snapshot.status !== 'completed' || !snapshot.autoCompleted) return;
+    const points = snapshot.ritualPointsAwarded ?? 0;
+    if (points <= 0 || !shouldShowWeeklyReviewRitualToast(snapshot.weekStart)) return;
+    showRitualWalletToast(points, true, snapshot.weekStart);
+  }, [snapshot, showRitualWalletToast]);
 
   const refreshSuggestions = async () => {
     if (isHistorical) return;
@@ -362,28 +437,21 @@ export default function WeeklyReviewPage() {
     !currentIsError &&
     !snapshotIsError &&
     !showMidWeek &&
-    !snapshot;
+    !snapshot &&
+    !current?.pendingReview;
+
+  const pendingBannerCopy = current?.pendingReview ? weeklyReviewPendingBannerCopy(current) : null;
 
   const pastReviewsSelect =
     listData && listData.reviews.length > 0 ? (
       <label className="flex flex-col gap-1.5 text-sm text-gray-600 dark:text-gray-400 sm:items-end">
         <span className="font-medium text-gray-700 dark:text-gray-300">Past reviews</span>
-        <div className="relative">
-          <Select
-            className="appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-8 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-            value={weekFromUrl ?? ''}
-            onChange={(e) => selectWeek(e.target.value || null)}
-          >
-            <option value="">Current / auto</option>
-            {listData.reviews.map((r) => (
-              <option key={r.weekStart} value={r.weekStart}>
-                Week of {r.weekStart} ({r.status}
-                {r.autoCompleted ? ' · auto-completed' : ''})
-              </option>
-            ))}
-          </Select>
-          <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-        </div>
+        <PastReviewsDropdown
+          reviews={listData.reviews}
+          anchorWeekStart={current?.weekStart ?? null}
+          value={weekFromUrl ?? ''}
+          onChange={selectWeek}
+        />
       </label>
     ) : null;
 
@@ -444,9 +512,9 @@ export default function WeeklyReviewPage() {
                 <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
                   <WeekContextBadge isHistorical={isHistorical} weekStart={snapshot.weekStart} />
                   {snapshot.autoCompleted ? (
-                    <span className="inline-flex items-center rounded-full bg-violet-600/15 px-2.5 py-0.5 text-xs font-semibold text-violet-800 ring-1 ring-violet-500/30 dark:text-violet-200 dark:ring-violet-400/35">
-                      Auto-completed
-                    </span>
+                    <WeeklyReviewAutoCompletedBadge
+                      ritualPointsAwarded={snapshot.ritualPointsAwarded}
+                    />
                   ) : null}
                 </div>
               )}
@@ -558,19 +626,10 @@ export default function WeeklyReviewPage() {
         )}
 
         {loading && !currentIsError && !(snapshotIsError && effectiveWeekStart) && (
-          <div
-            className={`flex min-h-[240px] flex-col items-center justify-center gap-4 p-10 ${cardClass}`}
-            aria-busy="true"
-            aria-live="polite"
-          >
-            <Loader2 className="h-10 w-10 animate-spin text-blue-600 dark:text-blue-400" />
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {currentLoading ? 'Loading your weekly review…' : 'Loading this week’s snapshot…'}
-            </p>
-          </div>
+          <WeeklyReviewWeekSwitchSkeleton />
         )}
 
-        {current?.pendingReview && !weekFromUrl && !loading && (
+        {pendingBannerCopy && !weekFromUrl && !loading && (
           <div
             className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-300/80 bg-amber-50/90 p-4 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-100 md:flex-row md:items-center md:justify-between"
             role="status"
@@ -578,13 +637,11 @@ export default function WeeklyReviewPage() {
             <div>
               <p className="font-semibold">Weekly review pending</p>
               <p className="mt-1 text-amber-900/90 dark:text-amber-200/90">
-                Your review day has passed for week {current.weekStart}. Generate a draft review to
-                reflect and plan, then finalize when you are ready—or discard the draft to keep
-                tracking as usual.
+                {pendingBannerCopy.body}
               </p>
             </div>
             <Button variant="primary" onClick={handleGenerate} disabled={generate.isPending}>
-              {generate.isPending ? 'Generating…' : 'Start weekly review'}
+              {generate.isPending ? 'Generating…' : pendingBannerCopy.ctaLabel}
             </Button>
           </div>
         )}
@@ -604,6 +661,8 @@ export default function WeeklyReviewPage() {
                 config={dashboardConfig}
                 data={current}
                 onEdit={() => setDashboardDrawerOpen(true)}
+                onRunWeeklyReview={handleGenerate}
+                runWeeklyReviewPending={generate.isPending}
               />
               <LeverageRoiRetrospectiveWidget
                 className="mt-6"
@@ -612,11 +671,6 @@ export default function WeeklyReviewPage() {
                 isError={leverageRoiIsError}
                 errorMessage={leverageRoiErrorMessage}
               />
-              <div className="mt-6 flex justify-end">
-                <Button variant="primary" onClick={handleGenerate} disabled={generate.isPending}>
-                  {generate.isPending ? 'Generating…' : 'Run weekly review now'}
-                </Button>
-              </div>
             </div>
           </div>
         )}
@@ -627,355 +681,385 @@ export default function WeeklyReviewPage() {
         />
 
         {snapshot && !loading && (
-          <div className={cn('flex flex-col gap-8 lg:flex-row', isHistorical && 'opacity-[0.97]')}>
-            <aside className="shrink-0 lg:w-56">
-              <div className="lg:sticky lg:top-20">
-                <p className="mb-3 hidden text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 lg:block">
-                  Steps
-                </p>
-                <div className="hidden lg:block">
+          <>
+            {isHistorical && (
+              <WeeklyReviewHistoricalLockStrip variant={!liveWeekKey ? 'historical' : 'locked'} />
+            )}
+            <div
+              className={cn('flex flex-col gap-8 lg:flex-row', isHistorical && 'opacity-[0.97]')}
+            >
+              <aside className="shrink-0 lg:w-56">
+                <div className="lg:sticky lg:top-20">
+                  <p className="mb-3 hidden text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 lg:block">
+                    Steps
+                  </p>
+                  <div className="hidden lg:block">
+                    <Stepper
+                      layout="vertical"
+                      step={step}
+                      onStep={setStepOverride}
+                      archived={isHistorical}
+                    />
+                  </div>
+                </div>
+              </aside>
+
+              <div className="min-w-0 flex-1 space-y-6">
+                <div className="lg:hidden">
                   <Stepper
-                    layout="vertical"
+                    layout="horizontal"
                     step={step}
                     onStep={setStepOverride}
                     archived={isHistorical}
                   />
                 </div>
-              </div>
-            </aside>
 
-            <div className="min-w-0 flex-1 space-y-6">
-              <div className="lg:hidden">
-                <Stepper
-                  layout="horizontal"
-                  step={step}
-                  onStep={setStepOverride}
-                  archived={isHistorical}
-                />
-              </div>
-
-              {isHistorical && (
-                <div
-                  className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-100/80 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300 md:flex-row md:items-center md:justify-between"
-                  role="status"
-                >
-                  <div className="flex items-start gap-3">
-                    <Lock
-                      className="mt-0.5 h-5 w-5 shrink-0 text-slate-500 dark:text-slate-400"
-                      aria-hidden
-                    />
-                    <div>
-                      <p className="font-semibold text-slate-900 dark:text-slate-100">
-                        {!liveWeekKey ? 'Historical week' : 'Week locked in'}
-                      </p>
-                      <p className="mt-1 text-slate-600 dark:text-slate-400">
-                        {!liveWeekKey
-                          ? 'This snapshot is read-only. Numbers and AI text reflect the saved review, not live task completion.'
-                          : 'This week’s review is committed. Planning actions and sprint updates are closed.'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {(snapshot?.oooStandby ?? current?.activeOooStandby) && (
-                <div
-                  className="rounded-xl border border-emerald-300/80 bg-emerald-50/90 p-4 text-sm text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100"
-                  role="status"
-                  aria-label="OOO Standby active"
-                >
-                  <p className="font-semibold">OOO Standby active</p>
-                  <p className="mt-1 text-emerald-900/90 dark:text-emerald-200/90">
-                    Protected days {(snapshot?.oooStandby ?? current?.activeOooStandby)?.startDate}{' '}
-                    – {(snapshot?.oooStandby ?? current?.activeOooStandby)?.endDate} are omitted
-                    from habit and velocity penalties.
-                  </p>
-                </div>
-              )}
-
-              {isDraftReview && (
-                <div
-                  className="flex flex-col gap-4 rounded-xl border border-blue-300 bg-blue-50/95 p-4 text-sm dark:border-blue-800/60 dark:bg-blue-950/45 md:flex-row md:items-start md:justify-between"
-                  role="status"
-                  aria-label="Weekly review draft"
-                >
-                  <div className="space-y-2 md:max-w-2xl">
-                    <p className="font-semibold text-blue-950 dark:text-blue-50">
-                      Weekly Review Draft — Unsaved changes will not affect your historical metrics.
-                    </p>
-                    <p className="text-gray-700 dark:text-gray-300">
-                      This week stays open for normal tracking until you choose{' '}
-                      <span className="font-medium">Finalize &amp; Lock Week</span>. Summary tiles
-                      and velocity update as you complete tasks through today; AI insights are from
-                      when you generated this draft.
-                    </p>
-                  </div>
-                  <Button
-                    variant="secondary"
-                    className="inline-flex shrink-0 items-center gap-2 self-start md:self-center"
-                    onClick={() => void handleDiscardDraft()}
-                    disabled={discard.isPending}
+                {(snapshot?.oooStandby ?? current?.activeOooStandby) && (
+                  <div
+                    className="rounded-xl border border-emerald-300/80 bg-emerald-50/90 p-4 text-sm text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100"
+                    role="status"
+                    aria-label="OOO Standby active"
                   >
-                    {discard.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-4 w-4" />
-                    )}
-                    Discard Draft / Re-open Week
-                  </Button>
-                </div>
-              )}
+                    <p className="font-semibold">OOO Standby active</p>
+                    <p className="mt-1 text-emerald-900/90 dark:text-emerald-200/90">
+                      Protected days{' '}
+                      {(snapshot?.oooStandby ?? current?.activeOooStandby)?.startDate} –{' '}
+                      {(snapshot?.oooStandby ?? current?.activeOooStandby)?.endDate} are omitted
+                      from habit and velocity penalties.
+                    </p>
+                  </div>
+                )}
 
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={step}
-                  role="tabpanel"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  {step === 'review' && (
-                    <div className="space-y-6">
-                      <div className={`p-6 ${shellClass(isHistorical)}`}>
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
-                          <Calendar className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                          Week summary
-                        </h2>
-                        <div className="mb-2 grid grid-cols-2 gap-3 md:grid-cols-5">
-                          <MetricWidget
-                            label="Tasks done"
-                            value={snapshot.stats.tasksCompleted}
-                            accent="text-gray-900 dark:text-white"
-                            icon={CheckCircle}
-                            muted={isHistorical}
-                          />
-                          <MetricWidget
-                            label="Habit logs"
-                            value={snapshot.stats.habitCompletions}
-                            accent="text-emerald-500 dark:text-emerald-400"
-                            icon={Activity}
-                            muted={isHistorical}
-                          />
-                          <MetricWidget
-                            label="Goals active"
-                            value={snapshot.stats.goalsActive}
-                            accent="text-violet-500 dark:text-violet-400"
-                            icon={Target}
-                            muted={isHistorical}
-                          />
-                          <MetricWidget
-                            label="Metrics"
-                            value={snapshot.stats.metricsLogged}
-                            accent="text-amber-500 dark:text-amber-400"
-                            icon={BarChart2}
-                            muted={isHistorical}
-                          />
-                          <MetricWidget
-                            label="Journal"
-                            value={snapshot.stats.journalEntries}
-                            accent="text-cyan-500 dark:text-cyan-400"
-                            icon={BookOpen}
-                            muted={isHistorical}
-                          />
-                        </div>
-                        <VelocityChart
-                          weeks={snapshot.velocityData}
-                          currentWeekStart={snapshot.weekStart}
-                          className="mt-4 border-gray-200 dark:border-gray-700"
-                        />
-                        <HabitVelocityInsightCallout
-                          correlations={snapshot.habitVelocityCorrelations}
-                        />
-                      </div>
-
-                      <LeverageRoiRetrospectiveWidget
-                        data={leverageRoi}
-                        isLoading={leverageRoiLoading}
-                        isError={leverageRoiIsError}
-                        errorMessage={leverageRoiErrorMessage}
-                        muted={isHistorical}
-                      />
-
-                      <div className={`p-6 ${shellClass(isHistorical)}`}>
-                        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
-                          <Sparkles className="h-5 w-5 text-amber-500 dark:text-amber-400" />
-                          AI insights
-                        </h2>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                          <InsightCard
-                            title="Tasks & velocity"
-                            body={snapshot.aiAnalysis.tasksSummary}
-                            icon={ListChecks}
-                            muted={isHistorical}
-                          />
-                          <InsightCard
-                            title="Habits"
-                            body={`${snapshot.aiAnalysis.habitsSummary}\n\n${snapshot.aiAnalysis.habitsAiMessage}`}
-                            icon={Activity}
-                            muted={isHistorical}
-                          />
-                          <InsightCard
-                            title="Metrics"
-                            body={snapshot.aiAnalysis.metricsSummary}
-                            icon={BarChart2}
-                            muted={isHistorical}
-                          />
-                          <InsightCard
-                            title="Goals & projects"
-                            body={snapshot.aiAnalysis.goalsSummary}
-                            icon={Target}
-                            muted={isHistorical}
-                          />
-                          <InsightCard
-                            title="Logbook"
-                            body={snapshot.aiAnalysis.logbookSummary}
-                            icon={BookOpen}
-                            muted={isHistorical}
-                          />
-                          {snapshot.aiAnalysis.reflectionPrompt && (
-                            <InsightCard
-                              title="Reflection"
-                              body={snapshot.aiAnalysis.reflectionPrompt}
-                              icon={PenLine}
-                              muted={isHistorical}
-                              className="md:col-span-2 xl:col-span-3"
-                            />
-                          )}
-                        </div>
-                        {snapshot.aiAnalysis.overdueTasks.length > 0 && (
-                          <div className="mt-4 rounded-lg border border-rose-900/40 bg-rose-950/20 p-3 text-sm text-rose-100">
-                            <p className="font-medium text-rose-200">Missed due dates</p>
-                            <ul className="mt-1 list-disc pl-5">
-                              {snapshot.aiAnalysis.overdueTasks.map((t) => (
-                                <li key={t.taskId}>
-                                  {t.title}: {t.note}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex justify-end">
-                        <Button variant="primary" onClick={() => setStepOverride('plan')}>
-                          Continue to planning
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </div>
+                {isDraftReview && (
+                  <div
+                    className="flex flex-col gap-3 rounded-xl border border-blue-300 bg-blue-50/95 p-4 text-sm dark:border-blue-800/60 dark:bg-blue-950/45"
+                    role="status"
+                    aria-label="Weekly review draft"
+                  >
+                    <div className="space-y-2">
+                      <p className="font-semibold text-blue-950 dark:text-blue-50">
+                        Weekly Review Draft — Unsaved changes will not affect your historical
+                        metrics.
+                      </p>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        This week stays open for normal tracking until you choose{' '}
+                        <span className="font-medium">Finalize &amp; Lock Week</span>. Summary tiles
+                        and velocity update as you complete tasks through today; AI insights are
+                        from when you generated this draft.
+                      </p>
                     </div>
-                  )}
-
-                  {step === 'plan' && (
-                    <div className="space-y-8">
-                      <section className={`p-6 ${shellClass(isHistorical)}`}>
-                        <h3 className="text-md mb-3 font-semibold text-amber-800 dark:text-amber-200">
-                          Quarantine zone
-                        </h3>
-                        <QuarantineZone
-                          candidates={snapshot.aiAnalysis.quarantineCandidates}
-                          decisions={quarantineDecisions}
-                          onChange={setQuarantineDecisions}
-                          readOnly={isHistorical}
-                        />
-                      </section>
-                      <section className={`p-6 ${shellClass(isHistorical)}`}>
-                        <h3 className="text-md mb-3 font-semibold text-rose-800 dark:text-rose-200">
-                          Accumulated Technical Debt
-                        </h3>
-                        <AccumulatedTechDebt
-                          candidates={snapshot.aiAnalysis.techDebtCandidates ?? []}
-                          decisions={techDebtDecisions}
-                          onChange={setTechDebtDecisions}
-                          readOnly={isHistorical}
-                        />
-                      </section>
-                      <section className={`p-6 ${shellClass(isHistorical)}`}>
-                        <h3 className="text-md mb-3 font-semibold text-gray-900 dark:text-white">
-                          Blocker resolution
-                        </h3>
-                        <BlockerResolution
-                          tasks={blockedTasks}
-                          resolutions={blockerResolutions}
-                          onChange={setBlockerResolutions}
-                          readOnly={isHistorical}
-                        />
-                      </section>
-                      <section className={`p-6 ${shellClass(isHistorical)}`}>
-                        <AISuggestedTasks
-                          suggestions={aiSuggestions}
-                          accepted={suggestedAccepted}
-                          onAdd={(t) => setSuggestedAccepted((s) => [...s, t])}
-                          onRefresh={refreshSuggestions}
-                          loading={suggestTasks.isPending}
-                          readOnly={isHistorical}
-                        />
-                      </section>
-                      <div className="flex justify-between">
-                        <Button variant="secondary" onClick={() => setStepOverride('review')}>
-                          Back
-                        </Button>
-                        <Button
-                          variant="primary"
-                          onClick={() => void handleSavePlan()}
-                          disabled={savePlan.isPending || isHistorical}
-                        >
-                          {savePlan.isPending ? 'Saving…' : 'Save plan & continue'}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 'complete' && (
-                    <div
-                      className={`relative overflow-hidden p-8 text-center sm:p-10 ${shellClass(isHistorical)}`}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="inline-flex shrink-0 items-center gap-2 self-start"
+                      onClick={() => void handleDiscardDraft()}
+                      disabled={discard.isPending}
                     >
-                      {!isHistorical && (
-                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-blue-500/5" />
+                      {discard.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4" />
                       )}
-                      <div className="relative">
-                        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-2 ring-emerald-500/30">
-                          <CheckSquare className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+                      Discard Draft / Re-open Week
+                    </Button>
+                  </div>
+                )}
+
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={step}
+                    role="tabpanel"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {step === 'review' && (
+                      <div className="space-y-6">
+                        <div className={`p-6 ${shellClass(isHistorical)}`}>
+                          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
+                            <Calendar className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                            Week summary
+                          </h2>
+                          <div className="mb-2 grid grid-cols-2 gap-3 md:grid-cols-5">
+                            <MetricWidget
+                              label="Tasks done"
+                              value={snapshot.stats.tasksCompleted}
+                              accent="text-gray-900 dark:text-white"
+                              icon={CheckCircle}
+                              muted={isHistorical}
+                            />
+                            <MetricWidget
+                              label="Habit logs"
+                              value={snapshot.stats.habitCompletions}
+                              accent="text-emerald-500 dark:text-emerald-400"
+                              icon={Activity}
+                              muted={isHistorical}
+                            />
+                            <MetricWidget
+                              label="Goals active"
+                              value={snapshot.stats.goalsActive}
+                              accent="text-violet-500 dark:text-violet-400"
+                              icon={Target}
+                              muted={isHistorical}
+                            />
+                            <MetricWidget
+                              label="Metrics"
+                              value={snapshot.stats.metricsLogged}
+                              accent="text-amber-500 dark:text-amber-400"
+                              icon={BarChart2}
+                              muted={isHistorical}
+                            />
+                            <MetricWidget
+                              label="Journal"
+                              value={snapshot.stats.journalEntries}
+                              accent="text-cyan-500 dark:text-cyan-400"
+                              icon={BookOpen}
+                              muted={isHistorical}
+                            />
+                          </div>
+                          <VelocityChart
+                            weeks={snapshot.velocityData}
+                            currentWeekStart={snapshot.weekStart}
+                            className="mt-4 border-gray-200 dark:border-gray-700"
+                          />
+                          <HabitVelocityInsightCallout
+                            correlations={snapshot.habitVelocityCorrelations}
+                          />
                         </div>
-                        <h2 className="mb-3 font-serif text-2xl font-semibold text-gray-900 dark:text-white">
-                          {snapshot.status === 'completed' ? 'Week locked' : 'Ready to finalize'}
-                        </h2>
-                        <p className="mx-auto mb-4 max-w-lg text-gray-600 dark:text-gray-300">
-                          {snapshot.completionSummary?.hypeMessage ||
-                            snapshot.aiAnalysis.hypeSummary ||
-                            "You're set for the week ahead."}
-                        </p>
-                        {snapshot.completionSummary?.sprintTaskIds &&
-                          snapshot.completionSummary.sprintTaskIds.length > 0 && (
-                            <p className="mb-6 text-sm text-gray-500 dark:text-gray-500">
-                              {snapshot.completionSummary.sprintTaskIds.length} new tasks added to
-                              your board.
-                            </p>
-                          )}
-                        <div className="flex flex-wrap justify-center gap-3">
-                          {!isHistorical && snapshot.status !== 'completed' && (
-                            <Button
-                              variant="primary"
-                              onClick={() => void handleComplete()}
-                              disabled={complete.isPending}
+
+                        <LeverageRoiRetrospectiveWidget
+                          data={leverageRoi}
+                          isLoading={leverageRoiLoading}
+                          isError={leverageRoiIsError}
+                          errorMessage={leverageRoiErrorMessage}
+                          muted={isHistorical}
+                        />
+
+                        {(snapshot.projectsMoved?.length ?? 0) > 0 ? (
+                          <section className={`p-6 ${shellClass(isHistorical)}`}>
+                            <WeeklyReviewProjectsMovedStrip
+                              projects={snapshot.projectsMoved}
+                              muted={isHistorical}
+                            />
+                          </section>
+                        ) : null}
+
+                        <div className={`p-6 ${shellClass(isHistorical)}`}>
+                          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
+                            <Sparkles className="h-5 w-5 text-amber-500 dark:text-amber-400" />
+                            AI insights
+                          </h2>
+                          {snapshot.aiAnalysis.weekOverWeekNarrative?.trim() ? (
+                            <div
+                              className={cn(
+                                'mb-5 rounded-lg border border-amber-200/80 bg-amber-50/60 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20',
+                                isHistorical && 'opacity-80'
+                              )}
+                              data-testid="weekly-review-wow-narrative"
                             >
-                              {complete.isPending ? 'Finalizing…' : 'Finalize & Lock Week'}
-                            </Button>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+                                Week over week
+                              </p>
+                              <p className="mt-2 text-sm leading-relaxed text-gray-800 dark:text-gray-100">
+                                {snapshot.aiAnalysis.weekOverWeekNarrative}
+                              </p>
+                            </div>
+                          ) : null}
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            {insightCardsView?.signalCards.map((card) => (
+                              <InsightCard
+                                key={card.id}
+                                title={card.title}
+                                body={card.body}
+                                icon={insightIconForDomain(card.id)}
+                                href={card.href}
+                                muted={isHistorical}
+                              />
+                            ))}
+                            {insightCardsView && insightCardsView.emptyDomains.length > 0 && (
+                              <NoSignalInsightRow
+                                domains={insightCardsView.emptyDomains}
+                                muted={isHistorical}
+                                className={
+                                  insightCardsView.signalCards.length === 0
+                                    ? 'md:col-span-2 xl:col-span-3'
+                                    : undefined
+                                }
+                              />
+                            )}
+                            {snapshot.aiAnalysis.reflectionPrompt && (
+                              <InsightCard
+                                title="Reflection"
+                                body={snapshot.aiAnalysis.reflectionPrompt}
+                                icon={PenLine}
+                                muted={isHistorical}
+                                className="md:col-span-2 xl:col-span-3"
+                              />
+                            )}
+                          </div>
+                          <section className={`mt-4 p-6 ${shellClass(isHistorical)}`}>
+                            <WeeklyReviewProjectRisksSection
+                              assessments={snapshot.aiAnalysis.projectRiskAssessments ?? []}
+                              muted={isHistorical}
+                            />
+                          </section>
+                          {snapshot.aiAnalysis.overdueTasks.length > 0 && (
+                            <div className="mt-4 rounded-lg border border-rose-900/40 bg-rose-950/20 p-3 text-sm text-rose-100">
+                              <p className="font-medium text-rose-200">Missed due dates</p>
+                              <ul className="mt-1 list-disc pl-5">
+                                {snapshot.aiAnalysis.overdueTasks.map((t) => (
+                                  <li key={t.taskId}>
+                                    {t.title}: {t.note}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           )}
-                          <Button
-                            variant="secondary"
-                            onClick={() => navigate(ROUTES.admin.dashboard)}
-                          >
-                            Dashboard
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button variant="primary" onClick={() => setStepOverride('plan')}>
+                            Continue to planning
+                            <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                    )}
+
+                    {step === 'plan' && (
+                      <div className="space-y-8">
+                        {snapshot.capacityAdvisory && (
+                          <section className={`p-6 ${shellClass(isHistorical)}`}>
+                            <h3 className="text-md mb-3 font-semibold text-amber-800 dark:text-amber-200">
+                              Next-week capacity
+                            </h3>
+                            <CapacityDeScopeAdvisory
+                              advisory={snapshot.capacityAdvisory}
+                              acceptedSuggestions={suggestedAccepted}
+                              deScopeDecisions={deScopeDecisions}
+                              techDebtDecisions={techDebtDecisions}
+                              onDeScopeChange={setDeScopeDecisions}
+                              readOnly={isHistorical}
+                            />
+                          </section>
+                        )}
+                        <section className={`p-6 ${shellClass(isHistorical)}`}>
+                          <h3 className="text-md mb-3 font-semibold text-amber-800 dark:text-amber-200">
+                            Quarantine zone
+                          </h3>
+                          <QuarantineZone
+                            candidates={snapshot.aiAnalysis.quarantineCandidates}
+                            decisions={quarantineDecisions}
+                            onChange={setQuarantineDecisions}
+                            readOnly={isHistorical}
+                          />
+                        </section>
+                        <section className={`p-6 ${shellClass(isHistorical)}`}>
+                          <h3 className="text-md mb-3 font-semibold text-rose-800 dark:text-rose-200">
+                            Accumulated Technical Debt
+                          </h3>
+                          <AccumulatedTechDebt
+                            candidates={snapshot.aiAnalysis.techDebtCandidates ?? []}
+                            decisions={techDebtDecisions}
+                            onChange={setTechDebtDecisions}
+                            weekStart={snapshot.weekStart}
+                            readOnly={isHistorical}
+                          />
+                        </section>
+                        <section className={`p-6 ${shellClass(isHistorical)}`}>
+                          <h3 className="text-md mb-3 font-semibold text-gray-900 dark:text-white">
+                            Blocker resolution
+                          </h3>
+                          <BlockerResolution
+                            tasks={blockedTasks}
+                            resolutions={blockerResolutions}
+                            onChange={setBlockerResolutions}
+                            readOnly={isHistorical}
+                          />
+                        </section>
+                        <section className={`p-6 ${shellClass(isHistorical)}`}>
+                          <AISuggestedTasks
+                            suggestions={aiSuggestions}
+                            accepted={suggestedAccepted}
+                            onAdd={(t) => setSuggestedAccepted((s) => [...s, t])}
+                            onDismiss={(index) =>
+                              setAiSuggestions((list) => list.filter((_, i) => i !== index))
+                            }
+                            onRefresh={refreshSuggestions}
+                            loading={suggestTasks.isPending}
+                            readOnly={isHistorical}
+                            goalById={goalById}
+                            velocityTrend={snapshot.aiAnalysis.velocityTrend}
+                            velocityData={snapshot.velocityData}
+                          />
+                        </section>
+                        <div className="flex justify-between">
+                          <Button variant="secondary" onClick={() => setStepOverride('review')}>
+                            Back
+                          </Button>
+                          <Button
+                            variant="primary"
+                            onClick={() => void handleSavePlan()}
+                            disabled={savePlan.isPending || isHistorical}
+                          >
+                            {savePlan.isPending ? 'Saving…' : 'Save plan & continue'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {step === 'complete' && (
+                      <div
+                        className={`relative overflow-hidden p-8 text-center sm:p-10 ${shellClass(isHistorical)}`}
+                      >
+                        {!isHistorical && (
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-blue-500/5" />
+                        )}
+                        <div className="relative">
+                          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-2 ring-emerald-500/30">
+                            <CheckSquare className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <h2 className="mb-3 font-serif text-2xl font-semibold text-gray-900 dark:text-white">
+                            {snapshot.status === 'completed' ? 'Week locked' : 'Ready to finalize'}
+                          </h2>
+                          <p className="mx-auto mb-4 max-w-lg text-gray-600 dark:text-gray-300">
+                            {snapshot.completionSummary?.hypeMessage ||
+                              snapshot.aiAnalysis.hypeSummary ||
+                              "You're set for the week ahead."}
+                          </p>
+                          {snapshot.completionSummary?.sprintTaskIds &&
+                            snapshot.completionSummary.sprintTaskIds.length > 0 && (
+                              <p className="mb-6 text-sm text-gray-500 dark:text-gray-500">
+                                {snapshot.completionSummary.sprintTaskIds.length} new tasks added to
+                                your board.
+                              </p>
+                            )}
+                          <div className="flex flex-wrap justify-center gap-3">
+                            {!isHistorical && snapshot.status !== 'completed' && (
+                              <Button
+                                variant="primary"
+                                onClick={() => void handleComplete()}
+                                disabled={complete.isPending}
+                              >
+                                {complete.isPending ? 'Finalizing…' : 'Finalize & Lock Week'}
+                              </Button>
+                            )}
+                            <Button
+                              variant="secondary"
+                              onClick={() => navigate(ROUTES.admin.dashboard)}
+                            >
+                              Dashboard
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {showEmpty && current && (
@@ -1028,7 +1112,7 @@ function WeeklyReviewEmptyState({
   onGenerate: () => Promise<void>;
   generating: boolean;
 }) {
-  const earlyWeek = !current.hasGeneratedReview && !current.isMidWeek;
+  const earlyWeek = !current.hasGeneratedReview && current.isMidWeek;
 
   return (
     <div className={`p-8 ${cardClass}`}>
@@ -1089,32 +1173,41 @@ function MetricWidget({
   icon: ComponentType<{ className?: string }>;
   muted: boolean;
 }) {
+  const isZero = isWeeklyStatTileZero(value);
+  const valueAccent = weeklyStatTileAccentClassName(isZero, accent);
+
   return (
-    <div
-      className={cn(
-        'rounded-xl border p-4 text-left transition-colors',
-        muted
-          ? 'border-slate-200/90 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/35'
-          : 'border-blue-200/60 bg-gradient-to-br from-white to-blue-50/50 dark:border-blue-900/45 dark:from-gray-800 dark:to-blue-950/25'
-      )}
-    >
-      <Icon className={cn('h-5 w-5', accent)} aria-hidden />
-      <div className={cn('mt-2 text-2xl font-bold tabular-nums', accent)}>{value}</div>
+    <div className={weeklyStatTileShellClassName({ isZero, historicalMuted: muted })}>
+      <Icon className={cn('h-5 w-5', valueAccent)} aria-hidden />
+      <div className={cn('mt-2 text-2xl font-bold tabular-nums', valueAccent)}>{value}</div>
       <div className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</div>
     </div>
   );
 }
 
-function InsightCard({
-  title,
-  body,
-  icon: Icon,
+function insightIconForDomain(
+  domainId: WeeklyReviewInsightDomainId
+): ComponentType<{ className?: string }> {
+  switch (domainId) {
+    case 'tasks':
+      return ListChecks;
+    case 'habits':
+      return Activity;
+    case 'metrics':
+      return BarChart2;
+    case 'goals-projects':
+      return Target;
+    case 'logbook':
+      return BookOpen;
+  }
+}
+
+function NoSignalInsightRow({
+  domains,
   muted,
   className,
 }: {
-  title: string;
-  body: string;
-  icon: ComponentType<{ className?: string }>;
+  domains: WeeklyReviewInsightEmptyDomainLink[];
   muted: boolean;
   className?: string;
 }) {
@@ -1128,15 +1221,75 @@ function InsightCard({
         className
       )}
     >
-      <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-gray-700/80">
-        <Icon
-          className={cn(
-            'h-4 w-4 shrink-0',
-            muted ? 'text-slate-500 dark:text-slate-400' : 'text-blue-600 dark:text-blue-400'
-          )}
-          aria-hidden
-        />
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h4>
+      <p className="text-sm text-gray-600 dark:text-gray-300">
+        <span className="font-medium text-gray-800 dark:text-gray-200">
+          {weeklyReviewNoSignalLabel}
+        </span>
+        <span className="text-gray-500 dark:text-gray-400"> — </span>
+        {domains.map((domain, index) => (
+          <span key={domain.id}>
+            <Link
+              to={domain.href}
+              className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
+            >
+              {domain.label}
+            </Link>
+            {index < domains.length - 1 ? (
+              <span className="text-gray-500 dark:text-gray-400">, </span>
+            ) : null}
+          </span>
+        ))}
+      </p>
+    </div>
+  );
+}
+
+function InsightCard({
+  title,
+  body,
+  icon: Icon,
+  muted,
+  className,
+  href,
+}: {
+  title: string;
+  body: string;
+  icon: ComponentType<{ className?: string }>;
+  muted: boolean;
+  className?: string;
+  href?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-xl border p-4 shadow-sm',
+        muted
+          ? 'border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/35'
+          : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800/90',
+        className
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2 dark:border-gray-700/80">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon
+            className={cn(
+              'h-4 w-4 shrink-0',
+              muted ? 'text-slate-500 dark:text-slate-400' : 'text-blue-600 dark:text-blue-400'
+            )}
+            aria-hidden
+          />
+          <h4 className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {title}
+          </h4>
+        </div>
+        {href ? (
+          <Link
+            to={href}
+            className="shrink-0 text-xs font-medium text-blue-600 underline-offset-2 hover:underline dark:text-blue-400"
+          >
+            Open
+          </Link>
+        ) : null}
       </div>
       <p className="mt-3 whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-300">{body}</p>
     </div>

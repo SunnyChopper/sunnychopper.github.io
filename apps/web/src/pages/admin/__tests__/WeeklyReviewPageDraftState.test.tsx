@@ -73,6 +73,7 @@ function makeDraftSnapshot(overrides?: Partial<WeeklyReview>): WeeklyReview {
 const midWeekCurrent: WeeklyReviewCurrentDashboard = {
   weekStart: WEEK_START,
   weekEnd: '2026-05-25',
+  weeklyReviewDate: '2026-05-25',
   isMidWeek: true,
   hasGeneratedReview: false,
   pendingReview: false,
@@ -97,12 +98,30 @@ vi.mock('@/hooks/useGrowthSystemDashboard', () => ({
   useGrowthSystemDashboard: () => ({ tasks: [] }),
 }));
 
+vi.mock('@/hooks/growth-system', () => ({
+  useGoals: () => ({ goals: [] }),
+}));
+
 vi.mock('@/hooks/useWeeklyDashboardConfig', () => ({
   useWeeklyDashboardConfig: () => ({ data: DEFAULT_WEEKLY_DASHBOARD_CONFIG }),
 }));
 
 vi.mock('@/components/organisms/WeeklyDashboardGrid', () => ({
-  WeeklyDashboardGrid: () => <div data-testid="weekly-dashboard-grid" />,
+  WeeklyDashboardGrid: ({
+    onRunWeeklyReview,
+    runWeeklyReviewPending,
+  }: {
+    onRunWeeklyReview?: () => void;
+    runWeeklyReviewPending?: boolean;
+  }) => (
+    <div data-testid="weekly-dashboard-grid">
+      {onRunWeeklyReview ? (
+        <button type="button" onClick={onRunWeeklyReview} disabled={runWeeklyReviewPending}>
+          {runWeeklyReviewPending ? 'Generating…' : 'Run weekly review now'}
+        </button>
+      ) : null}
+    </div>
+  ),
 }));
 
 vi.mock('@/components/organisms/WeeklyDashboardSettingsDrawer', () => ({
@@ -230,6 +249,16 @@ describe('WeeklyReviewPage draft state', () => {
       expect(mockGenerateMutateAsync).toHaveBeenCalledTimes(1);
     });
     expect(mockCompleteMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('renders Run weekly review CTA in dashboard grid toolbar for live mid-week', () => {
+    renderPage();
+
+    const grid = screen.getByTestId('weekly-dashboard-grid');
+    const runButton = screen.getByRole('button', { name: /Run weekly review now/i });
+
+    expect(grid).toContainElement(runButton);
+    expect(screen.getAllByRole('button', { name: /Run weekly review now/i })).toHaveLength(1);
   });
 
   it('opens early closeout modal when eligible and does not generate immediately', async () => {
@@ -372,5 +401,33 @@ describe('WeeklyReviewPage draft state', () => {
       expect(mockCompleteMutateAsync).toHaveBeenCalledTimes(1);
     });
     expect(mockGenerateMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('shows sticky historical lock strip for past completed week without inline long copy', () => {
+    const PAST_WEEK = '2026-05-12';
+    snapshotData = makeDraftSnapshot({ weekStart: PAST_WEEK, status: 'completed' });
+    currentData = { ...midWeekCurrent, weekStart: WEEK_START, hasGeneratedReview: true };
+
+    renderPage(`/admin/weekly-review?week=${PAST_WEEK}`);
+
+    expect(
+      screen.getByRole('status', { name: /Historical week · read-only/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Numbers and AI text reflect the saved review, not live task completion/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: /weekly review draft/i })).not.toBeInTheDocument();
+  });
+
+  it('does not show historical lock strip for live draft week', () => {
+    snapshotData = makeDraftSnapshot();
+    currentData = { ...midWeekCurrent, hasGeneratedReview: true };
+
+    renderPage(`/admin/weekly-review?week=${WEEK_START}`);
+
+    expect(
+      screen.queryByRole('status', { name: /Historical week · read-only/i })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /weekly review draft/i })).toBeInTheDocument();
   });
 });

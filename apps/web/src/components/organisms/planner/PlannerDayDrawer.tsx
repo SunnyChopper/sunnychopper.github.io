@@ -8,6 +8,7 @@ import { PlannerDayFocusPanel } from '@/components/organisms/planner/PlannerDayF
 import { overlayBackdropClassName, overlaySurfaceClassName } from '@/lib/overlay-layer';
 import { plannerDrawerShellClassName, plannerMutedClassName } from '@/lib/planner/planner-surfaces';
 import { cn } from '@/lib/utils';
+import type { Priority } from '@/types/growth-system';
 
 export interface PlannerDayDrawerProps {
   open: boolean;
@@ -15,6 +16,9 @@ export interface PlannerDayDrawerProps {
   onClose: () => void;
   onFocusDateChange: (iso: string) => void;
   onCommitted?: () => void;
+  onClearOutOfOffice?: (date: string) => void;
+  clearOutOfOfficePending?: boolean;
+  priorityByTaskId?: ReadonlyMap<string, Priority>;
 }
 
 export function PlannerDayDrawer({
@@ -23,6 +27,9 @@ export function PlannerDayDrawer({
   onClose,
   onFocusDateChange,
   onCommitted,
+  onClearOutOfOffice,
+  clearOutOfOfficePending,
+  priorityByTaskId,
 }: PlannerDayDrawerProps) {
   useEffect(() => {
     if (!open) return;
@@ -94,12 +101,20 @@ export function PlannerDayDrawer({
               </button>
             </div>
 
-            <div className="flex-1 space-y-4 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4">
               <PlannerDayFocusPanel
                 focusDateISO={focusDateISO}
                 onFocusDateChange={onFocusDateChange}
                 onCommitted={onCommitted}
+                onClearOutOfOffice={
+                  onClearOutOfOffice ? () => onClearOutOfOffice(focusDateISO) : undefined
+                }
+                clearOutOfOfficePending={clearOutOfOfficePending}
+                priorityByTaskId={priorityByTaskId}
               />
+            </div>
+
+            <div className="shrink-0 border-t border-gray-200 px-4 py-2.5 dark:border-white/10">
               <PlannerCalendarOverlay />
             </div>
           </motion.aside>
