@@ -208,6 +208,22 @@ export function formatUploadProgressDetail(
   return percent > 0 ? `Uploading… ${percent}%` : null;
 }
 
+export function extractionProgressDetailSentence(
+  job: ProfileExtractionJob | undefined
+): string | null {
+  const metrics = formatExtractionMetrics(job);
+  if (!metrics.sources) return null;
+
+  const { processed, total } = metrics.sources;
+  let sentence = `${processed} of ${total} sources processed`;
+
+  if (metrics.chunks) {
+    sentence += `, ${metrics.chunks.processed} of ${metrics.chunks.total} chunks analyzed`;
+  }
+
+  return sentence;
+}
+
 export function formatExtractionMetrics(job: ProfileExtractionJob | undefined): ExtractionMetrics {
   if (job?.sourceCount == null) {
     return { sources: null, chunks: null, chunksPendingDiscovery: false };

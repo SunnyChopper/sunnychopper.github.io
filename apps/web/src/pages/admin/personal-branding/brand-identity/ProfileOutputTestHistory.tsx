@@ -1,4 +1,6 @@
-import { FlaskConical } from 'lucide-react';
+import { FlaskConical, Sparkles } from 'lucide-react';
+import Button from '@/components/atoms/Button';
+import { Skeleton } from '@/components/atoms/Skeleton';
 import type { BrandProfileOutputTest } from '@/types/api/personal-branding.dto';
 import { BRAND_PLATFORM_LABELS } from '@/types/api/personal-branding.dto';
 import { cn } from '@/lib/utils';
@@ -22,11 +24,25 @@ function truncateTopic(topic: string, max = 48): string {
   return `${trimmed.slice(0, max - 1)}…`;
 }
 
+function HistoryRowSkeleton({ index }: { index: number }) {
+  return (
+    <li
+      className="rounded-md border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-950/50"
+      aria-hidden={index > 0}
+    >
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="mt-2 h-3 w-1/2" />
+    </li>
+  );
+}
+
 interface ProfileOutputTestHistoryProps {
   tests: BrandProfileOutputTest[];
   isLoading?: boolean;
   selectedTestId?: string | null;
   onSelect: (test: BrandProfileOutputTest) => void;
+  onGenerateFirst?: () => void;
+  generateDisabled?: boolean;
 }
 
 export default function ProfileOutputTestHistory({
@@ -34,6 +50,8 @@ export default function ProfileOutputTestHistory({
   isLoading = false,
   selectedTestId = null,
   onSelect,
+  onGenerateFirst,
+  generateDisabled = false,
 }: ProfileOutputTestHistoryProps) {
   return (
     <section className="rounded-lg border border-gray-200 bg-gray-50/80 p-4 dark:border-gray-700 dark:bg-gray-900/40">
@@ -50,11 +68,30 @@ export default function ProfileOutputTestHistory({
       </div>
 
       {isLoading ? (
-        <p className="text-xs text-gray-500">Loading saved tests…</p>
+        <ul className="space-y-2" role="status" aria-label="Loading saved tests">
+          {Array.from({ length: 3 }, (_, index) => (
+            <HistoryRowSkeleton key={index} index={index} />
+          ))}
+        </ul>
       ) : tests.length === 0 ? (
-        <p className="text-xs text-gray-500">
-          No saved output tests yet — generate a preview to start building history.
-        </p>
+        <div className="rounded-md border border-dashed border-gray-200 bg-white/60 px-4 py-5 text-center dark:border-gray-700 dark:bg-gray-950/30">
+          <p className="text-sm font-medium text-gray-900 dark:text-white">No saved previews yet</p>
+          <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+            Generate a preview to start building history you can compare over time.
+          </p>
+          {onGenerateFirst ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={onGenerateFirst}
+              disabled={generateDisabled}
+              className="mt-4 inline-flex items-center gap-2"
+            >
+              <Sparkles className="size-4" aria-hidden />
+              Generate your first preview
+            </Button>
+          ) : null}
+        </div>
       ) : (
         <ul className="space-y-2">
           {tests.map((test) => {

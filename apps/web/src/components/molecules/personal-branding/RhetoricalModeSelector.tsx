@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import InfoTip from '@/components/atoms/InfoTip';
 import { Select } from '@/components/atoms/Select';
 import type {
   PlatformRuleCatalogEntry,
@@ -14,6 +15,19 @@ const STRENGTH_LABELS: Record<RhetoricalStrength, string> = {
   strong: 'Strong',
   dominant: 'Dominant',
 };
+
+function CatalogEntryInfoTip({ entry }: { entry: PlatformRuleCatalogEntry }) {
+  if (!entry.example?.trim()) {
+    return null;
+  }
+
+  return (
+    <InfoTip label={`${entry.label} definition and example`}>
+      <p>{entry.definition}</p>
+      <p className="mt-1 opacity-90">Example: {entry.example}</p>
+    </InfoTip>
+  );
+}
 
 interface RhetoricalModeSelectorProps {
   catalog: PlatformRuleCatalogEntry[];
@@ -71,34 +85,37 @@ export default function RhetoricalModeSelector({
                   : 'border-gray-200 dark:border-gray-700'
               )}
             >
-              <label className="flex cursor-pointer items-start gap-2">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={checked}
-                  onChange={() => toggleMode(entry.id as RhetoricalModeId)}
-                  aria-describedby={`mode-${entry.id}-desc`}
-                />
-                <span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {entry.label}
-                  </span>
-                  <p
-                    id={`mode-${entry.id}-desc`}
-                    className={cn(
-                      'mt-1 text-gray-600 dark:text-gray-400',
-                      compact && !checked ? 'text-xs line-clamp-2' : 'text-sm'
-                    )}
-                  >
-                    {entry.definition}
-                  </p>
-                  {checked && (
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
-                      When enabled: {entry.enabledEffect}
+              <div className="flex items-start gap-2">
+                <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={checked}
+                    onChange={() => toggleMode(entry.id as RhetoricalModeId)}
+                    aria-describedby={`mode-${entry.id}-desc`}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {entry.label}
+                    </span>
+                    <p
+                      id={`mode-${entry.id}-desc`}
+                      className={cn(
+                        'mt-1 text-gray-600 dark:text-gray-400',
+                        compact && !checked ? 'text-xs line-clamp-2' : 'text-sm'
+                      )}
+                    >
+                      {entry.definition}
                     </p>
-                  )}
-                </span>
-              </label>
+                    {checked && (
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
+                        When enabled: {entry.enabledEffect}
+                      </p>
+                    )}
+                  </span>
+                </label>
+                <CatalogEntryInfoTip entry={entry} />
+              </div>
               {checked && current && (
                 <div className={cn(compact ? 'mt-2 pl-6' : 'mt-3 pl-6')}>
                   <label htmlFor={`mode-strength-${entry.id}`} className="text-xs font-medium">

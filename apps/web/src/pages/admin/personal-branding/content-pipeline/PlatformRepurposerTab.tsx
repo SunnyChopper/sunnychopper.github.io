@@ -59,6 +59,7 @@ import { eligibleProfilesForPlatform } from '@/lib/personal-branding/pipeline-pr
 import GeneratedVariantsFilterBar from './GeneratedVariantsFilterBar';
 import { BulkRejectVariantsModal } from '@/components/molecules/personal-branding/BulkRejectVariantsModal';
 import BrandPillarMultiSelect from '@/components/molecules/personal-branding/BrandPillarMultiSelect';
+import ContentGrowthLinksCard from './ContentGrowthLinksCard';
 import { buildSourceContentSelectOptions } from './source-content-select-label';
 import { originallyPublishedOnLabel } from '@/lib/personal-branding/content-node-labels';
 import {
@@ -677,6 +678,10 @@ export default function PlatformRepurposerTab({ pipeline }: PlatformRepurposerTa
                     </p>
                   ) : null}
                 </label>
+
+                {pipeline.selectedContent ? (
+                  <ContentGrowthLinksCard content={pipeline.selectedContent} />
+                ) : null}
 
                 <fieldset>
                   <legend className={pbFormLabelClassName}>Target platforms</legend>

@@ -51,7 +51,18 @@ describe('personalBrandingService.generateTopicSuggestions', () => {
       data: {
         data: {
           result: {
-            topics: ['How agentic AI changes delivery', 'Graph workflows for content'],
+            topics: [
+              {
+                topic: 'How agentic AI changes delivery',
+                why: 'Connects to Agentic AI Development pillar.',
+                matchedPillars: ['Agentic AI Development'],
+              },
+              {
+                topic: 'Graph workflows for content',
+                why: 'Maps to Graph-Based Workflows.',
+                matchedPillars: ['Graph-Based Workflows'],
+              },
+            ],
           },
         },
       },
@@ -71,6 +82,8 @@ describe('personalBrandingService.generateTopicSuggestions', () => {
       count: 5,
     });
     expect(result.topics).toHaveLength(2);
+    expect(result.topics[0].topic).toBe('How agentic AI changes delivery');
+    expect(result.topics[0].why).toContain('Agentic AI Development');
   });
 });
 

@@ -1,6 +1,7 @@
 import SubModuleTabShell from '../SubModuleTabShell';
 import PlatformRepurposerTab from './PlatformRepurposerTab';
 import PublishQueueTab from './PublishQueueTab';
+import ContentPipelineGrowthSettingsCard from './ContentPipelineGrowthSettingsCard';
 import { useContentPipeline } from './useContentPipeline';
 import { useContentPipelineTabs } from './useContentPipelineTabs';
 
@@ -26,7 +27,10 @@ export default function ContentPipelinePage() {
         activeTab === 'publish-queue' ? (
           <PublishQueueTab />
         ) : (
-          <PlatformRepurposerTab pipeline={pipeline} />
+          <div className="space-y-4">
+            <ContentPipelineGrowthSettingsCard />
+            <PlatformRepurposerTab pipeline={pipeline} />
+          </div>
         )
       }
     />

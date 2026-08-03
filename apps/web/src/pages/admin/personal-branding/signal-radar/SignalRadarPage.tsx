@@ -29,6 +29,7 @@ function resolveTabId(raw: string | null): SignalRadarTabId {
 export default function SignalRadarPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = resolveTabId(searchParams.get('tab'));
+  const highlightItemId = searchParams.get('itemId');
   const [activeTab, setActiveTab] = useState<SignalRadarTabId>(tabFromUrl);
   const signalRadar = useSignalRadar();
   const { showToast, ToastContainer } = useToast();
@@ -65,6 +66,12 @@ export default function SignalRadarPage() {
             <TrendStreamTab
               signalRadar={signalRadar}
               onOpenSettings={() => handleTabChange('settings')}
+              highlightItemId={highlightItemId}
+              onHighlightConsumed={() => {
+                const nextParams = new URLSearchParams(searchParams);
+                nextParams.delete('itemId');
+                setSearchParams(nextParams, { replace: true });
+              }}
             />
           )
         }

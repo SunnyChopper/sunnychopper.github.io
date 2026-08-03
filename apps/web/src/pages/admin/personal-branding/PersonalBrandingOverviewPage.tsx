@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { PenLine, Radio, Share2, User, Users } from 'lucide-react';
+import { PenLine, Radio, Share2, User, Users, Waves } from 'lucide-react';
 import { ROUTES } from '@/routes';
 import { Card } from '@/components/atoms/Card';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,12 @@ const MODULES = [
     description: 'Generate and manage platform-native content variants.',
     href: ROUTES.admin.personalBrandingPipeline,
     icon: Share2,
+  },
+  {
+    title: 'Content Stream',
+    description: 'Automated X short-post drafts on your schedule.',
+    href: ROUTES.admin.personalBrandingContentStream,
+    icon: Waves,
   },
   {
     title: 'Signal Radar',

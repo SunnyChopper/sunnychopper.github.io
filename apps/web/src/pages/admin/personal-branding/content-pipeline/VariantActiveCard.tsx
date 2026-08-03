@@ -13,6 +13,7 @@ import { ExpandablePlainTextPreview } from '@/components/molecules/personal-bran
 import { VariantCardSummaryActions } from '@/components/molecules/personal-branding/VariantCardSummaryActions';
 import { VariantImprovementSuggestionsPanel } from '@/components/molecules/personal-branding/VariantImprovementSuggestionsPanel';
 import { VariantPerformanceStrip } from '@/components/molecules/personal-branding/VariantPerformanceStrip';
+import { useEntityExplainChatOptional } from '@/contexts/EntityExplainChatContext';
 import { ROUTES } from '@/routes';
 import { cn } from '@/lib/utils';
 import { queryKeys } from '@/lib/react-query/query-keys';
@@ -104,6 +105,7 @@ export function VariantActiveCard({
   selectionDisabled = false,
 }: VariantActiveCardProps) {
   const navigate = useNavigate();
+  const explainChat = useEntityExplainChatOptional();
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(variant.title);
   const [draftBody, setDraftBody] = useState(variant.body);
@@ -313,6 +315,7 @@ export function VariantActiveCard({
             onCopy={() => void handleCopy()}
             onReject={() => pipeline.setRejectingVariantId(variant.id)}
             onRegenerate={handleRegeneratePlatform}
+            onExplain={() => explainChat?.open({ entityType: 'contentVariant', entity: variant })}
           />
         </>
       ) : (

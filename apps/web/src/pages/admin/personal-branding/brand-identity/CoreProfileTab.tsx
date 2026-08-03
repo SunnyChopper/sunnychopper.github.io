@@ -30,6 +30,7 @@ import type {
   ProfileExtractionClientProgress,
   ProfileExtractionJob,
   ProfileExtractionSource,
+  ProfileExtractionSourceRun,
 } from '@/types/api/personal-branding.dto';
 import { BRAND_PLATFORM_LABELS } from '@/types/api/personal-branding.dto';
 import { cn } from '@/lib/utils';
@@ -76,7 +77,13 @@ function formatBytes(size?: number | null): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function ExtractionSourcesSection({ sources }: { sources: ProfileExtractionSource[] }) {
+function ExtractionSourcesSection({
+  sources,
+  extractionSourceRuns,
+}: {
+  sources: ProfileExtractionSource[];
+  extractionSourceRuns?: Map<string, ProfileExtractionSourceRun>;
+}) {
   const { visibleItems, hiddenCount, hasCollapsibleList, isExpanded, toggle } = useCollapsibleList(
     sources,
     3
@@ -109,7 +116,11 @@ function ExtractionSourcesSection({ sources }: { sources: ProfileExtractionSourc
           const relativeExtractedAt = source.lastExtractedAt
             ? formatRelativeDate(source.lastExtractedAt)
             : null;
-          const freshnessDisplay = extractionSourceFreshnessDisplay(source, relativeExtractedAt);
+          const freshnessDisplay = extractionSourceFreshnessDisplay(
+            source,
+            relativeExtractedAt,
+            extractionSourceRuns?.get(source.id)
+          );
           return (
             <li
               key={source.id}
@@ -135,7 +146,11 @@ function ExtractionSourcesSection({ sources }: { sources: ProfileExtractionSourc
                   )}
                   <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                     {freshnessDisplay.extractedLine}
-                    {source.lastExtractionStatus === 'failed' ? ' · last run failed' : ''}
+                    {source.lastExtractionStatus === 'failed' &&
+                    freshnessDisplay.label !== 'Failed' &&
+                    freshnessDisplay.label !== 'Extracted'
+                      ? ' · last run failed'
+                      : ''}
                   </p>
                 </div>
                 <div className="flex w-28 shrink-0 flex-col items-end gap-2 text-right">
@@ -453,9 +468,10 @@ function ProfileEditor({
             />
             <div>
               <label className="mb-1 block text-sm font-medium">Target audience</label>
-              <FormInput
+              <FormTextarea
                 value={targetAudience}
                 onChange={(e) => setTargetAudience(e.target.value)}
+                disabled={busy}
               />
             </div>
           </ProfileFormSection>
@@ -556,6 +572,7 @@ export default function CoreProfileTab({ brandIdentity }: CoreProfileTabProps) {
     profileVersions,
     profileOutputTests,
     extractionJob,
+    extractionSourceRuns,
     clientExtractionProgress,
     clearExtractionJob,
     selectedProfileId,
@@ -822,7 +839,10 @@ export default function CoreProfileTab({ brandIdentity }: CoreProfileTabProps) {
               }}
               onDelete={handleDeleteRequest}
             />
-            <ExtractionSourcesSection sources={extractionSources} />
+            <ExtractionSourcesSection
+              sources={extractionSources}
+              extractionSourceRuns={extractionInProgress ? extractionSourceRuns : undefined}
+            />
           </>
         ) : (
           <p className="text-sm text-gray-500">Select a profile to edit.</p>

@@ -1,13 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sparkles, X } from 'lucide-react';
+import { ExternalLink, Sparkles, X } from 'lucide-react';
 import { AIThinkingIndicator } from '@/components/atoms/AIThinkingIndicator';
 import OverlayPortal from '@/components/molecules/OverlayPortal';
 import ReplyGenerationPanel from '@/components/molecules/personal-branding/ReplyGenerationPanel';
 import ReplySuggestionsList from '@/components/molecules/personal-branding/ReplySuggestionsList';
 import { overlayBackdropClassName, overlaySurfaceClassName } from '@/lib/overlay-layer';
+import {
+  buildManualInteractionIntent,
+  isXStatusUrl,
+  stripStatusUrlFromText,
+  type PrompterIntentAction,
+} from '@/lib/personal-branding/manual-prompter-paste';
+import { personalBrandingService } from '@/services/personal-branding.service';
 import { cn } from '@/lib/utils';
 import { FormTextarea } from '../PersonalBrandingFormFields';
+import { selectableChipClassName } from '../personal-branding-ui';
 import {
   BRAND_PLATFORM_LABELS,
   type BrandPlatform,
@@ -27,6 +35,12 @@ const PLATFORMS: BrandPlatform[] = [
   'newsletter',
 ];
 
+export interface PrompterAcceptMeta {
+  evidenceUrl?: string | null;
+  platformPostId?: string | null;
+  authorHandle?: string | null;
+}
+
 interface RolodexPrompterDrawerProps {
   open: boolean;
   connection: CreatorConnection | null;
@@ -38,6 +52,8 @@ interface RolodexPrompterDrawerProps {
   initialCreatorText?: string;
   initialInteractionIntent?: string;
   initialAuthorHandle?: string | null;
+  initialEvidenceUrl?: string | null;
+  initialPlatformPostId?: string | null;
   onClose: () => void;
   onGenerate: (
     payload: {
@@ -48,7 +64,11 @@ interface RolodexPrompterDrawerProps {
     draft: ReplyGenerationDraft,
     resolved: { provider: string; model: string }
   ) => void;
-  onAcceptSuggestion: (suggestion: ReplySuggestion, creatorText: string) => void;
+  onAcceptSuggestion: (
+    suggestion: ReplySuggestion,
+    creatorText: string,
+    meta?: PrompterAcceptMeta
+  ) => void;
   onRejectSuggestion: (suggestion: ReplySuggestion, feedbackText: string | null) => void;
 }
 
@@ -63,6 +83,8 @@ export default function RolodexPrompterDrawer({
   initialCreatorText = '',
   initialInteractionIntent = '',
   initialAuthorHandle,
+  initialEvidenceUrl,
+  initialPlatformPostId,
   onClose,
   onGenerate,
   onAcceptSuggestion,
@@ -71,13 +93,31 @@ export default function RolodexPrompterDrawer({
   const [creatorText, setCreatorText] = useState('');
   const [platform, setPlatform] = useState<BrandPlatform>('x');
   const [interactionIntent, setInteractionIntent] = useState('');
+  const [intentAction, setIntentAction] =
+    useState<Extract<PrompterIntentAction, 'reply' | 'quote'>>('reply');
+  const [authorHandle, setAuthorHandle] = useState<string | null>(null);
+  const [evidenceUrl, setEvidenceUrl] = useState<string | null>(null);
+  const [platformPostId, setPlatformPostId] = useState<string | null>(null);
+  const [isResolvingPaste, setIsResolvingPaste] = useState(false);
+  const resolveRequestId = useRef(0);
 
   useEffect(() => {
     if (!open) return;
     setCreatorText(initialCreatorText);
     setPlatform('x');
     setInteractionIntent(initialInteractionIntent);
-  }, [open, initialCreatorText, initialInteractionIntent]);
+    setAuthorHandle(initialAuthorHandle ?? null);
+    setEvidenceUrl(initialEvidenceUrl ?? null);
+    setPlatformPostId(initialPlatformPostId ?? null);
+    setIntentAction(initialInteractionIntent.toLowerCase().includes('quote') ? 'quote' : 'reply');
+  }, [
+    open,
+    initialCreatorText,
+    initialInteractionIntent,
+    initialAuthorHandle,
+    initialEvidenceUrl,
+    initialPlatformPostId,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -99,11 +139,65 @@ export default function RolodexPrompterDrawer({
     };
   }, [open]);
 
+  const applyIntentChip = (action: Extract<PrompterIntentAction, 'reply' | 'quote'>) => {
+    setIntentAction(action);
+    setInteractionIntent(
+      buildManualInteractionIntent({
+        action,
+        authorUsername: authorHandle,
+      })
+    );
+  };
+
+  const resolvePastedUrl = async (raw: string) => {
+    const { text, statusUrl } = stripStatusUrlFromText(raw);
+    if (!statusUrl) return;
+
+    setCreatorText(text);
+    setEvidenceUrl(statusUrl.evidenceUrl);
+    setPlatformPostId(statusUrl.platformPostId);
+    if (statusUrl.authorUsername) {
+      setAuthorHandle(statusUrl.authorUsername);
+    }
+
+    const requestId = ++resolveRequestId.current;
+    setIsResolvingPaste(true);
+    try {
+      const result = await personalBrandingService.resolveXContent({
+        url: statusUrl.evidenceUrl,
+        authorUsername: statusUrl.authorUsername,
+        platformPostId: statusUrl.platformPostId,
+      });
+      if (requestId !== resolveRequestId.current) return;
+      if (result.authorUsername) {
+        setAuthorHandle(result.authorUsername.replace(/^@+/, ''));
+      }
+      if (result.evidenceUrl) setEvidenceUrl(result.evidenceUrl);
+      if (result.platformPostId) setPlatformPostId(result.platformPostId);
+      if (result.creatorText?.trim()) {
+        setCreatorText(result.creatorText.trim());
+      }
+    } finally {
+      if (requestId === resolveRequestId.current) {
+        setIsResolvingPaste(false);
+      }
+    }
+  };
+
+  const handleCreatorTextChange = (value: string) => {
+    if (isXStatusUrl(value.trim())) {
+      void resolvePastedUrl(value.trim());
+      return;
+    }
+    setCreatorText(value);
+  };
+
   if (!connection) return null;
 
   const suggestions = activeRun?.suggestions ?? [];
   const showRunProgress =
     isGenerating || activeRun?.status === 'QUEUED' || activeRun?.status === 'RUNNING';
+  const displayHandle = authorHandle ?? initialAuthorHandle;
 
   return (
     <AnimatePresence>
@@ -145,7 +239,7 @@ export default function RolodexPrompterDrawer({
                   </h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {connection.name}
-                    {initialAuthorHandle ? ` · @${initialAuthorHandle}` : ''}
+                    {displayHandle ? ` · @${displayHandle}` : ''}
                   </p>
                 </div>
               </div>
@@ -183,16 +277,59 @@ export default function RolodexPrompterDrawer({
                 </label>
                 <FormTextarea
                   value={creatorText}
-                  onChange={(e) => setCreatorText(e.target.value)}
-                  placeholder="Paste their post or message…"
+                  onChange={(e) => handleCreatorTextChange(e.target.value)}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    if (isXStatusUrl(pasted.trim())) {
+                      e.preventDefault();
+                      void resolvePastedUrl(pasted.trim());
+                    }
+                  }}
+                  placeholder="Paste post URL or text…"
                   className="min-h-[120px]"
                 />
+                {isResolvingPaste ? (
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Resolving post from URL…
+                  </p>
+                ) : null}
+                {evidenceUrl ? (
+                  <a
+                    href={evidenceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Evidence link
+                  </a>
+                ) : null}
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                  Intent (optional)
-                </label>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Intent
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {(['reply', 'quote'] as const).map((action) => (
+                      <button
+                        key={action}
+                        type="button"
+                        onClick={() => applyIntentChip(action)}
+                        className={cn(
+                          selectableChipClassName(
+                            intentAction === action,
+                            intentAction === action ? 'ring-2 ring-blue-500/40' : undefined
+                          ),
+                          'capitalize'
+                        )}
+                      >
+                        {action}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <FormTextarea
                   value={interactionIntent}
                   onChange={(e) => setInteractionIntent(e.target.value)}
@@ -231,7 +368,13 @@ export default function RolodexPrompterDrawer({
               <ReplySuggestionsList
                 suggestions={suggestions}
                 isUpdating={isUpdatingSuggestion}
-                onAccept={(s) => onAcceptSuggestion(s, creatorText.trim())}
+                onAccept={(s) =>
+                  onAcceptSuggestion(s, creatorText.trim(), {
+                    evidenceUrl,
+                    platformPostId,
+                    authorHandle: displayHandle,
+                  })
+                }
                 onReject={onRejectSuggestion}
               />
             </div>

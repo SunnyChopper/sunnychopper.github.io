@@ -10,7 +10,7 @@ import { formFieldClassName } from '@/components/atoms/FormInput';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { personalBrandingService } from '@/services/personal-branding.service';
 import BrandPillarMultiSelect from '@/components/molecules/personal-branding/BrandPillarMultiSelect';
-import type { BrandPlatform, ContentType } from '@/types/api/personal-branding.dto';
+import type { BrandPlatform, BrandProfile, ContentType } from '@/types/api/personal-branding.dto';
 import { BRAND_PLATFORM_LABELS, CONTENT_TYPE_LABELS } from '@/types/api/personal-branding.dto';
 import { cn } from '@/lib/utils';
 import { collectActiveBrandPillars } from './content-workbench-helpers';
@@ -36,6 +36,8 @@ export interface NewDraftAiRequest {
 interface NewDraftWizardModalProps {
   isOpen: boolean;
   isGenerating: boolean;
+  profiles: BrandProfile[];
+  profilesLoading?: boolean;
   onClose: () => void;
   onStartFromTemplate: (result: NewDraftTemplateResult) => void;
   onGenerateWithAi: (request: NewDraftAiRequest) => void;
@@ -47,6 +49,8 @@ const PLATFORMS = Object.keys(BRAND_PLATFORM_LABELS) as BrandPlatform[];
 export default function NewDraftWizardModal({
   isOpen,
   isGenerating,
+  profiles,
+  profilesLoading = false,
   onClose,
   onStartFromTemplate,
   onGenerateWithAi,
@@ -60,19 +64,6 @@ export default function NewDraftWizardModal({
   const [templateId, setTemplateId] = useState('');
   const [pillars, setPillars] = useState<string[]>([]);
 
-  const profilesQ = useQuery({
-    queryKey: queryKeys.personalBranding.profiles.list(1, 50),
-    queryFn: async () => {
-      const res = await personalBrandingService.listProfiles(1, 50);
-      if (!res.success || !res.data) {
-        throw new Error(res.error?.message ?? 'Failed to load profiles');
-      }
-      return res.data.data;
-    },
-    enabled: isOpen,
-  });
-
-  const profiles = profilesQ.data ?? [];
   const brandPillarOptions = useMemo(() => collectActiveBrandPillars(profiles), [profiles]);
 
   const templatesQ = useQuery({
@@ -274,7 +265,7 @@ export default function NewDraftWizardModal({
             />
           </label>
           {topic.trim().length > 0 ? (
-            profilesQ.isPending ? (
+            profilesLoading ? (
               <p className="text-sm text-gray-500">Loading brand profiles…</p>
             ) : profiles.length === 0 ? (
               <p className="text-sm text-amber-600 dark:text-amber-400">

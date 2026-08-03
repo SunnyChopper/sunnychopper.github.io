@@ -13,6 +13,7 @@ const catalog: PlatformRuleCatalogEntry[] = [
     id: 'narrative',
     label: 'Narrative',
     definition: 'Tell a story.',
+    example: 'I shipped the launch at 2 a.m., broke prod, then recovered by dawn.',
     enabledEffect: 'Use storytelling.',
     disabledEffect: 'Avoid story arcs.',
   },
@@ -40,6 +41,20 @@ describe('RhetoricalModeSelector', () => {
     await user.click(screen.getByRole('checkbox', { name: /narrative/i }));
     expect(screen.getByText('When enabled: Use storytelling.')).toBeInTheDocument();
     expect(screen.getByLabelText(/narrative strength/i)).toBeInTheDocument();
+  });
+
+  it('shows example in info tip without toggling checkbox', async () => {
+    const user = userEvent.setup();
+    render(<ControlledModeSelector />);
+
+    const checkbox = screen.getByRole('checkbox', { name: /narrative/i });
+    expect(checkbox).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: /narrative definition and example/i }));
+    expect(screen.getByRole('tooltip')).toHaveTextContent(
+      'Example: I shipped the launch at 2 a.m., broke prod, then recovered by dawn.'
+    );
+    expect(checkbox).not.toBeChecked();
   });
 
   it('applies compact density with line-clamped definition when unchecked', () => {

@@ -1,4 +1,5 @@
 import { Loader2, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Button from '@/components/atoms/Button';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
@@ -22,8 +23,23 @@ import { PageCard } from '../PersonalBrandingPageTemplate';
 import { cn } from '@/lib/utils';
 import { isBrandProfileReadyForIdeation } from './content-workbench-helpers';
 import { ContentIdeaWhyCreateSection } from './ContentIdeaWhyCreateSection';
+import { ROUTES } from '@/routes';
 
 const ALL_PLATFORMS = Object.keys(BRAND_PLATFORM_LABELS) as BrandPlatform[];
+
+function contentIdeaSourceLabel(idea: ContentIdea): string {
+  if (idea.sourceType === 'WEEKLY_REVIEW_QUICK_WIN') {
+    return 'Weekly Review Quick Win';
+  }
+  if (idea.sourceType === 'GOAL_COMPLETED') {
+    return 'Goal completed';
+  }
+  return idea.sourceType.replace(/_/g, ' ');
+}
+
+function weeklyReviewQuickWinTaskHref(taskId: string): string {
+  return `${ROUTES.admin.tasks}?taskId=${encodeURIComponent(taskId)}`;
+}
 
 interface IdeationEngineTabProps {
   ideas: ContentIdea[];
@@ -289,8 +305,16 @@ export default function IdeationEngineTab({
                   {idea.targetPlatform ? (
                     <span>{BRAND_PLATFORM_LABELS[idea.targetPlatform]}</span>
                   ) : (
-                    <span>{idea.sourceType.replace(/_/g, ' ')}</span>
+                    <span>{contentIdeaSourceLabel(idea)}</span>
                   )}
+                  {idea.sourceType === 'WEEKLY_REVIEW_QUICK_WIN' && idea.sourceRefId ? (
+                    <Link
+                      to={weeklyReviewQuickWinTaskHref(idea.sourceRefId)}
+                      className="underline decoration-dotted underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
+                    >
+                      View source task
+                    </Link>
+                  ) : null}
                   {idea.tags.map((tag) => (
                     <span key={tag} className="rounded bg-gray-100 px-2 py-0.5 dark:bg-gray-800">
                       {tag}

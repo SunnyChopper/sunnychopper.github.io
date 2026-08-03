@@ -102,6 +102,7 @@ describe('ProfileStrengthIndicator', () => {
       devices: [],
       strengths: ['subtle', 'light', 'moderate', 'strong', 'dominant'],
       wordsPerMinute: 200,
+      limitDefaults: {},
     });
     vi.mocked(personalBrandingService.getEffectivePlatformRules).mockResolvedValue(
       profileOverlayPolicy

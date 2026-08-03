@@ -13,6 +13,7 @@ import VaultExtractorTab from './VaultExtractorTab';
 import TrendIdeasTab from './TrendIdeasTab';
 import { useContentTemplates } from './useContentTemplates';
 import { useContentWorkbench } from './useContentWorkbench';
+import { AmbientPresenceStrip } from '@/components/organisms/assistant/AmbientPresenceStrip';
 
 const TABS = [
   { id: 'sandbox', label: 'Sandbox Workspace' },
@@ -34,6 +35,7 @@ export default function ContentWorkbenchPage() {
 
   return (
     <>
+      <AmbientPresenceStrip surface="personalBranding" className="mb-4" />
       <SubModuleTabShell
         tabs={TABS}
         defaultTabId="sandbox"
@@ -269,6 +271,8 @@ export default function ContentWorkbenchPage() {
       <NewDraftWizardModal
         isOpen={wb.newDraftWizardOpen}
         isGenerating={wb.generateDraftMutation.isPending}
+        profiles={wb.brandProfiles}
+        profilesLoading={wb.profilesQ.isPending}
         onClose={wb.closeNewDraftWizard}
         onStartFromTemplate={wb.startFromTemplate}
         onGenerateWithAi={(request) => wb.generateDraftMutation.mutate(request)}

@@ -9,6 +9,7 @@ const catalog: PlatformRuleCatalog = {
       id: 'descriptive',
       label: 'Descriptive',
       definition: 'Paint a picture.',
+      example: 'Describe the scene with concrete sensory details.',
       enabledEffect: 'Use vivid detail.',
       disabledEffect: 'Stay abstract.',
     },
@@ -16,6 +17,7 @@ const catalog: PlatformRuleCatalog = {
       id: 'instructional',
       label: 'Instructional',
       definition: 'Teach step by step.',
+      example: 'Walk through the steps in order.',
       enabledEffect: 'Use steps.',
       disabledEffect: 'Avoid how-tos.',
     },
@@ -25,6 +27,7 @@ const catalog: PlatformRuleCatalog = {
       id: 'anecdote',
       label: 'Anecdote',
       definition: 'Short story.',
+      example: 'Open with a quick personal story.',
       enabledEffect: 'May use anecdotes.',
       disabledEffect: 'No anecdotes.',
     },
@@ -32,12 +35,14 @@ const catalog: PlatformRuleCatalog = {
       id: 'ruleOfThree',
       label: 'Rule of Three',
       definition: 'Triads.',
+      example: 'Group related ideas into threes.',
       enabledEffect: 'Use triplets.',
       disabledEffect: 'Avoid triads.',
     },
   ],
   strengths: ['subtle', 'light', 'moderate', 'strong', 'dominant'],
   wordsPerMinute: 200,
+  limitDefaults: {},
 };
 
 describe('PlatformRulePolicySummary', () => {

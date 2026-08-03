@@ -6,15 +6,39 @@ import {
   statusPillClassName,
 } from '@/pages/admin/personal-branding/personal-branding-ui';
 
+export type UniversalRulesFallbackMode = 'universalOnly' | 'none';
+
 export interface UniversalRulesFallbackNoticeProps {
   platformLabel: string;
+  mode?: UniversalRulesFallbackMode;
   className?: string;
 }
 
 export default function UniversalRulesFallbackNotice({
   platformLabel,
+  mode = 'universalOnly',
   className,
 }: UniversalRulesFallbackNoticeProps) {
+  const copy =
+    mode === 'none' ? (
+      <>
+        No saved platform rules for {platformLabel}. Generation will use profile voice only.{' '}
+        <Link to={ROUTES.admin.personalBrandingBrandIdentity} className={linkAccentClassName}>
+          Add rules on the Platform Rules tab
+        </Link>
+        .
+      </>
+    ) : (
+      <>
+        This profile has no mapped rules for {platformLabel}. Generation will use module-wide
+        universal rules.{' '}
+        <Link to={ROUTES.admin.personalBrandingBrandIdentity} className={linkAccentClassName}>
+          Map this profile on the Platform Rules tab
+        </Link>
+        .
+      </>
+    );
+
   return (
     <div
       className={cn(
@@ -26,14 +50,7 @@ export default function UniversalRulesFallbackNotice({
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className={statusPillClassName('info')}>Universal fallback</span>
-        <p className="text-sm text-gray-700 dark:text-gray-300">
-          This profile has no mapped rules for {platformLabel}. Generation will use module-wide
-          universal rules.{' '}
-          <Link to={ROUTES.admin.personalBrandingBrandIdentity} className={linkAccentClassName}>
-            Map this profile on the Platform Rules tab
-          </Link>
-          .
-        </p>
+        <p className="text-sm text-gray-700 dark:text-gray-300">{copy}</p>
       </div>
     </div>
   );
