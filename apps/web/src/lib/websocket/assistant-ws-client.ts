@@ -193,6 +193,16 @@ export class AssistantWsClient {
           lastMessageAtRaw != null && String(lastMessageAtRaw).trim()
             ? String(lastMessageAtRaw)
             : undefined;
+        const lastMessagePreviewRaw = p.lastMessagePreview ?? p.last_message_preview;
+        const lastMessagePreview =
+          lastMessagePreviewRaw != null && String(lastMessagePreviewRaw).trim()
+            ? String(lastMessagePreviewRaw)
+            : undefined;
+        const lastMessageRoleRaw = p.lastMessageRole ?? p.last_message_role;
+        const lastMessageRole =
+          lastMessageRoleRaw === 'user' || lastMessageRoleRaw === 'assistant'
+            ? lastMessageRoleRaw
+            : undefined;
         const activeLeafRaw = p.activeLeafMessageId ?? p.active_leaf_message_id;
         const activeLeafMessageId =
           activeLeafRaw != null && String(activeLeafRaw).trim() ? String(activeLeafRaw) : undefined;
@@ -202,6 +212,8 @@ export class AssistantWsClient {
             title,
             updatedAt: updatedAt || new Date().toISOString(),
             ...(lastMessageAt ? { lastMessageAt } : {}),
+            ...(lastMessagePreview ? { lastMessagePreview } : {}),
+            ...(lastMessageRole ? { lastMessageRole } : {}),
             ...(activeLeafMessageId ? { activeLeafMessageId } : {}),
           });
         }

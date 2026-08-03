@@ -7,7 +7,7 @@ import { nextMarkedThreadReadId } from '@/hooks/chatbot/mark-thread-read-guard';
  */
 export function useMarkThreadReadOnOpen(
   threadId: string | undefined,
-  markThreadRead: (threadId: string) => void,
+  markThreadRead: (threadId: string) => void
 ): void {
   const lastMarkedThreadIdRef = useRef<string | null>(null);
 

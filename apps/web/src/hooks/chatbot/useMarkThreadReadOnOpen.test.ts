@@ -8,7 +8,7 @@ describe('useMarkThreadReadOnOpen', () => {
 
     const { rerender } = renderHook(
       ({ threadId }) => useMarkThreadReadOnOpen(threadId, markThreadRead),
-      { initialProps: { threadId: 'thread-abc' } },
+      { initialProps: { threadId: 'thread-abc' } }
     );
 
     expect(markThreadRead).toHaveBeenCalledTimes(1);
@@ -25,7 +25,7 @@ describe('useMarkThreadReadOnOpen', () => {
 
     const { rerender } = renderHook(
       ({ threadId }) => useMarkThreadReadOnOpen(threadId, markThreadRead),
-      { initialProps: { threadId: 'thread-abc' } },
+      { initialProps: { threadId: 'thread-abc' } }
     );
 
     rerender({ threadId: 'thread-def' });
@@ -48,7 +48,7 @@ describe('useMarkThreadReadOnOpen', () => {
 
     const { rerender } = renderHook(
       ({ threadId }) => useMarkThreadReadOnOpen(threadId, markThreadRead),
-      { initialProps: { threadId: 'thread-abc' as string | undefined } },
+      { initialProps: { threadId: 'thread-abc' as string | undefined } }
     );
 
     expect(markThreadRead).toHaveBeenCalledTimes(1);

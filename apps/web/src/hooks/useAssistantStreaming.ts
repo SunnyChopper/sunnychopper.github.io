@@ -1,4 +1,12 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
   AssistantLastResolvedModels,
@@ -44,6 +52,7 @@ import {
 } from '@/hooks/assistant-streaming/stream-helpers';
 import { invalidateGrowthSystemCachesAfterMutationTool } from '@/hooks/assistant-streaming/growth-system-tool-invalidation';
 import { formatAssistantRunErrorForDisplay } from '@/lib/chat/assistant-error-display';
+import { reportAssistantStreamErrorFromWsPayload } from '@/lib/assistant-stream-telemetry';
 import { getResolvedWsUrl } from '@/lib/vite-public-env';
 import { apiClient } from '@/lib/api-client';
 import {
@@ -118,6 +127,16 @@ function summarizeDebugPayload(payload: unknown): string {
 
 const WS_BASE_URL = getResolvedWsUrl();
 
+function wsUrlHostFromResolvedUrl(): string | undefined {
+  const wsUrl = getResolvedWsUrl();
+  if (!wsUrl) return undefined;
+  try {
+    return new URL(wsUrl).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Map WebSocket connect / preflight failures to a UI payload (distinct codes for session vs backend). */
 export function mapAssistantConnectionFailure(
   reason: unknown,
@@ -162,6 +181,10 @@ export function mapAssistantConnectionFailure(
   }
   if (isWsHandshakeRefusedError(reason)) {
     details.handshakePhase = 'onerror';
+  }
+  const wsUrlHost = wsUrlHostFromResolvedUrl();
+  if (wsUrlHost) {
+    details.wsUrlHost = wsUrlHost;
   }
 
   return {
@@ -257,7 +280,17 @@ export const shouldPreserveFailedPlaceholderOnMessageComplete = (
 
 export { removeNodeFromTree };
 
-export function useAssistantStreaming(threadId: string | undefined) {
+export type UseAssistantStreamingOptions = {
+  /** Optional ref updated by the page to remap selected branch leaf after optimistic reconcile. */
+  onUserMessageIdReconciledRef?: MutableRefObject<
+    ((threadId: string, serverMessageId: string) => void) | undefined
+  >;
+};
+
+export function useAssistantStreaming(
+  threadId: string | undefined,
+  options?: UseAssistantStreamingOptions
+) {
   const queryClient = useQueryClient();
   const [runs, setRuns] = useState<Record<string, RunState>>({});
   const [lastResolvedModelPick, setLastResolvedModelPick] =
@@ -268,6 +301,13 @@ export function useAssistantStreaming(threadId: string | undefined) {
   const [error, setError] = useState<WsRunErrorPayload | null>(null);
   const [connectionState, setConnectionState] =
     useState<AssistantWsConnectionState>('disconnected');
+  const setStreamingError = useCallback(
+    (payload: WsRunErrorPayload, options: { hadStreamedAssistant?: boolean } = {}) => {
+      setError(payload);
+      reportAssistantStreamErrorFromWsPayload(payload, options);
+    },
+    []
+  );
   const [debugWsEvents, setDebugWsEvents] = useState<AssistantDebugWsEvent[]>([]);
   const [lastContextBudgetMeta, setLastContextBudgetMeta] =
     useState<WsContextBudgetMetaPayload | null>(null);
@@ -410,6 +450,9 @@ export function useAssistantStreaming(threadId: string | undefined) {
       keepAliveIntervalMs: 240_000,
       onConnectionStateChange: (state) => {
         setConnectionState(state);
+        if (state === 'connected') {
+          setError(null);
+        }
         if (state === 'disconnected' || state === 'failed') {
           setPendingRunStartCount(0);
         }
@@ -434,6 +477,10 @@ export function useAssistantStreaming(threadId: string | undefined) {
             payload.userMessageId
           );
           delete pendingOptimisticUserByThreadRef.current[payload.threadId];
+        }
+        const onReconciled = options?.onUserMessageIdReconciledRef?.current;
+        if (onReconciled) {
+          onReconciled(payload.threadId, payload.userMessageId);
         }
         const clientRunId = clientBootstrapRunByThreadRef.current[payload.threadId];
         if (clientRunId) {
@@ -727,6 +774,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
             queryKey: queryKeys.chatbot.contextUsage.prefix(payload.threadId),
           });
         }
+        void queryClient.invalidateQueries({ queryKey: queryKeys.chatbot.relevantNow() });
         setRuns((current) => {
           const run = current[payload.runId];
           if (run && run.assistantMessageId !== payload.message.id) {
@@ -784,6 +832,8 @@ export function useAssistantStreaming(threadId: string | undefined) {
           title: payload.title,
           updatedAt: payload.updatedAt,
           lastMessageAt: payload.lastMessageAt,
+          lastMessagePreview: payload.lastMessagePreview,
+          lastMessageRole: payload.lastMessageRole,
           activeLeafMessageId: payload.activeLeafMessageId,
         });
       },
@@ -800,7 +850,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
             if (hadStreamedAssistant) {
               setError(null);
             } else {
-              setError(payload);
+              setStreamingError(payload);
             }
             if (!hadStreamedAssistant) {
               soundEffects.play('error', { volume: 0.18 });
@@ -821,7 +871,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
             }
             upsertMessageTreeNodeCache(queryClient, payload.threadId, placeholder);
           } else {
-            setError(payload);
+            setStreamingError(payload);
             soundEffects.play('error', { volume: 0.18 });
             failedRunIdsRef.current[payload.runId] = true;
           }
@@ -834,7 +884,13 @@ export function useAssistantStreaming(threadId: string | undefined) {
     clientRef.current = client;
     setConnectionState(client.getConnectionState());
     return client;
-  }, [flushPendingDeltas, pushDebugEvent, queryClient, schedulePendingDeltaFlush]);
+  }, [
+    flushPendingDeltas,
+    pushDebugEvent,
+    queryClient,
+    schedulePendingDeltaFlush,
+    setStreamingError,
+  ]);
 
   // Removed the useEffect that cleared pendingRunStartCount when runs was empty,
   // because it immediately cleared the count right after sendUserMessage before the run could start.
@@ -859,7 +915,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
           threadId: threadIdRef.current,
           errorName: reason instanceof Error ? reason.name : typeof reason,
         });
-        setError(mapAssistantConnectionFailure(reason, threadIdRef.current ?? ''));
+        setStreamingError(mapAssistantConnectionFailure(reason, threadIdRef.current ?? ''));
       });
     }, 0);
     return () => {
@@ -877,7 +933,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
       }
       setConnectionState('disconnected');
     };
-  }, [ensureClient]);
+  }, [ensureClient, setStreamingError]);
 
   const sendUserMessage = useCallback(
     (payload: Omit<WsUserMessagePayload, 'threadId'>) => {
@@ -886,7 +942,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
       }
       const client = ensureClient();
       if (!client) {
-        setError({
+        setStreamingError({
           runId: 'connection',
           threadId,
           message: 'Assistant connection is not available.',
@@ -953,7 +1009,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
             });
             delete clientBootstrapRunByThreadRef.current[threadId];
           }
-          setError(mapAssistantConnectionFailure(sendErr, threadId));
+          setStreamingError(mapAssistantConnectionFailure(sendErr, threadId));
         }
       };
 
@@ -961,7 +1017,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
       setPendingRunStartCount((current) => current + 1);
       void runSend();
     },
-    [ensureClient, queryClient, threadId]
+    [ensureClient, queryClient, setStreamingError, threadId]
   );
 
   const sendFollowUp = useCallback(
@@ -1010,7 +1066,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
     (runId: string, approvalId: string, decision: 'approve' | 'reject') => {
       const client = ensureClient();
       if (!client) {
-        setError({
+        setStreamingError({
           runId: 'connection',
           threadId: threadId ?? '',
           message: 'Assistant connection is not available.',
@@ -1022,7 +1078,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
         try {
           await client.sendToolApprovalResponse({ runId, approvalId, decision });
         } catch {
-          setError({
+          setStreamingError({
             runId: 'connection',
             threadId: threadId ?? '',
             message: 'Assistant connection is not available.',
@@ -1070,13 +1126,13 @@ export function useAssistantStreaming(threadId: string | undefined) {
 
       void approve().catch(() => {});
     },
-    [ensureClient, threadId]
+    [ensureClient, setStreamingError, threadId]
   );
 
   const reconnect = useCallback(() => {
     const client = ensureClient();
     if (!client) {
-      setError({
+      setStreamingError({
         runId: 'connection',
         threadId: threadId ?? '',
         message: 'Assistant connection is not available.',
@@ -1086,7 +1142,7 @@ export function useAssistantStreaming(threadId: string | undefined) {
     }
     setError(null);
     client.manualReconnect();
-  }, [ensureClient, threadId]);
+  }, [ensureClient, setStreamingError, threadId]);
 
   const retryRun = useCallback(
     (

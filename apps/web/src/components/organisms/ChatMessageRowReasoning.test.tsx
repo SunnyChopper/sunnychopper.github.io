@@ -31,6 +31,7 @@ const baseProps = {
   message: assistantMessage,
   index: 1,
   transcriptLength: 2,
+  clusterPosition: 'solo' as const,
   getSiblings: () => ['assistant-1'],
   latestUserMessageId: 'user-1',
   isLoading: false,
@@ -48,6 +49,7 @@ const baseProps = {
   onRetryUserMessage: vi.fn(),
   onSendFollowUp: vi.fn(),
   onSelectSibling: vi.fn(),
+  run: undefined,
 };
 
 describe('ChatMessageRow reasoning stream state', () => {
@@ -94,5 +96,50 @@ describe('ChatMessageRow reasoning stream state', () => {
       'Reasoning stream is disabled in server configuration.'
     );
     expect(captured?.assistantThinkingStreaming).toBe(false);
+  });
+
+  it('constrains execution trace panel to assistant bubble max width', () => {
+    render(<ChatMessageRow {...baseProps} />);
+
+    const panel = screen.getByTestId('execution-trace-panel');
+    expect(panel.parentElement).toHaveClass('max-w-[70%]', 'mr-auto', 'w-full');
+  });
+
+  it('constrains standalone thinking panel to assistant bubble max width', () => {
+    const thinkingMessage: ChatMessage = {
+      ...assistantMessage,
+      thinking: 'Let me reason through this step by step.',
+      executionSteps: undefined,
+    };
+
+    render(
+      <ChatMessageRow
+        {...baseProps}
+        message={thinkingMessage}
+        thinkingPanelExpanded
+        isStreaming={false}
+      />
+    );
+
+    const toggle = screen.getByRole('button', { name: /Show Thinking/i });
+    expect(toggle.closest('.mr-auto')).toHaveClass('max-w-[70%]');
+  });
+
+  it('constrains pre-trace planning strip to assistant bubble max width', () => {
+    render(
+      <ChatMessageRow
+        {...baseProps}
+        run={{
+          assistantMessageId: 'assistant-1',
+          userMessageId: 'user-1',
+          buffer: '',
+          thinkingBuffer: '',
+          statusHistory: [],
+        }}
+      />
+    );
+
+    const planning = screen.getByText(/Planning response/i);
+    expect(planning.closest('.mr-auto')).toHaveClass('max-w-[70%]');
   });
 });

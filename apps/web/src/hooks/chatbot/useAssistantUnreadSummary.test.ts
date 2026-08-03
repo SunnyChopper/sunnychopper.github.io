@@ -35,7 +35,7 @@ describe('markAssistantThreadReadBestEffort', () => {
 
   it('soft-fails timeout-shaped errors without rethrowing', async () => {
     vi.mocked(assistantUnreadService.markThreadRead).mockRejectedValue(
-      new Error('Request timed out. The server may be slow or unavailable.'),
+      new Error('Request timed out. The server may be slow or unavailable.')
     );
 
     await expect(markAssistantThreadReadBestEffort('thread-1')).resolves.toBeNull();
@@ -44,7 +44,7 @@ describe('markAssistantThreadReadBestEffort', () => {
       expect.objectContaining({
         threadId: 'thread-1',
         error: 'Request timed out. The server may be slow or unavailable.',
-      }),
+      })
     );
   });
 });

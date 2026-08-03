@@ -16,7 +16,7 @@ export function useAssistantUnreadSummary() {
 }
 
 export async function markAssistantThreadReadBestEffort(
-  threadId: string,
+  threadId: string
 ): Promise<MarkThreadReadResult | null> {
   try {
     return await assistantUnreadService.markThreadRead(threadId);

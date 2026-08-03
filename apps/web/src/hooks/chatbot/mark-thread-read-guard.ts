@@ -3,14 +3,14 @@
  */
 export function shouldScheduleMarkThreadRead(
   threadId: string | undefined,
-  markedThreadId: string | null,
+  markedThreadId: string | null
 ): threadId is string {
   return Boolean(threadId) && threadId !== markedThreadId;
 }
 
 export function nextMarkedThreadReadId(
   threadId: string | undefined,
-  markedThreadId: string | null,
+  markedThreadId: string | null
 ): string | null {
   if (!threadId) {
     return null;

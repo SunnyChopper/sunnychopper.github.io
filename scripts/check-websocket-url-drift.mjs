@@ -128,6 +128,12 @@ function parseHostedDevWsUrl(tsPath) {
   return m ? m[1] : null;
 }
 
+function parseCanonicalProdWsUrl(tsPath) {
+  const text = readFileSync(tsPath, 'utf8');
+  const m = text.match(/CANONICAL_PROD_WS_URL\s*=\s*['"]([^'"]+)['"]/);
+  return m ? m[1] : null;
+}
+
 function parseTfvarsExample(path) {
   if (!existsSync(path)) return null;
   const text = readFileSync(path, 'utf8');
@@ -190,6 +196,8 @@ function main() {
   if (stage === 'dev') {
     const webRoot = resolveWebRoot();
     const envCi = join(webRoot, 'apps/web/.env.ci-dev');
+    const envDev = join(webRoot, 'apps/web/.env.dev');
+    const envDeployDev = join(webRoot, '.env.deploy.dev');
     const viteEnv = join(webRoot, 'apps/web/src/lib/vite-public-env.ts');
     const tfExample = join(webRoot, 'infrastructure/terraform.tfvars.example');
 
@@ -197,6 +205,12 @@ function main() {
       ['apps/web/.env.ci-dev VITE_WS_URL', parseEnvFile(envCi, 'VITE_WS_URL')],
       ['vite-public-env.ts HOSTED_DEV_WS_URL', parseHostedDevWsUrl(viteEnv)],
     ];
+    if (existsSync(envDev)) {
+      checks.push(['apps/web/.env.dev VITE_WS_URL', parseEnvFile(envDev, 'VITE_WS_URL')]);
+    }
+    if (existsSync(envDeployDev)) {
+      checks.push(['.env.deploy.dev VITE_WS_URL', parseEnvFile(envDeployDev, 'VITE_WS_URL')]);
+    }
     const tfUrl = parseTfvarsExample(tfExample);
     if (tfUrl) checks.push(['infrastructure/terraform.tfvars.example ws_url', tfUrl]);
 
@@ -243,6 +257,7 @@ function main() {
   const scriptDir = dirname(fileURLToPath(import.meta.url));
   const webRootFromScript = dirname(scriptDir);
   const envProd = join(webRootFromScript, 'apps/web/.env.production');
+  const viteEnv = join(webRootFromScript, 'apps/web/src/lib/vite-public-env.ts');
   if (existsSync(envProd)) {
     const committed = parseEnvFile(envProd, 'VITE_WS_URL');
     if (committed && !prodCandidateMatchesLive(committed, expected, stageName)) {
@@ -251,6 +266,13 @@ function main() {
       );
       process.exit(1);
     }
+  }
+  const canonicalProd = parseCanonicalProdWsUrl(viteEnv);
+  if (canonicalProd && !prodCandidateMatchesLive(canonicalProd, expected, stageName)) {
+    console.error(
+      `DRIFT vite-public-env.ts CANONICAL_PROD_WS_URL:\n  repo:  ${canonicalProd}\n  aws:   ${expected}\n  (${apiName} ApiId=${apiId})`,
+    );
+    process.exit(1);
   }
 
   console.log(`OK prod WebSocket URL matches ${apiName} (ApiId=${apiId})`);

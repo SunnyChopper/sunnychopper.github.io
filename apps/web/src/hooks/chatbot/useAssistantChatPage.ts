@@ -7,6 +7,7 @@ import { wsLogger } from '@/lib/logger';
 import { useAdminShell } from '@/contexts/AdminShellContext';
 import { useAuth } from '@/contexts/Auth';
 import { createLocalAssistantThreadId, isLocalAssistantThreadId } from '@/lib/chat/local-thread-id';
+import { resolveDurableContextUsageLeaf } from '@/lib/chat/durable-assistant-leaf';
 import { threadRecencyTimestamp } from '@/lib/chat/thread-recency';
 import type { ChatThread } from '@/types/chatbot';
 import {
@@ -133,6 +134,10 @@ export function useAssistantChatPage({
   const { editMessage } = useEditMessage();
   const { mutate: markThreadReadMutate } = useMarkAssistantThreadRead();
 
+  const onUserMessageIdReconciledRef = useRef<
+    ((threadId: string, serverMessageId: string) => void) | undefined
+  >(undefined);
+
   const {
     runs,
     lastResolvedModelPick,
@@ -150,7 +155,7 @@ export function useAssistantChatPage({
     reconnect,
     retryRun,
     respondToToolApproval,
-  } = useAssistantStreaming(streamingThreadId);
+  } = useAssistantStreaming(streamingThreadId, { onUserMessageIdReconciledRef });
 
   useAssistantStreamingToasts(
     showToast,
@@ -362,6 +367,14 @@ export function useAssistantChatPage({
       threadLastMessageAt: activeThread?.lastMessageAt,
     });
 
+  useEffect(() => {
+    onUserMessageIdReconciledRef.current = (threadId, serverMessageId) => {
+      if (threadId === serverThreadQueryId || threadId === resolvedThreadId) {
+        setSelectedLeafId(serverMessageId);
+      }
+    };
+  }, [resolvedThreadId, serverThreadQueryId, setSelectedLeafId]);
+
   const activeThreadVisibleTimestamp = useMemo(() => {
     if (transcript.length === 0) {
       return undefined;
@@ -493,7 +506,15 @@ export function useAssistantChatPage({
     resolvedThreadId,
   ]);
 
-  const leafForContextUsage = selectedLeafId ?? activeThread?.activeLeafMessageId ?? null;
+  const leafForContextUsage = useMemo(
+    () =>
+      resolveDurableContextUsageLeaf(
+        selectedLeafId,
+        activeThread?.activeLeafMessageId,
+        nodeByIdForBranch
+      ),
+    [selectedLeafId, activeThread?.activeLeafMessageId, nodeByIdForBranch]
+  );
 
   const contextUsageQuery = useThreadContextUsage({
     threadId: serverThreadQueryId,
