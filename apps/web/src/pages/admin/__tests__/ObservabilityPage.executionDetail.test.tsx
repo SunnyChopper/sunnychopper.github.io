@@ -537,6 +537,48 @@ describe('ObservabilityPage investigate thread', () => {
     });
   });
 
+  it('shows polished automation health row with status badge and copyable error', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    vi.mocked(observabilityService.getHealthMatrix).mockResolvedValue({
+      rows: [
+        {
+          rowId: 'job-run-1',
+          jobName: 'proactive_daily',
+          jobType: 'proactive_automation',
+          lastStatus: 'failed',
+          lastStartedAt: new Date().toISOString(),
+          lastFinishedAt: new Date().toISOString(),
+          errorMessage: 'Dispatch failed',
+          stackTrace: 'Traceback\nValueError: boom',
+          threadId: 'thread-abc',
+          runId: 'run-xyz',
+        },
+      ],
+    });
+
+    renderPage();
+    await user.click(screen.getByRole('tab', { name: /automation health/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Automation health summary')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('failed')).toBeInTheDocument();
+    const replayButton = screen.getByRole('button', { name: /replay/i });
+    expect(replayButton.className).toContain('bg-primary');
+
+    await user.click(screen.getByRole('button', { name: /^details$/i }));
+    expect(screen.getByText('Dispatch failed')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /copy error/i }));
+    expect(writeText).toHaveBeenCalledWith('Dispatch failed\n\nTraceback\nValueError: boom');
+  });
+
   it('hydrates execution filters from URL on load', async () => {
     renderPage(
       '/admin/assistant/observability?tab=executions&runId=run-from-url&jobRunId=job-from-url'
@@ -615,6 +657,58 @@ describe('ObservabilityPage investigate thread', () => {
     await user.click(screen.getByText('ai_http'));
     const btn = await screen.findByRole('button', { name: /open in sandbox/i });
     expect(btn).toBeDisabled();
+  });
+
+  it('keeps advanced ID filters collapsed by default', async () => {
+    renderPage('/admin/assistant/observability?tab=executions');
+
+    const advancedToggle = await screen.findByRole('button', { name: /advanced ids/i });
+    expect(advancedToggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByLabelText('threadId')).not.toBeInTheDocument();
+  });
+
+  it('opens execution detail when a table row is activated with keyboard', async () => {
+    const user = userEvent.setup();
+    vi.mocked(observabilityService.listExecutions).mockResolvedValue({
+      ...emptyPage,
+      data: [
+        {
+          id: 'exec-kb',
+          occurredAt: new Date().toISOString(),
+          module: 'assistant',
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          status: 'succeeded',
+        },
+      ],
+      total: 1,
+    });
+    vi.mocked(observabilityService.getExecution).mockResolvedValue({
+      id: 'exec-kb',
+      occurredAt: new Date().toISOString(),
+      module: 'assistant',
+      provider: 'openai',
+      model: 'gpt-5-mini',
+      status: 'succeeded',
+      promptText: 'hello',
+    });
+
+    renderPage('/admin/assistant/observability?tab=executions');
+    const row = await screen.findByRole('button', { name: /assistant/i });
+    row.focus();
+    await user.keyboard('{Enter}');
+
+    expect(await screen.findByRole('button', { name: /open in sandbox/i })).toBeInTheDocument();
+  });
+
+  it('labels pagination controls for assistive tech', async () => {
+    renderPage('/admin/assistant/observability?tab=executions');
+
+    expect(await screen.findByRole('button', { name: /previous page/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /next page/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: /execution log pagination/i })
+    ).toBeInTheDocument();
   });
 });
 

@@ -14,6 +14,18 @@ export function formatObservabilityTokenCount(value: number | null | undefined):
   return value.toLocaleString('en-US');
 }
 
+const OBS_DATETIME = new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'short',
+  timeStyle: 'medium',
+});
+
+export function formatObservabilityDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return OBS_DATETIME.format(d);
+}
+
 export function computeTokenInputSharePercent(
   inputTokens: number | null | undefined,
   outputTokens: number | null | undefined
