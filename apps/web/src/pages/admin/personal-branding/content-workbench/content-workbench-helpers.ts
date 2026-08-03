@@ -12,10 +12,14 @@ export function isBrandProfileSelectableForPipeline(profile: BrandProfile): bool
 }
 
 export function collectActiveBrandPillars(profiles: BrandProfile[]): string[] {
+  if (!Array.isArray(profiles)) return [];
+
   const labels = new Set<string>();
   for (const profile of profiles) {
     if (profile.status !== 'active') continue;
-    for (const pillar of profile.pillars ?? []) {
+    const pillars = profile.pillars;
+    if (!Array.isArray(pillars)) continue;
+    for (const pillar of pillars) {
       const label = pillar.trim();
       if (label) labels.add(label);
     }

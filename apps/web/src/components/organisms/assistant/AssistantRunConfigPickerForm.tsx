@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { AssistantCurrentDefaultsSummary } from '@/components/molecules/assistant/AssistantCurrentDefaultsSummary';
 import { ManualModelListbox } from '@/components/molecules/assistant/ManualModelListbox';
 import {
   AssistantModelManualSortChips,
@@ -28,7 +29,19 @@ export type AssistantRunConfigPickerFormProps = {
   autoLastReplyPlaceholder?: string | null;
   /** When false, hide context compaction controls (e.g. settings default-models section). */
   showCompaction?: boolean;
+  /** Override compaction help copy (e.g. proactive automation wording). */
+  compactionHelpText?: string;
+  /** Settings card: elevated mode toggle, summary-first manual layout, muted sort chips. */
+  layout?: 'default' | 'settings';
 };
+
+const OPTIMIZE_OPTIONS = [
+  ['speed', 'Speed'],
+  ['intelligence', 'Intelligence'],
+  ['cost', 'Cost / economy'],
+  ['balanced', 'Balanced'],
+  ['value', 'Value (quality per $)'],
+] as const;
 
 export function AssistantRunConfigPickerForm({
   catalog,
@@ -40,8 +53,11 @@ export function AssistantRunConfigPickerForm({
   manualHelpText = 'Manual choices apply after you tap Save — your next message uses the saved models.',
   autoLastReplyPlaceholder = null,
   showCompaction = true,
+  compactionHelpText,
+  layout = 'default',
 }: AssistantRunConfigPickerFormProps) {
   const [manualSortBy, setManualSortBy] = useState<ManualModelSortKey>('default');
+  const isSettingsLayout = layout === 'settings';
 
   const sortedPickerModels = useMemo(
     () => (catalog ? sortAssistantModels(catalog.models, manualSortBy) : []),
@@ -59,13 +75,98 @@ export function AssistantRunConfigPickerForm({
     );
   }
 
+  const modeToggle = (
+    <AssistantModelModeToggle
+      mode={draft.mode}
+      disabled={disabled}
+      variant={isSettingsLayout ? 'settings' : 'default'}
+      onChange={(m) => onDraftChange({ mode: m })}
+    />
+  );
+
+  const settingsSummary = isSettingsLayout ? (
+    <AssistantCurrentDefaultsSummary
+      mode={draft.mode}
+      reasoningModelId={draft.reasoningModelId}
+      responseModelId={draft.responseModelId}
+      optimizeFor={draft.optimizeFor}
+      models={catalog.models}
+    />
+  ) : null;
+
+  const manualListboxes = (
+    <div className={isSettingsLayout ? 'space-y-3 mb-2' : 'space-y-2 mb-1'}>
+      <ManualModelListbox
+        label="Reasoning / planning"
+        models={sortedPickerModels}
+        value={draft.reasoningModelId}
+        disabled={disabled}
+        density={isSettingsLayout ? 'comfortable' : 'default'}
+        onChange={(id) => onDraftChange({ reasoningModelId: id })}
+      />
+      <ManualModelListbox
+        label="Response"
+        models={sortedPickerModels}
+        value={draft.responseModelId}
+        disabled={disabled}
+        density={isSettingsLayout ? 'comfortable' : 'default'}
+        onChange={(id) => onDraftChange({ responseModelId: id })}
+      />
+    </div>
+  );
+
+  const sortChips = (
+    <AssistantModelManualSortChips
+      sortBy={manualSortBy}
+      disabled={disabled}
+      variant={isSettingsLayout ? 'muted' : 'default'}
+      onSortByChange={setManualSortBy}
+    />
+  );
+
+  const manualHelp = (
+    <p
+      className={`text-gray-500 dark:text-gray-400 ${
+        isSettingsLayout ? 'text-[11px] mt-1' : 'text-[11px] mt-2'
+      }`}
+    >
+      {manualHelpText}
+    </p>
+  );
+
+  const optimizeSection = (
+    <>
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+        Optimize for
+      </p>
+      <div className="flex flex-col gap-1.5 mb-2">
+        {OPTIMIZE_OPTIONS.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            disabled={disabled}
+            onClick={() => onDraftChange({ optimizeFor: key })}
+            className={`px-2 py-2 sm:py-1.5 rounded-md text-xs text-left min-h-[44px] sm:min-h-0 ${
+              draft.optimizeFor === key
+                ? 'bg-emerald-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
+        Auto ranks models from your configured API keys using catalog scores. Cost bars mean
+        cheapness (higher = lower $). Balanced uses 0.4×intel + 0.3×speed + 0.3×cost. The LLM router
+        (if enabled server-side) can also weigh capability tags like vision or realtime web.
+      </p>
+    </>
+  );
+
   return (
     <>
-      <AssistantModelModeToggle
-        mode={draft.mode}
-        disabled={disabled}
-        onChange={(m) => onDraftChange({ mode: m })}
-      />
+      {modeToggle}
       {showCompaction ? (
         <>
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 mt-3">
@@ -99,49 +200,22 @@ export function AssistantRunConfigPickerForm({
               </button>
             </div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              <strong>Auto</strong> lets the server summarize older turns when you are near the
-              model limit. <strong>Manual</strong> never does that silently—you run &quot;Compact
-              thread&quot; in chat (or start a new thread) when the meter says it is required.
+              {compactionHelpText ?? (
+                <>
+                  <strong>Auto</strong> lets the server summarize older turns when you are near the
+                  model limit. <strong>Manual</strong> never does that silently—you run
+                  &quot;Compact thread&quot; in chat (or start a new thread) when the meter says it
+                  is required.
+                </>
+              )}
             </p>
           </div>
         </>
       ) : null}
       {draft.mode === 'auto' ? (
         <>
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-            Optimize for
-          </p>
-          <div className="flex flex-col gap-1.5 mb-2">
-            {(
-              [
-                ['speed', 'Speed'],
-                ['intelligence', 'Intelligence'],
-                ['cost', 'Cost / economy'],
-                ['balanced', 'Balanced'],
-                ['value', 'Value (quality per $)'],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                disabled={disabled}
-                onClick={() => onDraftChange({ optimizeFor: key })}
-                className={`px-2 py-2 sm:py-1.5 rounded-md text-xs text-left min-h-[44px] sm:min-h-0 ${
-                  draft.optimizeFor === key
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-2">
-            Auto ranks models from your configured API keys using catalog scores. Cost bars mean
-            cheapness (higher = lower $). Balanced uses 0.4×intel + 0.3×speed + 0.3×cost. The LLM
-            router (if enabled server-side) can also weigh capability tags like vision or realtime
-            web.
-          </p>
+          {settingsSummary}
+          {optimizeSection}
           {lastResolved ? (
             <>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
@@ -167,30 +241,18 @@ export function AssistantRunConfigPickerForm({
             </p>
           ) : null}
         </>
+      ) : isSettingsLayout ? (
+        <>
+          {settingsSummary}
+          {manualListboxes}
+          {sortChips}
+          {manualHelp}
+        </>
       ) : (
         <>
-          <AssistantModelManualSortChips
-            sortBy={manualSortBy}
-            disabled={disabled}
-            onSortByChange={setManualSortBy}
-          />
-          <div className="space-y-2 mb-1">
-            <ManualModelListbox
-              label="Reasoning / planning"
-              models={sortedPickerModels}
-              value={draft.reasoningModelId}
-              disabled={disabled}
-              onChange={(id) => onDraftChange({ reasoningModelId: id })}
-            />
-            <ManualModelListbox
-              label="Response"
-              models={sortedPickerModels}
-              value={draft.responseModelId}
-              disabled={disabled}
-              onChange={(id) => onDraftChange({ responseModelId: id })}
-            />
-          </div>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">{manualHelpText}</p>
+          {sortChips}
+          {manualListboxes}
+          {manualHelp}
         </>
       )}
     </>

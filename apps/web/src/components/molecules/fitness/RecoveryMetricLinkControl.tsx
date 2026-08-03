@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Link2, Unlink } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link2 } from 'lucide-react';
 import type { Metric } from '@/types/growth-system';
 import type { RecoveryLinkableField } from '@/types/fitness';
+import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
+import Combobox from '@/components/molecules/Combobox';
 import { cn } from '@/lib/utils';
-import { Select } from '@/components/atoms/Select';
 
 type Props = {
   field: RecoveryLinkableField;
@@ -23,22 +24,26 @@ export function RecoveryMetricLinkControl({
   disabled,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [selectedMetricId, setSelectedMetricId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [busy, setBusy] = useState(false);
 
   const linkedMetric = linkedMetricId ? metrics.find((m) => m.id === linkedMetricId) : undefined;
 
-  const handleLink = async () => {
-    if (!selectedMetricId) return;
-    setBusy(true);
-    try {
-      await onLink(selectedMetricId);
+  const comboboxOptions = useMemo(
+    () =>
+      metrics.map((m) => ({
+        value: m.id,
+        label: `${m.name}${m.unit ? ` (${m.unit})` : ''}`,
+      })),
+    [metrics]
+  );
+
+  useEffect(() => {
+    if (linkedMetricId) {
       setPickerOpen(false);
-      setSelectedMetricId('');
-    } finally {
-      setBusy(false);
+      setSearchQuery('');
     }
-  };
+  }, [linkedMetricId]);
 
   const handleUnlink = async () => {
     setBusy(true);
@@ -49,81 +54,72 @@ export function RecoveryMetricLinkControl({
     }
   };
 
+  const handleComboboxChange = async (next: string) => {
+    setSearchQuery(next);
+    const match = metrics.find((m) => m.id === next);
+    if (!match) return;
+    setBusy(true);
+    try {
+      await onLink(match.id);
+      setPickerOpen(false);
+      setSearchQuery('');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (linkedMetricId) {
     return (
-      <div className="flex flex-wrap items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
-        <Link2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span>
-          Linked to <span className="font-medium">{linkedMetric?.name ?? linkedMetricId}</span>
-          {linkedMetric?.unit ? ` (${linkedMetric.unit})` : ''}
-        </span>
+      <EntityLinkChip
+        id={linkedMetricId}
+        type="metric"
+        size="sm"
+        label={linkedMetric?.name ?? linkedMetricId}
+        onRemove={disabled || busy ? undefined : () => void handleUnlink()}
+        removeAriaLabel={`Unlink metric from ${field}`}
+        className="shrink-0"
+      />
+    );
+  }
+
+  if (pickerOpen) {
+    return (
+      <div className="min-w-[12rem] max-w-xs flex-1">
+        <Combobox
+          value={searchQuery}
+          onChange={(next) => void handleComboboxChange(next)}
+          options={comboboxOptions}
+          disabled={disabled || busy}
+          placeholder="Search metrics…"
+          className="text-xs"
+        />
         <button
           type="button"
           disabled={disabled || busy}
-          onClick={handleUnlink}
-          className="inline-flex items-center gap-1 rounded-md border border-blue-200 px-2 py-0.5 font-medium hover:bg-blue-50 disabled:opacity-50 dark:border-blue-800 dark:hover:bg-blue-950/40"
+          onClick={() => {
+            setPickerOpen(false);
+            setSearchQuery('');
+          }}
+          className="mt-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
-          <Unlink className="h-3 w-3" aria-hidden />
-          Unlink
+          Cancel
         </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      {!pickerOpen ? (
-        <button
-          type="button"
-          disabled={disabled || busy}
-          onClick={() => setPickerOpen(true)}
-          className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Link to Growth metric
-        </button>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor={`metric-link-${field}`}>
-            Select metric for {field}
-          </label>
-          <Select
-            id={`metric-link-${field}`}
-            value={selectedMetricId}
-            onChange={(e) => setSelectedMetricId(e.target.value)}
-            disabled={disabled || busy}
-            className={cn(
-              'rounded-md border border-gray-300 bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900'
-            )}
-          >
-            <option value="">Choose metric…</option>
-            {metrics.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-                {m.unit ? ` (${m.unit})` : ''}
-              </option>
-            ))}
-          </Select>
-          <button
-            type="button"
-            disabled={disabled || busy || !selectedMetricId}
-            onClick={handleLink}
-            className="rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            Link
-          </button>
-          <button
-            type="button"
-            disabled={disabled || busy}
-            onClick={() => {
-              setPickerOpen(false);
-              setSelectedMetricId('');
-            }}
-            className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400"
-          >
-            Cancel
-          </button>
-        </div>
+    <button
+      type="button"
+      disabled={disabled || busy}
+      onClick={() => setPickerOpen(true)}
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1 text-xs text-gray-500 hover:text-gray-700',
+        'disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-200'
       )}
-    </div>
+    >
+      <Link2 className="h-3 w-3" aria-hidden />
+      Link metric
+    </button>
   );
 }

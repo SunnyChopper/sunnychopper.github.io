@@ -17,6 +17,10 @@ const SUBMODULE_TITLES: Record<string, { title: string; subtitle: string }> = {
     title: 'Content Pipeline',
     subtitle: 'Repurpose finalized content and track distribution.',
   },
+  [ROUTES.admin.personalBrandingContentStream]: {
+    title: 'Content Stream',
+    subtitle: 'Automated X short-post drafts grounded in your voice, trends, and platform rules.',
+  },
   [ROUTES.admin.personalBrandingRadar]: {
     title: 'Signal Radar',
     subtitle: 'Inbound trend feed and scraper source management.',

@@ -31,6 +31,8 @@ interface TaskCreateFormProps {
   onSubmit: (input: CreateTaskInput) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
+  /** Seed create form fields (e.g. from health priority actions). */
+  initialValues?: Partial<CreateTaskInput>;
   /** Tasks that can be selected as "depends on" (excludes the draft task). */
   dependencyPickerEntities?: EntitySummary[];
   projectPickerEntities?: EntitySummary[];
@@ -41,24 +43,25 @@ export function TaskCreateForm({
   onSubmit,
   onCancel,
   isLoading,
+  initialValues,
   dependencyPickerEntities = [],
   projectPickerEntities = [],
   goalPickerEntities = [],
 }: TaskCreateFormProps) {
   const [formData, setFormData] = useState<CreateTaskInput>({
-    title: '',
-    description: '',
-    extendedDescription: '',
-    area: 'Operations',
-    subCategory: undefined,
-    priority: 'P3',
-    status: 'Backlog',
-    size: undefined,
-    dueDate: '',
-    scheduledDate: '',
-    notes: '',
-    isRecurring: false,
-    pointValue: undefined,
+    title: initialValues?.title ?? '',
+    description: initialValues?.description ?? '',
+    extendedDescription: initialValues?.extendedDescription ?? '',
+    area: initialValues?.area ?? 'Operations',
+    subCategory: initialValues?.subCategory,
+    priority: initialValues?.priority ?? 'P3',
+    status: initialValues?.status ?? 'Backlog',
+    size: initialValues?.size,
+    dueDate: initialValues?.dueDate ?? '',
+    scheduledDate: initialValues?.scheduledDate ?? '',
+    notes: initialValues?.notes ?? '',
+    isRecurring: initialValues?.isRecurring ?? false,
+    pointValue: initialValues?.pointValue,
   });
 
   const [showAIAssist, setShowAIAssist] = useState(false);

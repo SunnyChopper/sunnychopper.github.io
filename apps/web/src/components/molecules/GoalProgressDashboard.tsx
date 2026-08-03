@@ -1,4 +1,4 @@
-import { CheckSquare, TrendingUp, BarChart3, Repeat } from 'lucide-react';
+import { CheckSquare, TrendingUp, BarChart3, Repeat, FolderKanban } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { GoalProgressBreakdown } from '@/types/growth-system';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
@@ -41,6 +41,17 @@ export function GoalProgressDashboard({
       icon: Repeat,
       detail: `${progress.habits.consistency}% consistency`,
     },
+    ...(progress.projects && (progress.weights?.projectsWeight ?? 0) > 0
+      ? [
+          {
+            label: 'Projects',
+            value: progress.projects.percentage,
+            color: 'bg-cyan-500',
+            icon: FolderKanban,
+            detail: `${progress.projects.linkedCount} linked`,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -126,6 +137,28 @@ export function GoalProgressDashboard({
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {showBreakdown && progress.projects && progress.projects.items.length > 0 && (
+          <div className="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+              Project contributions
+            </h4>
+            <ul className="space-y-2">
+              {progress.projects.items.map((item) => (
+                <li
+                  key={item.projectId}
+                  className="flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-400"
+                >
+                  <span className="text-gray-900 dark:text-white truncate">{item.title}</span>
+                  <span className="flex-shrink-0">
+                    {item.completionPercentage}% complete · weight {item.contributionWeight} (
+                    {Math.round(item.normalizedShare * 100)}% of slice)
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>

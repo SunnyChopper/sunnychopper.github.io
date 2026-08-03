@@ -5,5 +5,6 @@ export const DEFAULT_GOAL_PROGRESS_WEIGHTS: GoalProgressConfig = {
   tasksWeight: 35,
   metricsWeight: 10,
   habitsWeight: 20,
+  projectsWeight: 0,
   manualOverride: null,
 };

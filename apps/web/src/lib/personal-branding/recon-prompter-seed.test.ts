@@ -39,27 +39,69 @@ describe('ctaLabelForReconPost', () => {
 });
 
 describe('buildReconInteractionIntent', () => {
-  it('builds reply-focused intent with handle', () => {
+  it('prefers suggestedAngle when present', () => {
     expect(
-      buildReconInteractionIntent({ recommendedAction: 'reply', authorUsername: 'alice' })
-    ).toContain('@alice');
-    expect(
-      buildReconInteractionIntent({ recommendedAction: 'reply', authorUsername: 'alice' })
-    ).toContain('reply');
+      buildReconInteractionIntent({
+        recommendedAction: 'reply',
+        authorUsername: 'alice',
+        suggestedAngle: 'Add a contrarian insight on their AI thesis to spark debate.',
+        relevanceRationale: 'High engagement window',
+        relevanceRationaleBullets: ['Strong thread momentum'],
+        text: 'AI will change everything',
+      })
+    ).toBe('Add a contrarian insight on their AI thesis to spark debate.');
+  });
+
+  it('builds reply-focused intent with rationale and excerpt fallback', () => {
+    const intent = buildReconInteractionIntent({
+      recommendedAction: 'reply',
+      authorUsername: 'alice',
+      suggestedAngle: null,
+      relevanceRationale: 'Timely take on product launch',
+      relevanceRationaleBullets: ['Brand fit on builder tools', 'Early replies get visibility'],
+      text: 'We just shipped v2. Here is what changed.',
+    });
+    expect(intent).toContain('@alice');
+    expect(intent).toContain('Reply to @alice');
+    expect(intent).toContain('Opportunity: Timely take on product launch');
+    expect(intent).toContain('Brand fit on builder tools');
+    expect(intent).toContain('React to:');
+    expect(intent).toContain('We just shipped v2.');
   });
 
   it('builds quote-focused intent with handle', () => {
     expect(
-      buildReconInteractionIntent({ recommendedAction: 'quote', authorUsername: 'bob' })
+      buildReconInteractionIntent({
+        recommendedAction: 'quote',
+        authorUsername: 'bob',
+        suggestedAngle: null,
+        relevanceRationale: null,
+        relevanceRationaleBullets: null,
+        text: 'Hot take on markets',
+      })
     ).toContain('@bob');
     expect(
-      buildReconInteractionIntent({ recommendedAction: 'quote', authorUsername: 'bob' })
-    ).toContain('quote');
+      buildReconInteractionIntent({
+        recommendedAction: 'quote',
+        authorUsername: 'bob',
+        suggestedAngle: null,
+        relevanceRationale: null,
+        relevanceRationaleBullets: null,
+        text: 'Hot take on markets',
+      })
+    ).toContain('Quote @bob');
   });
 
   it('falls back to generic engage intent without handle', () => {
     expect(
-      buildReconInteractionIntent({ recommendedAction: 'monitor', authorUsername: null })
+      buildReconInteractionIntent({
+        recommendedAction: 'monitor',
+        authorUsername: null,
+        suggestedAngle: null,
+        relevanceRationale: null,
+        relevanceRationaleBullets: null,
+        text: 'Some post',
+      })
     ).toContain('the creator');
   });
 });

@@ -1,4 +1,4 @@
-export type ScheduleHealthTone = 'ahead' | 'ontrack' | 'behind' | 'overdue';
+export type ScheduleHealthTone = 'ahead' | 'ontrack' | 'behind' | 'overdue' | 'abandoned';
 
 export const IMPACT_LABELS: Record<number, string> = {
   1: 'Very Low Impact',
@@ -27,5 +27,9 @@ export const SCHEDULE_HEALTH_STYLES: Record<
   overdue: {
     label: 'Overdue',
     className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  },
+  abandoned: {
+    label: 'Abandoned risk',
+    className: 'bg-slate-100 text-slate-600 dark:bg-slate-800/80 dark:text-slate-400',
   },
 };

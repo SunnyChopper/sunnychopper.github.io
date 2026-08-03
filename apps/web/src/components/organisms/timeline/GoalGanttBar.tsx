@@ -4,6 +4,11 @@ import type { Goal } from '@/types/growth-system';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { goalBarStart, goalBarEnd } from '@/utils/gantt-cascade';
+import {
+  formatGoalTimelineBarAriaLabel,
+  formatGoalTimelineBarTooltip,
+  timelineBarTooltipPanelClassName,
+} from '@/utils/timeline-bar-tooltip';
 
 export type GanttDragMode = 'move' | 'resize-start' | 'resize-end' | 'connect';
 
@@ -49,6 +54,10 @@ export function GoalGanttBar({
 
   const start = goalBarStart(goal);
   const end = goalBarEnd(goal);
+  const startLabel = start?.toLocaleDateString() ?? '';
+  const endLabel = end?.toLocaleDateString() ?? '';
+  const tooltipText = formatGoalTimelineBarTooltip(goal.title, goal.status);
+  const ariaLabel = formatGoalTimelineBarAriaLabel(goal.title, goal.status, startLabel, endLabel);
 
   return (
     <motion.div
@@ -90,7 +99,7 @@ export function GoalGanttBar({
         />
         {/* Body drag + click */}
         <div
-          className="absolute inset-0 px-2 py-2 cursor-grab active:cursor-grabbing z-10"
+          className="absolute inset-0 px-2 py-2 cursor-grab active:cursor-grabbing z-10 group/gantt-bar"
           style={{ left: EDGE_HIT_PX, right: EDGE_HIT_PX + 8 }}
           onPointerDown={(e) => handlePointerDown(e, 'move')}
           onClick={(e) => {
@@ -106,8 +115,11 @@ export function GoalGanttBar({
           }}
           role="button"
           tabIndex={0}
-          aria-label={`Goal: ${goal.title}, ${start?.toLocaleDateString() ?? ''} to ${end?.toLocaleDateString() ?? ''}`}
+          aria-label={ariaLabel}
         >
+          <div className={timelineBarTooltipPanelClassName} role="tooltip">
+            {tooltipText}
+          </div>
           <div className="flex items-center justify-between h-full pointer-events-none">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <PriorityIndicator priority={goal.priority} size="sm" />

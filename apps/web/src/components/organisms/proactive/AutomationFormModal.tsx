@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { detectBrowserTimeZone } from '@/lib/iana-time-zones';
 import { AssistantRunConfigPickerForm } from '@/components/organisms/assistant/AssistantRunConfigPickerForm';
 import {
@@ -9,6 +9,12 @@ import {
 import Dialog from '@/components/molecules/Dialog';
 import Button from '@/components/atoms/Button';
 import { parseProactiveAssistantRunConfigFromUnknown } from '@/lib/proactive/assistant-run-config';
+import {
+  automationFormSnapshotsEqual,
+  buildAutomationFormSnapshot,
+  type AutomationFormSnapshot,
+} from '@/lib/proactive/automation-form-snapshot';
+import { isValidProactiveLocalTime } from '@/lib/proactive/format-proactive-time';
 import type {
   ProactiveAssistantRunConfig,
   ProactiveAutomation,
@@ -18,10 +24,13 @@ import type {
 import type { AssistantModelCatalogData } from '@/types/chatbot';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
+import { cn } from '@/lib/utils';
 
 const KINDS: ProactiveAutomationKind[] = [
   'dailyBriefing',
   'logbookEvening',
+  'tomorrowPrep',
+  'staleEntityHunter',
   'custom',
   'dailyLearningTrends',
   'dailyLearningTheory',
@@ -30,6 +39,8 @@ const KINDS: ProactiveAutomationKind[] = [
 const KIND_LABELS: Record<ProactiveAutomationKind, string> = {
   dailyBriefing: 'Daily Briefing',
   logbookEvening: 'Logbook Evening',
+  tomorrowPrep: 'Tomorrow Prep',
+  staleEntityHunter: 'Stale Entity Hunter',
   custom: 'Custom',
   dailyLearningTrends: 'Daily Learning — Trends',
   dailyLearningTheory: 'Daily Learning — Theory',
@@ -45,6 +56,10 @@ const WEEKDAY_OPTS: { value: number; label: string }[] = [
   { value: 5, label: 'Sat' },
   { value: 6, label: 'Sun' },
 ];
+
+const fieldInputClassName =
+  'border rounded-lg px-2 py-2 text-sm bg-white dark:bg-gray-900 dark:border-gray-600';
+const fieldErrorClassName = 'text-xs text-red-600 dark:text-red-400';
 
 export interface AutomationFormDefaults {
   kind: ProactiveAutomationKind;
@@ -62,7 +77,16 @@ export interface AutomationFormDefaults {
 
 function readKindFromPayload(payload: Record<string, unknown>): ProactiveAutomationKind {
   const k = payload.kind;
-  if (k === 'dailyBriefing' || k === 'logbookEvening' || k === 'custom') return k;
+  if (
+    k === 'dailyBriefing' ||
+    k === 'logbookEvening' ||
+    k === 'tomorrowPrep' ||
+    k === 'staleEntityHunter' ||
+    k === 'custom' ||
+    k === 'dailyLearningTrends' ||
+    k === 'dailyLearningTheory'
+  )
+    return k;
   return 'custom';
 }
 
@@ -150,6 +174,36 @@ function buildDefaults(
   };
 }
 
+function FormSection({
+  title,
+  description,
+  first = false,
+  children,
+}: {
+  title: string;
+  description?: string;
+  first?: boolean;
+  children: ReactNode;
+}) {
+  const sectionId = `automation-section-${title.replace(/\s+/g, '-').toLowerCase()}`;
+  return (
+    <section
+      className={cn('space-y-3', !first && 'border-t border-gray-200 dark:border-gray-700 pt-4')}
+      aria-labelledby={sectionId}
+    >
+      <div>
+        <h4 id={sectionId} className="text-sm font-semibold text-gray-900 dark:text-white">
+          {title}
+        </h4>
+        {description ? (
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{description}</p>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
 interface AutomationFormFieldsProps {
   mode: 'create' | 'edit' | 'suggestion' | 'rejectedSuggestion';
   defaults: AutomationFormDefaults;
@@ -159,6 +213,7 @@ interface AutomationFormFieldsProps {
   saving: boolean;
   onClose: () => void;
   onSubmit: (body: Record<string, unknown>) => void | Promise<void>;
+  render: (parts: { body: ReactNode; footer: ReactNode }) => ReactNode;
 }
 
 function AutomationFormFields({
@@ -170,6 +225,7 @@ function AutomationFormFields({
   saving,
   onClose,
   onSubmit,
+  render,
 }: AutomationFormFieldsProps) {
   const [kind, setKind] = useState<ProactiveAutomationKind>(defaults.kind);
   const [localTime, setLocalTime] = useState(defaults.localTime);
@@ -187,6 +243,11 @@ function AutomationFormFields({
   const [modelDraft, setModelDraft] = useState<ModelPickerDraft>(() =>
     modelPickerDraftFromRunConfig(defaults.assistantRunConfig, null)
   );
+  const [baseline, setBaseline] = useState<AutomationFormSnapshot | null>(null);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [promptTouched, setPromptTouched] = useState(false);
+  const [localTimeTouched, setLocalTimeTouched] = useState(false);
 
   const catalogReady = Boolean(modelCatalog?.models.length);
   const catalogSyncedRef = useRef(false);
@@ -198,9 +259,24 @@ function AutomationFormFields({
     }
     if (catalogSyncedRef.current) return;
     catalogSyncedRef.current = true;
+    const hydratedDraft = modelPickerDraftFromRunConfig(defaults.assistantRunConfig, modelCatalog);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sync when async catalog first becomes available
-    setModelDraft(modelPickerDraftFromRunConfig(defaults.assistantRunConfig, modelCatalog));
-  }, [catalogReady, defaults.assistantRunConfig, modelCatalog]);
+    setModelDraft(hydratedDraft);
+    setBaseline(
+      buildAutomationFormSnapshot({
+        kind: defaults.kind,
+        localTime: defaults.localTime,
+        timeZone: defaults.timeZone,
+        customUserPrompt: defaults.customUserPrompt,
+        threadStrategy: defaults.threadStrategy,
+        channelEmailEnabled: defaults.channelEmailEnabled,
+        channelWebhookEnabled: defaults.channelWebhookEnabled,
+        title: defaults.title,
+        daysOfWeek: defaults.daysOfWeek,
+        modelDraft: hydratedDraft,
+      })
+    );
+  }, [catalogReady, defaults, modelCatalog]);
 
   useEffect(() => {
     if (!modelCatalog?.models.length) return;
@@ -226,6 +302,53 @@ function AutomationFormFields({
   const browserTimeZone = useMemo(() => detectBrowserTimeZone(), []);
   const timeZoneMismatch = timeZone !== browserTimeZone;
 
+  const currentSnapshot = useMemo(
+    () =>
+      buildAutomationFormSnapshot({
+        kind,
+        localTime,
+        timeZone,
+        customUserPrompt,
+        threadStrategy,
+        channelEmailEnabled,
+        channelWebhookEnabled,
+        title,
+        daysOfWeek,
+        modelDraft,
+      }),
+    [
+      kind,
+      localTime,
+      timeZone,
+      customUserPrompt,
+      threadStrategy,
+      channelEmailEnabled,
+      channelWebhookEnabled,
+      title,
+      daysOfWeek,
+      modelDraft,
+    ]
+  );
+
+  const isDirty = baseline !== null && !automationFormSnapshotsEqual(currentSnapshot, baseline);
+
+  const titleError =
+    kind === 'custom' && !title.trim() && (submitAttempted || titleTouched)
+      ? 'Title is required for custom automations.'
+      : null;
+  const promptError =
+    kind === 'custom' && !customUserPrompt.trim() && (submitAttempted || promptTouched)
+      ? 'Custom prompt is required.'
+      : null;
+  const localTimeError =
+    !isValidProactiveLocalTime(localTime) && (submitAttempted || localTimeTouched)
+      ? 'Enter a valid 24-hour time (HH:MM, e.g. 08:00).'
+      : null;
+
+  const isFormValid =
+    isValidProactiveLocalTime(localTime) &&
+    (kind !== 'custom' || (title.trim().length > 0 && customUserPrompt.trim().length > 0));
+
   const toggleDay = (d: number) => {
     setDaysOfWeek((prev) => {
       if (prev.includes(d)) return prev.filter((x) => x !== d);
@@ -234,9 +357,12 @@ function AutomationFormFields({
   };
 
   const handleSubmit = () => {
+    setSubmitAttempted(true);
+    if (!isFormValid || !catalogReady) return;
+
     const body: Record<string, unknown> = {
       kind,
-      localTime,
+      localTime: localTime.trim(),
       timeZone,
       threadStrategy,
       channelEmailEnabled,
@@ -270,108 +396,160 @@ function AutomationFormFields({
           ? 'Save changes'
           : 'Save changes';
 
-  return (
+  const isEditMode = mode === 'edit' || mode === 'rejectedSuggestion';
+  const primaryDisabled = saving || !catalogReady || !isFormValid || (isEditMode && !isDirty);
+
+  const body = (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-xs flex flex-col gap-1 sm:col-span-2">
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            Title{kind === 'custom' ? ' (required)' : ' (optional)'}
-          </span>
-          <input
-            type="text"
-            className="border rounded-lg px-2 py-2 text-sm bg-white dark:bg-gray-900 dark:border-gray-600"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={kind === 'custom' ? 'e.g. Weekly project review' : 'e.g. Morning briefing'}
-            required={kind === 'custom'}
-          />
-        </label>
-        <label className="text-xs flex flex-col gap-1">
-          <span className="font-medium text-gray-700 dark:text-gray-300">Kind</span>
-          <Select
-            className="border rounded-lg px-2 py-2 text-sm bg-white dark:bg-gray-900 dark:border-gray-600"
-            value={kind}
-            onChange={(e) => setKind(e.target.value as ProactiveAutomationKind)}
-          >
-            {KINDS.map((k) => (
-              <option key={k} value={k}>
-                {KIND_LABELS[k]}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="text-xs flex flex-col gap-1">
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            Local time (24h HH:MM)
-          </span>
-          <input
-            type="text"
-            className="border rounded-lg px-2 py-2 text-sm bg-white dark:bg-gray-900 dark:border-gray-600"
-            value={localTime}
-            onChange={(e) => setLocalTime(e.target.value)}
-            placeholder="08:00"
-          />
-        </label>
-        <label className="text-xs flex flex-col gap-1 sm:col-span-2">
-          <span className="font-medium text-gray-700 dark:text-gray-300">Time zone (IANA)</span>
-          <Select
-            className="border rounded-lg px-2 py-2 text-sm bg-white dark:bg-gray-900 dark:border-gray-600"
-            value={timeZone}
-            onChange={(e) => setTimeZone(e.target.value)}
-          >
-            {zoneOptions.map((z) => (
-              <option key={z} value={z}>
-                {z}
-              </option>
-            ))}
-          </Select>
-          {timeZoneMismatch ? (
-            <p
-              role="status"
-              className="mt-1.5 text-[11px] text-amber-800 dark:text-amber-200 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-2 py-1.5"
+      <FormSection title="Identity" description="Name and automation type." first>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-xs flex flex-col gap-1 sm:col-span-2">
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              Title{kind === 'custom' ? ' (required)' : ' (optional)'}
+            </span>
+            <input
+              type="text"
+              className={fieldInputClassName}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={() => setTitleTouched(true)}
+              placeholder={
+                kind === 'custom' ? 'e.g. Weekly project review' : 'e.g. Morning briefing'
+              }
+              aria-invalid={titleError ? true : undefined}
+              aria-describedby={titleError ? 'automation-title-error' : undefined}
+            />
+            {titleError ? (
+              <span id="automation-title-error" className={fieldErrorClassName}>
+                {titleError}
+              </span>
+            ) : null}
+          </label>
+          <label className="text-xs flex flex-col gap-1 sm:col-span-2">
+            <span className="font-medium text-gray-700 dark:text-gray-300">Kind</span>
+            <Select
+              className={fieldInputClassName}
+              value={kind}
+              onChange={(e) => setKind(e.target.value as ProactiveAutomationKind)}
             >
-              Saved time zone is <strong>{timeZone}</strong>, but this browser reports{' '}
-              <strong>{browserTimeZone}</strong>. If the saved IANA zone does not match where you
-              live, scheduled runs (including evening logbook) may use the wrong local calendar day.
-            </p>
+              {KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {KIND_LABELS[k]}
+                </option>
+              ))}
+            </Select>
+          </label>
+          {kind === 'custom' ? (
+            <label className="text-xs flex flex-col gap-1 sm:col-span-2">
+              <span className="font-medium text-gray-700 dark:text-gray-300">Custom prompt</span>
+              <Textarea
+                className={`${fieldInputClassName} min-h-[100px]`}
+                value={customUserPrompt}
+                onChange={(e) => setCustomUserPrompt(e.target.value)}
+                onBlur={() => setPromptTouched(true)}
+                aria-invalid={promptError ? true : undefined}
+                aria-describedby={promptError ? 'automation-prompt-error' : undefined}
+              />
+              {promptError ? (
+                <span id="automation-prompt-error" className={fieldErrorClassName}>
+                  {promptError}
+                </span>
+              ) : null}
+            </label>
           ) : null}
-        </label>
-        <div className="text-xs flex flex-col gap-2 sm:col-span-2">
-          <span className="font-medium text-gray-700 dark:text-gray-300">Runs on</span>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">
-            Leave all unchecked for every day. Otherwise select specific weekdays (Mon–Sun).
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {WEEKDAY_OPTS.map(({ value, label }) => (
-              <label
-                key={value}
-                className="inline-flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300"
+        </div>
+      </FormSection>
+
+      <FormSection title="Schedule" description="When this automation runs in your time zone.">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="text-xs flex flex-col gap-1">
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              Local time (24h HH:MM)
+            </span>
+            <input
+              type="text"
+              className={fieldInputClassName}
+              value={localTime}
+              onChange={(e) => setLocalTime(e.target.value)}
+              onBlur={() => setLocalTimeTouched(true)}
+              placeholder="08:00"
+              aria-invalid={localTimeError ? true : undefined}
+              aria-describedby={localTimeError ? 'automation-local-time-error' : undefined}
+            />
+            {localTimeError ? (
+              <span id="automation-local-time-error" className={fieldErrorClassName}>
+                {localTimeError}
+              </span>
+            ) : null}
+          </label>
+          <label className="text-xs flex flex-col gap-1 sm:col-span-2">
+            <span className="font-medium text-gray-700 dark:text-gray-300">Time zone (IANA)</span>
+            <Select
+              className={fieldInputClassName}
+              value={timeZone}
+              onChange={(e) => setTimeZone(e.target.value)}
+            >
+              {zoneOptions.map((z) => (
+                <option key={z} value={z}>
+                  {z}
+                </option>
+              ))}
+            </Select>
+            {timeZoneMismatch ? (
+              <div
+                role="status"
+                className="mt-2 rounded-md border border-amber-200/80 bg-amber-50/80 px-3 py-2 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100"
               >
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-400"
-                  checked={daysOfWeek.includes(value)}
-                  onChange={() => toggleDay(value)}
-                />
-                {label}
-              </label>
-            ))}
+                <p>
+                  This automation uses <strong>{timeZone}</strong>. This browser is set to{' '}
+                  <strong>{browserTimeZone}</strong>.
+                </p>
+                <p className="mt-1 text-amber-800/90 dark:text-amber-200/80">
+                  Scheduled runs use the automation&apos;s time zone, not your browser clock.
+                </p>
+                <button
+                  type="button"
+                  className="mt-2 text-xs font-medium text-amber-900 underline underline-offset-2 hover:text-amber-950 dark:text-amber-100 dark:hover:text-white"
+                  onClick={() => setTimeZone(browserTimeZone)}
+                >
+                  Use browser time zone
+                </button>
+              </div>
+            ) : null}
+          </label>
+          <div className="text-xs flex flex-col gap-2 sm:col-span-2">
+            <span className="font-medium text-gray-700 dark:text-gray-300">Runs on</span>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              Leave all unchecked for every day. Otherwise select specific weekdays (Mon–Sun).
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {WEEKDAY_OPTS.map(({ value, label }) => (
+                <label
+                  key={value}
+                  className="inline-flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300"
+                >
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-400"
+                    checked={daysOfWeek.includes(value)}
+                    onChange={() => toggleDay(value)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
           </div>
         </div>
-        {kind === 'custom' ? (
-          <label className="text-xs flex flex-col gap-1 sm:col-span-2">
-            <span className="font-medium text-gray-700 dark:text-gray-300">Custom prompt</span>
-            <Textarea
-              className="border rounded-lg px-2 py-2 text-sm min-h-[100px] bg-white dark:bg-gray-900 dark:border-gray-600"
-              value={customUserPrompt}
-              onChange={(e) => setCustomUserPrompt(e.target.value)}
-            />
-          </label>
-        ) : null}
-        <label className="text-xs flex flex-col gap-1 sm:col-span-2">
-          <span className="font-medium text-gray-700 dark:text-gray-300">Thread strategy</span>
+      </FormSection>
+
+      <FormSection
+        title="Thread strategy"
+        description="Whether each run continues an existing thread or starts fresh."
+      >
+        <label className="text-xs flex flex-col gap-1 max-w-md">
+          <span className="font-medium text-gray-700 dark:text-gray-300">Strategy</span>
           <Select
-            className="border rounded-lg px-2 py-2 text-sm bg-white dark:bg-gray-900 dark:border-gray-600"
+            className={fieldInputClassName}
             value={threadStrategy}
             onChange={(e) => setThreadStrategy(e.target.value as ProactiveThreadStrategy)}
           >
@@ -379,75 +557,91 @@ function AutomationFormFields({
             <option value="newThreadEachRun">New thread each run</option>
           </Select>
         </label>
-        <div className="text-xs flex flex-col gap-2 sm:col-span-2 border-t border-gray-200 dark:border-gray-700 pt-3">
-          <span className="font-medium text-gray-700 dark:text-gray-300">Assistant models</span>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400">
-            Choose Auto (with an optimize goal) or Manual reasoning/response models for this
-            automation&apos;s runs. Omit changes if the catalog is still loading.
-          </p>
-          <AssistantRunConfigPickerForm
-            catalog={modelCatalog}
-            isLoading={isModelCatalogLoading}
-            draft={modelDraft}
-            onDraftChange={(patch) => setModelDraft((d) => ({ ...d, ...patch }))}
-            disabled={saving}
-            manualHelpText="Manual choices apply when you save this automation."
-          />
-        </div>
-        <label className="text-xs flex items-center gap-2">
-          <input
-            type="checkbox"
-            className="rounded border-gray-400"
-            checked={channelEmailEnabled}
-            onChange={(e) => setChannelEmailEnabled(e.target.checked)}
-          />
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            Send email notifications (when configured)
-          </span>
-        </label>
-        <label className="text-xs flex items-center gap-2 sm:col-span-2">
-          <input
-            type="checkbox"
-            className="rounded border-gray-400"
-            checked={channelWebhookEnabled}
-            onChange={(e) => setChannelWebhookEnabled(e.target.checked)}
-          />
-          <span className="font-medium text-gray-700 dark:text-gray-300">
-            Send webhook notifications (Discord or generic; configure in Settings)
-          </span>
-        </label>
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+      </FormSection>
+
+      <FormSection
+        title="Models"
+        description="Mode, context compaction, and model selection for this automation's runs."
+      >
         {isModelCatalogLoading && !catalogReady ? (
-          <span className="text-xs text-gray-500 dark:text-gray-400 mr-auto">Loading models…</span>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Loading models…</p>
         ) : null}
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="rounded-lg"
-          onClick={onClose}
+        <AssistantRunConfigPickerForm
+          catalog={modelCatalog}
+          isLoading={isModelCatalogLoading}
+          draft={modelDraft}
+          onDraftChange={(patch) => setModelDraft((d) => ({ ...d, ...patch }))}
           disabled={saving}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          className="rounded-lg"
-          disabled={
-            saving ||
-            !catalogReady ||
-            (kind === 'custom' && (!customUserPrompt.trim() || !title.trim()))
-          }
-          onClick={handleSubmit}
-        >
-          {primaryLabel}
-        </Button>
-      </div>
+          layout="settings"
+          manualHelpText="Manual choices apply when you save this automation."
+          compactionHelpText="Auto compacts context when this automation runs near the model limit. Manual never compacts silently—you manage thread length yourself."
+        />
+      </FormSection>
+
+      <FormSection title="Notifications" description="Where to send run results.">
+        <div className="flex flex-col gap-3">
+          <label className="text-xs flex items-center gap-2">
+            <input
+              type="checkbox"
+              className="rounded border-gray-400"
+              checked={channelEmailEnabled}
+              onChange={(e) => setChannelEmailEnabled(e.target.checked)}
+            />
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              Send email notifications (when configured)
+            </span>
+          </label>
+          <label className="text-xs flex items-center gap-2">
+            <input
+              type="checkbox"
+              className="rounded border-gray-400"
+              checked={channelWebhookEnabled}
+              onChange={(e) => setChannelWebhookEnabled(e.target.checked)}
+            />
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              Send webhook notifications (Discord or generic; configure in Settings)
+            </span>
+          </label>
+        </div>
+      </FormSection>
     </div>
   );
+
+  const footer = (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {isDirty ? (
+        <span role="status" className="mr-auto text-sm text-amber-700 dark:text-amber-300">
+          Unsaved changes
+        </span>
+      ) : isModelCatalogLoading && !catalogReady ? (
+        <span className="mr-auto text-xs text-gray-500 dark:text-gray-400">Loading models…</span>
+      ) : (
+        <span className="mr-auto" aria-hidden />
+      )}
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="rounded-lg"
+        onClick={onClose}
+        disabled={saving}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="button"
+        variant="primary"
+        size="sm"
+        className="rounded-lg"
+        disabled={primaryDisabled}
+        onClick={handleSubmit}
+      >
+        {primaryLabel}
+      </Button>
+    </div>
+  );
+
+  return render({ body, footer });
 }
 
 export interface AutomationFormModalProps {
@@ -497,21 +691,30 @@ export default function AutomationFormModal({
           ? 'Edit suggestion'
           : 'Edit automation';
 
+  if (!isOpen) {
+    return (
+      <Dialog isOpen={false} onClose={onClose} title={dialogTitle} size="lg">
+        {null}
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title={dialogTitle} size="lg">
-      {isOpen ? (
-        <AutomationFormFields
-          key={formKey}
-          mode={mode}
-          defaults={defaults}
-          zoneOptions={zoneOptions}
-          modelCatalog={modelCatalog}
-          isModelCatalogLoading={isModelCatalogLoading}
-          saving={saving}
-          onClose={onClose}
-          onSubmit={onSubmit}
-        />
-      ) : null}
-    </Dialog>
+    <AutomationFormFields
+      key={formKey}
+      mode={mode}
+      defaults={defaults}
+      zoneOptions={zoneOptions}
+      modelCatalog={modelCatalog}
+      isModelCatalogLoading={isModelCatalogLoading}
+      saving={saving}
+      onClose={onClose}
+      onSubmit={onSubmit}
+      render={({ body, footer }) => (
+        <Dialog isOpen onClose={onClose} title={dialogTitle} size="lg" footer={footer}>
+          {body}
+        </Dialog>
+      )}
+    />
   );
 }

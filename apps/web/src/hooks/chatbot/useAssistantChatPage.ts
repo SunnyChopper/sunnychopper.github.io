@@ -7,6 +7,7 @@ import { wsLogger } from '@/lib/logger';
 import { useAdminShell } from '@/contexts/AdminShellContext';
 import { useAuth } from '@/contexts/Auth';
 import { createLocalAssistantThreadId, isLocalAssistantThreadId } from '@/lib/chat/local-thread-id';
+import { resolveDurableContextUsageLeaf } from '@/lib/chat/durable-assistant-leaf';
 import { threadRecencyTimestamp } from '@/lib/chat/thread-recency';
 import type { ChatThread } from '@/types/chatbot';
 import {
@@ -41,6 +42,8 @@ import type {
   AssistantRunConfig,
 } from '@/types/chatbot';
 import { useThreadContextUsage } from '@/hooks/chatbot/useThreadContextUsage';
+import { useMarkAssistantThreadRead } from '@/hooks/chatbot/useAssistantUnreadSummary';
+import { useMarkThreadReadOnOpen } from '@/hooks/chatbot/useMarkThreadReadOnOpen';
 import {
   extractAssistantRunConfigForLeaf,
   headerLabelsFromAssistantRunConfig,
@@ -60,6 +63,9 @@ export function useAssistantChatPage({
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [suppressInvalidToastThreadId, setSuppressInvalidToastThreadId] = useState<string | null>(
+    null
+  );
   const [thinkingExpanded, setThinkingExpanded] = useState<Record<string, boolean>>({});
   const [executionTraceExpanded, setExecutionTraceExpanded] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
@@ -85,7 +91,14 @@ export function useAssistantChatPage({
     navigate,
     showToast,
     userId: user?.id,
+    suppressInvalidToastThreadId,
   });
+
+  useEffect(() => {
+    if (suppressInvalidToastThreadId && routeThreadId !== suppressInvalidToastThreadId) {
+      setSuppressInvalidToastThreadId(null);
+    }
+  }, [routeThreadId, suppressInvalidToastThreadId]);
 
   const serverThreadQueryId =
     resolvedThreadId && !isLocalAssistantThreadId(resolvedThreadId) ? resolvedThreadId : undefined;
@@ -119,6 +132,11 @@ export function useAssistantChatPage({
   const { createThread, updateThread, deleteThread, isUpdating, isDeleting } =
     useChatThreadMutations();
   const { editMessage } = useEditMessage();
+  const { mutate: markThreadReadMutate } = useMarkAssistantThreadRead();
+
+  const onUserMessageIdReconciledRef = useRef<
+    ((threadId: string, serverMessageId: string) => void) | undefined
+  >(undefined);
 
   const {
     runs,
@@ -137,7 +155,7 @@ export function useAssistantChatPage({
     reconnect,
     retryRun,
     respondToToolApproval,
-  } = useAssistantStreaming(streamingThreadId);
+  } = useAssistantStreaming(streamingThreadId, { onUserMessageIdReconciledRef });
 
   useAssistantStreamingToasts(
     showToast,
@@ -349,6 +367,14 @@ export function useAssistantChatPage({
       threadLastMessageAt: activeThread?.lastMessageAt,
     });
 
+  useEffect(() => {
+    onUserMessageIdReconciledRef.current = (threadId, serverMessageId) => {
+      if (threadId === serverThreadQueryId || threadId === resolvedThreadId) {
+        setSelectedLeafId(serverMessageId);
+      }
+    };
+  }, [resolvedThreadId, serverThreadQueryId, setSelectedLeafId]);
+
   const activeThreadVisibleTimestamp = useMemo(() => {
     if (transcript.length === 0) {
       return undefined;
@@ -480,7 +506,15 @@ export function useAssistantChatPage({
     resolvedThreadId,
   ]);
 
-  const leafForContextUsage = selectedLeafId ?? activeThread?.activeLeafMessageId ?? null;
+  const leafForContextUsage = useMemo(
+    () =>
+      resolveDurableContextUsageLeaf(
+        selectedLeafId,
+        activeThread?.activeLeafMessageId,
+        nodeByIdForBranch
+      ),
+    [selectedLeafId, activeThread?.activeLeafMessageId, nodeByIdForBranch]
+  );
 
   const contextUsageQuery = useThreadContextUsage({
     threadId: serverThreadQueryId,
@@ -510,6 +544,8 @@ export function useAssistantChatPage({
 
   useThinkingAccordionSync(runs, setThinkingExpanded);
   useExecutionTraceAccordionSync(runs, setExecutionTraceExpanded);
+
+  useMarkThreadReadOnOpen(serverThreadQueryId, markThreadReadMutate);
 
   const manualSendBlockedMessage = useMemo(() => {
     if (isLocalDraft || threadCompactionMode !== 'manual') {
@@ -652,18 +688,23 @@ export function useAssistantChatPage({
   const confirmDeleteThread = useCallback(async () => {
     const id = deleteTarget?.id;
     if (!id) return;
+    const remainingThread = threads.find((t) => t.id !== id);
+    const isActiveThread = resolvedThreadId === id;
     try {
-      const remainingThread = threads.find((t) => t.id !== id);
-      await deleteThread(id);
-      setDeleteTarget(null);
-      if (resolvedThreadId === id) {
+      if (isActiveThread) {
+        setSuppressInvalidToastThreadId(id);
         if (remainingThread) {
           navigate(`/admin/assistant/${remainingThread.id}`, { replace: true });
         } else {
           navigate('/admin/assistant', { replace: true });
         }
       }
+      await deleteThread(id);
+      setDeleteTarget(null);
     } catch (error) {
+      if (isActiveThread) {
+        setSuppressInvalidToastThreadId(null);
+      }
       wsLogger.error('Error deleting thread', error);
       const apiError = extractApiError(error);
       const message = apiError?.message || extractErrorMessage(error, 'Failed to delete chat');

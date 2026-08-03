@@ -47,6 +47,7 @@ export function migrateGoal(goal: Goal): Goal {
       tasksWeight: 35,
       metricsWeight: 10,
       habitsWeight: 20,
+      projectsWeight: 0,
       manualOverride: null,
     },
     parentGoalId: goal.parentGoalId || null,

@@ -14,4 +14,18 @@ describe('MultiCombobox', () => {
     await user.click(screen.getByRole('option', { name: 'One' }));
     expect(onChange).toHaveBeenCalledWith(['One']);
   });
+
+  it('hides selected pills when hideSelectedPills is true', () => {
+    render(
+      <MultiCombobox
+        value={['One']}
+        onChange={vi.fn()}
+        options={['One', 'Two']}
+        placeholder="Add"
+        hideSelectedPills
+      />
+    );
+    expect(screen.queryByLabelText('Remove One')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
 });

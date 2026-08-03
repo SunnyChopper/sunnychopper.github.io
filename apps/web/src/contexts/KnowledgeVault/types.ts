@@ -39,6 +39,14 @@ export interface KnowledgeVaultContextType {
   createFlashcard: (input: CreateFlashcardInput) => Promise<Flashcard>;
   createFlashcardDeck: (input: CreateFlashcardDeckInput) => Promise<FlashcardDeck>;
   updateFlashcard: (id: string, input: UpdateFlashcardInput) => Promise<Flashcard>;
+  updateFlashcardDeck: (
+    id: string,
+    input: {
+      tags?: string[];
+      area?: import('@/types/growth-system').Area;
+      status?: 'active' | 'archived';
+    }
+  ) => Promise<FlashcardDeck>;
   createCourse: (input: CreateCourseInput) => Promise<Course>;
   updateCourse: (id: string, input: UpdateCourseInput) => Promise<Course>;
   deleteItem: (id: string) => Promise<void>;

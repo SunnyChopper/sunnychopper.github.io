@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarClock, MessageSquarePlus, Search, Sparkles } from 'lucide-react';
+import { CalendarClock, ClipboardPaste, MessageSquarePlus, Search, Sparkles } from 'lucide-react';
 import Button from '@/components/atoms/Button';
 import ReplyRunMonitor from '@/components/molecules/personal-branding/ReplyRunMonitor';
 import RejectWithFeedbackModal from '@/components/molecules/personal-branding/RejectWithFeedbackModal';
@@ -29,6 +29,7 @@ import ContentOpportunityDrawer from './ContentOpportunityDrawer';
 import DaysSinceLastTouchBadge from './DaysSinceLastTouchBadge';
 import InteractionsBoardFilterBar from './InteractionsBoardFilterBar';
 import LogInteractionDialog from './LogInteractionDialog';
+import ManualPrompterPasteDialog from './ManualPrompterPasteDialog';
 import ProfileLinkBadge from './ProfileLinkBadge';
 import RelationshipPriorityBadge from './RelationshipPriorityBadge';
 import RolodexPrompterDrawer from './RolodexPrompterDrawer';
@@ -135,6 +136,7 @@ export default function InteractionsBoardTab({
   const [checkInConnection, setCheckInConnection] = useState<CreatorConnection | null>(null);
   const [prompterConnection, setPrompterConnection] = useState<CreatorConnection | null>(null);
   const [prompterPrefill, setPrompterPrefill] = useState<ReconPrompterPrefill | null>(null);
+  const [pasteDialogOpen, setPasteDialogOpen] = useState(false);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const replyRuns = useRolodexReplyRuns(activeRunId);
   const activeRun: ReplyRun | null | undefined = replyRuns.query.data;
@@ -328,7 +330,11 @@ export default function InteractionsBoardTab({
     opportunity: ContentOpportunity | null,
     suggestion: ReplySuggestion,
     creatorText: string,
-    reconMeta?: Pick<ReconPrompterPrefill, 'evidenceUrl' | 'platformPostId' | 'reconPostId'> | null
+    reconMeta?: {
+      evidenceUrl?: string | null;
+      platformPostId?: string | null;
+      reconPostId?: string | null;
+    } | null
   ) => {
     try {
       await replyRuns.updateSuggestion.mutateAsync({
@@ -513,11 +519,23 @@ export default function InteractionsBoardTab({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600 dark:text-gray-400">
-        High-value connections sorted by follow-up or last recon freshness. Use filters to focus by
-        priority, follow-up status, or stale recon data. Check in with evidence, find recent X
-        content to engage with, or open the prompter for Brand Identity-aware reply vectors.
-      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          High-value connections sorted by follow-up or last recon freshness. Use filters to focus
+          by priority, follow-up status, or stale recon data. Check in with evidence, find recent X
+          content to engage with, or open the prompter for Brand Identity-aware reply vectors.
+        </p>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="shrink-0"
+          onClick={() => setPasteDialogOpen(true)}
+        >
+          <ClipboardPaste className="mr-1.5 h-4 w-4" />
+          Paste post
+        </Button>
+      </div>
 
       {connections.length > 0 ? (
         <InteractionsBoardFilterBar
@@ -724,6 +742,8 @@ export default function InteractionsBoardTab({
         initialCreatorText={prompterPrefill?.creatorText ?? pendingLog?.creatorText}
         initialInteractionIntent={prompterPrefill?.interactionIntent}
         initialAuthorHandle={prompterPrefill?.authorHandle}
+        initialEvidenceUrl={prompterPrefill?.evidenceUrl}
+        initialPlatformPostId={prompterPrefill?.platformPostId}
         onClose={() => {
           setPrompterConnection(null);
           setPrompterPrefill(null);
@@ -734,15 +754,13 @@ export default function InteractionsBoardTab({
           if (!prompterConnection) return;
           void startReplyGeneration(prompterConnection, payload, draft, resolved);
         }}
-        onAcceptSuggestion={(suggestion, creatorText) => {
+        onAcceptSuggestion={(suggestion, creatorText, meta) => {
           if (!prompterConnection) return;
-          void handleAcceptSuggestion(
-            prompterConnection,
-            null,
-            suggestion,
-            creatorText,
-            prompterPrefill
-          );
+          void handleAcceptSuggestion(prompterConnection, null, suggestion, creatorText, {
+            evidenceUrl: meta?.evidenceUrl ?? prompterPrefill?.evidenceUrl,
+            platformPostId: meta?.platformPostId ?? prompterPrefill?.platformPostId,
+            reconPostId: prompterPrefill?.reconPostId,
+          });
         }}
         onRejectSuggestion={(suggestion, feedback) => {
           void handleRejectSuggestion(suggestion, feedback);
@@ -827,6 +845,18 @@ export default function InteractionsBoardTab({
         }
         onClose={() => setDismissingOpportunity(null)}
         onSubmit={submitDismissOpportunity}
+      />
+
+      <ManualPrompterPasteDialog
+        open={pasteDialogOpen}
+        connections={connections}
+        isCreatingConnection={rolodex.createConnection.isPending}
+        onClose={() => setPasteDialogOpen(false)}
+        onOpenPrompter={(connection, prefill) => {
+          openPrompter(connection, prefill);
+        }}
+        onCreateConnection={async (body) => rolodex.createConnection.mutateAsync(body)}
+        showToast={showToast}
       />
 
       <ToastContainer />

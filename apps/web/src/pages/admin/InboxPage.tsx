@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { Inbox, Trash2, Sparkles, FileInput, Loader2, Upload, ExternalLink } from 'lucide-react';
+import {
+  inboxItemAccentBarClassName,
+  inboxItemRowShellClassName,
+} from '@/lib/knowledge-vault/inbox-item-surfaces';
 import {
   inboxService,
   type InboxItem,
@@ -12,6 +16,7 @@ import {
 } from '@/services/knowledge-vault/inbox.service';
 import { vaultFileUploadService } from '@/services/knowledge-vault/file-upload.service';
 import FileUploadZone from '@/components/molecules/FileUploadZone';
+import { InboxBucketEmptyState } from '@/components/molecules/knowledge-vault/InboxBucketEmptyState';
 import Button from '@/components/atoms/Button';
 import { Select } from '@/components/atoms/Select';
 
@@ -25,6 +30,8 @@ const STATUS_DESCRIPTIONS: Record<InboxTriageStatus, string> = {
 };
 
 const ACTIVE_INGESTION: InboxIngestionStatus[] = ['queued', 'running'];
+
+type InboxFilter = InboxTriageStatus | 'all';
 
 function groupLabel(s: string) {
   if (s === 'pending') return 'Pending';
@@ -45,7 +52,7 @@ function ingestionLabel(status?: InboxIngestionStatus | null) {
 
 export default function InboxPage() {
   const qc = useQueryClient();
-  const [filter, setFilter] = useState<InboxTriageStatus | 'all'>('all');
+  const [filter, setFilter] = useState<InboxFilter>('all');
   const [capture, setCapture] = useState('');
   const [selected, setSelected] = useState<InboxItem | null>(null);
   const [overrideType, setOverrideType] = useState<'note' | 'flashcard' | 'course' | 'document'>(
@@ -58,6 +65,16 @@ export default function InboxPage() {
   const [activeJob, setActiveJob] = useState<InboxIngestionJob | null>(null);
   const [fallbackFileId, setFallbackFileId] = useState<string | null>(null);
   const [manualUploading, setManualUploading] = useState(false);
+  const captureInputRef = useRef<HTMLInputElement>(null);
+
+  const focusQuickCapture = useCallback(() => {
+    const input = captureInputRef.current;
+    if (!input) return;
+    if (typeof input.scrollIntoView === 'function') {
+      input.scrollIntoView({ block: 'nearest' });
+    }
+    input.focus();
+  }, []);
 
   const listQuery = useQuery({
     queryKey: queryKeys.knowledgeVault.inbox(),
@@ -166,10 +183,56 @@ export default function InboxPage() {
     },
   });
 
-  const grouped = STATUSES.map((st) => ({
-    st,
-    rows: (listQuery.data ?? []).filter((i) => i.aiTriageStatus === st),
-  }));
+  const handleSelectItem = useCallback((item: InboxItem) => {
+    setSelected(item);
+    setFileError(null);
+    setFallbackFileId(null);
+    const t = item.aiSuggestedType;
+    if (t === 'flashcard' || t === 'course' || t === 'document' || t === 'note') {
+      setOverrideType(t);
+    }
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelected(null);
+    setActiveJob(null);
+    setFallbackFileId(null);
+    setFileError(null);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !selected) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('[role="dialog"]')) return;
+      handleClearSelection();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selected, handleClearSelection]);
+
+  const grouped = useMemo(
+    () =>
+      STATUSES.map((st) => ({
+        st,
+        rows: (listQuery.data ?? []).filter((i) => i.aiTriageStatus === st),
+      })),
+    [listQuery.data]
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<InboxFilter, number> = {
+      all: listQuery.data?.length ?? 0,
+      pending: 0,
+      triaged: 0,
+      filed: 0,
+      dismissed: 0,
+    };
+    for (const { st, rows } of grouped) {
+      counts[st] = rows.length;
+    }
+    return counts;
+  }, [listQuery.data, grouped]);
 
   const handleDroppedFiles = async (files: File[]) => {
     setUploadError(null);
@@ -219,6 +282,38 @@ export default function InboxPage() {
     );
   };
 
+  const renderInboxRow = (
+    item: InboxItem,
+    opts?: { showTriageStatus?: boolean; lineClamp?: 2 | 3 }
+  ) => {
+    const isSelected = selected?.id === item.id;
+    const lineClamp = opts?.lineClamp ?? 2;
+    return (
+      <button
+        type="button"
+        onClick={() => handleSelectItem(item)}
+        className={inboxItemRowShellClassName({ selected: isSelected })}
+        aria-pressed={isSelected}
+      >
+        <span
+          className={inboxItemAccentBarClassName({ selected: isSelected })}
+          aria-hidden="true"
+        />
+        <p
+          className={`text-sm text-gray-900 dark:text-white ${
+            lineClamp === 3 ? 'line-clamp-3' : 'line-clamp-2'
+          }`}
+        >
+          {item.extractedPreview || item.rawContent}
+        </p>
+        {opts?.showTriageStatus !== false && (
+          <p className="text-xs text-gray-500 mt-1">{item.aiTriageStatus}</p>
+        )}
+        {renderIngestionStatus(item)}
+      </button>
+    );
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -260,6 +355,7 @@ export default function InboxPage() {
         {uploadError && <p className="text-sm text-red-600 dark:text-red-400">{uploadError}</p>}
         <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-gray-200 dark:border-gray-600">
           <input
+            ref={captureInputRef}
             value={capture}
             onChange={(e) => setCapture(e.target.value)}
             placeholder="Quick capture — text or paste a URL"
@@ -274,88 +370,74 @@ export default function InboxPage() {
       </div>
 
       <div className="space-y-1.5">
-        <div className="flex gap-2 flex-wrap">
-          {(['all', ...STATUSES] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              title={f === 'all' ? 'Show all items' : STATUS_DESCRIPTIONS[f]}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-full text-sm ${
-                filter === f
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-              }`}
-            >
-              {f === 'all' ? 'All' : groupLabel(f)}
-            </button>
-          ))}
+        <div role="tablist" aria-label="Inbox status filters" className="flex gap-2 flex-wrap">
+          {(['all', ...STATUSES] as const).map((f) => {
+            const isActive = filter === f;
+            const label = f === 'all' ? 'All' : groupLabel(f);
+            const count = statusCounts[f];
+            const description = f === 'all' ? 'Show all items' : STATUS_DESCRIPTIONS[f];
+            return (
+              <button
+                key={f}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-label={`${label}, ${count} item${count === 1 ? '' : 's'}`}
+                title={description}
+                onClick={() => setFilter(f)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900 ${
+                  isActive
+                    ? 'border-l-4 border-green-600 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 font-semibold pl-2.5'
+                    : 'border-l-4 border-transparent bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span>{label}</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-xs font-medium tabular-nums ${
+                    isActive
+                      ? 'bg-green-100 dark:bg-green-800/40 text-green-800 dark:text-green-200'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  } ${count === 0 ? 'opacity-60' : ''}`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-6">
           {listQuery.isLoading && <p className="text-gray-500">Loading…</p>}
-          {filter === 'all'
-            ? grouped.map(({ st, rows }) => (
-                <div key={st}>
-                  <h2 className="text-sm font-semibold text-gray-500 mb-2">{groupLabel(st)}</h2>
-                  <ul className="space-y-2">
-                    {rows.map((item) => (
-                      <li key={item.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelected(item);
-                            setFileError(null);
-                            setFallbackFileId(null);
-                            const t = item.aiSuggestedType;
-                            if (
-                              t === 'flashcard' ||
-                              t === 'course' ||
-                              t === 'document' ||
-                              t === 'note'
-                            ) {
-                              setOverrideType(t);
-                            }
-                          }}
-                          className={`w-full text-left p-3 rounded-lg border transition ${
-                            selected?.id === item.id
-                              ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-green-300'
-                          }`}
-                        >
-                          <p className="text-sm line-clamp-2 text-gray-900 dark:text-white">
-                            {item.extractedPreview || item.rawContent}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">{item.aiTriageStatus}</p>
-                          {renderIngestionStatus(item)}
-                        </button>
-                      </li>
-                    ))}
-                    {rows.length === 0 && (
-                      <p className="text-sm text-gray-500">No items in {groupLabel(st)}.</p>
-                    )}
-                  </ul>
-                </div>
-              ))
-            : items.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setSelected(item)}
-                  className={`w-full text-left p-3 rounded-lg border transition ${
-                    selected?.id === item.id
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                  }`}
-                >
-                  <p className="text-sm line-clamp-3 text-gray-900 dark:text-white">
-                    {item.extractedPreview || item.rawContent}
-                  </p>
-                  {renderIngestionStatus(item)}
-                </button>
-              ))}
+          {filter === 'all' ? (
+            grouped.map(({ st, rows }) => (
+              <div key={st}>
+                <h2 className="text-sm font-semibold text-gray-500 mb-2">{groupLabel(st)}</h2>
+                <ul className="space-y-2">
+                  {rows.map((item) => (
+                    <li key={item.id}>{renderInboxRow(item)}</li>
+                  ))}
+                  {rows.length === 0 && !listQuery.isLoading && (
+                    <li>
+                      <InboxBucketEmptyState status={st} onQuickCapture={focusQuickCapture} />
+                    </li>
+                  )}
+                </ul>
+              </div>
+            ))
+          ) : !listQuery.isLoading && items.length === 0 ? (
+            <InboxBucketEmptyState
+              status={filter as InboxTriageStatus}
+              onQuickCapture={focusQuickCapture}
+            />
+          ) : (
+            items.map((item) => (
+              <div key={item.id}>
+                {renderInboxRow(item, { showTriageStatus: false, lineClamp: 3 })}
+              </div>
+            ))
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 min-h-[320px]">

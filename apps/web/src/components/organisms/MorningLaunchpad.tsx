@@ -13,9 +13,12 @@ import {
   ChevronUp,
   ChevronDown,
   HeartPulse,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { useTasks, useHabits, useGoals } from '@/hooks/useGrowthSystem';
 import { useFitnessRecoveryRange, useUpsertRecoveryMutation } from '@/hooks/useFitness';
+import { useToast } from '@/hooks/use-toast';
 import { localCalendarDate } from '@/lib/date/local-calendar';
 import { formatDateString } from '@/utils/date-formatters';
 import type { Task, Habit, Goal } from '@/types/growth-system';
@@ -53,12 +56,14 @@ function MorningLaunchpadContent({ isOpen, onClose, topTasks }: MorningLaunchpad
   const today = localCalendarDate();
   const { data: recoveryRes } = useFitnessRecoveryRange(today, today, { enabled: isOpen });
   const upsertRecovery = useUpsertRecoveryMutation();
+  const { showToast, ToastContainer } = useToast();
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [briefing, setBriefing] = useState<string>('');
   const [orderedTasks, setOrderedTasks] = useState<Task[]>([]);
   const [sleepHours, setSleepHours] = useState('');
   const [sleepQuality, setSleepQuality] = useState('');
   const [energyLevel, setEnergyLevel] = useState('');
+  const [saveSucceeded, setSaveSucceeded] = useState(false);
 
   const handleEngage = () => {
     if (orderedTasks.length === 0) return;
@@ -218,12 +223,42 @@ function MorningLaunchpadContent({ isOpen, onClose, topTasks }: MorningLaunchpad
     );
   }, [isOpen, existingRecovery]);
 
+  useEffect(() => {
+    if (!saveSucceeded) return;
+    const t = window.setTimeout(() => setSaveSucceeded(false), 2000);
+    return () => window.clearTimeout(t);
+  }, [saveSucceeded]);
+
+  const hasAnyRecoveryValue =
+    sleepHours.trim() !== '' || sleepQuality.trim() !== '' || energyLevel.trim() !== '';
+
   const saveMorningRecovery = async () => {
     const body: Record<string, unknown> = {};
     if (sleepHours !== '') body.sleepHours = Number(sleepHours);
     if (sleepQuality !== '') body.sleepQuality = Number(sleepQuality);
     if (energyLevel !== '') body.energyLevel = Number(energyLevel);
-    await upsertRecovery.mutateAsync({ date: today, body });
+
+    try {
+      await upsertRecovery.mutateAsync({ date: today, body });
+      setSaveSucceeded(true);
+      showToast({
+        type: 'success',
+        title: 'Recovery saved',
+        message: "Today's check-in is updated.",
+        duration: 3000,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Try again in a moment.';
+      showToast({
+        type: 'error',
+        title: 'Could not save recovery',
+        message,
+        action: {
+          label: 'Retry',
+          onClick: () => void saveMorningRecovery(),
+        },
+      });
+    }
   };
 
   useEffect(() => {
@@ -481,6 +516,7 @@ function MorningLaunchpadContent({ isOpen, onClose, topTasks }: MorningLaunchpad
                         placeholder="—"
                         value={sleepHours}
                         onChange={(e) => setSleepHours(e.target.value)}
+                        disabled={upsertRecovery.isPending}
                       />
                     </label>
                     <label className="text-xs text-cyan-50">
@@ -491,6 +527,7 @@ function MorningLaunchpadContent({ isOpen, onClose, topTasks }: MorningLaunchpad
                         placeholder="—"
                         value={sleepQuality}
                         onChange={(e) => setSleepQuality(e.target.value)}
+                        disabled={upsertRecovery.isPending}
                       />
                     </label>
                     <label className="text-xs text-cyan-50">
@@ -501,17 +538,42 @@ function MorningLaunchpadContent({ isOpen, onClose, topTasks }: MorningLaunchpad
                         placeholder="—"
                         value={energyLevel}
                         onChange={(e) => setEnergyLevel(e.target.value)}
+                        disabled={upsertRecovery.isPending}
                       />
                     </label>
                   </div>
-                  <button
-                    type="button"
-                    onClick={saveMorningRecovery}
-                    disabled={upsertRecovery.isPending}
-                    className="mt-4 rounded-lg bg-white/20 px-4 py-2 text-sm font-medium text-white hover:bg-white/30 disabled:opacity-50"
-                  >
-                    {upsertRecovery.isPending ? 'Saving…' : 'Save recovery'}
-                  </button>
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void saveMorningRecovery()}
+                      disabled={upsertRecovery.isPending || !hasAnyRecoveryValue}
+                      className={cn(
+                        'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-50',
+                        saveSucceeded
+                          ? 'bg-green-600 hover:bg-green-700'
+                          : 'bg-cyan-500 hover:bg-cyan-400'
+                      )}
+                    >
+                      {upsertRecovery.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          Saving…
+                        </>
+                      ) : saveSucceeded ? (
+                        <>
+                          <Check className="h-4 w-4" aria-hidden />
+                          Saved to DailyRecovery
+                        </>
+                      ) : (
+                        'Save recovery'
+                      )}
+                    </button>
+                    {!hasAnyRecoveryValue && (
+                      <span className="text-xs text-cyan-100/80">
+                        Add at least one field to save.
+                      </span>
+                    )}
+                  </div>
                   {existingRecovery?.recoveryScore != null && (
                     <p className="mt-2 text-xs text-cyan-100">
                       Score:{' '}
@@ -599,6 +661,7 @@ function MorningLaunchpadContent({ isOpen, onClose, topTasks }: MorningLaunchpad
         >
           <X size={24} />
         </button>
+        <ToastContainer />
       </div>
     </OverlayPortal>
   );

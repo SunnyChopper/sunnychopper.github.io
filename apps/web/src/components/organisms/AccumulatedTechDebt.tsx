@@ -1,6 +1,5 @@
 import { Archive, ArrowRight } from 'lucide-react';
 import {
-  VELOCITY_DRAG_ROLLOVER_THRESHOLD,
   type WeeklyReviewTechDebtCandidate,
   type WeeklyReviewTechDebtDecision,
 } from '@/types/growth-system';
@@ -10,6 +9,8 @@ interface AccumulatedTechDebtProps {
   candidates: WeeklyReviewTechDebtCandidate[];
   decisions: WeeklyReviewTechDebtDecision[];
   onChange: (decisions: WeeklyReviewTechDebtDecision[]) => void;
+  /** Review week Monday (YYYY-MM-DD) for rolled-from fallback on legacy snapshots. */
+  weekStart?: string;
   /** When true, decisions are shown but cannot be changed (archived / completed week). */
   readOnly?: boolean;
 }
@@ -21,10 +22,37 @@ function formatScheduledDate(iso: string | null | undefined): string | null {
   return day;
 }
 
+function mondayOfCalendarDay(day: string): string {
+  const date = new Date(`${day}T12:00:00Z`);
+  const weekday = date.getUTCDay();
+  const daysSinceMonday = (weekday + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - daysSinceMonday);
+  return date.toISOString().slice(0, 10);
+}
+
+function resolveRolledFromWeekStart(
+  candidate: WeeklyReviewTechDebtCandidate,
+  weekStart?: string
+): string | null {
+  const explicit = formatScheduledDate(candidate.rolledFromWeekStart);
+  if (explicit) return explicit;
+
+  const scheduled = formatScheduledDate(candidate.scheduledDate);
+  if (scheduled) return mondayOfCalendarDay(scheduled);
+
+  return formatScheduledDate(weekStart);
+}
+
+function rolledFromTooltip(weekStart: string | null): string | null {
+  if (!weekStart) return null;
+  return `Rolled from week of ${weekStart}`;
+}
+
 export function AccumulatedTechDebt({
   candidates,
   decisions,
   onChange,
+  weekStart,
   readOnly = false,
 }: AccumulatedTechDebtProps) {
   const setAction = (
@@ -57,8 +85,9 @@ export function AccumulatedTechDebt({
       {candidates.map((c) => {
         const d = decisionFor(c);
         const rolled = c.rolloverCount ?? 0;
-        const velocityDrag = rolled >= VELOCITY_DRAG_ROLLOVER_THRESHOLD;
         const sched = formatScheduledDate(c.scheduledDate);
+        const rolledFromWeek = resolveRolledFromWeekStart(c, weekStart);
+        const tooltip = rolledFromTooltip(rolledFromWeek);
 
         return (
           <div
@@ -72,12 +101,12 @@ export function AccumulatedTechDebt({
                   <span
                     className={cn(
                       'inline-flex rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
-                      velocityDrag
-                        ? 'bg-red-600/90 text-white'
-                        : rolled >= 1
-                          ? 'bg-amber-600/80 text-white'
-                          : 'bg-slate-700 text-slate-200'
+                      rolled >= 1
+                        ? 'bg-amber-600/90 text-white'
+                        : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-200'
                     )}
+                    title={tooltip ?? undefined}
+                    aria-label={tooltip ?? `Rolled ${rolled} times`}
                   >
                     Rolled {rolled}x
                   </span>

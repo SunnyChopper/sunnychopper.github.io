@@ -26,6 +26,31 @@ export const RECON_RUNS_PAGE_SIZE = 20;
 export const RECON_ACTIVE_POST_STATUS = 'NEW';
 export const RECON_PROCESSED_POST_STATUSES = 'REVIEWED,ACTIONED,DISMISSED';
 
+export const RECON_SCARCITY_WINDOW_MS = 48 * 60 * 60 * 1000;
+export const RECON_SCARCITY_MAX_COUNT = 3;
+export const RECON_SCARCITY_DEFAULT_THRESHOLD = 0.5;
+
+export function postedAfterForScarcityWindow(nowMs = Date.now()): string {
+  return new Date(nowMs - RECON_SCARCITY_WINDOW_MS).toISOString();
+}
+
+export function isReconScarce(recentHighSignalCount: number): boolean {
+  return recentHighSignalCount <= RECON_SCARCITY_MAX_COUNT;
+}
+
+export function buildReconScarcityMessage(
+  recentHighSignalCount: number,
+  threshold: number,
+  hasTrackedXHandles: boolean
+): string {
+  const countLabel = recentHighSignalCount === 1 ? 'post' : 'posts';
+  const base = `Only ${recentHighSignalCount} ${countLabel} from the last 48 h scored at or above your relevance threshold (${threshold})`;
+  if (!hasTrackedXHandles) {
+    return `${base}—add X handles in Connection Directory to start ingesting recon posts.`;
+  }
+  return `${base}—consider adding more high-signal accounts.`;
+}
+
 const PROCESSED_RECON_POST_STATUSES = new Set<ReconPostStatus>([
   'REVIEWED',
   'ACTIONED',
@@ -45,15 +70,19 @@ export function isProcessedReconPostStatus(status: ReconPostStatus): boolean {
   return PROCESSED_RECON_POST_STATUSES.has(status);
 }
 
-export function flattenReconFeedPages<T extends { id: string }>(
+export function flattenReconFeedPages<T extends { id: string; platformPostId?: string | null }>(
   pages: PaginatedPersonalBranding<T>[] | undefined
 ) {
-  const seen = new Set<string>();
+  const seenIds = new Set<string>();
+  const seenPlatformPostIds = new Set<string>();
   const items: T[] = [];
   for (const page of pages ?? []) {
     for (const item of page.data) {
-      if (seen.has(item.id)) continue;
-      seen.add(item.id);
+      if (seenIds.has(item.id)) continue;
+      const platformPostId = item.platformPostId?.trim();
+      if (platformPostId && seenPlatformPostIds.has(platformPostId)) continue;
+      seenIds.add(item.id);
+      if (platformPostId) seenPlatformPostIds.add(platformPostId);
       items.push(item);
     }
   }
@@ -263,6 +292,14 @@ export function useReconFeed(options?: {
     [qc]
   );
 
+  const invalidateScarcity = useCallback(
+    () =>
+      void qc.invalidateQueries({
+        queryKey: [...queryKeys.personalBranding.reconFeed.all(), 'scarcity'],
+      }),
+    [qc]
+  );
+
   const settings = useQuery({
     queryKey: queryKeys.personalBranding.reconFeed.settings(),
     queryFn: async () => {
@@ -328,6 +365,25 @@ export function useReconFeed(options?: {
     includeProcessedPosts ? activePollMs : false
   );
 
+  const scarcityThreshold = settings.data?.minRelevanceScore ?? RECON_SCARCITY_DEFAULT_THRESHOLD;
+
+  const scarcityQuery = useQuery({
+    queryKey: queryKeys.personalBranding.reconFeed.scarcity(scarcityThreshold),
+    queryFn: async () => {
+      const res = await personalBrandingService.listReconPosts(1, 1, {
+        status: RECON_ACTIVE_POST_STATUS,
+        postedAfter: postedAfterForScarcityWindow(),
+        minScore: scarcityThreshold,
+      });
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message ?? 'Failed to load recon scarcity stats');
+      }
+      return res.data.total;
+    },
+    enabled: settings.isSuccess,
+    refetchInterval: activePollMs,
+  });
+
   const followSuggestionsQuery = useInfiniteQuery({
     queryKey: queryKeys.personalBranding.reconFeed.followSuggestions('NEW'),
     initialPageParam: 1,
@@ -383,6 +439,7 @@ export function useReconFeed(options?: {
       personalBrandingService.updateReconFeedSettings(body),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.personalBranding.reconFeed.settings() });
+      invalidateScarcity();
     },
   });
 
@@ -417,6 +474,7 @@ export function useReconFeed(options?: {
       setUpdatingPostId(null);
       void qc.invalidateQueries({ queryKey: activePostsQueryKey });
       void qc.invalidateQueries({ queryKey: processedPostsQueryKey });
+      invalidateScarcity();
     },
   });
 
@@ -482,10 +540,21 @@ export function useReconFeed(options?: {
     return activeRunProbeRows.some((r) => ACTIVE_RUN_STATUSES.has(r.status));
   }, [activeRunProbeRows]);
 
+  const recentHighSignalCount = scarcityQuery.data ?? null;
+  const isScarce = recentHighSignalCount !== null && isReconScarce(recentHighSignalCount);
+
   return {
     settings,
     posts,
     processedPosts,
+    scarcity: {
+      recentHighSignalCount,
+      threshold: scarcityThreshold,
+      isScarce,
+      isLoading: scarcityQuery.isLoading,
+      isError: scarcityQuery.isError,
+      isSuccess: scarcityQuery.isSuccess,
+    },
     updatingPostId,
     followSuggestions,
     runs,

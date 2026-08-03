@@ -31,6 +31,7 @@ export default function FileUploadZone({
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [sizeError, setSizeError] = useState<string | null>(null);
+  const [typeError, setTypeError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const {
     visibleItems: visibleFiles,
@@ -57,18 +58,30 @@ export default function FileUploadZone({
 
   const filterAndValidate = (incoming: File[]): File[] => {
     setSizeError(null);
+    setTypeError(null);
     const allowedExt = extensions?.length
       ? new Set(extensions.map((e) => e.toLowerCase().replace(/^\./, '')))
       : DEFAULT_EXT;
     const ok: File[] = [];
+    const rejectedTypes: string[] = [];
     for (const file of incoming) {
       const extension = file.name.split('.').pop()?.toLowerCase() || '';
-      if (!allowedExt.has(extension)) continue;
+      if (!allowedExt.has(extension)) {
+        rejectedTypes.push(file.name);
+        continue;
+      }
       if (file.size > maxBytes) {
         setSizeError(`"${file.name}" exceeds ${maxSizeMB} MB`);
         continue;
       }
       ok.push(file);
+    }
+    if (rejectedTypes.length > 0) {
+      const label =
+        rejectedTypes.length === 1
+          ? `"${rejectedTypes[0]}" is not a supported file type`
+          : `${rejectedTypes.length} files are not supported types`;
+      setTypeError(label);
     }
     return ok;
   };
@@ -177,6 +190,7 @@ export default function FileUploadZone({
         {sizeError && (
           <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">{sizeError}</p>
         )}
+        {typeError && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{typeError}</p>}
 
         <input
           ref={inputRef}

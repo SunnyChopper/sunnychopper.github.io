@@ -11,12 +11,15 @@ export function useChatbotThreadRoute({
   navigate,
   showToast,
   userId,
+  suppressInvalidToastThreadId = null,
 }: {
   routeThreadId: string | undefined;
   threads: ChatThread[];
   navigate: NavigateFunction;
   showToast: ShowToast;
   userId: string | undefined;
+  /** When deleting the active thread, suppress the dead-link toast until navigation settles. */
+  suppressInvalidToastThreadId?: string | null;
 }) {
   const resolvedThreadId = useMemo(
     () => routeThreadId ?? threads[0]?.id ?? null,
@@ -66,7 +69,9 @@ export function useChatbotThreadRoute({
     if (!threadExists) {
       const fallbackThreadId = threads[0].id;
       navigate(`/admin/assistant/${fallbackThreadId}`, { replace: true });
-      if (invalidThreadToastRef.current !== routeThreadId) {
+      const isIntentionalDelete =
+        suppressInvalidToastThreadId != null && routeThreadId === suppressInvalidToastThreadId;
+      if (!isIntentionalDelete && invalidThreadToastRef.current !== routeThreadId) {
         invalidThreadToastRef.current = routeThreadId;
         showToast({
           type: 'error',
@@ -78,7 +83,7 @@ export function useChatbotThreadRoute({
     }
 
     invalidThreadToastRef.current = null;
-  }, [navigate, routeThreadId, showToast, threads]);
+  }, [navigate, routeThreadId, showToast, suppressInvalidToastThreadId, threads]);
 
   return {
     resolvedThreadId,

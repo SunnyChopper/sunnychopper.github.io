@@ -1,11 +1,15 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { X } from 'lucide-react';
+
+import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
+import type { Priority } from '@/types/growth-system';
 import type { PlannerBlock } from '@/types/planner';
 import { formatLocalTimeRange } from '@/utils/date-formatters';
 
 export interface PlannerBlockCardProps {
   block: PlannerBlock;
+  priority?: Priority | null;
   disabled?: boolean;
   isDraft?: boolean;
   onDiscardDraft?: (tempId: string) => void;
@@ -13,6 +17,7 @@ export interface PlannerBlockCardProps {
 
 export function PlannerBlockCard({
   block,
+  priority,
   disabled,
   isDraft,
   onDiscardDraft,
@@ -57,9 +62,18 @@ export function PlannerBlockCard({
           </span>
         </div>
       ) : null}
-      <p className="line-clamp-2 text-sm font-medium leading-snug text-gray-900 dark:text-white">
-        {title}
-      </p>
+      <div className="flex min-w-0 items-start gap-1.5">
+        {priority ? (
+          <PriorityIndicator priority={priority} variant="badge" size="sm" className="shrink-0" />
+        ) : null}
+        <p
+          className="line-clamp-2 text-sm font-medium leading-snug text-gray-900 dark:text-white"
+          title={title}
+          aria-label={title}
+        >
+          {title}
+        </p>
+      </div>
       <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
         {formatLocalTimeRange(block.startAt, block.endAt)}
       </p>

@@ -45,6 +45,7 @@ const catalog = {
   ],
   strengths: ['subtle', 'light', 'moderate', 'strong', 'dominant'],
   wordsPerMinute: 200,
+  limitDefaults: {},
 };
 
 const effectivePolicy = {

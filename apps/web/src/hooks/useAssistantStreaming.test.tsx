@@ -250,6 +250,9 @@ describe('useAssistantStreaming', () => {
     expect(getRunProgressLabel()).toBeNull();
     expect(getRunProgressLabel({ statusStage: 'planning' })).toBe('Planning response...');
     expect(getRunProgressLabel({ statusStage: 'runningTools' })).toBe('Running tools...');
+    expect(getRunProgressLabel({ statusStage: 'consultingSpecialists' })).toBe(
+      'Consulting specialists...'
+    );
     expect(getRunProgressLabel({ statusStage: 'responding' })).toBe('Generating response...');
     expect(getRunProgressLabel({ statusStage: 'persisting' })).toBe('Persisting response...');
     expect(getRunProgressLabel({ statusStage: 'awaitingApproval' })).toBe(

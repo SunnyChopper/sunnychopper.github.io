@@ -1,38 +1,70 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { aiCoursePracticeService, practiceArtifactsService } from '@/services/knowledge-vault';
+import {
+  aiCoursePracticeService,
+  formatPracticeGenerationError,
+  practiceArtifactsService,
+} from '@/services/knowledge-vault';
 import type { PracticeSourceScope, VaultItemType } from '@/types/knowledge-vault';
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 import { queryKeys } from '@/lib/react-query/query-keys';
+import { formatApiFailure } from '@/utils/api-error-formatter';
+import type { ApiError } from '@/types/api-contracts';
+import { PracticeSourcePicker } from '@/components/molecules/knowledge-vault/PracticeSourcePicker';
 
 function errText(err: unknown, fallback: string): string {
   if (typeof err === 'string') return err;
   if (err && typeof err === 'object' && 'message' in err) {
-    return String((err as { message: string }).message);
+    const apiErr = err as ApiError;
+    return formatPracticeGenerationError(apiErr, formatApiFailure(apiErr, fallback));
   }
   return fallback;
 }
 
-type CreateKind = Extract<VaultItemType, 'practice_question_set' | 'quiz' | 'homework_assignment'>;
+export type PracticeArtifactCreateKind = Extract<
+  VaultItemType,
+  'practice_question_set' | 'quiz' | 'homework_assignment'
+>;
 
 interface PracticeArtifactCreateDialogProps {
-  kind: CreateKind;
+  kind: PracticeArtifactCreateKind;
+  initialSourceIds?: string[];
   onSuccess: () => void;
   onCancel: () => void;
 }
 
+function resolveInitialSourceIds(
+  initialSourceIds: string[] | undefined,
+  eligibleIds: Set<string>
+): string[] {
+  if (!initialSourceIds?.length) return [];
+  return initialSourceIds.filter((id) => eligibleIds.has(id));
+}
+
 export function PracticeArtifactCreateDialog({
   kind,
+  initialSourceIds,
   onSuccess,
   onCancel,
 }: PracticeArtifactCreateDialogProps) {
   const { vaultItems } = useKnowledgeVault();
   const queryClient = useQueryClient();
-  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
+
+  const notesAndDocs = useMemo(
+    () =>
+      vaultItems.filter(
+        (v) => (v.type === 'note' || v.type === 'document') && v.status !== 'archived'
+      ),
+    [vaultItems]
+  );
+
+  const eligibleIds = useMemo(() => new Set(notesAndDocs.map((item) => item.id)), [notesAndDocs]);
+
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>(() =>
+    resolveInitialSourceIds(initialSourceIds, eligibleIds)
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const notesAndDocs = vaultItems.filter((v) => v.type === 'note' || v.type === 'document');
 
   const buildContext = () => {
     const parts = selectedSourceIds
@@ -47,15 +79,17 @@ export function PracticeArtifactCreateDialog({
     sourceItemIds: selectedSourceIds,
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (opts?: { stricterPrompt?: boolean }) => {
     setBusy(true);
     setError(null);
     const context = buildContext();
+    const stricterPrompt = opts?.stricterPrompt ?? false;
     try {
       if (kind === 'practice_question_set') {
         const gen = await aiCoursePracticeService.generatePracticeQuestions({
           context,
           sourceScope,
+          stricterPrompt,
         });
         if (!gen.success || !gen.data) throw new Error(gen.error || 'Generation failed');
         const saved = await practiceArtifactsService.createPracticeSet({
@@ -66,7 +100,12 @@ export function PracticeArtifactCreateDialog({
         });
         if (!saved.success) throw new Error(errText(saved.error, 'Save failed'));
       } else if (kind === 'quiz') {
-        const gen = await aiCoursePracticeService.generateQuiz({ context, sourceScope, count: 10 });
+        const gen = await aiCoursePracticeService.generateQuiz({
+          context,
+          sourceScope,
+          count: 10,
+          stricterPrompt,
+        });
         if (!gen.success || !gen.data) throw new Error(gen.error || 'Generation failed');
         const saved = await practiceArtifactsService.createQuiz({
           title: gen.data.title,
@@ -78,7 +117,11 @@ export function PracticeArtifactCreateDialog({
         });
         if (!saved.success) throw new Error(errText(saved.error, 'Save failed'));
       } else {
-        const gen = await aiCoursePracticeService.generateHomework({ context, sourceScope });
+        const gen = await aiCoursePracticeService.generateHomework({
+          context,
+          sourceScope,
+          stricterPrompt,
+        });
         if (!gen.success || !gen.data) throw new Error(gen.error || 'Generation failed');
         const saved = await practiceArtifactsService.createHomework({
           title: gen.data.title,
@@ -111,39 +154,38 @@ export function PracticeArtifactCreateDialog({
       <p className="text-sm text-gray-600 dark:text-gray-400">
         Generate {label.toLowerCase()} from selected Library sources (optional).
       </p>
-      <div className="max-h-48 overflow-y-auto space-y-1 border rounded p-2">
-        {notesAndDocs.length === 0 ? (
-          <p className="text-sm text-gray-500">No notes or documents in Library.</p>
-        ) : (
-          notesAndDocs.map((item) => (
-            <label key={item.id} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={selectedSourceIds.includes(item.id)}
-                onChange={(e) => {
-                  setSelectedSourceIds((prev) =>
-                    e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id)
-                  );
-                }}
-              />
-              <span className="truncate">{item.title}</span>
-            </label>
-          ))
-        )}
-      </div>
+      <PracticeSourcePicker
+        items={notesAndDocs}
+        value={selectedSourceIds}
+        onChange={setSelectedSourceIds}
+        initialSourceIds={initialSourceIds}
+      />
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <div
+          className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap rounded border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-3"
+          role="alert"
+        >
           {error}
-        </p>
+        </div>
       )}
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
         <button type="button" onClick={onCancel} className="px-4 py-2 text-sm rounded border">
           Cancel
         </button>
+        {error && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => handleCreate({ stricterPrompt: true })}
+            className="px-4 py-2 text-sm rounded border border-amber-600 text-amber-800 dark:text-amber-300 disabled:opacity-50"
+          >
+            {busy ? 'Retrying…' : 'Retry with stricter prompt'}
+          </button>
+        )}
         <button
           type="button"
           disabled={busy}
-          onClick={handleCreate}
+          onClick={() => handleCreate()}
           className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg disabled:opacity-50"
         >
           {busy ? 'Generating…' : `Generate ${label}`}

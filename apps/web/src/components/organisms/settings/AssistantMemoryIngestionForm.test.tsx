@@ -8,16 +8,20 @@ const baseProps = {
   provider: 'groq',
   model: 'llama-3.1-8b-instant',
   factCriteria: emptyFactCriteria(),
-  isCustom: false,
   onProviderChange: vi.fn(),
   onModelChange: vi.fn(),
   onFactCriteriaChange: vi.fn(),
-  onResetToServerDefaults: vi.fn(),
-  resetting: false,
   disabled: false,
 };
 
 describe('AssistantMemoryIngestionForm', () => {
+  it('shows calm empty states for fact filter lists', () => {
+    render(<AssistantMemoryIngestionForm {...baseProps} />);
+
+    expect(screen.getByText('No rules yet.')).toBeInTheDocument();
+    expect(screen.getByText('No exclusions yet.')).toBeInTheDocument();
+  });
+
   it('adds an always-capture rule row', () => {
     const onFactCriteriaChange = vi.fn();
     render(
@@ -42,5 +46,30 @@ describe('AssistantMemoryIngestionForm', () => {
 
     const addButtons = screen.getAllByRole('button', { name: '+ Add rule' });
     expect(addButtons[0]).toBeDisabled();
+  });
+
+  it('removes a filled rule chip instantly', () => {
+    const onFactCriteriaChange = vi.fn();
+    render(
+      <AssistantMemoryIngestionForm
+        {...baseProps}
+        factCriteria={{ alwaysCapture: ['capital changes'], neverCapture: [] }}
+        onFactCriteriaChange={onFactCriteriaChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove rule' }));
+    expect(onFactCriteriaChange).toHaveBeenCalledWith({
+      alwaysCapture: [],
+      neverCapture: [],
+    });
+  });
+
+  it('does not render reset control inside the form', () => {
+    render(<AssistantMemoryIngestionForm {...baseProps} />);
+
+    expect(
+      screen.queryByRole('button', { name: 'Reset to server defaults' })
+    ).not.toBeInTheDocument();
   });
 });

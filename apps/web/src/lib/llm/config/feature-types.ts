@@ -34,6 +34,7 @@ export type AIFeature =
   | 'sentimentAnalysis'
   | 'weeklyReview'
   | 'connectionSuggestions'
+  | 'logbookSuggestLinks'
   | 'noteExpand'
   | 'noteSummarize'
   | 'noteImprove'
@@ -104,6 +105,7 @@ export const AI_FEATURE_GROUPS: { id: string; label: string; features: AIFeature
       'sentimentAnalysis',
       'weeklyReview',
       'connectionSuggestions',
+      'logbookSuggestLinks',
     ],
   },
   {
@@ -163,6 +165,7 @@ export const AI_FEATURE_DISPLAY_NAMES: Record<AIFeature, string> = {
   sentimentAnalysis: 'Sentiment Analysis',
   weeklyReview: 'Weekly Review Generator',
   connectionSuggestions: 'Connection Suggestions',
+  logbookSuggestLinks: 'Logbook Link Suggestions',
   noteExpand: 'Note Content Expansion',
   noteSummarize: 'Note Summarization',
   noteImprove: 'Note Clarity Improvement',
@@ -213,6 +216,7 @@ export const DEFAULT_FEATURE_PROVIDERS: Record<AIFeature, FeatureProviderConfig>
   sentimentAnalysis: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   weeklyReview: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
   connectionSuggestions: { provider: 'anthropic', model: 'claude-haiku-4-5' },
+  logbookSuggestLinks: { provider: 'groq', model: 'openai/gpt-oss-20b' },
   noteExpand: { provider: 'anthropic', model: 'claude-haiku-4-5' },
   noteSummarize: { provider: 'anthropic', model: 'claude-haiku-4-5' },
   noteImprove: { provider: 'anthropic', model: 'claude-sonnet-4-6' },

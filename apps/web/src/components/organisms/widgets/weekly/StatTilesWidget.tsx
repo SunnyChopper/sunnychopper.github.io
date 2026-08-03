@@ -1,8 +1,22 @@
 import type { ComponentType } from 'react';
-import { Activity, BarChart2, BookOpen, CheckCircle, Target, TrendingUp } from 'lucide-react';
+import {
+  Activity,
+  BarChart2,
+  BookOpen,
+  CheckCircle,
+  FolderCheck,
+  Target,
+  TrendingUp,
+  Trophy,
+} from 'lucide-react';
 import type { WeeklyReviewCurrentDashboard } from '@/types/growth-system';
 import type { StatTileKey, WeeklyDashboardWidget } from '@/types/weekly-dashboard';
 import { STAT_TILE_LABELS } from '@/types/weekly-dashboard';
+import {
+  isWeeklyStatTileZero,
+  weeklyStatTileAccentClassName,
+  weeklyStatTileShellClassName,
+} from '@/lib/growth-system/weekly-stat-tile-surfaces';
 import { cn } from '@/lib/utils';
 
 const TILE_ICONS: Record<StatTileKey, ComponentType<{ className?: string }>> = {
@@ -14,6 +28,8 @@ const TILE_ICONS: Record<StatTileKey, ComponentType<{ className?: string }>> = {
   goalsActive: Target,
   goalsAtRisk: Target,
   journalEntries: BookOpen,
+  projectsCompleted: FolderCheck,
+  projectCompletionPoints: Trophy,
 };
 
 const TILE_ACCENTS: Record<StatTileKey, string> = {
@@ -25,6 +41,8 @@ const TILE_ACCENTS: Record<StatTileKey, string> = {
   goalsActive: 'text-violet-500 dark:text-violet-400',
   goalsAtRisk: 'text-red-500 dark:text-red-400',
   journalEntries: 'text-cyan-500 dark:text-cyan-400',
+  projectsCompleted: 'text-indigo-500 dark:text-indigo-400',
+  projectCompletionPoints: 'text-amber-600 dark:text-amber-400',
 };
 
 interface StatTilesWidgetProps {
@@ -48,15 +66,12 @@ export function StatTilesWidget({ widget, data }: StatTilesWidgetProps) {
       {tiles.map((key) => {
         const Icon = TILE_ICONS[key];
         const value = data.statsPartial[key] ?? 0;
+        const isZero = isWeeklyStatTileZero(value);
+        const accent = weeklyStatTileAccentClassName(isZero, TILE_ACCENTS[key]);
         return (
-          <div
-            key={key}
-            className="rounded-xl border border-blue-200/60 bg-gradient-to-br from-white to-blue-50/50 p-4 dark:border-blue-900/45 dark:from-gray-800 dark:to-blue-950/25"
-          >
-            <Icon className={cn('h-5 w-5', TILE_ACCENTS[key])} aria-hidden />
-            <div className={cn('mt-2 text-2xl font-bold tabular-nums', TILE_ACCENTS[key])}>
-              {value}
-            </div>
+          <div key={key} className={weeklyStatTileShellClassName({ isZero })}>
+            <Icon className={cn('h-5 w-5', accent)} aria-hidden />
+            <div className={cn('mt-2 text-2xl font-bold tabular-nums', accent)}>{value}</div>
             <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
               {STAT_TILE_LABELS[key]}
             </div>

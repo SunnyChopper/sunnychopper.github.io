@@ -20,8 +20,15 @@ import {
   usePlannerRolloverDecision,
   usePlannerWeek,
 } from '@/hooks/usePlanner';
-import { isPlannerDayBlocked, manualBlockingContextForDate } from '@/lib/planner/blocked-days';
+import { useToast } from '@/hooks/use-toast';
+import {
+  CLEAR_OOO_CONFIRM_MESSAGE,
+  dayHasScheduledWork,
+  isPlannerDayBlocked,
+  resolveDayBlockToggleAction,
+} from '@/lib/planner/blocked-days';
 import { isDraftBlockId } from '@/lib/planner/draft';
+import { buildPriorityByTaskId } from '@/lib/planner/priority-by-task-id';
 import {
   plannerChipButtonClassName,
   plannerChipClassName,
@@ -69,7 +76,9 @@ export default function PlannerPage() {
   const rolloverDecision = usePlannerRolloverDecision(weekStart, focusDateISO);
   const createSchedulingException = useCreateSchedulingException(weekStart);
   const deleteSchedulingException = useDeleteSchedulingException(weekStart);
+  const { showToast, ToastContainer } = useToast();
   const { tasks } = useGrowthSystemDashboard();
+  const priorityByTaskId = useMemo(() => buildPriorityByTaskId(tasks), [tasks]);
 
   const todayISO = todayISOLocal();
   const todayRolloverCount = useMemo(() => {
@@ -136,11 +145,24 @@ export default function PlannerPage() {
     async (date: string) => {
       const day = week?.days.find((d) => d.date === date);
       if (!day) return;
+
+      const action = resolveDayBlockToggleAction(day, date);
+      if (action.type === 'explain-non-manual') {
+        showToast({
+          type: 'info',
+          title: 'Day unavailable',
+          message: `This day is blocked by ${action.label}. Clear it from the source (trip, calendar, or weekly review).`,
+        });
+        return;
+      }
+
       setToggleBlockedPendingDate(date);
       try {
-        const manual = manualBlockingContextForDate(day, date);
-        if (manual) {
-          await deleteSchedulingException.mutateAsync(manual.id);
+        if (action.type === 'clear') {
+          if (dayHasScheduledWork(day) && !window.confirm(CLEAR_OOO_CONFIRM_MESSAGE)) {
+            return;
+          }
+          await deleteSchedulingException.mutateAsync(action.exceptionId);
         } else {
           await createSchedulingException.mutateAsync({
             startDate: date,
@@ -154,7 +176,7 @@ export default function PlannerPage() {
         setToggleBlockedPendingDate(null);
       }
     },
-    [week, createSchedulingException, deleteSchedulingException]
+    [week, createSchedulingException, deleteSchedulingException, showToast]
   );
 
   const handleDragEnd = useCallback(
@@ -203,10 +225,18 @@ export default function PlannerPage() {
       const res = await preview.mutateAsync();
       const blocked = new Set(res.blockedDates ?? []);
       setDraftBlocks(res.proposedBlocks.filter((b) => !blocked.has((b.date || '').slice(0, 10))));
+      const leftCount = res.leftInBacklogCount ?? 0;
+      if (res.adjustedToFit && leftCount > 0) {
+        showToast({
+          type: 'info',
+          title: 'Adjusted to fit',
+          message: `${leftCount} task${leftCount === 1 ? '' : 's'} left in backlog`,
+        });
+      }
     } catch (err) {
       setCommitError(err instanceof Error ? err.message : 'Auto-schedule preview failed');
     }
-  }, [preview]);
+  }, [preview, showToast]);
 
   const handleCommitDraft = useCallback(async () => {
     if (!draftBlocks?.length) return;
@@ -269,16 +299,18 @@ export default function PlannerPage() {
     return ids;
   }, [week, draftBlocks]);
 
-  const busy =
-    preview.isPending ||
+  const isPreviewPending = preview.isPending;
+  const boardMutationBusy =
     commit.isPending ||
     patch.isPending ||
     createSchedulingException.isPending ||
     deleteSchedulingException.isPending;
-  const navDisabled = isDrafting || busy;
+  const autoScheduleBusy = isPreviewPending || isDrafting || boardMutationBusy;
+  const navDisabled = isDrafting || boardMutationBusy;
 
   return (
     <div className="mx-auto max-w-[1680px] space-y-5 p-4 pb-10">
+      <ToastContainer />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-600/20 text-blue-600 ring-1 ring-gray-200 dark:text-blue-400 dark:ring-white/10">
@@ -299,7 +331,7 @@ export default function PlannerPage() {
                 <>
                   <span className="text-gray-300 dark:text-gray-600">|</span>
                   <span>
-                    Daily Capacity:{' '}
+                    Baseline capacity:{' '}
                     <span className={`font-medium ${plannerEmphasisClassName}`}>
                       {week.velocity.dailyCapacityStoryPoints}pts
                     </span>
@@ -369,7 +401,7 @@ export default function PlannerPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <AutoScheduleActionBar
-          isBusy={busy || isDrafting}
+          isBusy={autoScheduleBusy}
           onAutoSchedule={() => void handleAutoSchedulePreview()}
         />
         <div className="flex items-center gap-3">
@@ -442,6 +474,7 @@ export default function PlannerPage() {
                 onRolloverAction={handleRolloverAction}
                 rolloverPendingId={rolloverPendingId}
                 rolloverPendingAction={rolloverPendingAction}
+                priorityByTaskId={priorityByTaskId}
               />
             </div>
           ) : null}
@@ -461,6 +494,9 @@ export default function PlannerPage() {
         onClose={() => setIsDayDrawerOpen(false)}
         onFocusDateChange={syncFocusDate}
         onCommitted={() => void refetch()}
+        onClearOutOfOffice={(date) => void handleToggleDayBlocked(date)}
+        clearOutOfOfficePending={toggleBlockedPendingDate === focusDateISO}
+        priorityByTaskId={priorityByTaskId}
       />
     </div>
   );

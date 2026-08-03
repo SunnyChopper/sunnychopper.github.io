@@ -1,24 +1,46 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Dumbbell } from 'lucide-react';
 import { PageContainer } from '@/components/templates/PageContainer';
+import { FitnessModulePageHeader } from '@/components/molecules/fitness/FitnessModulePageHeader';
 import Button from '@/components/atoms/Button';
 import { FormCheckbox } from '@/components/atoms/FormCheckbox';
 import { FormInput, formFieldClassName } from '@/components/atoms/FormInput';
+import Combobox from '@/components/molecules/Combobox';
+import MultiCombobox from '@/components/molecules/MultiCombobox';
 import {
   useFitnessExercises,
   useFitnessTemplates,
   useFitnessSessions,
   useFitnessSessionSets,
   useOverloadSuggestion,
+  useTemplateOverloadHints,
   useCreateSessionMutation,
   useUpdateSessionMutation,
   useAddSetMutation,
   useUpdateSetMutation,
   useCreateExerciseMutation,
   useCreateTemplateMutation,
+  useScheduledWorkoutDays,
 } from '@/hooks/useFitness';
 import { localCalendarDate, addCalendarDays } from '@/lib/date/local-calendar';
+import { findExerciseByNameInsensitive } from '@/lib/fitness/exercise-utils';
+import {
+  pushRecentExerciseId,
+  readRecentExerciseIds,
+  RECENT_CHIP_DISPLAY,
+} from '@/lib/fitness/recent-exercises';
+import { resolveTodaysStartTemplate } from '@/lib/fitness/todays-scheduled-template';
+import { resolveTodaysStripState } from '@/lib/fitness/todays-workout-strip';
 import { cn } from '@/lib/utils';
+import {
+  fitnessSectionClassName,
+  fitnessSectionPaddingClassName,
+  fitnessSuccessCalloutClassName,
+  fitnessInteractiveRowClassName,
+} from '@/lib/fitness/fitness-surfaces';
+import { TemplateExercisePreviewList } from '@/components/molecules/fitness/TemplateExercisePreviewList';
+import { TodaysWorkoutStrip } from '@/components/molecules/fitness/TodaysWorkoutStrip';
+import { SessionStartOverloadHints } from '@/components/molecules/fitness/SessionStartOverloadHints';
 import WorkoutSchedulePanel from '@/components/organisms/fitness/WorkoutSchedulePanel';
 import type { FitnessExercise, WorkoutSession, WorkoutSet, WorkoutTemplate } from '@/types/fitness';
 import { Select } from '@/components/atoms/Select';
@@ -54,10 +76,18 @@ export default function HealthFitnessWorkoutsPage() {
     startDate: start,
     endDate: today,
   });
+  const { data: todayScheduleRes, isLoading: todayScheduleLoad } = useScheduledWorkoutDays(
+    today,
+    today
+  );
 
   const exercises = exRes?.success ? (exRes.data?.data ?? []) : [];
   const templates = tplRes?.success ? (tplRes.data?.data ?? []) : [];
   const sessions = sessRes?.success ? (sessRes.data?.data ?? []) : [];
+  const todaysScheduledDay =
+    todayScheduleRes?.success && todayScheduleRes.data?.days?.length
+      ? (todayScheduleRes.data.days.find((d) => d.date === today) ?? todayScheduleRes.data.days[0])
+      : undefined;
 
   const sortedSessions = useMemo(
     () =>
@@ -66,6 +96,24 @@ export default function HealthFitnessWorkoutsPage() {
       ),
     [sessions]
   );
+
+  const todaysSessions = useMemo(
+    () => sortedSessions.filter((s) => s.sessionDate === today),
+    [sortedSessions, today]
+  );
+
+  const stripState = useMemo(
+    () =>
+      resolveTodaysStripState({
+        day: todaysScheduledDay,
+        templates,
+        todaysSessions,
+        isLoading: todayScheduleLoad || sessLoad,
+      }),
+    [todaysScheduledDay, templates, todaysSessions, todayScheduleLoad, sessLoad]
+  );
+
+  const sessionSectionRef = useRef<HTMLElement>(null);
 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
@@ -87,9 +135,23 @@ export default function HealthFitnessWorkoutsPage() {
   const createTemplate = useCreateTemplateMutation();
 
   const [newExName, setNewExName] = useState('');
+  const [recentExerciseIds, setRecentExerciseIds] = useState<string[]>(() =>
+    readRecentExerciseIds()
+  );
   const [tplName, setTplName] = useState('');
   const [tplExerciseIds, setTplExerciseIds] = useState<string[]>([]);
   const [startTemplateId, setStartTemplateId] = useState<string>('');
+  const [templateSelectDirty, setTemplateSelectDirty] = useState(false);
+
+  const scheduledStart = useMemo(
+    () => resolveTodaysStartTemplate(todaysScheduledDay, templates),
+    [todaysScheduledDay, templates]
+  );
+
+  useEffect(() => {
+    if (templateSelectDirty || !scheduledStart) return;
+    setStartTemplateId(scheduledStart.templateId);
+  }, [scheduledStart, templateSelectDirty]);
 
   const [addExerciseId, setAddExerciseId] = useState<string>('');
   const { data: overloadRes } = useOverloadSuggestion(addExerciseId || null);
@@ -100,6 +162,75 @@ export default function HealthFitnessWorkoutsPage() {
     exercises.forEach((e) => m.set(e.id, e));
     return m;
   }, [exercises]);
+
+  const exerciseNameOptions = useMemo(() => exercises.map((e) => e.name), [exercises]);
+
+  const exerciseLabelLookup = useMemo(() => {
+    const lookup: Record<string, string> = {};
+    exercises.forEach((e) => {
+      lookup[e.id] = e.name;
+    });
+    return lookup;
+  }, [exercises]);
+
+  const matchingExercise = useMemo(
+    () => findExerciseByNameInsensitive(exercises, newExName),
+    [exercises, newExName]
+  );
+
+  const recentExerciseChips = useMemo(
+    () =>
+      recentExerciseIds
+        .slice(0, RECENT_CHIP_DISPLAY)
+        .map((id) => exById.get(id))
+        .filter((e): e is FitnessExercise => e != null),
+    [recentExerciseIds, exById]
+  );
+
+  const rememberRecentExercise = useCallback((id: string) => {
+    setRecentExerciseIds(pushRecentExerciseId(id));
+  }, []);
+
+  useEffect(() => {
+    if (readRecentExerciseIds().length > 0) return;
+
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    for (const s of sets) {
+      if (!seen.has(s.exerciseId)) {
+        seen.add(s.exerciseId);
+        ordered.push(s.exerciseId);
+      }
+    }
+    if (ordered.length === 0) return;
+
+    for (let i = ordered.length - 1; i >= 0; i--) {
+      pushRecentExerciseId(ordered[i]!);
+    }
+    setRecentExerciseIds(readRecentExerciseIds());
+  }, [sets]);
+
+  const handleTplExerciseIdsChange = useCallback(
+    (next: string[]) => {
+      const added = next.filter((id) => !tplExerciseIds.includes(id));
+      for (const id of added) {
+        rememberRecentExercise(id);
+      }
+      setTplExerciseIds(next);
+    },
+    [tplExerciseIds, rememberRecentExercise]
+  );
+
+  const handleAddExercise = async () => {
+    const name = newExName.trim();
+    if (!name || matchingExercise) return;
+
+    const res = await createExercise.mutateAsync({ name });
+    if (res.success && res.data?.id) {
+      rememberRecentExercise(res.data.id);
+    }
+    setNewExName('');
+  };
 
   const setsByExercise = useMemo(() => {
     const m = new Map<string, WorkoutSet[]>();
@@ -119,16 +250,31 @@ export default function HealthFitnessWorkoutsPage() {
   const sessionTpl: WorkoutTemplate | undefined = templates.find(
     (t) => t.id === currentSession?.templateId
   );
+  const templateOverloadTemplateId =
+    sessionTpl && sessionTpl.exerciseIds.length > 0 ? sessionTpl.id : null;
+  const { data: templateOverloadRes } = useTemplateOverloadHints(templateOverloadTemplateId);
+  const templateOverloadSuggestions = templateOverloadRes?.success
+    ? (templateOverloadRes.data?.suggestions ?? [])
+    : [];
 
-  const startFromTemplate = async () => {
+  const startFromTemplate = async (templateId?: string) => {
     const res = await createSession.mutateAsync({
-      templateId: startTemplateId || undefined,
+      templateId: templateId ?? (startTemplateId || undefined),
       sessionDate: today,
     });
     if (res.success && res.data) {
       setSelectedSessionId(res.data.id);
     }
   };
+
+  const handleStripStart = async (templateId: string) => {
+    await startFromTemplate(templateId);
+  };
+
+  const handleContinueSession = useCallback((id: string) => {
+    setSelectedSessionId(id);
+    sessionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const nextSetIndexFor = (exerciseId: string) => {
     const cur = setsByExercise.get(exerciseId) ?? [];
@@ -150,57 +296,82 @@ export default function HealthFitnessWorkoutsPage() {
       isSuccessful: true,
       setType: 'working',
     });
+    rememberRecentExercise(addExerciseId);
   };
 
   return (
     <PageContainer className="space-y-8">
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-violet-600 dark:text-violet-400">
-          <Dumbbell className="h-6 w-6" />
-          <span className="text-sm font-medium">Workouts</span>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Sessions & overload</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Progressive overload hints from your last successful working sets. Story points stay in
-          Growth System.
-        </p>
-      </div>
+      <FitnessModulePageHeader
+        icon={Dumbbell}
+        title="Workouts"
+        purpose="Today's plan first — start a session, then tune schedule and library below."
+        accent="violet"
+      />
+
+      <TodaysWorkoutStrip
+        state={stripState}
+        today={today}
+        isStarting={createSession.isPending}
+        onStart={handleStripStart}
+        onContinueSession={handleContinueSession}
+      />
 
       <WorkoutSchedulePanel />
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900/40">
+      <section className={cn(fitnessSectionClassName, fitnessSectionPaddingClassName)}>
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">Library</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Add exercises and build templates before you start a session.
         </p>
-        <div className="mt-5 grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-gray-950/40">
-            <FieldLabel htmlFor="new-exercise-name">New exercise</FieldLabel>
+        <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <FieldLabel>New exercise</FieldLabel>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-              <FormInput
-                id="new-exercise-name"
+              <Combobox
                 className="w-full flex-1"
                 value={newExName}
-                onChange={(e) => setNewExName(e.target.value)}
-                placeholder="Bench press"
+                onChange={setNewExName}
+                options={exerciseNameOptions}
+                placeholder="Search or create…"
+                isLoading={exLoad}
+                allowCreate
               />
               <Button
                 type="button"
                 size="sm"
                 variant="secondary"
-                disabled={!newExName.trim() || createExercise.isPending}
-                onClick={async () => {
-                  await createExercise.mutateAsync({ name: newExName.trim() });
-                  setNewExName('');
-                }}
+                disabled={!newExName.trim() || !!matchingExercise || createExercise.isPending}
+                onClick={handleAddExercise}
               >
                 Add exercise
               </Button>
             </div>
+            {matchingExercise ? (
+              <p className="text-xs text-amber-700 dark:text-amber-300" role="status">
+                Already in library
+              </p>
+            ) : null}
+            {recentExerciseChips.length > 0 ? (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Recent</p>
+                <div className="flex flex-wrap gap-2">
+                  {recentExerciseChips.map((ex) => (
+                    <button
+                      key={ex.id}
+                      type="button"
+                      className="rounded-full bg-gray-200 px-2.5 py-1 text-xs font-medium text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+                      onClick={() => setNewExName(ex.name)}
+                    >
+                      {ex.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
 
-          <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-gray-950/40">
-            <FieldLabel htmlFor="template-name" hint="Select exercises to include in order.">
+          <div className="space-y-4">
+            <FieldLabel htmlFor="template-name" hint="Search and add exercises in order.">
               New template
             </FieldLabel>
             <FormInput
@@ -210,33 +381,26 @@ export default function HealthFitnessWorkoutsPage() {
               value={tplName}
               onChange={(e) => setTplName(e.target.value)}
             />
-            <div
-              className="max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white p-2 text-sm dark:border-gray-700 dark:bg-gray-900"
-              role="group"
-              aria-label="Exercises for template"
-            >
-              {exLoad && <p className="px-1 py-2 text-xs text-gray-500">Loading exercises…</p>}
-              {!exLoad && exercises.length === 0 && (
-                <p className="px-1 py-2 text-xs text-gray-500">Add an exercise first.</p>
-              )}
-              {!exLoad &&
-                exercises.map((e) => (
-                  <label
-                    key={e.id}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800/60"
-                  >
-                    <FormCheckbox
-                      checked={tplExerciseIds.includes(e.id)}
-                      onChange={() =>
-                        setTplExerciseIds((ids) =>
-                          ids.includes(e.id) ? ids.filter((x) => x !== e.id) : [...ids, e.id]
-                        )
-                      }
-                    />
-                    <span className="text-gray-800 dark:text-gray-200">{e.name}</span>
-                  </label>
-                ))}
-            </div>
+            {exLoad ? (
+              <p className="text-xs text-gray-500">Loading exercises…</p>
+            ) : exercises.length === 0 ? (
+              <p className="text-xs text-gray-500">Add an exercise first.</p>
+            ) : (
+              <MultiCombobox
+                value={tplExerciseIds}
+                onChange={handleTplExerciseIdsChange}
+                options={exercises.map((e) => ({ value: e.id, label: e.name }))}
+                labelLookup={exerciseLabelLookup}
+                placeholder="Search and add exercises…"
+                isLoading={exLoad}
+                hideSelectedPills
+              />
+            )}
+            <TemplateExercisePreviewList
+              exerciseIds={tplExerciseIds}
+              nameById={exerciseLabelLookup}
+              onChange={setTplExerciseIds}
+            />
             <Button
               type="button"
               size="sm"
@@ -257,10 +421,13 @@ export default function HealthFitnessWorkoutsPage() {
         {(exLoad || tplLoad) && <p className="mt-3 text-xs text-gray-400">Loading library…</p>}
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900/40">
+      <section
+        ref={sessionSectionRef}
+        className={cn(fitnessSectionClassName, fitnessSectionPaddingClassName)}
+      >
         <h2 className="text-base font-semibold text-gray-900 dark:text-white">Session</h2>
-        <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="space-y-3 rounded-xl border border-blue-100 bg-blue-50/40 p-4 dark:border-blue-900/50 dark:bg-blue-950/20">
+        <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="space-y-4">
             <p className="text-sm font-medium text-gray-900 dark:text-white">Start new session</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
               Optionally pick a template, then create today&apos;s session ({today}).
@@ -270,7 +437,10 @@ export default function HealthFitnessWorkoutsPage() {
               id="start-template"
               className={selectClassName}
               value={startTemplateId}
-              onChange={(e) => setStartTemplateId(e.target.value)}
+              onChange={(e) => {
+                setTemplateSelectDirty(true);
+                setStartTemplateId(e.target.value);
+              }}
             >
               <option value="">— none —</option>
               {templates.map((t) => (
@@ -283,13 +453,13 @@ export default function HealthFitnessWorkoutsPage() {
               type="button"
               size="sm"
               disabled={createSession.isPending}
-              onClick={startFromTemplate}
+              onClick={() => startFromTemplate()}
             >
               New session ({today})
             </Button>
           </div>
 
-          <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-gray-950/40">
+          <div className="space-y-4">
             <p className="text-sm font-medium text-gray-900 dark:text-white">Active session</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
               Switch between recent sessions or mark the current one complete.
@@ -332,14 +502,23 @@ export default function HealthFitnessWorkoutsPage() {
         )}
       </section>
 
+      {sessionId && sessionTpl && templateOverloadSuggestions.length > 0 && (
+        <SessionStartOverloadHints
+          suggestions={templateOverloadSuggestions}
+          nameById={exerciseLabelLookup}
+          selectedExerciseId={addExerciseId}
+          onSelectExercise={setAddExerciseId}
+        />
+      )}
+
       {sessionId && (
-        <section className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900/40">
+        <section className={cn(fitnessSectionClassName, fitnessSectionPaddingClassName)}>
           <h2 className="text-base font-semibold text-gray-900 dark:text-white">Log sets</h2>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Choose an exercise, review the overload hint, then add a working set.
           </p>
 
-          <div className="mt-5 space-y-4">
+          <div className="mt-4 space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,14rem)_1fr_auto] sm:items-end">
               <div>
                 <FieldLabel htmlFor="log-exercise">Exercise</FieldLabel>
@@ -359,13 +538,23 @@ export default function HealthFitnessWorkoutsPage() {
               </div>
 
               {overload && addExerciseId && (
-                <div
-                  className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-100"
-                  role="status"
-                >
+                <div className={fitnessSuccessCalloutClassName} role="status">
                   <p className="font-medium">Overload suggestion</p>
+                  {overload.lastSuccessfulWeight != null && (
+                    <p className="mt-1">
+                      Last success:{' '}
+                      <strong>
+                        {overload.lastSuccessfulWeight}
+                        {overload.lastSuccessfulCompletedReps != null
+                          ? ` × ${overload.lastSuccessfulCompletedReps}`
+                          : ''}{' '}
+                        {overload.unit}
+                      </strong>
+                    </p>
+                  )}
                   <p className="mt-1">
-                    Suggested weight: <strong>{overload.nextSuggestedWeight}</strong>
+                    Suggested weight: <strong>{overload.nextSuggestedWeight}</strong>{' '}
+                    {overload.unit}
                   </p>
                   <p>
                     Target reps: {overload.nextSuggestedTargetRepsMin}–
@@ -390,7 +579,7 @@ export default function HealthFitnessWorkoutsPage() {
             </div>
           </div>
 
-          <div className="mt-6 space-y-5">
+          <div className="mt-6 space-y-4">
             {sessLoad && <p className="text-sm text-gray-500">Loading…</p>}
             {Array.from(setsByExercise.entries()).map(([exId, row]) => (
               <div key={exId}>
@@ -417,7 +606,7 @@ export default function HealthFitnessWorkoutsPage() {
       )}
 
       {!sessionId && !sessLoad && sortedSessions.length === 0 && (
-        <p className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/30">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400">
           Create a session to start logging sets.
         </p>
       )}
@@ -445,7 +634,12 @@ function SetRow({
   const [ok, setOk] = useState(s.isSuccessful);
 
   return (
-    <li className="grid grid-cols-[auto_1fr_1fr_1fr_auto] items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs dark:border-gray-700 dark:bg-gray-800/50 sm:gap-4 sm:px-4">
+    <li
+      className={cn(
+        fitnessInteractiveRowClassName,
+        'grid grid-cols-[auto_1fr_1fr_1fr_auto] items-center gap-3 py-2 text-xs sm:gap-4 sm:py-3'
+      )}
+    >
       <span className="whitespace-nowrap font-medium text-gray-500 dark:text-gray-400">
         Set {s.setIndex + 1}
       </span>

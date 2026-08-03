@@ -1,3 +1,10 @@
+const LOCAL_TIME_24H_RE = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+
+/** Validate proactive automation `localTime` (API: HH:MM 24h). */
+export function isValidProactiveLocalTime(localTime: string): boolean {
+  return LOCAL_TIME_24H_RE.test((localTime || '').trim());
+}
+
 /**
  * Format proactive automation `localTime` (API: HH:MM24h) for display in 12-hour clock.
  */

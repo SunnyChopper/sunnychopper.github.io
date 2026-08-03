@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useImperativeHandle, useLayoutEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import type { PluggableList } from 'unified';
@@ -25,6 +25,11 @@ function pickDataSourceLine(props: Record<string, unknown>): string | number | u
 
 export type MarkdownRendererVariant = 'default' | 'chat';
 
+export interface MarkdownCollapseActionsHandle {
+  expandAll: () => void;
+  collapseAll: () => void;
+}
+
 interface MarkdownRendererProps {
   content: string;
   className?: string;
@@ -38,6 +43,8 @@ interface MarkdownRendererProps {
   annotateSourceLines?: boolean;
   /** When true, YouTube links render as iframe embeds in preview (default false). */
   richEmbeds?: boolean;
+  /** Optional ref for bulk expand/collapse of collapsible heading sections. */
+  collapseActionsRef?: React.RefObject<MarkdownCollapseActionsHandle | null>;
 }
 
 export default function MarkdownRenderer({
@@ -49,10 +56,12 @@ export default function MarkdownRenderer({
   contentKey,
   annotateSourceLines = false,
   richEmbeds = false,
+  collapseActionsRef,
 }: MarkdownRendererProps) {
   const codeRefs = useRef<Map<string, HTMLPreElement>>(new Map());
   const { mathLoaded, prismLoaded, Prism } = useMarkdownPlugins(content);
   const collapseState = useMarkdownCollapseState(filePath);
+  const headingIdsRef = useRef<Set<string>>(new Set());
 
   // Map to track heading IDs for stability across re-renders
   // Key: `${level}-${textHash}` or `${level}-${textHash}-${occurrence}`, Value: full heading ID with counter
@@ -73,7 +82,17 @@ export default function MarkdownRenderer({
     headingOccurrenceMapRef.current.clear();
     codeBlockCounterRef.current = 0;
     codeBlockIdGeneratorRef.current = 0;
+    headingIdsRef.current.clear();
   }, [content]);
+
+  useImperativeHandle(
+    collapseActionsRef,
+    () => ({
+      expandAll: () => collapseState.resetState(),
+      collapseAll: () => collapseState.collapseAll(Array.from(headingIdsRef.current)),
+    }),
+    [collapseState]
+  );
 
   // Highlight existing code blocks when Prism loads
   useEffect(() => {
@@ -151,6 +170,7 @@ export default function MarkdownRenderer({
           headingCountersRef.current,
           headingOccurrenceMapRef.current
         );
+        headingIdsRef.current.add(headingId);
         const isCollapsed = collapsedHeadingsSet.has(headingId);
 
         return (

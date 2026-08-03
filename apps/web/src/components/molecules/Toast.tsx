@@ -57,6 +57,18 @@ export function ToastItem({ toast, onDismiss }: { toast: ToastType; onDismiss: (
             {toast.message}
           </p>
         )}
+        {toast.action && (
+          <button
+            type="button"
+            onClick={() => {
+              onDismiss();
+              toast.action?.onClick();
+            }}
+            className="mt-2 rounded-md border border-current/20 px-2.5 py-1 text-xs font-semibold transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+          >
+            {toast.action.label}
+          </button>
+        )}
       </div>
 
       <button
@@ -78,7 +90,12 @@ export function ToastContainer({
   onDismiss: (id: string) => void;
 }) {
   return (
-    <div className="pointer-events-none fixed top-4 right-4 z-[100] flex flex-col gap-2.5">
+    <div
+      className="pointer-events-none fixed top-4 right-4 z-[100] flex flex-col gap-2.5"
+      role="status"
+      aria-live="polite"
+      aria-relevant="additions"
+    >
       <AnimatePresence>
         {toasts.map((toast) => (
           <div key={toast.id} className="pointer-events-auto">

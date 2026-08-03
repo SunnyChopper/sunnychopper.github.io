@@ -1,7 +1,13 @@
 import type { ApiResponse } from '@/types/api-contracts';
 
 export type ContentStatus = 'DRAFT' | 'FINALIZED' | 'PIPELINED' | 'PUBLISHED' | 'SKIPPED';
-export type ContentSourceType = 'RADAR_INGESTED' | 'ON_DEMAND_AI' | 'MANUAL' | 'VAULT_EXTRACTED';
+export type ContentSourceType =
+  | 'RADAR_INGESTED'
+  | 'ON_DEMAND_AI'
+  | 'MANUAL'
+  | 'VAULT_EXTRACTED'
+  | 'GOAL_COMPLETED'
+  | 'WEEKLY_REVIEW_QUICK_WIN';
 export type ContentType = 'DEEP_DIVE_BLOG' | 'SOCIAL_THREAD' | 'VIDEO_SCRIPT';
 export type ContentIdeaStatus = 'GENERATED' | 'APPROVED' | 'REJECTED' | 'DRAFTED';
 
@@ -11,6 +17,18 @@ export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   VIDEO_SCRIPT: 'Video Script',
 };
 export type BrandPlatform = 'linkedin' | 'x' | 'medium' | 'youtube' | 'instagram' | 'newsletter';
+
+export type PlatformFormat =
+  | 'simple_post'
+  | 'carousel'
+  | 'reel'
+  | 'long_form'
+  | 'short'
+  | 'single_post'
+  | 'article'
+  | 'thread'
+  | 'deep_dive'
+  | 'briefing';
 export type RepurposeJobStatus =
   | 'queued'
   | 'running'
@@ -485,12 +503,16 @@ export interface BrandProfileOutputTest {
   topic: string;
   contentType: ContentType;
   platform: BrandPlatform;
+  platformFormat?: PlatformFormat | null;
   title: string;
   body: string;
   confidence?: number | null;
   provider?: string | null;
   model?: string | null;
   cached: boolean;
+  toneScores?: Record<string, number> | null;
+  overallToneMatch?: number | null;
+  toneBiasKey?: string | null;
   userId: string;
   createdAt: string;
 }
@@ -504,8 +526,10 @@ export interface GenerateProfileOutputTestInput {
   topic: string;
   contentType: ContentType;
   platform: BrandPlatform;
+  platformFormat?: PlatformFormat;
   provider?: string;
   model?: string;
+  toneBiasKey?: string;
 }
 
 export interface StartProfileExtractionRerunInput {
@@ -551,8 +575,14 @@ export interface PlatformRuleCatalogEntry {
   id: string;
   label: string;
   definition: string;
+  example: string;
   enabledEffect: string;
   disabledEffect: string;
+}
+
+export interface PlatformLimitDefault {
+  characterLimit: number;
+  readTimeLimitMinutes: number;
 }
 
 export interface PlatformRuleCatalog {
@@ -560,6 +590,7 @@ export interface PlatformRuleCatalog {
   devices: PlatformRuleCatalogEntry[];
   strengths: RhetoricalStrength[];
   wordsPerMinute: number;
+  limitDefaults: Partial<Record<BrandPlatform, PlatformLimitDefault>>;
 }
 
 export interface ResolvedPlatformPolicy {
@@ -639,14 +670,56 @@ export interface PlatformRuleSetPreviewInput {
   rhetoricalModes?: RhetoricalModeSetting[];
   rhetoricalDevices?: RhetoricalDeviceId[];
   brandProfileId?: string | null;
+  brandProfileIds?: string[];
+  sampleText?: string | null;
   provider?: string | null;
   model?: string | null;
+}
+
+export type PlatformRuleSetPreviewValidationSeverity = 'warning' | 'info';
+
+export interface PlatformRuleSetPreviewValidationIssue {
+  id: string;
+  code: string;
+  severity: PlatformRuleSetPreviewValidationSeverity;
+  message: string;
+  requirementLine?: string | null;
 }
 
 export interface PlatformRuleSetPreviewResult {
   sampleText: string;
   body: string;
   appliedPolicy: ResolvedPlatformPolicy;
+  validationIssues?: PlatformRuleSetPreviewValidationIssue[];
+}
+
+export type PlatformRuleSetInfluenceKind = 'mode' | 'device' | 'requirement' | 'limit';
+
+export interface PlatformRuleSetInfluenceItem {
+  kind: PlatformRuleSetInfluenceKind;
+  id: string;
+  summary: string;
+  previewExcerpt: string;
+  sampleExcerpt?: string | null;
+}
+
+export interface PlatformRuleSetInfluenceInput {
+  platform: BrandPlatform;
+  characterLimit?: number | null;
+  readTimeLimitMinutes?: number | null;
+  requirements?: string | null;
+  rhetoricalModes: RhetoricalModeSetting[];
+  rhetoricalDevices: RhetoricalDeviceId[];
+  brandProfileId?: string | null;
+  brandProfileIds?: string[];
+  sampleText: string;
+  body: string;
+  provider?: string | null;
+  model?: string | null;
+}
+
+export interface PlatformRuleSetInfluenceResult {
+  appliedInfluences: PlatformRuleSetInfluenceItem[];
 }
 
 export type KeywordResearchStatus = 'validated' | 'unavailable';
@@ -688,6 +761,8 @@ export interface ContentNode {
   pillars: string[];
   keywordResearch?: KeywordResearchEvidence | null;
   crossPostLinks?: CrossPostLink[];
+  linkedGoalIds?: string[];
+  linkedTaskIds?: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -705,6 +780,8 @@ export interface CreateContentNodeInput {
   canonicalUrl?: string | null;
   tags?: string[];
   pillars?: string[];
+  linkedGoalIds?: string[];
+  linkedTaskIds?: string[];
 }
 
 export interface UpdateContentNodeInput {
@@ -717,6 +794,8 @@ export interface UpdateContentNodeInput {
   assetPrompts?: Record<string, unknown> | null;
   tags?: string[] | null;
   pillars?: string[] | null;
+  linkedGoalIds?: string[] | null;
+  linkedTaskIds?: string[] | null;
 }
 
 export interface ContentIdea {
@@ -737,6 +816,8 @@ export interface ContentIdea {
   radarItemIds?: string[] | null;
   radarItemSnapshots?: RadarItemSnapshot[] | null;
   keywordResearch?: KeywordResearchEvidence | null;
+  linkedGoalIds?: string[];
+  linkedTaskIds?: string[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -850,6 +931,106 @@ export interface ContentIdeationJob {
   completedAt?: string | null;
 }
 
+export type SocialCurrencyAngle =
+  | 'humor'
+  | 'practicalValue'
+  | 'identitySignal'
+  | 'emotion'
+  | 'hotTake'
+  | 'authority'
+  | 'trendHijack'
+  | 'storyHook';
+
+export const SOCIAL_CURRENCY_ANGLE_LABELS: Record<SocialCurrencyAngle, string> = {
+  humor: 'Humor',
+  practicalValue: 'Practical value',
+  identitySignal: 'Identity signal',
+  emotion: 'Emotion',
+  hotTake: 'Hot take',
+  authority: 'Authority',
+  trendHijack: 'Trend hijack',
+  storyHook: 'Story hook',
+};
+
+export type ContentStreamMemeFormat = 'imageMacro' | 'reaction' | 'situation';
+
+export interface ContentStreamMemeSuggestion {
+  concept: string;
+  visualBrief: string;
+  suggestedCaption?: string | null;
+  format: ContentStreamMemeFormat;
+}
+
+export type ContentStreamPostStatus = 'pending' | 'kept' | 'discarded';
+
+export type ContentStreamFeedback = 'up' | 'down';
+
+export type ContentStreamJobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface ContentStreamSettings {
+  platform: BrandPlatform;
+  enabled: boolean;
+  xUsername?: string | null;
+  brandProfileId?: string | null;
+  postsPerDay: number;
+  syncCadence: SyncCadence;
+  syncStartTime: string;
+  syncEndTime?: string | null;
+  syncTimezone: string;
+  syncIntervalHours?: number | null;
+  nextDueAt?: string | null;
+  lastRunAt?: string | null;
+  lastJobId?: string | null;
+  lastErrorSummary?: string | null;
+  dailyBudgetDate?: string | null;
+  dailyGeneratedCount: number;
+  remainingDailyBudget: number;
+  hasRapidApiKey: boolean;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentStreamPost {
+  id: string;
+  platform: BrandPlatform;
+  platformFormat: string;
+  title?: string | null;
+  body: string;
+  socialCurrencyAngle: SocialCurrencyAngle;
+  angleRationale: string;
+  memeSuggestion?: ContentStreamMemeSuggestion | null;
+  status: ContentStreamPostStatus;
+  feedbackAt?: string | null;
+  pillars: string[];
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentStreamJobStart {
+  jobId: string;
+  status: ContentStreamJobStatus;
+  pollAfterMs: number;
+}
+
+export interface ContentStreamJob {
+  jobId: string;
+  status: ContentStreamJobStatus;
+  stage?: string | null;
+  message?: string | null;
+  pollAfterMs?: number | null;
+  error?: string | null;
+  provider?: string | null;
+  model?: string | null;
+  createdPostIds: string[];
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
 export interface ContentImageInsertion {
   query: string;
   imageUrl: string;
@@ -941,6 +1122,12 @@ export interface ContentKeywordOptimizationJob {
   completedAt?: string | null;
 }
 
+export interface TopicSuggestion {
+  topic: string;
+  why: string;
+  matchedPillars: string[];
+}
+
 export interface GenerateTopicSuggestionsInput {
   pillars: string[];
   targetAudience?: string | null;
@@ -951,7 +1138,7 @@ export interface GenerateTopicSuggestionsInput {
 }
 
 export interface GenerateTopicSuggestionsResult {
-  topics: string[];
+  topics: TopicSuggestion[];
 }
 
 export type PlatformFitTier = 'high' | 'medium' | 'low';
@@ -2234,6 +2421,25 @@ export interface CreateReplyRunInput {
   suggestedParamsJson?: Record<string, unknown> | null;
 }
 
+export interface ResolveXContentInput {
+  url?: string;
+  authorUsername?: string;
+  platformPostId?: string;
+}
+
+export interface ResolveXContentResult {
+  authorUsername: string;
+  displayName?: string | null;
+  profileUrl?: string | null;
+  bio?: string | null;
+  evidenceUrl?: string | null;
+  platformPostId?: string | null;
+  creatorText?: string | null;
+  matchedInTimeline: boolean;
+  source: 'rapidapi' | 'metadata_only';
+  warning?: string | null;
+}
+
 export interface ReplySuggestion {
   id: string;
   runId: string;
@@ -2428,6 +2634,7 @@ export interface ReconPost {
   relevanceRationale?: string | null;
   relevanceRationaleBullets?: string[] | null;
   recommendedAction?: string | null;
+  suggestedAngle?: string | null;
   confidence?: number | null;
   status: ReconPostStatus;
   userId: string;

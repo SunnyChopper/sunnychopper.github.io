@@ -7,6 +7,12 @@ import {
 import { queryKeys } from '@/lib/react-query/query-keys';
 import type { Project, ProjectDependency, UpdateProjectInput } from '@/types/growth-system';
 
+function invalidateProjectDependencyQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.growthSystem.projects.dependencies(),
+  });
+}
+
 function applyDependencyMutationResult(
   queryClient: ReturnType<typeof useQueryClient>,
   result: {
@@ -17,9 +23,7 @@ function applyDependencyMutationResult(
   if (result.cascaded?.length) {
     applyCascadedProjectUpdatesToCache(queryClient, result.cascaded);
   }
-  void queryClient.invalidateQueries({
-    queryKey: queryKeys.growthSystem.projects.dependencies(),
-  });
+  invalidateProjectDependencyQueries(queryClient);
 }
 
 export function useProjectDependencies(projectIds?: string[]) {
@@ -78,9 +82,7 @@ export function useProjectDependencies(projectIds?: string[]) {
       predecessorProjectId: string;
     }) => projectsService.removeDependency(successorProjectId, predecessorProjectId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.growthSystem.projects.dependencies(),
-      });
+      invalidateProjectDependencyQueries(queryClient);
     },
   });
 
@@ -93,6 +95,33 @@ export function useProjectDependencies(projectIds?: string[]) {
     removeDependency: removeMutation.mutateAsync,
     isAdding: addMutation.isPending,
     isRemoving: removeMutation.isPending,
+  };
+}
+
+/** 1-hop predecessors/successors for project detail dependency mini-graph. */
+export function useProjectDependencyNeighborhood(projectId: string | undefined) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: [...queryKeys.growthSystem.projects.dependencies(), 'neighborhood', projectId],
+    queryFn: async () => {
+      const response = await projectsService.listDependenciesForProject(projectId!);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error(response.error?.message || 'Failed to fetch project dependencies');
+    },
+    enabled: Boolean(projectId),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const predecessors = data?.predecessors ?? [];
+  const successors = data?.successors ?? [];
+
+  return {
+    predecessors,
+    successors,
+    edgeCount: predecessors.length + successors.length,
+    isLoading,
+    error,
   };
 }
 

@@ -20,9 +20,12 @@ import {
   plannerPanelClassName,
 } from '@/lib/planner/planner-surfaces';
 import { mondayISOForDate } from '@/lib/planner/week';
+import { lookupTaskPriority } from '@/lib/planner/priority-by-task-id';
+import { trimSelectedToCapacity } from '@/lib/planner/trim-selected-to-capacity';
 import { useToast } from '@/hooks/use-toast';
 import { addDaysISO, todayISOLocal } from '@/lib/planner/week';
 import type { PlannerDay, PlannerRolloverAction } from '@/types/planner';
+import type { Priority } from '@/types/growth-system';
 
 import { RolloverTaskCard } from './RolloverTaskCard';
 
@@ -39,12 +42,18 @@ export interface PlannerDayFocusPanelProps {
   focusDateISO: string;
   onFocusDateChange: (iso: string) => void;
   onCommitted?: () => void;
+  onClearOutOfOffice?: () => void;
+  clearOutOfOfficePending?: boolean;
+  priorityByTaskId?: ReadonlyMap<string, Priority>;
 }
 
 export function PlannerDayFocusPanel({
   focusDateISO,
   onFocusDateChange,
   onCommitted,
+  onClearOutOfOffice,
+  clearOutOfOfficePending,
+  priorityByTaskId,
 }: PlannerDayFocusPanelProps) {
   const today = todayISOLocal();
   const tomorrow = useMemo(() => addDaysISO(today, 1), [today]);
@@ -58,6 +67,9 @@ export function PlannerDayFocusPanel({
 
   const KILL_SWITCH_CONFIRM =
     "Drowning? Let's fix it. This will drop all non-essential items back to your backlog.";
+  const KILL_SWITCH_HELPER = 'Drops non-essentials to backlog (One Thing + P1 stay).';
+  const KILL_SWITCH_ARIA_LABEL =
+    'Kill Switch — drops non-essentials to backlog; keeps One Thing and P1';
 
   const [rolloverPendingId, setRolloverPendingId] = useState<string | null>(null);
   const [rolloverPendingAction, setRolloverPendingAction] = useState<PlannerRolloverAction | null>(
@@ -98,6 +110,16 @@ export function PlannerDayFocusPanel({
       else next.add(taskId);
       return next;
     });
+  };
+
+  const handleTrimToFit = () => {
+    if (!plan) return;
+    const { selectedIds: next } = trimSelectedToCapacity({
+      selectedIds,
+      suggestions: plan.suggestions,
+      capacityPoints,
+    });
+    setSelectedIds(next);
   };
 
   const handleCommitSuccess = (week: { days: PlannerDay[] }, message: string) => {
@@ -144,15 +166,41 @@ export function PlannerDayFocusPanel({
       });
       return;
     }
+    if (!plan) return;
+
+    let taskIds = orderedIds.filter((id) => selectedIds.has(id));
+    let leftInBacklog = 0;
+
     if (overCapacity) {
-      showToast({
-        type: 'error',
-        title: 'Over capacity',
-        message: 'Remove a task to stay within today’s capacity.',
+      const { selectedIds: next, removedIds } = trimSelectedToCapacity({
+        selectedIds,
+        suggestions: plan.suggestions,
+        capacityPoints,
       });
+      setSelectedIds(next);
+      leftInBacklog = removedIds.length;
+      taskIds = orderedIds.filter((id) => next.has(id));
+      showToast({
+        type: 'info',
+        title: 'Adjusted to fit',
+        message:
+          leftInBacklog === 0
+            ? 'Selection trimmed to capacity.'
+            : `${leftInBacklog} task${leftInBacklog === 1 ? '' : 's'} left in backlog`,
+      });
+    }
+
+    if (taskIds.length === 0) {
+      if (!overCapacity) {
+        showToast({
+          type: 'error',
+          title: 'Plan failed',
+          message: 'Select at least one task.',
+        });
+      }
       return;
     }
-    const taskIds = orderedIds.filter((id) => selectedIds.has(id));
+
     commit.mutate(
       { taskIds, useLlm: false },
       {
@@ -222,16 +270,22 @@ export function PlannerDayFocusPanel({
         >
           Refresh
         </button>
+      </div>
+
+      <div className="flex flex-col items-start gap-0.5">
         <button
           type="button"
           disabled={busy}
           className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
           onClick={handleKillSwitch}
-          aria-label="Kill Switch — de-scope non-essential tasks for this day"
+          aria-label={KILL_SWITCH_ARIA_LABEL}
         >
           <ShieldAlert className="h-3.5 w-3.5" />
           Kill Switch
         </button>
+        <p className={`max-w-[11rem] text-[10px] leading-snug ${plannerMutedClassName}`}>
+          {KILL_SWITCH_HELPER}
+        </p>
       </div>
 
       {error ? (
@@ -289,7 +343,12 @@ export function PlannerDayFocusPanel({
             </div>
           ) : null}
 
-          <PredictionCard prediction={plan.prediction} />
+          <PredictionCard
+            prediction={plan.prediction}
+            focusDateISO={focusDateISO}
+            onClearOutOfOffice={onClearOutOfOffice}
+            clearOutOfOfficePending={clearOutOfOfficePending}
+          />
           <DowHistoryStrip
             history={plan.prediction.dayOfWeekHistory}
             activeDayOfWeek={plan.prediction.dayOfWeek}
@@ -320,17 +379,13 @@ export function PlannerDayFocusPanel({
                 selectedIds={selectedIds}
                 onToggleTask={handleToggleTask}
                 onReorder={(next) => setOrderedIds(next)}
+                onTrimToFit={handleTrimToFit}
               />
             )}
-            {overCapacity ? (
-              <p className="text-xs text-amber-700 dark:text-amber-300">
-                Remove a task to stay within today’s capacity.
-              </p>
-            ) : null}
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 type="button"
-                disabled={busy || dayBlocked || selectedIds.size === 0 || overCapacity}
+                disabled={busy || dayBlocked || selectedIds.size === 0}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={submitDeterministic}
               >
@@ -347,7 +402,11 @@ export function PlannerDayFocusPanel({
               </h3>
               <div className="space-y-2">
                 {committedDay.blocks.map((b) => (
-                  <PlannerBlockCard key={b.id} block={b} />
+                  <PlannerBlockCard
+                    key={b.id}
+                    block={b}
+                    priority={lookupTaskPriority(priorityByTaskId, b.taskId)}
+                  />
                 ))}
               </div>
             </div>

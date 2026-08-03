@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { isDurableAssistantMessageId } from '@/lib/chat/durable-assistant-leaf';
 import { isLocalAssistantThreadId } from '@/lib/chat/local-thread-id';
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { chatbotService } from '@/services/chatbot.service';
@@ -39,7 +40,9 @@ export function useThreadContextUsage({
         leafMessageId: leaf || undefined,
         runConfig,
       }),
-    enabled: Boolean(enabled && serverThread && threadId && leaf),
+    enabled: Boolean(
+      enabled && serverThread && threadId && leaf && isDurableAssistantMessageId(leaf)
+    ),
     staleTime: 10_000,
   });
 }

@@ -82,6 +82,9 @@ export const ContentPipelinePage = lazy(
 export const SignalRadarPage = lazy(
   () => import('@/pages/admin/personal-branding/signal-radar/SignalRadarPage')
 );
+export const ContentStreamPage = lazy(
+  () => import('@/pages/admin/personal-branding/content-stream/ContentStreamPage')
+);
 export const RolodexPage = lazy(
   () => import('@/pages/admin/personal-branding/rolodex/RolodexPage')
 );
@@ -90,6 +93,7 @@ export const AssistantSettingsPage = lazy(() => import('@/pages/admin/AssistantS
 export const ProactiveAutomationsPage = lazy(
   () => import('@/pages/admin/ProactiveAutomationsPage')
 );
+export const InterventionsPage = lazy(() => import('@/pages/admin/InterventionsPage'));
 export const ObservabilityPage = lazy(() => import('@/pages/admin/ObservabilityPage'));
 export const AssistantSandboxPage = lazy(() => import('@/pages/admin/AssistantSandboxPage'));
 export const ToolsOverviewPage = lazy(() => import('@/pages/admin/tools/ToolsOverviewPage'));

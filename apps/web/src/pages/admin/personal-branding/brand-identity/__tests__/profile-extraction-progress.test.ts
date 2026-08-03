@@ -4,6 +4,7 @@ import {
   extractionIsTerminal,
   extractionPipelineSteps,
   extractionProgressPercent,
+  extractionProgressDetailSentence,
   extractionStatusLabel,
   extractionStepCaption,
   formatExtractionMetrics,
@@ -180,6 +181,44 @@ describe('extractionProgressPercent', () => {
         })
       )
     ).toBe(4);
+  });
+});
+
+describe('extractionProgressDetailSentence', () => {
+  it('combines source and chunk counts when chunks are known', () => {
+    expect(
+      extractionProgressDetailSentence(
+        makeJob({
+          status: 'running',
+          stage: 'analyzing_sources',
+          sourceCount: 70,
+          processedSourceCount: 15,
+          totalChunkCount: 33,
+          processedChunkCount: 26,
+        })
+      )
+    ).toBe('15 of 70 sources processed, 26 of 33 chunks analyzed');
+  });
+
+  it('omits chunks when totalChunkCount is zero', () => {
+    expect(
+      extractionProgressDetailSentence(
+        makeJob({
+          status: 'running',
+          stage: 'analyzing_sources',
+          sourceCount: 70,
+          processedSourceCount: 0,
+          totalChunkCount: 0,
+          processedChunkCount: 0,
+        })
+      )
+    ).toBe('0 of 70 sources processed');
+  });
+
+  it('returns null when sourceCount is missing', () => {
+    expect(extractionProgressDetailSentence(makeJob({ status: 'queued', stage: 'queued' }))).toBe(
+      null
+    );
   });
 });
 

@@ -18,6 +18,7 @@ import type {
   ProactiveEmailTestResult,
   NotificationWebhookConfig,
   RecoveryNotificationsConfig,
+  StaleEntityHunterPreferencesConfig,
   RolodexFollowUpNotificationsConfig,
   ReconFeedContentNotificationsConfig,
   ProactiveWebhookTestResult,
@@ -38,6 +39,12 @@ import type {
   CreateMessageRequest,
   EditMessageRequest,
   MessageTreeResponse,
+  RelevantNowData,
+  AmbientPresenceData,
+  AmbientActionResult,
+  AmbientSurface,
+  AmbientActionId,
+  AmbientEntityRef,
   ThreadContextUsage,
   UpdateThreadRequest,
 } from '@/types/chatbot';
@@ -217,15 +224,19 @@ class ApiClient {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError<{
         message?: string;
+        detail?: string | Record<string, unknown>;
         code?: string;
         details?: Record<string, unknown>;
       }>;
 
       if (axiosError.response) {
+        const responseData = axiosError.response.data;
+        const detailMessage =
+          typeof responseData?.detail === 'string' ? responseData.detail : undefined;
         return {
-          message: axiosError.response.data?.message || axiosError.message || 'Request failed',
-          code: axiosError.response.data?.code || `HTTP_${axiosError.response.status}`,
-          details: axiosError.response.data?.details,
+          message: responseData?.message || detailMessage || axiosError.message || 'Request failed',
+          code: responseData?.code || `HTTP_${axiosError.response.status}`,
+          details: responseData?.details,
         };
       }
 
@@ -631,6 +642,30 @@ class ApiClient {
     return this.get<ChatThread[]>('/assistant/threads');
   }
 
+  async getAssistantUnreadSummary(): Promise<
+    ApiResponse<import('@/types/api-contracts').AssistantUnreadSummary>
+  > {
+    return this.get<import('@/types/api-contracts').AssistantUnreadSummary>(
+      '/assistant/unread-summary'
+    );
+  }
+
+  async markAssistantThreadRead(
+    threadId: string
+  ): Promise<ApiResponse<import('@/types/api-contracts').MarkThreadReadResult>> {
+    return this.post<import('@/types/api-contracts').MarkThreadReadResult>(
+      `/assistant/threads/${threadId}/read`,
+      {}
+    );
+  }
+
+  async patchMetaImprovementProposal(
+    proposalId: string,
+    body: { status: string; prUrl?: string }
+  ): Promise<ApiResponse<Record<string, unknown>>> {
+    return this.patch<Record<string, unknown>>(`/meta/improvement-proposals/${proposalId}`, body);
+  }
+
   async getChatThread(id: string): Promise<ApiResponse<ChatThread>> {
     return this.get<ChatThread>(`/assistant/threads/${id}`);
   }
@@ -801,6 +836,109 @@ class ApiClient {
     return this.get<AssistantModelCatalogData>('/assistant/model-catalog');
   }
 
+  async getAssistantRelevantNow(): Promise<ApiResponse<RelevantNowData>> {
+    return this.get<RelevantNowData>('/assistant/relevant-now');
+  }
+
+  async getAssistantAmbient(surface: AmbientSurface): Promise<ApiResponse<AmbientPresenceData>> {
+    return this.get<AmbientPresenceData>(
+      `/assistant/ambient?surface=${encodeURIComponent(surface)}`
+    );
+  }
+
+  async postAssistantAmbientAction(body: {
+    surface: AmbientSurface;
+    whisperId: string;
+    actionId: AmbientActionId;
+    entityRef?: AmbientEntityRef;
+  }): Promise<ApiResponse<AmbientActionResult>> {
+    return this.post<AmbientActionResult>('/assistant/ambient/actions', body);
+  }
+
+  async postAssistantAmbientDismiss(body: {
+    surface: AmbientSurface;
+    whisperId: string;
+    ledgerEntryId?: string;
+  }): Promise<ApiResponse<{ dismissed: boolean }>> {
+    return this.post<{ dismissed: boolean }>('/assistant/ambient/dismiss', body);
+  }
+
+  async getPendingCoachEscalations(): Promise<
+    ApiResponse<{ escalations: import('@/types/chatbot').CoachEscalationPendingItem[] }>
+  > {
+    return this.get<{ escalations: import('@/types/chatbot').CoachEscalationPendingItem[] }>(
+      '/assistant/coach-escalations/pending'
+    );
+  }
+
+  async getAssistantInterventions(params?: {
+    status?: string;
+    kind?: string;
+    page?: number;
+    pageSize?: number;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<ApiResponse<import('@/types/api-contracts').AssistantInterventionListResult>> {
+    const search = new URLSearchParams();
+    if (params?.status) search.set('status', params.status);
+    if (params?.kind) search.set('kind', params.kind);
+    if (params?.page != null) search.set('page', String(params.page));
+    if (params?.pageSize != null) search.set('pageSize', String(params.pageSize));
+    if (params?.sortOrder) search.set('sortOrder', params.sortOrder);
+    const qs = search.toString();
+    const path = `/assistant/interventions${qs ? `?${qs}` : ''}`;
+    return this.get<import('@/types/api-contracts').AssistantInterventionListResult>(path);
+  }
+
+  async getAssistantInterventionUnreadCount(): Promise<ApiResponse<{ unreadCount: number }>> {
+    return this.get<{ unreadCount: number }>('/assistant/interventions/unread-count');
+  }
+
+  async markAssistantInterventionRead(
+    interventionId: string
+  ): Promise<ApiResponse<import('@/types/api-contracts').AssistantIntervention>> {
+    return this.post<import('@/types/api-contracts').AssistantIntervention>(
+      `/assistant/interventions/${interventionId}/read`,
+      {}
+    );
+  }
+
+  async dismissAssistantIntervention(
+    interventionId: string,
+    reason: string
+  ): Promise<ApiResponse<import('@/types/api-contracts').AssistantIntervention>> {
+    return this.post<import('@/types/api-contracts').AssistantIntervention>(
+      `/assistant/interventions/${interventionId}/dismiss`,
+      { reason }
+    );
+  }
+
+  async replyAssistantIntervention(
+    interventionId: string,
+    message: string
+  ): Promise<
+    ApiResponse<{
+      threadId: string;
+      intervention: import('@/types/api-contracts').AssistantIntervention;
+    }>
+  > {
+    return this.post<{
+      threadId: string;
+      intervention: import('@/types/api-contracts').AssistantIntervention;
+    }>(`/assistant/interventions/${interventionId}/reply`, { message });
+  }
+
+  async convertAssistantInterventionToChat(interventionId: string): Promise<
+    ApiResponse<{
+      threadId: string;
+      intervention: import('@/types/api-contracts').AssistantIntervention;
+    }>
+  > {
+    return this.post<{
+      threadId: string;
+      intervention: import('@/types/api-contracts').AssistantIntervention;
+    }>(`/assistant/interventions/${interventionId}/convert-to-chat`, {});
+  }
+
   async getProactiveAutomations(): Promise<ApiResponse<ProactiveAutomation[]>> {
     return this.get<ProactiveAutomation[]>('/proactive/automations');
   }
@@ -965,6 +1103,98 @@ class ApiClient {
     body: RecoveryNotificationsConfig
   ): Promise<ApiResponse<RecoveryNotificationsConfig>> {
     return this.put<RecoveryNotificationsConfig>('/preferences/recovery-notifications', body);
+  }
+
+  async getRecoveryMorningNudge(): Promise<
+    ApiResponse<import('@/types/api-contracts').RecoveryMorningNudgeConfig>
+  > {
+    return this.get<import('@/types/api-contracts').RecoveryMorningNudgeConfig>(
+      '/preferences/recovery-morning-nudge'
+    );
+  }
+
+  async setRecoveryMorningNudge(
+    body: import('@/types/api-contracts').RecoveryMorningNudgeConfig
+  ): Promise<ApiResponse<import('@/types/api-contracts').RecoveryMorningNudgeConfig>> {
+    return this.put<import('@/types/api-contracts').RecoveryMorningNudgeConfig>(
+      '/preferences/recovery-morning-nudge',
+      body
+    );
+  }
+
+  async getSleepDebtPreferences(): Promise<
+    ApiResponse<import('@/types/api-contracts').SleepDebtPreferencesConfig>
+  > {
+    return this.get<import('@/types/api-contracts').SleepDebtPreferencesConfig>(
+      '/preferences/sleep-debt'
+    );
+  }
+
+  async setSleepDebtPreferences(
+    body: import('@/types/api-contracts').SleepDebtPreferencesConfig
+  ): Promise<ApiResponse<import('@/types/api-contracts').SleepDebtPreferencesConfig>> {
+    return this.put<import('@/types/api-contracts').SleepDebtPreferencesConfig>(
+      '/preferences/sleep-debt',
+      body
+    );
+  }
+
+  async getAmbientStrictPlan(): Promise<
+    ApiResponse<import('@/types/api-contracts').AmbientStrictPlanConfig>
+  > {
+    return this.get<import('@/types/api-contracts').AmbientStrictPlanConfig>(
+      '/preferences/ambient-strict-plan'
+    );
+  }
+
+  async setAmbientStrictPlan(
+    body: import('@/types/api-contracts').SetAmbientStrictPlanRequest
+  ): Promise<ApiResponse<import('@/types/api-contracts').AmbientStrictPlanConfig>> {
+    return this.put<import('@/types/api-contracts').AmbientStrictPlanConfig>(
+      '/preferences/ambient-strict-plan',
+      body
+    );
+  }
+
+  async getCoachEscalationNotifications(): Promise<
+    ApiResponse<import('@/types/api-contracts').CoachEscalationNotificationsConfig>
+  > {
+    return this.get<import('@/types/api-contracts').CoachEscalationNotificationsConfig>(
+      '/preferences/coach-escalation-notifications'
+    );
+  }
+
+  async setCoachEscalationNotifications(
+    body: import('@/types/api-contracts').CoachEscalationNotificationsConfig
+  ): Promise<ApiResponse<import('@/types/api-contracts').CoachEscalationNotificationsConfig>> {
+    return this.put<import('@/types/api-contracts').CoachEscalationNotificationsConfig>(
+      '/preferences/coach-escalation-notifications',
+      body
+    );
+  }
+
+  async getStaleEntityHunterPreferences(): Promise<
+    ApiResponse<StaleEntityHunterPreferencesConfig>
+  > {
+    return this.get<StaleEntityHunterPreferencesConfig>('/preferences/stale-entity-hunter');
+  }
+
+  async setStaleEntityHunterPreferences(
+    body: StaleEntityHunterPreferencesConfig
+  ): Promise<ApiResponse<StaleEntityHunterPreferencesConfig>> {
+    return this.put<StaleEntityHunterPreferencesConfig>('/preferences/stale-entity-hunter', body);
+  }
+
+  async resolveAssistantDecision(
+    threadId: string,
+    messageId: string,
+    decisionId: string,
+    action: import('@/types/chatbot').DecisionAction
+  ): Promise<ApiResponse<ChatMessage>> {
+    return this.post<ChatMessage>(
+      `/assistant/threads/${threadId}/messages/${messageId}/decisions/${decisionId}/resolve`,
+      { action }
+    );
   }
 
   async getRolodexFollowUpNotifications(): Promise<

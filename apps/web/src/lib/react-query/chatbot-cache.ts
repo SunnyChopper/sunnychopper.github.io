@@ -172,6 +172,8 @@ export type ThreadMetadataWsPatch = {
   title: string;
   updatedAt: string;
   lastMessageAt?: string;
+  lastMessagePreview?: string;
+  lastMessageRole?: 'user' | 'assistant';
   activeLeafMessageId?: string;
 };
 
@@ -183,6 +185,8 @@ const mergeThreadMetadataPatch = (
   title: patch.title,
   updatedAt: patch.updatedAt,
   ...(patch.lastMessageAt ? { lastMessageAt: patch.lastMessageAt } : {}),
+  ...(patch.lastMessagePreview ? { lastMessagePreview: patch.lastMessagePreview } : {}),
+  ...(patch.lastMessageRole ? { lastMessageRole: patch.lastMessageRole } : {}),
   ...(patch.activeLeafMessageId ? { activeLeafMessageId: patch.activeLeafMessageId } : {}),
 });
 
@@ -221,6 +225,8 @@ export const upsertThreadMetadataFromWs = (
     createdAt: patch.updatedAt,
     updatedAt: patch.updatedAt,
     ...(patch.lastMessageAt ? { lastMessageAt: patch.lastMessageAt } : {}),
+    ...(patch.lastMessagePreview ? { lastMessagePreview: patch.lastMessagePreview } : {}),
+    ...(patch.lastMessageRole ? { lastMessageRole: patch.lastMessageRole } : {}),
     ...(patch.activeLeafMessageId ? { activeLeafMessageId: patch.activeLeafMessageId } : {}),
   });
 };

@@ -7,6 +7,7 @@ import type {
   CreateMessageRequest,
   EditMessageRequest,
   MessageTreeResponse,
+  RelevantNowData,
   ThreadContextUsage,
   UpdateThreadRequest,
 } from '@/types/chatbot';
@@ -16,7 +17,7 @@ import { apiClient } from '@/lib/api-client';
 export const chatbotService = {
   async getThreads(): Promise<ChatThread[]> {
     const response = await apiClient.getChatThreads();
-    if (response.success && response.data) {
+    if (response.success && Array.isArray(response.data)) {
       return response.data.sort((a, b) => threadRecencyMs(b) - threadRecencyMs(a));
     }
     if (response.error) {
@@ -81,6 +82,17 @@ export const chatbotService = {
       throw response.error;
     }
     throw new Error('Failed to fetch assistant model catalog');
+  },
+
+  async getRelevantNow(): Promise<RelevantNowData> {
+    const response = await apiClient.getAssistantRelevantNow();
+    if (response.success && response.data) {
+      return response.data;
+    }
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to fetch relevant now');
   },
 
   async getMessages(threadId: string): Promise<ChatMessage[]> {
@@ -168,5 +180,39 @@ export const chatbotService = {
       throw response.error;
     }
     throw new Error('Failed to compact thread context');
+  },
+
+  async getPendingCoachEscalations(): Promise<
+    import('@/types/chatbot').CoachEscalationPendingItem[]
+  > {
+    const response = await apiClient.getPendingCoachEscalations();
+    if (response.success && response.data) {
+      return response.data.escalations ?? [];
+    }
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to fetch pending coach escalations');
+  },
+
+  async resolveAssistantDecision(
+    threadId: string,
+    messageId: string,
+    decisionId: string,
+    action: import('@/types/chatbot').DecisionAction
+  ): Promise<ChatMessage> {
+    const response = await apiClient.resolveAssistantDecision(
+      threadId,
+      messageId,
+      decisionId,
+      action
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    if (response.error) {
+      throw response.error;
+    }
+    throw new Error('Failed to resolve decision');
   },
 };

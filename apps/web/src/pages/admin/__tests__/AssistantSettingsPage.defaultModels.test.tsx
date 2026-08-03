@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AssistantSettingsPage from '@/pages/admin/AssistantSettingsPage';
 import { apiClient } from '@/lib/api-client';
@@ -35,16 +35,16 @@ const catalog: AssistantModelCatalogData = {
       apiModelId: 'b',
       label: 'Model B',
       supportsReasoningStream: false,
-      speedScore: 5,
-      costScore: 5,
-      qualityScore: 5,
+      speedScore: 8,
+      costScore: 3,
+      qualityScore: 7,
     },
   ],
   defaults: { defaultReasoningModelId: 'openai:a', defaultResponseModelId: 'openai:b' },
 };
 
 const baseSettings: AssistantSettingsConfig = {
-  toolApproval: { mode: 'dangerousOnly', dangerousTools: [] },
+  toolApproval: { mode: 'dangerousOnly', dangerousTools: [], deniedReadTools: [] },
   memoryIngestion: {
     provider: 'groq',
     model: 'llama-3.1-8b-instant',
@@ -89,14 +89,64 @@ describe('AssistantSettingsPage default models', () => {
   it('renders Default models section after load', async () => {
     render(<AssistantSettingsPage />);
     expect(await screen.findByRole('heading', { name: 'Default models' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Reset to Auto (server default)' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Reset default models to Auto server default' })
+    ).toBeDisabled();
+  });
+
+  it('shows Current defaults summary in Auto mode', async () => {
+    render(<AssistantSettingsPage />);
+    await screen.findByRole('heading', { name: 'Default models' });
+    expect(screen.getByText('Current defaults')).toBeInTheDocument();
+    expect(screen.getByText('Auto · Intelligence')).toBeInTheDocument();
+  });
+
+  it('shows Current defaults with model labels in Manual mode', async () => {
+    render(<AssistantSettingsPage />);
+    await screen.findByRole('heading', { name: 'Default models' });
+    fireEvent.click(screen.getByRole('button', { name: /manual/i }));
+
+    const summaryBlock = screen.getByText('Current defaults').parentElement!;
+    expect(within(summaryBlock).getByText('Model A')).toBeInTheDocument();
+    expect(within(summaryBlock).getByText('Model B')).toBeInTheDocument();
+    expect(screen.getByText('Sort list by')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reasoning / planning' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Response' })).toBeInTheDocument();
+  });
+
+  it('updates Current defaults when Response model changes', async () => {
+    vi.mocked(apiClient.getAssistantSettings).mockResolvedValue({
+      success: true,
+      data: {
+        ...baseSettings,
+        defaultModels: {
+          mode: 'manual',
+          manual: { reasoningModelId: 'openai:a', responseModelId: 'openai:a' },
+        },
+        defaultModelsIsCustom: true,
+      },
+    });
+
+    render(<AssistantSettingsPage />);
+    await screen.findByRole('heading', { name: 'Default models' });
+
+    const responseTrigger = screen.getByRole('button', { name: 'Response' });
+    fireEvent.click(responseTrigger);
+
+    const option = await screen.findByRole('option', { name: /Model B/i });
+    fireEvent.click(within(option).getByRole('button'));
+
+    const summaryBlock = screen.getByText('Current defaults').parentElement!;
+    expect(within(summaryBlock).getAllByText('Model A')).toHaveLength(1);
+    expect(within(summaryBlock).getByText('Model B')).toBeInTheDocument();
   });
 
   it('saves defaultModels with the unified settings PUT', async () => {
     render(<AssistantSettingsPage />);
     await screen.findByRole('heading', { name: 'Default models' });
-    fireEvent.click(screen.getByRole('button', { name: 'manual' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Save all settings' }));
+    fireEvent.click(screen.getByRole('button', { name: /manual/i }));
+    expect(screen.getByTestId('assistant-settings-dirty-bar')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save all assistant settings' }));
 
     await waitFor(() => {
       expect(apiClient.setAssistantSettings).toHaveBeenCalledWith(
@@ -126,7 +176,9 @@ describe('AssistantSettingsPage default models', () => {
 
     render(<AssistantSettingsPage />);
     await screen.findByRole('heading', { name: 'Default models' });
-    const resetBtn = screen.getByRole('button', { name: 'Reset to Auto (server default)' });
+    const resetBtn = screen.getByRole('button', {
+      name: 'Reset default models to Auto server default',
+    });
     expect(resetBtn).toBeEnabled();
     fireEvent.click(resetBtn);
 

@@ -41,6 +41,7 @@ import { EmptyState } from '@/components/molecules/EmptyState';
 | `actionLabel` / `onAction` | Primary CTA |
 | `secondaryActionLabel` / `onSecondaryAction` | Optional secondary CTA |
 | `variant` | `'default'` (elevated) or `'onboarding'` (step cards + pro tips) |
+| `density` | `'default'` (`py-14`) or `'compact'` (`py-8`) — use `compact` for in-section fitness empties |
 
 ### Content Pipeline scene keys
 
@@ -54,6 +55,21 @@ import { EmptyState } from '@/components/molecules/EmptyState';
 | `queueEmpty` | Publish Queue has no scheduled items |
 
 Scenes live in `apps/web/src/components/molecules/empty-state/EmptyStateScenes.tsx`.
+
+### Health & Fitness scene keys
+
+Use `density="compact"` and **always** include a primary CTA. Contract: `docs/contracts/fitness-empty-state-system-contract-spec.md`.
+
+| Scene | Use when |
+|-------|----------|
+| `recoveryCheckIn` | No recovery row for selected day (`DailyRecoveryCard`) |
+| `pantryEmpty` | Pantry list empty after load (`PantryManager`) |
+| `auraCorrelation` | Aura chart gated (`n < 7` paired days) |
+| `rewardsQuickClaim` | No active manual reward rules |
+| `rewardsRules` | No reward rules configured |
+| `rewardsClaims` | No claims in last 14 days |
+
+**Knowledge Vault Inbox:** per-bucket empties use compact dashed `InboxBucketEmptyState` (not scene `EmptyState`); CTA focuses Quick Capture input.
 
 ## Context-specific patterns
 

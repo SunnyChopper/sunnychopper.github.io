@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   aggregateProfileStrengthSummary,
+  formatAppliedPlatformRuleNames,
   hasResolvedPlatformPolicy,
   normalizeToneMetrics,
   resolvePlatformRuleSource,
+  shouldShowUniversalFallbackNotice,
   summarizeProfileStrength,
 } from './profile-strength';
 
@@ -12,6 +14,26 @@ describe('normalizeToneMetrics', () => {
     expect(
       normalizeToneMetrics({ clarity: 0.8, warmth: 'high', authority: 0.5, humor: null })
     ).toEqual({ clarity: 0.8, authority: 0.5 });
+  });
+});
+
+describe('shouldShowUniversalFallbackNotice', () => {
+  it('shows for none and universalOnly, not profileOverlay', () => {
+    expect(shouldShowUniversalFallbackNotice('none')).toBe(true);
+    expect(shouldShowUniversalFallbackNotice('universalOnly')).toBe(true);
+    expect(shouldShowUniversalFallbackNotice('profileOverlay')).toBe(false);
+  });
+});
+
+describe('formatAppliedPlatformRuleNames', () => {
+  it('uses trimmed names and falls back to Untitled rule', () => {
+    expect(
+      formatAppliedPlatformRuleNames([
+        { name: '  Instagram baseline  ' },
+        { name: '' },
+        { name: null },
+      ])
+    ).toEqual(['Instagram baseline', 'Untitled rule', 'Untitled rule']);
   });
 });
 

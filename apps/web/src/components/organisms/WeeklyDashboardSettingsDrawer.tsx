@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, ChevronDown, ChevronUp, Plus, Trash2, X } from 'lucide-react';
 import Button from '@/components/atoms/Button';
+import DropdownMenuButton from '@/components/molecules/DropdownMenuButton';
 import { useGrowthSystemDashboard } from '@/hooks/useGrowthSystemDashboard';
 import {
   useWeeklyDashboardConfig,
@@ -359,18 +360,19 @@ export function WeeklyDashboardSettingsDrawer({
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(WIDGET_TYPE_LABELS) as WeeklyDashboardWidgetType[]).map((type) => (
-              <Button
-                key={type}
-                variant="secondary"
-                onClick={() => addWidget(type)}
-                className="inline-flex items-center gap-1 text-xs"
-              >
-                <Plus className="h-3 w-3" />
-                {WIDGET_TYPE_LABELS[type]}
-              </Button>
-            ))}
+          <div className="flex">
+            <DropdownMenuButton
+              label="Add widget"
+              align="start"
+              items={(Object.keys(WIDGET_TYPE_LABELS) as WeeklyDashboardWidgetType[]).map(
+                (type) => ({
+                  key: type,
+                  label: WIDGET_TYPE_LABELS[type],
+                  icon: Plus,
+                  onClick: () => addWidget(type),
+                })
+              )}
+            />
           </div>
         </div>
 

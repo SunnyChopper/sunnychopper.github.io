@@ -1,4 +1,4 @@
-import type { BrandPlatform } from '@/types/api/personal-branding.dto';
+import type { BrandPlatform, PlatformRuleRecord } from '@/types/api/personal-branding.dto';
 
 export function normalizeToneMetrics(
   values: Record<string, number | unknown>
@@ -18,6 +18,19 @@ export function resolvePlatformRuleSource(rules: { isUniversal: boolean }[]): Pl
     return 'universalOnly';
   }
   return 'profileOverlay';
+}
+
+export function shouldShowUniversalFallbackNotice(ruleSource: PlatformRuleSource): boolean {
+  return ruleSource !== 'profileOverlay';
+}
+
+export function formatAppliedPlatformRuleNames(
+  rules: Pick<PlatformRuleRecord, 'name'>[]
+): string[] {
+  return rules.map((rule) => {
+    const trimmed = rule.name?.trim();
+    return trimmed && trimmed.length > 0 ? trimmed : 'Untitled rule';
+  });
 }
 
 export interface ProfileStrengthSummaryInput {

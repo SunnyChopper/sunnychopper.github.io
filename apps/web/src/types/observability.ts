@@ -112,3 +112,50 @@ export interface ObservabilityRetryQueued {
   queued: boolean;
   message: string;
 }
+
+export type CostGuardrailScopeType = 'module' | 'feature';
+export type CostGuardrailPeriod = 'daily' | 'weekly';
+
+export interface CostGuardrailRuleInput {
+  id?: string;
+  enabled: boolean;
+  scopeType: CostGuardrailScopeType;
+  module: string;
+  feature?: string | null;
+  period: CostGuardrailPeriod;
+  limitUsd: number;
+  autoThrottle: boolean;
+}
+
+export interface CostGuardrailRuleStatus extends CostGuardrailRuleInput {
+  id: string;
+  spentUsd: number;
+  remainingUsd: number;
+  exceeded: boolean;
+  utilizationPct: number;
+  approaching: boolean;
+  periodStart: string | null;
+  periodEnd: string | null;
+  throttledFeatures: string[];
+}
+
+export interface CostGuardrailSpendSpike {
+  active: boolean;
+  message?: string | null;
+  bucketStart?: string | null;
+  multiplier?: number | null;
+  topFeature?: string | null;
+}
+
+export interface CostGuardrailBanner {
+  active: boolean;
+  messages: string[];
+}
+
+export interface CostGuardrailStatus {
+  rules: CostGuardrailRuleStatus[];
+  banner: CostGuardrailBanner;
+  throttleAllowlist: string[];
+  overrides: Record<string, { forceEnabledUntil?: string; manualPaused?: boolean }>;
+  spendSpike?: CostGuardrailSpendSpike | null;
+}

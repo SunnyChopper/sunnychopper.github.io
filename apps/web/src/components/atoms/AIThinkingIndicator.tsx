@@ -21,15 +21,15 @@ export function AIThinkingIndicator({
     <div className={`inline-flex items-center ${config.gap} ${className}`}>
       <div className="flex items-center gap-1">
         <span
-          className={`${config.dot} rounded-full bg-purple-500 animate-bounce`}
+          className={`${config.dot} rounded-full bg-purple-500 motion-safe:animate-bounce motion-reduce:animate-none`}
           style={{ animationDelay: '0ms', animationDuration: '1s' }}
         />
         <span
-          className={`${config.dot} rounded-full bg-purple-500 animate-bounce`}
+          className={`${config.dot} rounded-full bg-purple-500 motion-safe:animate-bounce motion-reduce:animate-none`}
           style={{ animationDelay: '200ms', animationDuration: '1s' }}
         />
         <span
-          className={`${config.dot} rounded-full bg-purple-500 animate-bounce`}
+          className={`${config.dot} rounded-full bg-purple-500 motion-safe:animate-bounce motion-reduce:animate-none`}
           style={{ animationDelay: '400ms', animationDuration: '1s' }}
         />
       </div>

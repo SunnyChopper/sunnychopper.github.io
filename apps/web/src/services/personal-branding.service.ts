@@ -22,6 +22,12 @@ import type {
   ContentIdea,
   ContentIdeationJob,
   ContentIdeationJobStart,
+  ContentStreamFeedback,
+  ContentStreamJob,
+  ContentStreamJobStart,
+  ContentStreamPost,
+  ContentStreamPostStatus,
+  ContentStreamSettings,
   ContentImageInjectJob,
   ContentImageInjectJobStart,
   ContentKeywordOptimizationJob,
@@ -104,6 +110,7 @@ import type {
   FollowSuggestionConnectionDraft,
   FollowSuggestionListResponse,
   ReconFeedSettings,
+  SyncCadence,
   ReconPost,
   ReconPostListResponse,
   ReconRunListResponse,
@@ -119,6 +126,8 @@ import type {
   GenerateTopicSuggestionsResult,
   PlatformRuleSetPreviewInput,
   PlatformRuleSetPreviewResult,
+  PlatformRuleSetInfluenceInput,
+  PlatformRuleSetInfluenceResult,
   SuggestPlatformFitInput,
   PlatformFitSuggestionsResult,
   GenerateVaultIdeasInput,
@@ -146,6 +155,8 @@ import type {
   RolodexResponseVectorInput,
   RolodexResponseVectorsResult,
   CreateReplyRunInput,
+  ResolveXContentInput,
+  ResolveXContentResult,
   ReplyRun,
   ReplySuggestion,
   UpdateReplySuggestionInput,
@@ -802,6 +813,19 @@ export const personalBrandingService = {
     return res.data.data.result;
   },
 
+  annotatePlatformRuleSetInfluence: async (
+    body: PlatformRuleSetInfluenceInput
+  ): Promise<PlatformRuleSetInfluenceResult> => {
+    const res = await apiClient.post<{ data: { result: PlatformRuleSetInfluenceResult } }>(
+      '/ai/personal-branding/platform-rule-set-influence',
+      body
+    );
+    if (!res.success || !res.data?.data?.result) {
+      throw new Error(res.error?.message ?? 'Failed to analyze rule influence');
+    }
+    return res.data.data.result;
+  },
+
   suggestPlatformFit: async (
     body: SuggestPlatformFitInput
   ): Promise<PlatformFitSuggestionsResult> => {
@@ -844,6 +868,82 @@ export const personalBrandingService = {
   getContentIdeationJob: async (jobId: string): Promise<ContentIdeationJob> =>
     unwrap(
       await apiClient.get<ContentIdeationJob>(`/personal-branding/content-ideas/jobs/${jobId}`)
+    ),
+
+  getContentStreamSettings: async (platform: BrandPlatform = 'x'): Promise<ContentStreamSettings> =>
+    unwrap(
+      await apiClient.get<ContentStreamSettings>(
+        `/personal-branding/content-stream/settings?platform=${platform}`
+      )
+    ),
+
+  updateContentStreamSettings: async (
+    body: Partial<{
+      enabled: boolean;
+      xUsername: string | null;
+      brandProfileId: string | null;
+      postsPerDay: number;
+      syncCadence: SyncCadence;
+      syncStartTime: string | null;
+      syncEndTime: string | null;
+      syncTimezone: string | null;
+      syncIntervalHours: number | null;
+    }>,
+    platform: BrandPlatform = 'x'
+  ): Promise<ContentStreamSettings> =>
+    unwrap(
+      await apiClient.patch<ContentStreamSettings>(
+        `/personal-branding/content-stream/settings?platform=${platform}`,
+        body
+      )
+    ),
+
+  listContentStreamPosts: async (
+    platform: BrandPlatform = 'x',
+    page = 1,
+    pageSize = 20,
+    status?: ContentStreamPostStatus
+  ): Promise<PaginatedPersonalBranding<ContentStreamPost>> =>
+    unwrap(
+      await apiClient.get<PaginatedPersonalBranding<ContentStreamPost>>(
+        `/personal-branding/content-stream/posts?${new URLSearchParams({
+          platform,
+          page: String(page),
+          pageSize: String(pageSize),
+          ...(status ? { status } : {}),
+        }).toString()}`
+      )
+    ),
+
+  updateContentStreamPostFeedback: async (
+    postId: string,
+    feedback: ContentStreamFeedback
+  ): Promise<ContentStreamPost> =>
+    unwrap(
+      await apiClient.patch<ContentStreamPost>(
+        `/personal-branding/content-stream/posts/${postId}/feedback`,
+        { feedback }
+      )
+    ),
+
+  startContentStreamGenerate: async (body?: {
+    platform?: BrandPlatform;
+    count?: number;
+    force?: boolean;
+  }): Promise<ContentStreamJobStart> => {
+    const res = await apiClient.post<ContentStreamJobStart>(
+      '/personal-branding/content-stream/generate',
+      { platform: 'x', ...body }
+    );
+    if (!res.success || !res.data?.jobId) {
+      throw new Error(formatApiFailure(res.error, 'Failed to start Content Stream generation'));
+    }
+    return res.data;
+  },
+
+  getContentStreamJob: async (jobId: string): Promise<ContentStreamJob> =>
+    unwrap(
+      await apiClient.get<ContentStreamJob>(`/personal-branding/content-stream/jobs/${jobId}`)
     ),
 
   injectContentImages: async (
@@ -1452,6 +1552,14 @@ export const personalBrandingService = {
     }
     return payload as ReplyRun;
   },
+
+  resolveXContent: async (body: ResolveXContentInput): Promise<ResolveXContentResult> =>
+    unwrap(
+      await apiClient.post<ResolveXContentResult>(
+        '/personal-branding/rolodex/resolve-x-content',
+        body
+      )
+    ),
 
   getReplyRun: async (runId: string): Promise<ReplyRun> =>
     unwrap(await apiClient.get<ReplyRun>(`/personal-branding/rolodex/reply-runs/${runId}`)),

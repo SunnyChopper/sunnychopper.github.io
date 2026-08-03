@@ -32,11 +32,9 @@ export function getResolvedApiBaseUrl(): string {
 }
 
 export function getResolvedWsUrl(): string | undefined {
-  if (import.meta.env.PROD) {
-    return CANONICAL_PROD_WS_URL;
-  }
   const explicit = import.meta.env.VITE_WS_URL;
   if (explicit) return explicit;
   if (import.meta.env.DEV) return HOSTED_DEV_WS_URL;
+  if (import.meta.env.PROD) return CANONICAL_PROD_WS_URL;
   return undefined;
 }

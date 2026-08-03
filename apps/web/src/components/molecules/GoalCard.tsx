@@ -25,6 +25,8 @@ import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
 import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
 import { formatDateString } from '@/utils/date-formatters';
+import { EntityExplainButton } from '@/components/molecules/EntityExplainButton';
+import { useEntityExplainChatOptional } from '@/contexts/EntityExplainChatContext';
 
 interface GoalCardProps {
   goal: Goal;
@@ -48,6 +50,7 @@ export function GoalCard({
   onQuickAction,
 }: GoalCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const explainChat = useEntityExplainChatOptional();
 
   // Fallback progress calculation if not provided
   const criteriaProgress =
@@ -216,9 +219,9 @@ export function GoalCard({
         </div>
       </div>
 
-      {/* Quick Action Buttons (on hover) */}
+      {/* Explain + quick actions (on hover) */}
       <AnimatePresence>
-        {isHovered && onQuickAction && (
+        {isHovered && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -226,24 +229,48 @@ export function GoalCard({
             transition={{ duration: 0.2 }}
             className="absolute top-2 right-2 flex gap-2"
           >
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={(e) => handleQuickAction(e, 'add_task')}
-              className="p-2 bg-white dark:bg-gray-700 rounded-full shadow-lg border border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-500 transition-colors"
-              title="Add Task"
-            >
-              <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={(e) => handleQuickAction(e, 'log_metric')}
-              className="p-2 bg-white dark:bg-gray-700 rounded-full shadow-lg border border-gray-200 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-500 transition-colors"
-              title="Log Metric"
-            >
-              <Activity className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-            </motion.button>
+            {explainChat ? (
+              <EntityExplainButton
+                entityType="goal"
+                entityTitle={goal.title}
+                alwaysVisible
+                className="rounded-full border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-600 dark:bg-gray-700"
+                onClick={() =>
+                  explainChat.open({
+                    entityType: 'goal',
+                    entity: goal,
+                    goalEnrichment: {
+                      linkedCounts,
+                      progressPercent: overallProgress,
+                      daysRemaining,
+                      momentum,
+                    },
+                  })
+                }
+              />
+            ) : null}
+            {onQuickAction ? (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => handleQuickAction(e, 'add_task')}
+                  className="p-2 bg-white dark:bg-gray-700 rounded-full shadow-lg border border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-500 transition-colors"
+                  title="Add Task"
+                >
+                  <Plus className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => handleQuickAction(e, 'log_metric')}
+                  className="p-2 bg-white dark:bg-gray-700 rounded-full shadow-lg border border-gray-200 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/30 hover:border-green-500 transition-colors"
+                  title="Log Metric"
+                >
+                  <Activity className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+                </motion.button>
+              </>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>

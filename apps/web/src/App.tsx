@@ -37,6 +37,7 @@ import {
   ComponentsDemoPage,
   ConceptColliderPage,
   ContentPipelinePage,
+  ContentStreamPage,
   ContentWorkbenchPage,
   CourseDetailPage,
   CourseGeneratorPage,
@@ -78,6 +79,7 @@ import {
   PlannerPage,
   PostmanPage,
   ProactiveAutomationsPage,
+  InterventionsPage,
   ProjectsPage,
   ProjectLabsPage,
   RegexPage,
@@ -329,6 +331,14 @@ function AppContent() {
               }
             />
             <Route
+              path="content-stream"
+              element={
+                <AdminRouteSuspense>
+                  <ContentStreamPage />
+                </AdminRouteSuspense>
+              }
+            />
+            <Route
               path="radar"
               element={
                 <AdminRouteSuspense>
@@ -490,6 +500,14 @@ function AppContent() {
             element={
               <AdminRouteSuspense>
                 <ProactiveAutomationsPage />
+              </AdminRouteSuspense>
+            }
+          />
+          <Route
+            path={ADMIN_CHILD_ROUTES.assistantInterventions}
+            element={
+              <AdminRouteSuspense>
+                <InterventionsPage />
               </AdminRouteSuspense>
             }
           />

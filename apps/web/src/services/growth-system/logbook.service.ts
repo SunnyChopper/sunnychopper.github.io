@@ -4,6 +4,8 @@ import type {
   CreateLogbookEntryInput,
   UpdateLogbookEntryInput,
   LogbookMood,
+  LogbookLinkedEntity,
+  LogbookEntityLinkSuggestions,
 } from '@/types/growth-system';
 import type { ApiResponse, ApiListResponse } from '@/types/api-contracts';
 
@@ -23,6 +25,7 @@ interface BackendLogbookEntry {
   notes: string | null;
   mood: LogbookMood | null;
   energyLevel?: number | null;
+  linkedEntities?: LogbookLinkedEntity[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -125,6 +128,7 @@ export const logbookService = {
       notes?: string;
       mood?: LogbookMood;
       energyLevel?: number;
+      linkedEntities?: LogbookLinkedEntity[];
     } = {
       date: input.date,
     };
@@ -132,6 +136,7 @@ export const logbookService = {
     if (input.notes !== undefined) requestBody.notes = input.notes;
     if (input.mood !== undefined) requestBody.mood = input.mood;
     if (input.energy !== undefined) requestBody.energyLevel = input.energy;
+    if (input.linkedEntities !== undefined) requestBody.linkedEntities = input.linkedEntities;
     const response = await apiClient.post<BackendLogbookEntry>('/logbook', requestBody);
     if (response.success && response.data) {
       return {
@@ -155,6 +160,7 @@ export const logbookService = {
     if (input.notes !== undefined) requestBody.notes = input.notes;
     if (input.mood !== undefined) requestBody.mood = input.mood;
     if (input.energy !== undefined) requestBody.energyLevel = input.energy;
+    if (input.linkedEntities !== undefined) requestBody.linkedEntities = input.linkedEntities;
     const response = await apiClient.patch<BackendLogbookEntry>(`/logbook/${id}`, requestBody);
     if (response.success && response.data) {
       return {
@@ -238,5 +244,16 @@ export const logbookService = {
       success: false,
       error: { code: 'NOT_FOUND', message: 'Link not found' },
     };
+  },
+
+  async suggestLinks(body: {
+    notes: string;
+    title?: string;
+    mood?: LogbookMood;
+    energyLevel?: number;
+    limit?: number;
+    useCache?: boolean;
+  }): Promise<ApiResponse<LogbookEntityLinkSuggestions>> {
+    return apiClient.post<LogbookEntityLinkSuggestions>('/ai/logbook/suggest-links', body);
   },
 };

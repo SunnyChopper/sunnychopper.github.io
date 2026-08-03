@@ -101,9 +101,25 @@ export const practiceArtifactsService = {
       status?: PracticeArtifactStatus;
       estimatedMinutes?: number;
       completedAt?: string | null;
+      area?: Area;
+      tags?: string[];
     }
   ) {
     return apiClient.patch<HomeworkAssignment>(`/knowledge/homework/${homeworkId}`, patch);
+  },
+
+  async updatePracticeSet(
+    id: string,
+    patch: { tags?: string[]; area?: Area; status?: PracticeArtifactStatus }
+  ) {
+    return apiClient.patch<PracticeQuestionSet>(`/knowledge/practice-question-sets/${id}`, patch);
+  },
+
+  async updateQuiz(
+    id: string,
+    patch: { tags?: string[]; area?: Area; status?: PracticeArtifactStatus }
+  ) {
+    return apiClient.patch<QuizArtifact>(`/knowledge/quizzes/${id}`, patch);
   },
 
   async convertHomeworkToTask(

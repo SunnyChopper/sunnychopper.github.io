@@ -4,6 +4,8 @@ import { formatProactiveLocalTime12h } from '@/lib/proactive/format-proactive-ti
 const KIND_LABELS: Record<ProactiveAutomationKind, string> = {
   dailyBriefing: 'Daily briefing',
   logbookEvening: 'Evening logbook',
+  tomorrowPrep: 'Tomorrow prep',
+  staleEntityHunter: 'Stale entity hunter',
   custom: 'Custom automation',
   dailyLearningTrends: 'Daily learning — trends',
   dailyLearningTheory: 'Daily learning — theory',
@@ -19,6 +21,8 @@ function readKind(obj: Record<string, unknown>): ProactiveAutomationKind | undef
   if (
     k === 'dailyBriefing' ||
     k === 'logbookEvening' ||
+    k === 'tomorrowPrep' ||
+    k === 'staleEntityHunter' ||
     k === 'custom' ||
     k === 'dailyLearningTrends' ||
     k === 'dailyLearningTheory'

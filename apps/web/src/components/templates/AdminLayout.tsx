@@ -5,6 +5,8 @@ import { queryKeys } from '@/lib/react-query/query-keys';
 import { useAuth } from '@/contexts/Auth';
 import { useMode } from '@/contexts/Mode';
 import { AdminShellProvider, useAdminShell } from '@/contexts/AdminShellContext';
+import { EntityExplainChatProvider } from '@/contexts/EntityExplainChatContext';
+import { AmbientAskProvider } from '@/contexts/AmbientAskContext';
 import {
   LayoutDashboard,
   CheckSquare,
@@ -22,6 +24,7 @@ import {
   ChevronDown,
   ChevronRight,
   MessageCircle,
+  PanelRight,
   Command,
   Film,
   Star,
@@ -43,6 +46,7 @@ import {
   ClipboardList,
   Shield,
   Zap,
+  Bell,
   Link2,
   Newspaper,
   BarChart2,
@@ -57,11 +61,20 @@ import {
   Share2,
   Radio,
   Users,
+  Waves,
   FlaskConical,
 } from 'lucide-react';
 import LeisureModeToggle from '@/components/atoms/LeisureModeToggle';
 import { WalletWidget } from '@/components/molecules/WalletWidget';
 import { BackendStatusBanner } from '@/components/molecules/BackendStatusBanner';
+import CostGuardrailBanner from '@/components/molecules/observability/CostGuardrailBanner';
+import { CoachEscalationModal } from '@/components/organisms/CoachEscalationModal';
+import { InterventionCenterDrawer } from '@/components/organisms/assistant/InterventionCenterDrawer';
+import { InterventionBellButton } from '@/components/molecules/assistant/InterventionBellButton';
+import { AssistantNavUnreadBadge } from '@/components/molecules/assistant/AssistantNavUnreadBadge';
+import { AssistantNewMessageToast } from '@/components/molecules/assistant/AssistantNewMessageToast';
+import { useAssistantInterventionUnreadCount } from '@/hooks/chatbot/useAssistantInterventions';
+import { useAssistantUnreadSummary } from '@/hooks/chatbot/useAssistantUnreadSummary';
 import { ROUTES } from '@/routes';
 import { cn } from '@/lib/utils';
 import { taskLinksService } from '@/services/knowledge-vault/task-links.service';
@@ -151,6 +164,7 @@ const workNavigation: NavItem[] = [
     children: [
       { name: 'Settings', href: ROUTES.admin.assistantToolSafety, icon: Shield },
       { name: 'Proactive', href: ROUTES.admin.assistantProactive, icon: Zap },
+      { name: 'Interventions', href: ROUTES.admin.assistantInterventions, icon: Bell },
       { name: 'Observability', href: ROUTES.admin.assistantObservability, icon: BarChart2 },
       { name: 'Sandbox', href: ROUTES.admin.assistantSandbox, icon: Play },
       { name: 'Memory Audit', href: ROUTES.admin.memoryAudit, icon: ClipboardList },
@@ -192,6 +206,11 @@ const workNavigation: NavItem[] = [
         name: 'Content Pipeline',
         href: ROUTES.admin.personalBrandingPipeline,
         icon: Share2,
+      },
+      {
+        name: 'Content Stream',
+        href: ROUTES.admin.personalBrandingContentStream,
+        icon: Waves,
       },
       { name: 'Signal Radar', href: ROUTES.admin.personalBrandingRadar, icon: Radio },
       { name: 'Rolodex', href: ROUTES.admin.personalBrandingRolodex, icon: Users },
@@ -265,6 +284,7 @@ const leisureNavigation: NavItem[] = [
     children: [
       { name: 'Settings', href: ROUTES.admin.assistantToolSafety, icon: Shield },
       { name: 'Proactive', href: ROUTES.admin.assistantProactive, icon: Zap },
+      { name: 'Interventions', href: ROUTES.admin.assistantInterventions, icon: Bell },
       { name: 'Observability', href: ROUTES.admin.assistantObservability, icon: BarChart2 },
       { name: 'Sandbox', href: ROUTES.admin.assistantSandbox, icon: Play },
       { name: 'Memory Audit', href: ROUTES.admin.memoryAudit, icon: ClipboardList },
@@ -308,12 +328,23 @@ function AdminLayoutContent() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { isLeisureMode } = useMode();
-  const { mainNavOpen, toggleMainNav, closeMainNav, assistantChatsOpen, toggleAssistantChats } =
-    useAdminShell();
+  const {
+    mainNavOpen,
+    toggleMainNav,
+    closeMainNav,
+    assistantChatsOpen,
+    toggleAssistantChats,
+    assistantRelevantNowOpen,
+    toggleAssistantRelevantNow,
+  } = useAdminShell();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   /** When user collapses a group while the route would keep it open, store pathname at collapse time so it clears on navigation without an effect. */
   const [routeCollapsedAt, setRouteCollapsedAt] = useState<Record<string, string>>({});
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [interventionDrawerOpen, setInterventionDrawerOpen] = useState(false);
+  const interventionUnreadQ = useAssistantInterventionUnreadCount();
+  const assistantUnreadQ = useAssistantUnreadSummary();
+  const assistantUnreadCount = assistantUnreadQ.data?.totalUnread ?? 0;
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const stored = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
     return stored
@@ -618,15 +649,24 @@ function AdminLayoutContent() {
       <Suspense fallback={null}>
         <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       </Suspense>
+      <InterventionCenterDrawer
+        open={interventionDrawerOpen}
+        onClose={() => setInterventionDrawerOpen(false)}
+      />
       <Suspense fallback={null}>
         <DebugInspector />
       </Suspense>
+      <AssistantNewMessageToast isAssistantRoute={isAssistantRoute} />
 
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 pt-safe">
         <div className="px-4 py-3 flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Personal OS</h1>
           <div className="flex items-center gap-2">
             <WalletWidget />
+            <InterventionBellButton
+              unreadCount={interventionUnreadQ.data ?? 0}
+              onClick={() => setInterventionDrawerOpen(true)}
+            />
             <button
               onClick={() => setCommandPaletteOpen(true)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
@@ -634,6 +674,16 @@ function AdminLayoutContent() {
             >
               <Command size={20} />
             </button>
+            {isAssistantRoute && (
+              <button
+                onClick={toggleAssistantRelevantNow}
+                aria-label="Open relevant context"
+                aria-expanded={assistantRelevantNowOpen}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <PanelRight size={20} />
+              </button>
+            )}
             {isAssistantRoute && (
               <button
                 onClick={toggleAssistantChats}
@@ -687,8 +737,12 @@ function AdminLayoutContent() {
             >
               {user?.email?.includes('@') ? user.email : user ? 'Signed in' : ''}
             </p>
-            <div className="mt-3 flex justify-center">
+            <div className="mt-3 flex justify-center gap-2">
               <WalletWidget />
+              <InterventionBellButton
+                unreadCount={interventionUnreadQ.data ?? 0}
+                onClick={() => setInterventionDrawerOpen(true)}
+              />
             </div>
             <button
               onClick={() => setCommandPaletteOpen(true)}
@@ -733,6 +787,9 @@ function AdminLayoutContent() {
                           </span>
                           <span className="flex-1 text-left truncate flex items-center gap-2">
                             {item.name}
+                            {item.href === ROUTES.admin.assistant && (
+                              <AssistantNavUnreadBadge count={assistantUnreadCount} />
+                            )}
                             {item.name === 'Knowledge Vault' && vaultLinkBadge > 0 && (
                               <span
                                 className="shrink-0 text-[10px] font-semibold bg-amber-500 text-white rounded-full px-1.5 py-0.5"
@@ -820,6 +877,8 @@ function AdminLayoutContent() {
           <div
             className={cn(
               'flex h-full w-full min-h-0 min-w-0 flex-1 flex-col px-6 pb-12 lg:px-12',
+              'transition-[padding] duration-200 motion-reduce:transition-none',
+              'lg:pr-[calc(1.5rem+var(--entity-explain-inset,0px))] xl:pr-[calc(3rem+var(--entity-explain-inset,0px))]',
               isCompactAdminOutlet ? 'pt-12 lg:pt-4' : 'pt-20 lg:pt-8'
             )}
           >
@@ -829,6 +888,8 @@ function AdminLayoutContent() {
                 isCompactAdminOutlet ? '-mt-4 lg:-mt-2' : '-mt-6 lg:-mt-8'
               )}
             />
+            <CostGuardrailBanner className="-mx-6 lg:-mx-12 mb-6 shrink-0" />
+            <CoachEscalationModal />
             <div className="flex h-full w-full min-h-0 min-w-0 flex-1 flex-col">
               <Outlet />
             </div>
@@ -842,7 +903,11 @@ function AdminLayoutContent() {
 export default function AdminLayout() {
   return (
     <AdminShellProvider>
-      <AdminLayoutContent />
+      <EntityExplainChatProvider>
+        <AmbientAskProvider>
+          <AdminLayoutContent />
+        </AmbientAskProvider>
+      </EntityExplainChatProvider>
     </AdminShellProvider>
   );
 }

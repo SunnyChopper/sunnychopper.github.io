@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from 'lucide-react';
 import type { Task } from '@/types/growth-system';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
@@ -11,6 +11,18 @@ import { extractDateOnly, toLocalDateKey } from '@/utils/date-formatters';
 
 const VISIBLE_TASKS_PER_DAY = 2;
 
+const CELL_MIN_HEIGHT = 'min-h-[100px] sm:min-h-[120px]';
+
+const WEEK_DAYS = [
+  { short: 'S', full: 'Sun' },
+  { short: 'M', full: 'Mon' },
+  { short: 'T', full: 'Tue' },
+  { short: 'W', full: 'Wed' },
+  { short: 'T', full: 'Thu' },
+  { short: 'F', full: 'Fri' },
+  { short: 'S', full: 'Sat' },
+] as const;
+
 interface TaskCalendarViewProps {
   tasks: Task[];
   isLoading?: boolean;
@@ -19,12 +31,20 @@ interface TaskCalendarViewProps {
   initialMonth?: Date;
 }
 
+function isTaskDueInMonth(task: Task, year: number, month: number): boolean {
+  if (!task.dueDate) return false;
+  const dateOnly = extractDateOnly(task.dueDate);
+  const [taskYear, taskMonth] = dateOnly.split('-').map(Number);
+  return taskYear === year && taskMonth - 1 === month;
+}
+
 export function TaskCalendarView({
   tasks,
   isLoading = false,
   onTaskClick,
   initialMonth,
 }: TaskCalendarViewProps) {
+  const shouldReduceMotion = useReducedMotion();
   const [currentDate, setCurrentDate] = useState(() => initialMonth ?? new Date());
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
@@ -60,7 +80,9 @@ export function TaskCalendarView({
 
   const [monthKey, setMonthKey] = useState(0);
   const handleMonthChange = (direction: 'prev' | 'next') => {
-    setMonthKey((prev) => prev + 1);
+    if (!shouldReduceMotion) {
+      setMonthKey((prev) => prev + 1);
+    }
     setExpandedDate(null);
     navigateMonth(direction);
   };
@@ -83,73 +105,89 @@ export function TaskCalendarView({
     days.push(day);
   }
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const tasksInVisibleMonth = useMemo(
+    () => tasks.filter((task) => isTaskDueInMonth(task, year, month)).length,
+    [tasks, year, month]
+  );
 
   const tasksWithDates = tasks.filter((t) => t.dueDate).length;
 
+  const rootMotionProps = shouldReduceMotion
+    ? {}
+    : { initial: { opacity: 0 }, animate: { opacity: 1 } };
+
+  const headerMotionProps = shouldReduceMotion
+    ? {}
+    : { initial: { opacity: 0, x: -10 }, animate: { opacity: 1, x: 0 } };
+
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
+      {...rootMotionProps}
+      className="relative min-w-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm"
     >
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-3"
-        >
-          <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+        <motion.div {...headerMotionProps} className="flex items-center gap-3 min-w-0">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg shrink-0">
             <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           </div>
-          <div>
-            <AnimatePresence mode="wait">
-              <motion.h2
-                key={monthKey}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="text-xl font-bold text-gray-900 dark:text-white"
-              >
+          <div className="min-w-0">
+            {shouldReduceMotion ? (
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
                 {monthName}
-              </motion.h2>
-            </AnimatePresence>
+              </h2>
+            ) : (
+              <AnimatePresence mode="wait">
+                <motion.h2
+                  key={monthKey}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate"
+                >
+                  {monthName}
+                </motion.h2>
+              </AnimatePresence>
+            )}
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {isLoading ? (
                 <span className="inline-block h-4 w-36 rounded bg-gray-200 dark:bg-gray-600 animate-pulse" />
               ) : (
                 <>
-                  {tasksWithDates} {tasksWithDates === 1 ? 'task' : 'tasks'} scheduled
+                  {tasksInVisibleMonth} {tasksInVisibleMonth === 1 ? 'task' : 'tasks'} scheduled
                 </>
               )}
             </p>
           </div>
         </motion.div>
-        <div className="flex items-center gap-2">
-          <motion.div whileTap={{ scale: 0.95 }} whileHover={{ scale: 1.02 }}>
-            <Button variant="secondary" size="sm" onClick={goToToday} className="min-h-[44px]">
-              Today
-            </Button>
-          </motion.div>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={goToToday}
+            aria-current={isCurrentMonth ? 'date' : undefined}
+            className={cn('min-h-[44px]', isCurrentMonth && 'opacity-70')}
+          >
+            Today
+          </Button>
           <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.05 }}
+            <button
+              type="button"
               onClick={() => handleMonthChange('prev')}
+              aria-label="Previous month"
               className="p-2 min-h-[44px] min-w-[44px] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
             >
               <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </motion.button>
-            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              whileHover={{ scale: 1.05 }}
+            </button>
+            <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
+            <button
+              type="button"
               onClick={() => handleMonthChange('next')}
+              aria-label="Next month"
               className="p-2 min-h-[44px] min-w-[44px] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
             >
               <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </motion.button>
+            </button>
           </div>
         </div>
       </div>
@@ -160,9 +198,9 @@ export function TaskCalendarView({
             <motion.div
               key="calendar-overflow-backdrop"
               data-testid="calendar-overflow-backdrop"
-              initial={{ opacity: 0 }}
+              initial={shouldReduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              exit={shouldReduceMotion ? undefined : { opacity: 0 }}
               className={cn('fixed inset-0', overlayBackdropClassName)}
               aria-hidden
               onClick={() => setExpandedDate(null)}
@@ -171,27 +209,31 @@ export function TaskCalendarView({
         )}
       </AnimatePresence>
 
-      <div className="p-4">
-        <div className="grid grid-cols-7 gap-2">
-          {weekDays.map((day) => (
+      <div className="p-2 sm:p-4 min-w-0">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+          {WEEK_DAYS.map((day) => (
             <div
-              key={day}
-              className="text-center font-bold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-400 py-3"
+              key={day.full}
+              className="text-center font-bold text-[10px] sm:text-xs uppercase tracking-wider text-gray-600 dark:text-gray-400 py-2 sm:py-3"
             >
-              {day}
+              <span className="sm:hidden">{day.short}</span>
+              <span className="hidden sm:inline">{day.full}</span>
             </div>
           ))}
 
           {days.map((day, index) => {
             if (day === null) {
-              return <div key={`empty-${index}`} className="aspect-square" />;
+              return <div key={`empty-${index}`} className={CELL_MIN_HEIGHT} />;
             }
 
             if (isLoading) {
               return (
                 <div
                   key={`sk-${day}`}
-                  className="aspect-square border-2 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/80 animate-pulse"
+                  className={cn(
+                    CELL_MIN_HEIGHT,
+                    'border-2 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/80 animate-pulse'
+                  )}
                 />
               );
             }
@@ -210,60 +252,86 @@ export function TaskCalendarView({
               day: 'numeric',
             });
 
+            const cellMotionProps = shouldReduceMotion
+              ? {}
+              : {
+                  initial: { opacity: 0, scale: 0.9 },
+                  animate: { opacity: 1, scale: 1 },
+                  transition: { delay: index * 0.01 },
+                };
+
             return (
               <motion.div
                 key={day}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.01 }}
-                whileHover={isExpanded ? undefined : { scale: 1.05 }}
-                whileTap={isExpanded ? undefined : { scale: 0.95 }}
-                className={`relative aspect-square border-2 rounded-lg p-2 transition-all ${
-                  isExpanded ? 'z-50' : 'z-10'
-                } ${
+                {...cellMotionProps}
+                className={cn(
+                  'relative border-2 rounded-lg p-1 sm:p-2 transition-colors',
+                  CELL_MIN_HEIGHT,
+                  isExpanded ? 'z-50' : 'z-10',
                   isToday
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                     : hasTasks
-                      ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm'
+                      ? 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-blue-400 dark:hover:border-blue-500'
                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
-                }`}
+                )}
               >
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full min-w-0">
                   <div
-                    className={`text-sm font-bold mb-1 ${
+                    className={cn(
+                      'inline-flex items-center justify-center text-sm font-bold mb-1 shrink-0',
                       isToday
-                        ? 'text-blue-600 dark:text-blue-400'
+                        ? 'h-6 w-6 rounded-full bg-blue-600 text-white'
                         : hasTasks
                           ? 'text-gray-900 dark:text-white'
                           : 'text-gray-500 dark:text-gray-500'
-                    }`}
+                    )}
                   >
                     {day}
                   </div>
 
-                  <div className="flex-1 space-y-1 overflow-hidden">
-                    <AnimatePresence>
-                      {dateTasks.slice(0, VISIBLE_TASKS_PER_DAY).map((task, taskIndex) => (
-                        <motion.button
-                          key={task.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={{ delay: taskIndex * 0.05 }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                  <div className="flex-1 min-w-0 space-y-0.5 overflow-hidden">
+                    {dateTasks.slice(0, VISIBLE_TASKS_PER_DAY).map((task, taskIndex) => {
+                      const chipMotionProps = shouldReduceMotion
+                        ? {}
+                        : {
+                            initial: { opacity: 0, x: -10 },
+                            animate: { opacity: 1, x: 0 },
+                            exit: { opacity: 0, scale: 0.8 },
+                            transition: { delay: taskIndex * 0.05 },
+                          };
+
+                      const chipButton = (
+                        <button
+                          type="button"
                           onClick={() => onTaskClick(task)}
-                          className="w-full text-left px-1.5 py-1 rounded text-[10px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-all group min-h-[44px]"
+                          aria-label={task.title}
+                          title={task.title}
+                          className="w-full min-w-0 text-left px-1 py-0.5 rounded text-[10px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors group"
                         >
-                          <div className="flex items-center gap-1">
-                            <PriorityIndicator priority={task.priority} size="sm" />
-                            <span className="truncate text-gray-900 dark:text-white font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          <div className="flex items-center gap-1 min-w-0 w-full">
+                            <PriorityIndicator
+                              priority={task.priority}
+                              variant="dot"
+                              size="sm"
+                              className="shrink-0"
+                            />
+                            <span className="min-w-0 flex-1 truncate text-gray-900 dark:text-white font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400">
                               {task.title}
                             </span>
                           </div>
-                        </motion.button>
-                      ))}
-                    </AnimatePresence>
+                        </button>
+                      );
+
+                      if (shouldReduceMotion) {
+                        return <div key={task.id}>{chipButton}</div>;
+                      }
+
+                      return (
+                        <motion.div key={task.id} {...chipMotionProps}>
+                          {chipButton}
+                        </motion.div>
+                      );
+                    })}
 
                     {overflowCount > 0 && (
                       <button
@@ -272,7 +340,7 @@ export function TaskCalendarView({
                           e.stopPropagation();
                           setExpandedDate(dateStr);
                         }}
-                        className="w-full text-left text-[10px] text-gray-500 dark:text-gray-400 pl-1.5 font-medium hover:text-blue-600 dark:hover:text-blue-400 min-h-[44px] flex items-center"
+                        className="w-full text-left text-[10px] text-gray-500 dark:text-gray-400 pl-1 font-medium hover:text-blue-600 dark:hover:text-blue-400 py-0.5"
                         aria-expanded={isExpanded}
                         aria-label={`Show ${overflowCount} more tasks on ${formattedDateLabel}`}
                       >
@@ -286,10 +354,10 @@ export function TaskCalendarView({
                   {isExpanded && (
                     <motion.div
                       key={`popover-${dateStr}`}
-                      initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                      initial={shouldReduceMotion ? false : { opacity: 0, y: -4, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                      transition={{ duration: 0.15 }}
+                      exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4, scale: 0.98 }}
+                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.15 }}
                       role="dialog"
                       aria-label={`Tasks on ${formattedDateLabel}`}
                       className="absolute top-full mt-1 z-50 w-56 max-h-64 flex flex-col rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg overflow-hidden"
@@ -315,15 +383,21 @@ export function TaskCalendarView({
                             <button
                               type="button"
                               aria-label={task.title}
+                              title={task.title}
                               onClick={() => {
                                 setExpandedDate(null);
                                 onTaskClick(task);
                               }}
-                              className="w-full text-left px-2 py-2 rounded text-xs bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 hover:shadow-sm hover:border-blue-400 dark:hover:border-blue-500 transition-all group min-h-[44px]"
+                              className="w-full text-left px-2 py-2 rounded text-xs bg-gray-50 dark:bg-gray-700/80 border border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors group min-h-[44px]"
                             >
-                              <div className="flex items-center gap-1.5">
-                                <PriorityIndicator priority={task.priority} size="sm" />
-                                <span className="truncate text-gray-900 dark:text-white font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <PriorityIndicator
+                                  priority={task.priority}
+                                  variant="dot"
+                                  size="sm"
+                                  className="shrink-0"
+                                />
+                                <span className="min-w-0 flex-1 truncate text-gray-900 dark:text-white font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400">
                                   {task.title}
                                 </span>
                               </div>
@@ -342,8 +416,7 @@ export function TaskCalendarView({
 
       {!isLoading && tasksWithDates === 0 && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          {...(shouldReduceMotion ? {} : { initial: { opacity: 0 }, animate: { opacity: 1 } })}
           className="px-6 py-8 text-center border-t border-gray-200 dark:border-gray-700"
         >
           <CalendarIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />

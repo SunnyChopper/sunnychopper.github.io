@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, Repeat, Calendar, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { PageContainer } from '@/components/templates/PageContainer';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -94,6 +95,7 @@ export default function HabitsPage() {
     updateCompletionNote,
   } = useHabits();
   const { showToast, ToastContainer } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [habitLogs, setHabitLogs] = useState<Map<string, HabitLog[]>>(new Map());
   const [linkedGoals, setLinkedGoals] = useState<Map<string, Goal[]>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
@@ -178,6 +180,17 @@ export default function HabitsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habits]);
+
+  useEffect(() => {
+    const habitId = searchParams.get('habitId');
+    if (!habitId || isLoading) return;
+    const match = habits.find((habit) => habit.id === habitId);
+    if (!match) return;
+    setSelectedHabit(match);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('habitId');
+    setSearchParams(nextParams, { replace: true });
+  }, [habits, isLoading, searchParams, setSearchParams]);
 
   const loadHabitLogs = async (habitId: string, options?: { throwOnError?: boolean }) => {
     try {

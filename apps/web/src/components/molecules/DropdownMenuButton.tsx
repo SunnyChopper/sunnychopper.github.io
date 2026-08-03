@@ -12,14 +12,25 @@ export interface MenuItem {
 }
 
 interface DropdownMenuButtonProps {
-  label: string;
+  label?: string;
   items: MenuItem[];
   className?: string;
+  icon?: LucideIcon;
+  ariaLabel?: string;
+  align?: 'start' | 'end';
 }
 
-export default function DropdownMenuButton({ label, items, className }: DropdownMenuButtonProps) {
+export default function DropdownMenuButton({
+  label,
+  items,
+  className,
+  icon: TriggerIcon,
+  ariaLabel,
+  align = 'start',
+}: DropdownMenuButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isIconTrigger = Boolean(TriggerIcon);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -58,18 +69,25 @@ export default function DropdownMenuButton({ label, items, className }: Dropdown
         onClick={() => setIsOpen((open) => !open)}
         aria-haspopup="menu"
         aria-expanded={isOpen}
+        aria-label={isIconTrigger ? ariaLabel : undefined}
         className={cn(
-          'rounded px-2.5 py-1 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800',
-          isOpen && 'bg-gray-100 dark:bg-gray-800'
+          isIconTrigger
+            ? 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+            : 'rounded px-2.5 py-1 text-sm text-gray-700 transition hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800',
+          isOpen &&
+            (isIconTrigger ? 'bg-gray-100 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800')
         )}
       >
-        {label}
+        {isIconTrigger && TriggerIcon ? <TriggerIcon size={20} aria-hidden /> : label}
       </button>
 
       {isOpen ? (
         <div
           role="menu"
-          className="absolute left-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+          className={cn(
+            'absolute top-full z-50 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-800',
+            align === 'end' ? 'right-0' : 'left-0'
+          )}
         >
           {items.map((item) => {
             const Icon = item.icon;

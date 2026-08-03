@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ClipboardPaste, Sparkles } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Button from '@/components/atoms/Button';
@@ -14,6 +14,7 @@ import {
   useReconFeed,
   useReconRunDetail,
   RECON_RUNS_PAGE_SIZE,
+  buildReconScarcityMessage,
   type ReconPostListFilters,
 } from '@/hooks/useReconFeed';
 import { extractErrorMessage } from '@/lib/react-query/error-utils';
@@ -39,8 +40,10 @@ import { linkAccentClassName, selectableChipClassName } from '../personal-brandi
 import ConnectionEditorDialog from './ConnectionEditorDialog';
 import EntityTypeBadge from './EntityTypeBadge';
 import LogInteractionDialog from './LogInteractionDialog';
+import ManualPrompterPasteDialog from './ManualPrompterPasteDialog';
 import ReconRunDetailDrawer from './ReconRunDetailDrawer';
 import RolodexPrompterDrawer from './RolodexPrompterDrawer';
+import { hasXHandle } from './rolodex-platform';
 
 type RolodexHook = ReturnType<typeof useRolodex>;
 
@@ -60,6 +63,8 @@ const RECON_SORT_OPTIONS: { value: ReconSortField; label: string }[] = [
   { value: 'relevanceScore', label: 'Relevance' },
   { value: 'postedAt', label: 'Posted' },
 ];
+
+const RECON_PROCESSED_PANEL_ID = 'recon-processed-panel';
 
 function postedAfterForPreset(preset: ReconAgePreset): string | undefined {
   if (preset === 'all') return undefined;
@@ -340,15 +345,17 @@ export default function ReconFeedTab({
   const connections = rolodex.connections.data?.data ?? [];
   const [agePreset, setAgePreset] = useState<ReconAgePreset>('all');
   const [sortField, setSortField] = useState<ReconSortField>('relevanceScore');
+  const [processedOpen, setProcessedOpen] = useState(false);
   const [runsPage, setRunsPage] = useState(1);
   const [prompterConnection, setPrompterConnection] = useState<CreatorConnection | null>(null);
   const [prompterPrefill, setPrompterPrefill] = useState<ReconPrompterPrefill | null>(null);
+  const [pasteDialogOpen, setPasteDialogOpen] = useState(false);
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [checkInConnection, setCheckInConnection] = useState<CreatorConnection | null>(null);
   const [pendingLog, setPendingLog] = useState<{
     connection: CreatorConnection;
     creatorText: string;
-    vector: ReplySuggestion;
+    vector: { id: string; label: string; angle: string; draftText: string; rationale: string };
     evidenceUrl?: string | null;
     platform?: string | null;
     platformPostId?: string | null;
@@ -387,6 +394,22 @@ export default function ReconFeedTab({
   const processedPosts = recon.processedPosts.items;
   const suggestions = recon.followSuggestions.items;
   const runs = recon.runs.data?.data ?? [];
+  const trackedXHandleCount = useMemo(
+    () => connections.filter((connection) => hasXHandle(connection)).length,
+    [connections]
+  );
+  const hasTrackedXHandles = trackedXHandleCount > 0;
+  const showScarcityHint =
+    recon.scarcity.isSuccess &&
+    recon.scarcity.isScarce &&
+    recon.scarcity.recentHighSignalCount !== null;
+  const scarcityMessage = showScarcityHint
+    ? buildReconScarcityMessage(
+        recon.scarcity.recentHighSignalCount!,
+        recon.scarcity.threshold,
+        hasTrackedXHandles
+      )
+    : null;
   const runsTotal = recon.runs.data?.total ?? 0;
   const runsPageSize = recon.runs.data?.pageSize ?? RECON_RUNS_PAGE_SIZE;
   const runsTotalPages = Math.max(1, Math.ceil(runsTotal / runsPageSize));
@@ -421,6 +444,24 @@ export default function ReconFeedTab({
     }
   };
 
+  const openConnectionDirectory = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'directory');
+    setSearchParams(next, { replace: true });
+  };
+
+  const activeFeedEmptyMessage = useMemo(() => {
+    if (showScarcityHint && scarcityMessage) {
+      return scarcityMessage;
+    }
+    if (agePreset === 'all') {
+      return processedPosts.length > 0
+        ? 'No new posts to review. Check Processed below or run ingest for fresh items.'
+        : 'No recon posts yet. Run ingest after adding X handles.';
+    }
+    return 'No new posts in this window. Try a wider age filter or run ingest.';
+  }, [agePreset, processedPosts.length, scarcityMessage, showScarcityHint]);
+
   const closeConnectionEditor = () => {
     setConnectionEditorOpen(false);
     setAddingSuggestion(null);
@@ -439,6 +480,34 @@ export default function ReconFeedTab({
     }
   };
 
+  const openPrompter = useCallback(
+    (connection: CreatorConnection, prefill?: ReconPrompterPrefill | null) => {
+      setPrompterConnection(connection);
+      setPrompterPrefill(prefill ?? null);
+      setActiveRunId(null);
+      if (prefill?.creatorText) {
+        setPendingLog({
+          connection,
+          creatorText: prefill.creatorText,
+          vector: {
+            id: 'manual-paste',
+            label: 'From pasted post',
+            angle: 'manual-paste',
+            draftText: '',
+            rationale: '',
+          },
+          evidenceUrl: prefill.evidenceUrl ?? null,
+          platform: 'x',
+          platformPostId: prefill.platformPostId ?? null,
+          channel: 'x',
+        });
+      } else {
+        setPendingLog(null);
+      }
+    },
+    []
+  );
+
   const openPrompterFromPost = useCallback(
     (post: ReconPost) => {
       const connection = connections.find((item) => item.id === post.connectionId);
@@ -451,11 +520,9 @@ export default function ReconFeedTab({
         return;
       }
       const { connectionId: _connectionId, ...prefill } = buildReconPrompterSeed(post);
-      setPrompterConnection(connection);
-      setPrompterPrefill(prefill);
-      setActiveRunId(null);
+      openPrompter(connection, prefill);
     },
-    [connections, showToast]
+    [connections, openPrompter, showToast]
   );
 
   const startReplyGeneration = async (
@@ -497,7 +564,8 @@ export default function ReconFeedTab({
   const handleAcceptSuggestion = async (
     connection: CreatorConnection,
     suggestion: ReplySuggestion,
-    creatorText: string
+    creatorText: string,
+    meta?: { evidenceUrl?: string | null; platformPostId?: string | null }
   ) => {
     const activePrefill = prompterPrefill;
     try {
@@ -514,9 +582,9 @@ export default function ReconFeedTab({
         connection,
         creatorText,
         vector: suggestion,
-        evidenceUrl: activePrefill?.evidenceUrl ?? null,
+        evidenceUrl: meta?.evidenceUrl ?? activePrefill?.evidenceUrl ?? null,
         platform: 'x',
-        platformPostId: activePrefill?.platformPostId ?? null,
+        platformPostId: meta?.platformPostId ?? activePrefill?.platformPostId ?? null,
         channel: 'x',
       });
       setCheckInConnection(connection);
@@ -670,11 +738,23 @@ export default function ReconFeedTab({
 
       <PageCard className="space-y-4">
         <div className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Active feed</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              New posts awaiting review, ranked by LLM relevance for engagement traction.
-            </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Active feed</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                New posts awaiting review, ranked by LLM relevance for engagement traction.
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="shrink-0"
+              onClick={() => setPasteDialogOpen(true)}
+            >
+              <ClipboardPaste className="mr-1.5 h-4 w-4" />
+              Paste post
+            </Button>
           </div>
           <div className="flex flex-wrap items-end gap-6">
             <div className="space-y-2">
@@ -721,14 +801,38 @@ export default function ReconFeedTab({
             </div>
           </div>
         </div>
+        {showScarcityHint && scarcityMessage && posts.length > 0 ? (
+          <div
+            role="status"
+            className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            <p>{scarcityMessage}</p>
+            <button
+              type="button"
+              onClick={openConnectionDirectory}
+              className={cn(linkAccentClassName, 'mt-2 text-sm font-medium')}
+            >
+              {hasTrackedXHandles
+                ? 'Open Connection Directory'
+                : 'Add X handles in Connection Directory'}
+            </button>
+          </div>
+        ) : null}
         {posts.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            {agePreset === 'all'
-              ? processedPosts.length > 0
-                ? 'No new posts to review. Check Processed below or run ingest for fresh items.'
-                : 'No recon posts yet. Run ingest after adding X handles.'
-              : 'No new posts in this window. Try a wider age filter or run ingest.'}
-          </p>
+          <div className="space-y-2 text-sm text-gray-500">
+            <p>{activeFeedEmptyMessage}</p>
+            {showScarcityHint ? (
+              <button
+                type="button"
+                onClick={openConnectionDirectory}
+                className={cn(linkAccentClassName, 'font-medium')}
+              >
+                {hasTrackedXHandles
+                  ? 'Open Connection Directory'
+                  : 'Add X handles in Connection Directory'}
+              </button>
+            ) : null}
+          </div>
         ) : (
           <PaginatedReconListPanel
             loadedCount={posts.length}
@@ -751,36 +855,60 @@ export default function ReconFeedTab({
       </PageCard>
 
       <PageCard className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Processed</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Posts you reviewed, actioned, or dismissed. Restore any item to return it to the active
-            feed.
-          </p>
-        </div>
-        {processedPosts.length === 0 ? (
-          <p className="text-sm text-gray-500">No processed posts yet.</p>
-        ) : (
-          <PaginatedReconListPanel
-            loadedCount={processedPosts.length}
-            total={recon.processedPosts.total}
-            hasNextPage={Boolean(recon.processedPosts.hasNextPage)}
-            isFetchingNextPage={recon.processedPosts.isFetchingNextPage}
-            onLoadMore={() => void recon.processedPosts.fetchNextPage()}
-          >
-            {processedPosts.map((post) => (
-              <ReconPostRow
-                key={post.id}
-                post={post}
-                variant="processed"
-                isUpdating={recon.updatingPostId === post.id}
-                onDraft={() => openPrompterFromPost(post)}
-                onStatus={(status) => void handlePostStatus(post.id, status)}
-                onRestore={() => void handlePostStatus(post.id, 'NEW')}
-              />
-            ))}
-          </PaginatedReconListPanel>
-        )}
+        <button
+          type="button"
+          onClick={() => setProcessedOpen((prev) => !prev)}
+          className="flex w-full items-center gap-2 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
+          aria-expanded={processedOpen}
+          aria-controls={RECON_PROCESSED_PANEL_ID}
+        >
+          {processedOpen ? (
+            <ChevronDown className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />
+          ) : (
+            <ChevronRight className="h-5 w-5 shrink-0 text-gray-400" aria-hidden />
+          )}
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex-1 min-w-0">
+            Processed
+          </h2>
+          {!processedOpen ? (
+            <span className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[50%]">
+              {recon.processedPosts.total === 0
+                ? 'No processed posts'
+                : `View processed · ${processedPosts.length} of ${recon.processedPosts.total}`}
+            </span>
+          ) : null}
+        </button>
+        {processedOpen ? (
+          <div id={RECON_PROCESSED_PANEL_ID} className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Posts you reviewed, actioned, or dismissed. Restore any item to return it to the
+              active feed.
+            </p>
+            {processedPosts.length === 0 ? (
+              <p className="text-sm text-gray-500">No processed posts yet.</p>
+            ) : (
+              <PaginatedReconListPanel
+                loadedCount={processedPosts.length}
+                total={recon.processedPosts.total}
+                hasNextPage={Boolean(recon.processedPosts.hasNextPage)}
+                isFetchingNextPage={recon.processedPosts.isFetchingNextPage}
+                onLoadMore={() => void recon.processedPosts.fetchNextPage()}
+              >
+                {processedPosts.map((post) => (
+                  <ReconPostRow
+                    key={post.id}
+                    post={post}
+                    variant="processed"
+                    isUpdating={recon.updatingPostId === post.id}
+                    onDraft={() => openPrompterFromPost(post)}
+                    onStatus={(status) => void handlePostStatus(post.id, status)}
+                    onRestore={() => void handlePostStatus(post.id, 'NEW')}
+                  />
+                ))}
+              </PaginatedReconListPanel>
+            )}
+          </div>
+        ) : null}
       </PageCard>
 
       <PageCard className="space-y-4">
@@ -1037,6 +1165,8 @@ export default function ReconFeedTab({
         initialCreatorText={prompterPrefill?.creatorText ?? pendingLog?.creatorText}
         initialInteractionIntent={prompterPrefill?.interactionIntent}
         initialAuthorHandle={prompterPrefill?.authorHandle}
+        initialEvidenceUrl={prompterPrefill?.evidenceUrl ?? pendingLog?.evidenceUrl}
+        initialPlatformPostId={prompterPrefill?.platformPostId ?? pendingLog?.platformPostId}
         onClose={() => {
           setPrompterConnection(null);
           setPrompterPrefill(null);
@@ -1047,13 +1177,25 @@ export default function ReconFeedTab({
           if (!prompterConnection) return;
           void startReplyGeneration(prompterConnection, payload, draft, resolved);
         }}
-        onAcceptSuggestion={(suggestion, creatorText) => {
+        onAcceptSuggestion={(suggestion, creatorText, meta) => {
           if (!prompterConnection) return;
-          void handleAcceptSuggestion(prompterConnection, suggestion, creatorText);
+          void handleAcceptSuggestion(prompterConnection, suggestion, creatorText, meta);
         }}
         onRejectSuggestion={(suggestion, feedback) => {
           void handleRejectSuggestion(suggestion, feedback);
         }}
+      />
+
+      <ManualPrompterPasteDialog
+        open={pasteDialogOpen}
+        connections={connections}
+        isCreatingConnection={rolodex.createConnection.isPending}
+        onClose={() => setPasteDialogOpen(false)}
+        onOpenPrompter={(connection, prefill) => {
+          openPrompter(connection, prefill);
+        }}
+        onCreateConnection={async (body) => rolodex.createConnection.mutateAsync(body)}
+        showToast={showToast}
       />
     </div>
   );

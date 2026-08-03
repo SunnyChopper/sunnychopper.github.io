@@ -1,12 +1,17 @@
 import { useMemo, useState } from 'react';
 import type { AuraPoint, AuraXMetric } from '@/types/fitness';
 import { cn } from '@/lib/utils';
+import {
+  fitnessSectionClassName,
+  fitnessSectionCompactPaddingClassName,
+} from '@/lib/fitness/fitness-surfaces';
 
 const X_LABELS: Record<AuraXMetric, string> = {
   sleepHours: 'Sleep (hours)',
   sleepQuality: 'Sleep quality (1–10)',
   energyLevel: 'Energy (1–10)',
   recoveryScore: 'Recovery score',
+  sleepDebt: 'Sleep debt (7d, hours)',
 };
 
 interface AuraScatterChartProps {
@@ -59,12 +64,7 @@ export function AuraScatterChart({ points, xMetric, className }: AuraScatterChar
     padT + innerH - ((y - plot.minY) / (plot.maxY - plot.minY || 1)) * innerH;
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-600 dark:bg-gray-900/50',
-        className
-      )}
-    >
+    <div className={cn(fitnessSectionClassName, fitnessSectionCompactPaddingClassName, className)}>
       <svg
         width="100%"
         viewBox={`0 0 ${w} ${h}`}

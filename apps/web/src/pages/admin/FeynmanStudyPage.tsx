@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import MarkdownRenderer from '@/components/molecules/MarkdownRenderer';
+import { FeynmanClarityBar } from '@/components/molecules/knowledge-vault/FeynmanClarityBar';
+import { FeynmanExplanationHistoryStrip } from '@/components/molecules/knowledge-vault/FeynmanExplanationHistoryStrip';
 import Button from '@/components/atoms/Button';
 import { vaultItemsService } from '@/services/knowledge-vault/vault-items.service';
 import { vaultPrimitivesService } from '@/services/knowledge-vault/vault-primitives.service';
 import { apiClient } from '@/lib/api-client';
-import type { Note } from '@/types/knowledge-vault';
+import { pushExplanationHistory } from '@/lib/knowledge-vault/feynman-explanation-history';
+import type { FeynmanRespondResult, Note } from '@/types/knowledge-vault';
 import { Textarea } from '@/components/atoms/Textarea';
 
 export default function FeynmanStudyPage() {
@@ -16,7 +19,9 @@ export default function FeynmanStudyPage() {
   const [log, setLog] = useState<Array<{ role: string; content: string }>>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [lastFeedback, setLastFeedback] = useState<Record<string, unknown> | null>(null);
+  const [lastFeedback, setLastFeedback] = useState<FeynmanRespondResult | null>(null);
+  const [feedbackVersion, setFeedbackVersion] = useState(0);
+  const [explanationHistory, setExplanationHistory] = useState<string[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,15 +47,19 @@ export default function FeynmanStudyPage() {
       });
       if (res.success && res.data?.initialPrompt) {
         setLog([{ role: 'assistant', content: String(res.data.initialPrompt) }]);
+        setLastFeedback(null);
+        setExplanationHistory([]);
+        setFeedbackVersion((v) => v + 1);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const send = async () => {
-    if (!itemId || !input.trim()) return;
-    const next = [...log, { role: 'user', content: input.trim() }];
+  const sendExplanation = async (text: string) => {
+    if (!itemId || !text.trim()) return;
+    const trimmed = text.trim();
+    const next = [...log, { role: 'user', content: trimmed }];
     setLog(next);
     setInput('');
     setLoading(true);
@@ -58,9 +67,11 @@ export default function FeynmanStudyPage() {
     try {
       const res = await vaultPrimitivesService.feynmanRespond(itemId, next);
       if (res.success && res.data) {
-        setLastFeedback(res.data as Record<string, unknown>);
-        const fb = String((res.data as { feedback?: string }).feedback ?? '');
-        const fq = String((res.data as { follow_up_question?: string }).follow_up_question ?? '');
+        setLastFeedback(res.data);
+        setExplanationHistory((history) => pushExplanationHistory(history, trimmed));
+        setFeedbackVersion((v) => v + 1);
+        const fb = res.data.feedback ?? '';
+        const fq = res.data.followUpQuestion ?? '';
         const line = [fb, fq].filter(Boolean).join('\n\n');
         if (line) setLog((l) => [...l, { role: 'assistant', content: line }]);
       }
@@ -69,21 +80,16 @@ export default function FeynmanStudyPage() {
     }
   };
 
+  const send = () => void sendExplanation(input);
+
+  const restoreExplanation = (text: string) => {
+    setInput(text);
+    void sendExplanation(text);
+  };
+
   if (!itemId) {
     return <p className="p-6 text-red-600">Missing item</p>;
   }
-
-  const score = typeof lastFeedback?.clarity_score === 'number' ? lastFeedback.clarity_score : null;
-  const bannerClass =
-    score == null
-      ? ''
-      : score >= 0.7
-        ? 'bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-100'
-        : score >= 0.4
-          ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100'
-          : 'bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-100';
-
-  const jargon = (lastFeedback?.jargon_highlights as Array<{ term?: string }> | undefined) ?? [];
 
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] p-2 md:p-4 gap-3">
@@ -123,22 +129,17 @@ export default function FeynmanStudyPage() {
             <p className="text-gray-500 text-sm">Loading note…</p>
           )}
         </div>
-        <div className="flex-1 min-h-[280px] min-w-0 flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
-          {score != null && (
-            <div className={`px-3 py-2 text-sm font-medium shrink-0 ${bannerClass}`}>
-              Clarity score: {(score * 100).toFixed(0)}%
-            </div>
-          )}
-          {jargon.length > 0 && (
-            <div className="px-3 py-2 text-xs border-b border-gray-200 dark:border-gray-700 shrink-0">
-              Jargon to simplify:{' '}
-              {jargon.map((j, i) => (
-                <span key={i} className="bg-yellow-200 dark:bg-yellow-800/60 px-1 rounded mx-0.5">
-                  {j.term}
-                </span>
-              ))}
-            </div>
-          )}
+        <div className="flex-1 min-h-[280px] min-w-0 flex flex-col border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+          <FeynmanClarityBar
+            clarityScore={lastFeedback?.clarityScore ?? null}
+            jargonHighlights={lastFeedback?.jargonHighlights ?? []}
+            feedbackVersion={feedbackVersion}
+          />
+          <FeynmanExplanationHistoryStrip
+            explanations={explanationHistory}
+            onSelect={restoreExplanation}
+            disabled={loading}
+          />
           <div className="flex-1 overflow-auto p-4 space-y-4 text-sm flex flex-col min-h-0">
             {log.map((m, i) => (
               <div
@@ -168,11 +169,11 @@ export default function FeynmanStudyPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  void send();
+                  send();
                 }
               }}
             />
-            <Button type="button" onClick={() => void send()} disabled={loading}>
+            <Button type="button" onClick={send} disabled={loading}>
               <Send className="w-4 h-4" />
             </Button>
           </div>

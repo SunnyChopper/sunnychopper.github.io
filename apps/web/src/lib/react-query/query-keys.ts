@@ -158,8 +158,12 @@ export const queryKeys = {
       range: (start: string, end: string) =>
         [...queryKeys.fitness.recovery.all(), 'range', start, end] as const,
       metricLinks: () => [...queryKeys.fitness.recovery.all(), 'metricLinks'] as const,
+      sleepDebt: (asOf?: string) =>
+        [...queryKeys.fitness.recovery.all(), 'sleepDebt', asOf ?? 'today'] as const,
     },
     overload: (exerciseId: string) => [...queryKeys.fitness.all, 'overload', exerciseId] as const,
+    templateOverloadHints: (templateId: string) =>
+      [...queryKeys.fitness.all, 'templateOverloadHints', templateId] as const,
     aura: (start: string, end: string, xMetric: string) =>
       [...queryKeys.fitness.all, 'aura', start, end, xMetric] as const,
     rewardRules: {
@@ -220,6 +224,16 @@ export const queryKeys = {
           : ([...queryKeys.chatbot.memory.all(), 'long-term'] as const),
     },
     modelCatalog: () => [...queryKeys.chatbot.all, 'model-catalog'] as const,
+    relevantNow: () => [...queryKeys.chatbot.all, 'relevant-now'] as const,
+    ambient: (surface: string) => [...queryKeys.chatbot.all, 'ambient', surface] as const,
+    coachEscalationsPending: () =>
+      [...queryKeys.chatbot.all, 'coach-escalations', 'pending'] as const,
+    interventionsAll: () => [...queryKeys.chatbot.all, 'interventions'] as const,
+    interventionsUnreadCount: () =>
+      [...queryKeys.chatbot.all, 'interventions', 'unread-count'] as const,
+    unreadSummary: () => [...queryKeys.chatbot.all, 'unread-summary'] as const,
+    interventionsList: (params?: Record<string, unknown>) =>
+      [...queryKeys.chatbot.interventionsAll(), 'list', params ?? {}] as const,
     assistantSettings: () => [...queryKeys.chatbot.all, 'assistant-settings'] as const,
     /** Prefix match invalidates all leaf/runConfig variants for a thread. */
     contextUsage: {
@@ -260,6 +274,7 @@ export const queryKeys = {
         ? ([...queryKeys.observability.all, 'executions', filters] as const)
         : ([...queryKeys.observability.all, 'executions'] as const),
     executionDetail: (id: string) => [...queryKeys.observability.all, 'execution', id] as const,
+    costGuardrails: () => [...queryKeys.observability.all, 'cost-guardrails'] as const,
   },
 
   admin: {
@@ -430,6 +445,12 @@ export const queryKeys = {
     timeZone: () => [...queryKeys.preferences.all, 'time-zone'] as const,
     notificationWebhook: () => [...queryKeys.preferences.all, 'notification-webhook'] as const,
     recoveryNotifications: () => [...queryKeys.preferences.all, 'recovery-notifications'] as const,
+    recoveryMorningNudge: () => [...queryKeys.preferences.all, 'recovery-morning-nudge'] as const,
+    sleepDebt: () => [...queryKeys.preferences.all, 'sleep-debt'] as const,
+    ambientStrictPlan: () => [...queryKeys.preferences.all, 'ambient-strict-plan'] as const,
+    coachEscalationNotifications: () =>
+      [...queryKeys.preferences.all, 'coach-escalation-notifications'] as const,
+    staleEntityHunter: () => [...queryKeys.preferences.all, 'stale-entity-hunter'] as const,
     rolodexFollowUpNotifications: () =>
       [...queryKeys.preferences.all, 'rolodex-follow-up-notifications'] as const,
     reconFeedContentNotifications: () =>
@@ -456,6 +477,8 @@ export const queryKeys = {
       all: () => [...queryKeys.personalBranding.all, 'extractions'] as const,
       detail: (jobId: string) =>
         [...queryKeys.personalBranding.extractions.all(), 'detail', jobId] as const,
+      sources: (jobId: string) =>
+        [...queryKeys.personalBranding.extractions.all(), 'sources', jobId] as const,
     },
     platformRules: {
       all: () => [...queryKeys.personalBranding.all, 'platform-rules'] as const,
@@ -516,6 +539,25 @@ export const queryKeys = {
       all: () => [...queryKeys.personalBranding.all, 'content-ideation-jobs'] as const,
       detail: (jobId: string) =>
         [...queryKeys.personalBranding.ideationJobs.all(), 'detail', jobId] as const,
+    },
+    contentStream: {
+      all: () => [...queryKeys.personalBranding.all, 'content-stream'] as const,
+      settings: (platform = 'x') =>
+        [...queryKeys.personalBranding.contentStream.all(), 'settings', platform] as const,
+      posts: (platform = 'x', page = 1, pageSize = 20, status?: string) =>
+        [
+          ...queryKeys.personalBranding.contentStream.all(),
+          'posts',
+          platform,
+          page,
+          pageSize,
+          status ?? 'all',
+        ] as const,
+      jobs: {
+        all: () => [...queryKeys.personalBranding.contentStream.all(), 'jobs'] as const,
+        detail: (jobId: string) =>
+          [...queryKeys.personalBranding.contentStream.jobs.all(), 'detail', jobId] as const,
+      },
     },
     imageInjectJobs: {
       all: () => [...queryKeys.personalBranding.all, 'content-image-inject-jobs'] as const,
@@ -716,6 +758,8 @@ export const queryKeys = {
         [...queryKeys.personalBranding.reconFeed.all(), 'runs', page, pageSize] as const,
       runDetail: (runId: string) =>
         [...queryKeys.personalBranding.reconFeed.all(), 'run', runId] as const,
+      scarcity: (minScore: number) =>
+        [...queryKeys.personalBranding.reconFeed.all(), 'scarcity', minScore] as const,
     },
   },
 

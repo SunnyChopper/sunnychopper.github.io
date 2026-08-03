@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sparkles, ClipboardList, HelpCircle, BookMarked } from 'lucide-react';
-import { aiCoursePracticeService, practiceArtifactsService } from '@/services/knowledge-vault';
+import {
+  aiCoursePracticeService,
+  formatPracticeGenerationError,
+  practiceArtifactsService,
+} from '@/services/knowledge-vault';
 import type {
   HomeworkAssignment,
   PracticeQuestion,
@@ -11,14 +15,25 @@ import type {
 import { queryKeys } from '@/lib/react-query/query-keys';
 import { ROUTES } from '@/routes';
 import { Textarea } from '@/components/atoms/Textarea';
+import { ShowAnswersToggle } from '@/components/molecules/knowledge-vault/ShowAnswersToggle';
+import {
+  readShowAnswersPreference,
+  writeShowAnswersPreference,
+} from '@/lib/knowledge-vault/course-practice-show-answers';
+
+import { formatApiFailure } from '@/utils/api-error-formatter';
+import type { ApiError } from '@/types/api-contracts';
 
 function errText(err: unknown, fallback: string): string {
   if (typeof err === 'string') return err;
   if (err && typeof err === 'object' && 'message' in err) {
-    return String((err as { message: string }).message);
+    const apiErr = err as ApiError;
+    return formatPracticeGenerationError(apiErr, formatApiFailure(apiErr, fallback));
   }
   return fallback;
 }
+
+type FailedGenerateAction = 'practice' | 'quiz' | 'homework';
 
 interface CoursePracticeSectionsProps {
   courseId: string;
@@ -30,6 +45,13 @@ interface CoursePracticeSectionsProps {
   courseProgress: number;
   model?: string;
   disabled?: boolean;
+}
+
+const answerKeyBlockClassName =
+  'rounded-md border-l-4 border-l-amber-500 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 space-y-1 text-sm text-gray-700 dark:text-gray-300';
+
+function AnswerKeyBlock({ children }: { children: ReactNode }) {
+  return <div className={answerKeyBlockClassName}>{children}</div>;
 }
 
 function QuestionList({
@@ -75,8 +97,21 @@ function QuestionList({
               onChange={(e) => onChange(q.id, e.target.value)}
             />
           )}
-          {showAnswers && q.correctAnswer && (
-            <p className="text-xs text-gray-500">Answer: {q.correctAnswer}</p>
+          {showAnswers && (q.correctAnswer || q.explanation) && (
+            <AnswerKeyBlock>
+              {q.correctAnswer && (
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">Answer:</span>{' '}
+                  {q.correctAnswer}
+                </p>
+              )}
+              {q.explanation && (
+                <p>
+                  <span className="font-medium text-gray-900 dark:text-white">Explanation:</span>{' '}
+                  {q.explanation}
+                </p>
+              )}
+            </AnswerKeyBlock>
           )}
         </div>
       ))}
@@ -125,9 +160,16 @@ export function CoursePracticeSections({
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastFailedAction, setLastFailedAction] = useState<FailedGenerateAction | null>(null);
   const [quizResponses, setQuizResponses] = useState<Record<string, string>>({});
   const [activeQuizId, setActiveQuizId] = useState<string | null>(null);
   const [lastAttemptScore, setLastAttemptScore] = useState<number | null>(null);
+  const [showAnswers, setShowAnswers] = useState(readShowAnswersPreference);
+
+  const handleShowAnswersChange = useCallback((next: boolean) => {
+    setShowAnswers(next);
+    writeShowAnswersPreference(next);
+  }, []);
 
   const context = useMemo(
     () =>
@@ -155,7 +197,7 @@ export function CoursePracticeSections({
     await queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeVault.vaultItems() });
   }, [queryClient]);
 
-  const generatePractice = async () => {
+  const generatePractice = async (opts?: { stricterPrompt?: boolean }) => {
     setBusy('practice');
     setError(null);
     const gen = await aiCoursePracticeService.generatePracticeQuestions({
@@ -163,9 +205,11 @@ export function CoursePracticeSections({
       sourceScope,
       model,
       count: 5,
+      stricterPrompt: opts?.stricterPrompt,
     });
     if (!gen.success || !gen.data) {
       setError(gen.error || 'Failed to generate practice');
+      setLastFailedAction('practice');
       setBusy(null);
       return;
     }
@@ -175,12 +219,17 @@ export function CoursePracticeSections({
       difficulty: gen.data.difficulty,
       sourceScope: gen.data.sourceScope,
     });
-    if (!saved.success) setError(errText(saved.error, 'Failed to save practice set'));
+    if (!saved.success) {
+      setError(errText(saved.error, 'Failed to save practice set'));
+      setLastFailedAction('practice');
+    } else {
+      setLastFailedAction(null);
+    }
     await invalidate();
     setBusy(null);
   };
 
-  const generateQuiz = async () => {
+  const generateQuiz = async (opts?: { stricterPrompt?: boolean }) => {
     setBusy('quiz');
     setError(null);
     const gen = await aiCoursePracticeService.generateQuiz({
@@ -189,9 +238,11 @@ export function CoursePracticeSections({
       model,
       count: 8,
       timeLimitMinutes: 30,
+      stricterPrompt: opts?.stricterPrompt,
     });
     if (!gen.success || !gen.data) {
       setError(gen.error || 'Failed to generate quiz');
+      setLastFailedAction('quiz');
       setBusy(null);
       return;
     }
@@ -203,13 +254,18 @@ export function CoursePracticeSections({
       timeLimitMinutes: gen.data.timeLimitMinutes,
       sourceScope: gen.data.sourceScope,
     });
-    if (!saved.success) setError(errText(saved.error, 'Failed to save quiz'));
-    else if (saved.data) setActiveQuizId(saved.data.id);
+    if (!saved.success) {
+      setError(errText(saved.error, 'Failed to save quiz'));
+      setLastFailedAction('quiz');
+    } else {
+      setLastFailedAction(null);
+      if (saved.data) setActiveQuizId(saved.data.id);
+    }
     await invalidate();
     setBusy(null);
   };
 
-  const generateHomework = async () => {
+  const generateHomework = async (opts?: { stricterPrompt?: boolean }) => {
     setBusy('homework');
     setError(null);
     const gen = await aiCoursePracticeService.generateHomework({
@@ -218,9 +274,11 @@ export function CoursePracticeSections({
       model,
       courseProgress,
       dueDays: 3,
+      stricterPrompt: opts?.stricterPrompt,
     });
     if (!gen.success || !gen.data) {
       setError(gen.error || 'Failed to generate homework');
+      setLastFailedAction('homework');
       setBusy(null);
       return;
     }
@@ -233,9 +291,21 @@ export function CoursePracticeSections({
       estimatedMinutes: gen.data.estimatedMinutes,
       sourceScope: gen.data.sourceScope,
     });
-    if (!saved.success) setError(errText(saved.error, 'Failed to save homework'));
+    if (!saved.success) {
+      setError(errText(saved.error, 'Failed to save homework'));
+      setLastFailedAction('homework');
+    } else {
+      setLastFailedAction(null);
+    }
     await invalidate();
     setBusy(null);
+  };
+
+  const retryStricter = async () => {
+    if (!lastFailedAction) return;
+    if (lastFailedAction === 'practice') await generatePractice({ stricterPrompt: true });
+    else if (lastFailedAction === 'quiz') await generateQuiz({ stricterPrompt: true });
+    else await generateHomework({ stricterPrompt: true });
   };
 
   const submitQuiz = async (quizId: string) => {
@@ -274,9 +344,21 @@ export function CoursePracticeSections({
         Practice &amp; Assessment
       </h3>
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-          {error}
-        </p>
+        <div className="space-y-2" role="alert">
+          <div className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap rounded border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-3">
+            {error}
+          </div>
+          {lastFailedAction && (
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={retryStricter}
+              className="px-3 py-1.5 text-sm rounded border border-amber-600 text-amber-800 dark:text-amber-300 disabled:opacity-50"
+            >
+              {busy ? 'Retrying…' : 'Retry with stricter prompt'}
+            </button>
+          )}
+        </div>
       )}
 
       <section className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
@@ -288,7 +370,7 @@ export function CoursePracticeSections({
           <button
             type="button"
             disabled={disabled || busy !== null}
-            onClick={generatePractice}
+            onClick={() => generatePractice()}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg disabled:opacity-50"
           >
             <Sparkles size={16} />
@@ -321,7 +403,7 @@ export function CoursePracticeSections({
           <button
             type="button"
             disabled={disabled || busy !== null}
-            onClick={generateQuiz}
+            onClick={() => generateQuiz()}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg disabled:opacity-50"
           >
             <Sparkles size={16} />
@@ -335,14 +417,24 @@ export function CoursePracticeSections({
         )}
         {activeQuiz ? (
           <div className="space-y-3">
-            <p className="text-sm font-medium">{activeQuiz.title}</p>
-            {activeQuiz.bestScorePercent != null && (
-              <p className="text-xs text-gray-500">Best: {activeQuiz.bestScorePercent}%</p>
-            )}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <p className="text-sm font-medium">{activeQuiz.title}</p>
+                {activeQuiz.bestScorePercent != null && (
+                  <p className="text-xs text-gray-500">Best: {activeQuiz.bestScorePercent}%</p>
+                )}
+              </div>
+              <ShowAnswersToggle
+                checked={showAnswers}
+                onChange={handleShowAnswersChange}
+                disabled={busy !== null}
+              />
+            </div>
             <QuestionList
               questions={activeQuiz.questions}
               responses={quizResponses}
               onChange={(qid, val) => setQuizResponses((r) => ({ ...r, [qid]: val }))}
+              showAnswers={showAnswers}
             />
             <button
               type="button"
@@ -367,7 +459,7 @@ export function CoursePracticeSections({
           <button
             type="button"
             disabled={disabled || busy !== null}
-            onClick={generateHomework}
+            onClick={() => generateHomework()}
             className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg disabled:opacity-50"
           >
             <Sparkles size={16} />
@@ -382,7 +474,14 @@ export function CoursePracticeSections({
               key={hw.id}
               className="rounded border border-gray-100 dark:border-gray-800 p-3 space-y-2"
             >
-              <p className="font-medium text-sm">{hw.title}</p>
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-medium text-sm min-w-0">{hw.title}</p>
+                <ShowAnswersToggle
+                  checked={showAnswers}
+                  onChange={handleShowAnswersChange}
+                  disabled={busy !== null}
+                />
+              </div>
               <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
                 {hw.prompt}
               </p>
@@ -393,6 +492,20 @@ export function CoursePracticeSections({
                     <li key={d}>{d}</li>
                   ))}
                 </ul>
+              )}
+              {showAnswers && (
+                <AnswerKeyBlock>
+                  {hw.rubric ? (
+                    <p className="whitespace-pre-wrap">
+                      <span className="font-medium text-gray-900 dark:text-white">Rubric:</span>{' '}
+                      {hw.rubric}
+                    </p>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 italic">
+                      No rubric was provided for this assignment.
+                    </p>
+                  )}
+                </AnswerKeyBlock>
               )}
               <div className="flex flex-wrap gap-2">
                 <button

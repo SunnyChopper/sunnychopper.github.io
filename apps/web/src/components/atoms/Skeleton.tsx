@@ -18,7 +18,7 @@ export function Skeleton({ className, variant = 'text' }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'animate-pulse bg-gray-200 dark:bg-gray-700',
+        'bg-gray-200 motion-safe:animate-pulse motion-reduce:animate-none dark:bg-gray-700',
         variantClassName[variant],
         className
       )}

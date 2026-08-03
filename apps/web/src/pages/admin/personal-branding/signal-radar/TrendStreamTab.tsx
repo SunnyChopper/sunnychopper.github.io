@@ -134,6 +134,7 @@ function RadarItemCard({
   selected,
   selectionDisabled,
   dismissPhase,
+  highlighted,
   onToggleSelected,
   onOpenRelevance,
   onMarkRelevant,
@@ -146,6 +147,7 @@ function RadarItemCard({
   selected: boolean;
   selectionDisabled: boolean;
   dismissPhase: 'pending' | 'exiting' | null;
+  highlighted?: boolean;
   onToggleSelected: () => void;
   onOpenRelevance: () => void;
   onMarkRelevant: () => void;
@@ -164,10 +166,12 @@ function RadarItemCard({
 
   return (
     <article
+      id={`radar-item-${item.id}`}
       className={cn(
         gridItemCardClassName,
         'flex flex-col transition-opacity',
         selected && 'ring-2 ring-sky-500/70 dark:ring-sky-400/60',
+        highlighted && 'ring-2 ring-amber-500/80 dark:ring-amber-400/70',
         dismissPhase === 'pending' && 'opacity-75',
         dismissPhase === 'exiting' && 'pointer-events-none'
       )}
@@ -297,9 +301,16 @@ type SignalRadarHook = ReturnType<typeof useSignalRadar>;
 interface TrendStreamTabProps {
   signalRadar: SignalRadarHook;
   onOpenSettings?: () => void;
+  highlightItemId?: string | null;
+  onHighlightConsumed?: () => void;
 }
 
-export default function TrendStreamTab({ signalRadar, onOpenSettings }: TrendStreamTabProps) {
+export default function TrendStreamTab({
+  signalRadar,
+  onOpenSettings,
+  highlightItemId,
+  onHighlightConsumed,
+}: TrendStreamTabProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const prefersReducedMotion = useReducedMotion();
@@ -365,6 +376,14 @@ export default function TrendStreamTab({ signalRadar, onOpenSettings }: TrendStr
     () => mergeTrendStreamDisplayItems(streamItems, dismissingById),
     [streamItems, dismissingById]
   );
+
+  useEffect(() => {
+    if (!highlightItemId || items.isLoading) return;
+    const el = document.getElementById(`radar-item-${highlightItemId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    onHighlightConsumed?.();
+  }, [highlightItemId, items.isLoading, displayItems, onHighlightConsumed]);
 
   const clearDismissTimer = useCallback((itemId: string) => {
     const timerId = dismissTimersRef.current[itemId];
@@ -906,6 +925,7 @@ export default function TrendStreamTab({ signalRadar, onOpenSettings }: TrendStr
                           isTrendStreamCardDismissing(item.id, dismissingById)
                         }
                         dismissPhase={dismissPhase}
+                        highlighted={highlightItemId === item.id}
                         onToggleSelected={() => toggleItemSelection(item.id)}
                         onOpenRelevance={() => setRelevanceModalItemId(item.id)}
                         isUpdatingThis={isUpdatingThis}

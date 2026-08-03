@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Search,
@@ -13,10 +14,14 @@ import {
   LayoutGrid,
   List,
   Calendar as CalendarIcon,
+  Grid2x2,
   Filter,
-  X,
   Star,
   Link2Off,
+  MoreHorizontal,
+  Archive,
+  RotateCcw,
+  GitBranch,
 } from 'lucide-react';
 import { PageContainer } from '@/components/templates/PageContainer';
 import type {
@@ -29,15 +34,21 @@ import type {
   Task,
   EntitySummary,
   FilterOptions,
-  Area,
-  Priority,
   Goal,
+  CreateLogbookEntryInput,
+  UpdateLogbookEntryInput,
+  ProjectDependency,
 } from '@/types/growth-system';
-import { useProjects, useGoals, useTasks } from '@/hooks/useGrowthSystem';
+import { useProjects, useGoals, useTasks, useLogbook } from '@/hooks/useGrowthSystem';
 import { useProjectHealthMap } from '@/hooks/useProjectHealthMap';
-import { useProjectDependencies, useProjectTimelineUpdate } from '@/hooks/useProjectDependencies';
+import {
+  useProjectDependencies,
+  useProjectDependencyNeighborhood,
+  useProjectTimelineUpdate,
+} from '@/hooks/useProjectDependencies';
 import { tasksService } from '@/services/growth-system/tasks.service';
 import { projectsService } from '@/services/growth-system/projects.service';
+import { goalsService } from '@/services/growth-system/goals.service';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   addTaskDependencyToCache,
@@ -53,48 +64,84 @@ import Button from '@/components/atoms/Button';
 import { ProjectCard } from '@/components/molecules/ProjectCard';
 import { ProjectListItem } from '@/components/molecules/ProjectListItem';
 import { ProjectTimelineView } from '@/components/organisms/ProjectTimelineView';
+import { ImpactEffortMatrix } from '@/components/organisms/ImpactEffortMatrix';
+import ProjectDependencyMiniGraph from '@/components/organisms/ProjectDependencyMiniGraph';
+import { EntityMemoryThreadPanel } from '@/components/organisms/growth-system/EntityMemoryThreadPanel';
 import { ProjectCreateForm } from '@/components/organisms/ProjectCreateForm';
 import { ProjectEditForm } from '@/components/organisms/ProjectEditForm';
 import { TaskEditPanel } from '@/components/organisms/TaskEditPanel';
 import { TaskCreateForm } from '@/components/organisms/TaskCreateForm';
+import { LogbookEditor } from '@/components/organisms/LogbookEditor';
 import Dialog from '@/components/molecules/Dialog';
+import { ProjectGoalContributionWeightField } from '@/components/molecules/ProjectGoalContributionWeightField';
+import DropdownMenuButton from '@/components/molecules/DropdownMenuButton';
 import { EmptyState } from '@/components/molecules/EmptyState';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
 import { ProgressRing } from '@/components/atoms/ProgressRing';
-import {
-  SUBCATEGORY_LABELS,
-  PROJECT_STATUSES,
-  PROJECT_STATUS_LABELS,
-  AREAS,
-  AREA_LABELS,
-  PRIORITIES,
-} from '@/constants/growth-system';
+import { PointBadge } from '@/components/atoms/PointBadge';
+import { pointBadgeStatusFromProject } from '@/lib/point-badge';
+import { SUBCATEGORY_LABELS } from '@/constants/growth-system';
 import { TaskListItem } from '@/components/molecules/TaskListItem';
+import { ProjectCompletedTasksSection } from '@/components/molecules/ProjectCompletedTasksSection';
 import { RelationshipPicker } from '@/components/organisms/RelationshipPicker';
 import { AIProjectAssistPanel } from '@/components/molecules/AIProjectAssistPanel';
+import { EntityExplainButton } from '@/components/molecules/EntityExplainButton';
+import { useEntityExplainChatOptional } from '@/contexts/EntityExplainChatContext';
+import {
+  AI_PROJECT_ASSIST_PANEL_ID,
+  AI_PROJECT_TOOL_MODES,
+  aiProjectToolPillClassName,
+  aiProjectToolTabId,
+  type AIProjectToolMode,
+} from '@/lib/projects/ai-project-tools-surfaces';
 import { AISuggestionBanner } from '@/components/molecules/AISuggestionBanner';
+import { AmbientPresenceStrip } from '@/components/organisms/assistant/AmbientPresenceStrip';
+import ProjectPortfolioHealthStrip from '@/components/molecules/projects/ProjectPortfolioHealthStrip';
+import {
+  countPortfolioBuckets,
+  resolvePortfolioHealthScore,
+} from '@/lib/projects/portfolio-health';
 import { llmConfig } from '@/lib/llm';
 import { formatDateString } from '@/utils/date-formatters';
 import { cn } from '@/lib/utils';
-import { getGoalCriteriaProgressPercent, getProjectDisplayModel } from '@/utils/project-summary';
+import {
+  getGoalCriteriaProgressPercent,
+  getProjectDisplayModel,
+  resolveProjectBadgeStatus,
+  projectProgressRingColor,
+} from '@/utils/project-summary';
 import { useToast } from '@/hooks/use-toast';
-import { Select } from '@/components/atoms/Select';
+import type { ProjectHealthPriorityAction } from '@/types/llm';
+import { formatApiError } from '@/utils/api-error-formatter';
+import ProjectsActiveFilterChips from '@/components/molecules/ProjectsActiveFilterChips';
+import PriorityLegendInfoTip from '@/components/molecules/PriorityLegendInfoTip';
+import ProjectsFiltersBar, {
+  PROJECTS_FILTERS_PANEL_ID,
+} from '@/components/molecules/ProjectsFiltersBar';
+import {
+  countProjectsActiveFilters,
+  filterProjectsForView,
+} from '@/lib/growth-system/projects-filters';
+import { buildProjectNeighborhood } from '@/lib/projects/project-graph-utils';
+import {
+  projectGridSelectionCountClassName,
+  projectGridSelectionStripClassName,
+} from '@/lib/growth-system/project-card-surfaces';
+import { useEntityLogbookLinkPicker } from '@/lib/growth-system/logbook-entity-links';
 
-const STATUSES: ProjectStatus[] = [...PROJECT_STATUSES];
-const AREA_OPTIONS: Area[] = [...AREAS];
-const PRIORITY_OPTIONS: Priority[] = [...PRIORITIES];
-
-type ViewMode = 'grid' | 'list' | 'timeline';
+type ViewMode = 'grid' | 'list' | 'timeline' | 'matrix';
 
 export default function ProjectsPage() {
   const { showToast, ToastContainer } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({});
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -109,17 +156,49 @@ export default function ProjectsPage() {
   const [isGoalSaving, setIsGoalSaving] = useState(false);
   const [goalSaveError, setGoalSaveError] = useState<string | null>(null);
   const [goalActionError, setGoalActionError] = useState<string | null>(null);
+  const [goalLinkWeights, setGoalLinkWeights] = useState<Record<string, number>>({});
 
   const [showAIAssist, setShowAIAssist] = useState(false);
-  const [aiMode, setAIMode] = useState<'health' | 'generate' | 'risks'>('health');
+  const [showDependenciesPanel, setShowDependenciesPanel] = useState(false);
+  const [aiMode, setAIMode] = useState<AIProjectToolMode>('health');
   const isAIConfigured = llmConfig.isConfigured();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskEditOpen, setIsTaskEditOpen] = useState(false);
   const [isTaskPickerOpen, setIsTaskPickerOpen] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [createTaskInitialValues, setCreateTaskInitialValues] =
+    useState<Partial<CreateTaskInput> | null>(null);
+  const [createTaskFormKey, setCreateTaskFormKey] = useState(0);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [isLogActivityOpen, setIsLogActivityOpen] = useState(false);
+  const [logActivitySeed, setLogActivitySeed] = useState<{ notes: string } | null>(null);
+  const [isCreatingLogActivity, setIsCreatingLogActivity] = useState(false);
   const [isCompletedTasksModalOpen, setIsCompletedTasksModalOpen] = useState(false);
+
+  const {
+    isLogbookPickerOpen,
+    setIsLogbookPickerOpen,
+    openLogbookPicker,
+    logbookPickerEntities,
+    selectedLogbookIds,
+    setSelectedLogbookIds,
+    handleLogbookSave,
+    isLogbookSaving,
+    isLogbookLoading,
+    logbookSaveError,
+    setLogbookSaveError,
+    memoryReloadKey,
+    bumpMemoryReload,
+  } = useEntityLogbookLinkPicker({
+    entityType: 'project',
+    entityId: selectedProject?.id ?? '',
+    entityName: selectedProject?.name ?? '',
+    onError: (message) => {
+      showToast({ type: 'error', title: 'Could not open logbook picker', message });
+    },
+  });
+  const explainChat = useEntityExplainChatOptional();
 
   // Use individual hooks to fetch data from their respective endpoints
   const {
@@ -131,8 +210,20 @@ export default function ProjectsPage() {
   } = useProjects();
   const { goals, isLoading: goalsLoading } = useGoals();
   const { tasks, isLoading: tasksLoading, updateTask, createTask } = useTasks();
+  const { createEntry: createLogbookEntry } = useLogbook();
 
   const isLoading = projectsLoading || goalsLoading || tasksLoading;
+
+  useEffect(() => {
+    const projectId = searchParams.get('projectId');
+    if (!projectId || projectsLoading) return;
+    const match = projects.find((project) => project.id === projectId);
+    if (!match) return;
+    setSelectedProject(match);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('projectId');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams, projects, projectsLoading]);
 
   // Convert goals to EntitySummary format
   const allGoals = useMemo<EntitySummary[]>(
@@ -148,6 +239,7 @@ export default function ProjectsPage() {
           parentGoalId: g.parentGoalId,
           targetDate: g.targetDate,
           completedDate: g.completedDate,
+          updatedAt: g.updatedAt,
         })),
     [goals]
   );
@@ -166,13 +258,15 @@ export default function ProjectsPage() {
 
   const allProjects = useMemo<EntitySummary[]>(
     () =>
-      projects.map((project) => ({
-        id: project.id,
-        title: project.name,
-        type: 'project' as const,
-        area: project.area,
-        status: project.status,
-      })),
+      projects
+        .filter((project) => project.status !== 'Archived')
+        .map((project) => ({
+          id: project.id,
+          title: project.name,
+          type: 'project' as const,
+          area: project.area,
+          status: project.status,
+        })),
     [projects]
   );
 
@@ -193,19 +287,19 @@ export default function ProjectsPage() {
         type: 'task' as const,
         area: t.area,
         status: t.status,
+        updatedAt: t.updatedAt,
       })),
     [tasks]
   );
 
-  // Filter projects based on search and filters
   const filteredProjects = useMemo(() => {
-    return projects.filter((project) => {
-      return (
-        (!searchQuery || project.name.toLowerCase().includes(searchQuery.toLowerCase())) &&
-        (!filters.status || project.status === filters.status) &&
-        (!filters.area || project.area === filters.area) &&
-        (!filters.priority || project.priority === filters.priority)
-      );
+    return filterProjectsForView(projects, {
+      searchQuery,
+      filters: {
+        area: filters.area,
+        status: filters.status as ProjectStatus | undefined,
+        priority: filters.priority,
+      },
     });
   }, [projects, searchQuery, filters]);
 
@@ -214,11 +308,57 @@ export default function ProjectsPage() {
     [filteredProjects]
   );
 
-  const { projectHealthMap, isLoading: isHealthLoading } = useProjectHealthMap(filteredProjectIds);
+  const openProjectIds = useMemo(
+    () =>
+      projects
+        .filter(
+          (project) =>
+            project.status === 'Planning' ||
+            project.status === 'Active' ||
+            project.status === 'On Hold'
+        )
+        .map((project) => project.id),
+    [projects]
+  );
 
-  const { dependencies: projectDependencies, addDependency: addProjectDependency } =
-    useProjectDependencies(filteredProjectIds);
+  const { projectHealthMap, isLoading: isHealthLoading } = useProjectHealthMap(openProjectIds);
+
+  const {
+    dependencies: projectDependencies,
+    addDependency: addProjectDependency,
+    removeDependency: removeProjectDependency,
+  } = useProjectDependencies(filteredProjectIds);
   const projectTimelineUpdate = useProjectTimelineUpdate();
+
+  const {
+    predecessors: detailPredecessors,
+    successors: detailSuccessors,
+    edgeCount: detailDepEdgeCount,
+    isLoading: isDetailDepsLoading,
+  } = useProjectDependencyNeighborhood(selectedProject?.id);
+
+  const projectsById = useMemo(
+    () => new Map(projects.map((project) => [project.id, project])),
+    [projects]
+  );
+
+  const detailGraphNeighborhood = useMemo(() => {
+    if (!selectedProject) return null;
+    return buildProjectNeighborhood({
+      focusProject: selectedProject,
+      predecessors: detailPredecessors,
+      successors: detailSuccessors,
+      projectsById,
+    });
+  }, [selectedProject, detailPredecessors, detailSuccessors, projectsById]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      setShowDependenciesPanel(detailDepEdgeCount > 0);
+    } else {
+      setShowDependenciesPanel(false);
+    }
+  }, [selectedProject?.id, detailDepEdgeCount]);
 
   const getProjectStats = useCallback(
     (projectId: string) => {
@@ -277,6 +417,17 @@ export default function ProjectsPage() {
     }
     return { incompleteProjects: inc, completeProjects: comp };
   }, [filteredProjects, getProjectDisplay]);
+  const activeSelectedProjectId: string | undefined = selectedProject?.id ?? undefined;
+
+  const portfolioBucketCounts = useMemo(
+    () => countPortfolioBuckets(projects, getProjectDisplay),
+    [projects, getProjectDisplay]
+  );
+
+  const portfolioHealthScore = useMemo(
+    () => resolvePortfolioHealthScore(projects, projectHealthMap),
+    [projects, projectHealthMap]
+  );
 
   const handleCreateProject = async (input: CreateProjectInput) => {
     setIsSubmitting(true);
@@ -290,7 +441,7 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleUpdateProject = async (id: string, input: UpdateProjectInput) => {
+  const handleUpdateProject = async (id: string, input: UpdateProjectInput): Promise<void> => {
     setIsSubmitting(true);
     try {
       const response = await updateProject({ id, input });
@@ -307,6 +458,36 @@ export default function ProjectsPage() {
       setIsSubmitting(false);
     }
   };
+
+  const handleWeeklyRiskPinChange = useCallback(
+    async (pinned: boolean): Promise<boolean> => {
+      if (!selectedProject) return false;
+      const response = await updateProject({
+        id: selectedProject.id,
+        input: { weeklyRiskAssessmentPinned: pinned },
+      });
+      if (response?.success && response.data) {
+        const updated = 'project' in response.data ? response.data.project : response.data;
+        setSelectedProject(updated);
+        showToast({
+          type: 'success',
+          title: pinned
+            ? 'Project pinned for weekly risk assessment'
+            : 'Weekly risk assessment pin removed',
+        });
+        return true;
+      }
+      showToast({
+        type: 'error',
+        title: 'Could not update pin',
+        message:
+          response?.error?.message ||
+          'You may already have five projects pinned for weekly review.',
+      });
+      return false;
+    },
+    [selectedProject, updateProject, showToast]
+  );
 
   const handleDeleteProject = async () => {
     if (!projectToDelete) return;
@@ -325,9 +506,98 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleArchiveProject = async (project: Project) => {
+    setIsSubmitting(true);
+    try {
+      const response = await updateProject({
+        id: project.id,
+        input: { status: 'Archived' },
+      });
+      if (response.success && response.data) {
+        const updated = 'project' in response.data ? response.data.project : response.data;
+        if (selectedProject?.id === project.id) {
+          setSelectedProject(updated);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to archive project:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReviveProject = async (project: Project) => {
+    setIsSubmitting(true);
+    try {
+      const response = await updateProject({
+        id: project.id,
+        input: { status: 'Active' },
+      });
+      if (response.success && response.data) {
+        const updated = 'project' in response.data ? response.data.project : response.data;
+        if (selectedProject?.id === project.id) {
+          setSelectedProject(updated);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to revive project:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleProjectClick = (project: Project) => {
+    setSelectedProjectIds([]);
     setSelectedProject(project);
   };
+
+  const handleDetailGraphProjectClick = useCallback(
+    (projectId: string) => {
+      const project = projects.find((entry) => entry.id === projectId);
+      if (project) {
+        handleProjectClick(project);
+      }
+    },
+    [projects]
+  );
+
+  const handleRemoveDetailDependency = useCallback(
+    async (dependency: ProjectDependency) => {
+      try {
+        await removeProjectDependency({
+          successorProjectId: dependency.successorProjectId,
+          predecessorProjectId: dependency.predecessorProjectId,
+        });
+        showToast({ type: 'success', title: 'Dependency removed' });
+      } catch (error) {
+        showToast({
+          type: 'error',
+          title: 'Could not remove dependency',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'An unexpected error occurred. Please try again.',
+        });
+      }
+    },
+    [removeProjectDependency, showToast]
+  );
+
+  const handleToggleProjectSelect = useCallback((project: Project) => {
+    setSelectedProjectIds((prev) =>
+      prev.includes(project.id) ? prev.filter((id) => id !== project.id) : [...prev, project.id]
+    );
+  }, []);
+
+  const handleClearProjectSelection = useCallback(() => {
+    setSelectedProjectIds([]);
+  }, []);
+
+  useEffect(() => {
+    if (viewMode !== 'grid') {
+      setSelectedProjectIds([]);
+    }
+  }, [viewMode]);
 
   const handleBackToGrid = () => {
     setSelectedProject(null);
@@ -338,9 +608,17 @@ export default function ProjectsPage() {
     setFilters({});
   };
 
-  const activeFilterCount = useMemo(() => {
-    return [filters.area, filters.status, filters.priority].filter(Boolean).length;
-  }, [filters]);
+  const selectedStatusFilter = filters.status as ProjectStatus | undefined;
+
+  const activeFilterCount = useMemo(
+    () =>
+      countProjectsActiveFilters({
+        selectedArea: filters.area,
+        selectedStatus: selectedStatusFilter,
+        selectedPriority: filters.priority,
+      }),
+    [filters.area, selectedStatusFilter, filters.priority]
+  );
 
   const updateProjectGoals = useCallback(
     (projectId: string, updater: (goals: EntitySummary[]) => EntitySummary[]) => {
@@ -381,6 +659,38 @@ export default function ProjectsPage() {
     const derivedGoals = allGoals.filter((goal) => goalIdsFromTasks.has(goal.id));
     updateProjectGoals(selectedProject.id, () => derivedGoals);
   }, [selectedProject, allGoals, getProjectTasks, updateProjectGoals]);
+
+  useEffect(() => {
+    if (!selectedProject?.goalIds?.length) {
+      setGoalLinkWeights({});
+      return;
+    }
+
+    let cancelled = false;
+    const loadWeights = async () => {
+      const weights: Record<string, number> = {};
+      await Promise.all(
+        selectedProject.goalIds!.map(async (goalId) => {
+          const response = await goalsService.getLinks(goalId);
+          if (!response.success || !response.data) return;
+          const link = response.data.projects.find(
+            (projectLink) => projectLink.entityId === selectedProject.id
+          );
+          if (link) {
+            weights[goalId] = link.contributionWeight ?? 1;
+          }
+        })
+      );
+      if (!cancelled) {
+        setGoalLinkWeights(weights);
+      }
+    };
+
+    void loadWeights();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProject?.id, selectedProject?.goalIds]);
 
   const handleGoalLink = async (projectId: string, goalId: string) => {
     const response = await projectsService.linkToGoal(projectId, goalId);
@@ -486,9 +796,29 @@ export default function ProjectsPage() {
       await handleGoalUnlink(selectedProject.id, goalId);
       updateProjectGoals(selectedProject.id, (goals) => goals.filter((goal) => goal.id !== goalId));
       setSelectedGoalIds((prev) => prev.filter((id) => id !== goalId));
+      setGoalLinkWeights((prev) => {
+        const next = { ...prev };
+        delete next[goalId];
+        return next;
+      });
     } catch (error) {
       setGoalActionError(error instanceof Error ? error.message : 'Failed to unlink goal');
     }
+  };
+
+  const handleGoalContributionWeightChange = async (goalId: string, contributionWeight: number) => {
+    if (!selectedProject) return;
+    setGoalActionError(null);
+    const response = await projectsService.updateGoalLinkWeight(
+      selectedProject.id,
+      goalId,
+      contributionWeight
+    );
+    if (!response.success) {
+      setGoalActionError(response.error?.message ?? 'Failed to update contribution weight');
+      return;
+    }
+    setGoalLinkWeights((prev) => ({ ...prev, [goalId]: contributionWeight }));
   };
 
   const handleCreateTasksFromAI = async (
@@ -507,6 +837,25 @@ export default function ProjectsPage() {
     // Note: Tasks will be automatically updated when dashboard data refreshes
   };
 
+  const priorityActionToTaskPrefill = (text: string): Partial<CreateTaskInput> => {
+    const title = text.length > 100 ? `${text.slice(0, 97)}...` : text;
+    return {
+      title,
+      description: text,
+    };
+  };
+
+  const handleCreateTaskFromHealthAction = (action: ProjectHealthPriorityAction) => {
+    setCreateTaskInitialValues(priorityActionToTaskPrefill(action.text));
+    setCreateTaskFormKey((key) => key + 1);
+    setIsCreateTaskOpen(true);
+  };
+
+  const handleLogActivityFromHealthAction = (action: ProjectHealthPriorityAction) => {
+    setLogActivitySeed({ notes: action.text });
+    setIsLogActivityOpen(true);
+  };
+
   const handleCreateTaskForProject = async (input: CreateTaskInput) => {
     if (!selectedProject) return;
     setIsCreatingTask(true);
@@ -523,6 +872,7 @@ export default function ProjectsPage() {
         queryKey: queryKeys.growthSystem.projects.lists(),
       });
       setIsCreateTaskOpen(false);
+      setCreateTaskInitialValues(null);
       showToast({
         type: 'success',
         title: 'Task created',
@@ -539,6 +889,39 @@ export default function ProjectsPage() {
       throw err;
     } finally {
       setIsCreatingTask(false);
+    }
+  };
+
+  const handleCreateLogActivityForProject = async (
+    input: CreateLogbookEntryInput | UpdateLogbookEntryInput
+  ) => {
+    if (!selectedProject) return;
+    setIsCreatingLogActivity(true);
+    try {
+      const createInput = input as CreateLogbookEntryInput;
+      const response = await createLogbookEntry(createInput);
+      if (!response.success || !response.data) {
+        throw new Error(formatApiError(response.error));
+      }
+      setIsLogActivityOpen(false);
+      setLogActivitySeed(null);
+      bumpMemoryReload();
+      showToast({
+        type: 'success',
+        title: 'Activity logged',
+        message: `Entry linked to ${selectedProject.name}.`,
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to log activity. Please try again.';
+      showToast({
+        type: 'error',
+        title: 'Failed to log activity',
+        message,
+      });
+      throw err;
+    } finally {
+      setIsCreatingLogActivity(false);
     }
   };
 
@@ -615,6 +998,9 @@ export default function ProjectsPage() {
       linkedFullGoalsForDetail
     );
     const progress = detailDisplay.progressPercent;
+    const detailProgressRingColor = projectProgressRingColor(
+      resolveProjectBadgeStatus(selectedProject, detailDisplay)
+    );
     const linkedGoals = projectGoals.get(selectedProject.id) || [];
     const linkedGoalTree = buildLinkedGoalTree(
       linkedGoals.map((g) => g.id),
@@ -633,6 +1019,18 @@ export default function ProjectsPage() {
       allProjects.filter((project) => task.projectIds?.includes(project.id));
     const getLinkedGoalsForTask = (task: Task) =>
       allGoals.filter((goal) => task.goalIds?.includes(goal.id));
+    const openProjectExplain = () => {
+      explainChat?.open({
+        entityType: 'project',
+        entity: selectedProject,
+        projectEnrichment: {
+          taskCount: projectTasks.length,
+          completedTaskCount: completedTasks,
+          linkedGoalCount: linkedGoals.length,
+          progressPercent: progress,
+        },
+      });
+    };
 
     return (
       <PageContainer className="py-6 sm:py-8">
@@ -645,62 +1043,99 @@ export default function ProjectsPage() {
         </button>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6 lg:p-8 mb-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8 mb-6">
+          <div className="flex items-start justify-between gap-3 sm:gap-4 mb-2">
             <div className="min-w-0 flex-1">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4 mb-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                 <PriorityIndicator
                   priority={selectedProject.priority}
                   size="lg"
                   className="shrink-0 sm:mt-1"
                 />
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight break-words">
-                  {selectedProject.name}
-                </h1>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight break-words">
+                    {selectedProject.name}
+                  </h1>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
+                    <AreaBadge area={selectedProject.area} />
+                    {selectedProject.subCategory && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        {SUBCATEGORY_LABELS[selectedProject.subCategory]}
+                      </span>
+                    )}
+                    <StatusBadge
+                      status={resolveProjectBadgeStatus(selectedProject, detailDisplay)}
+                      size="sm"
+                      appearance="quiet"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
-                <AreaBadge area={selectedProject.area} />
-                {selectedProject.subCategory && (
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                    {SUBCATEGORY_LABELS[selectedProject.subCategory]}
-                  </span>
-                )}
-                <StatusBadge status={detailDisplay.effectiveStatus} size="sm" />
-              </div>
-              {selectedProject.description && (
-                <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm sm:text-base">
-                  {selectedProject.description}
-                </p>
-              )}
             </div>
 
-            <div
-              className={cn(
-                'flex w-full flex-shrink-0 flex-row flex-wrap items-center justify-between gap-4',
-                'sm:justify-start lg:w-auto lg:flex-col lg:items-center lg:justify-start'
-              )}
-            >
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               <div className="shrink-0 scale-[0.9] sm:scale-100">
-                <ProgressRing progress={progress} size="lg" showLabel />
+                <ProgressRing
+                  progress={progress}
+                  size="lg"
+                  showLabel
+                  color={detailProgressRingColor}
+                />
               </div>
-              <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setIsEditDialogOpen(true)}>
-                  <Edit2 className="w-4 h-4 mr-1" />
-                  Edit
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setProjectToDelete(selectedProject)}
-                  className="hover:!bg-red-50 hover:!text-red-600"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </Button>
-              </div>
+              {explainChat != null ? (
+                <EntityExplainButton
+                  entityType="project"
+                  entityTitle={selectedProject.name}
+                  onClick={openProjectExplain}
+                  alwaysVisible
+                />
+              ) : null}
+              <DropdownMenuButton
+                icon={MoreHorizontal}
+                ariaLabel="Project options"
+                align="end"
+                items={[
+                  {
+                    key: 'edit',
+                    label: 'Edit',
+                    icon: Edit2,
+                    onClick: () => setIsEditDialogOpen(true),
+                  },
+                  ...(selectedProject.status === 'Archived'
+                    ? [
+                        {
+                          key: 'revive',
+                          label: 'Revive',
+                          icon: RotateCcw,
+                          onClick: () => void handleReviveProject(selectedProject),
+                        },
+                      ]
+                    : [
+                        {
+                          key: 'archive',
+                          label: 'Archive',
+                          icon: Archive,
+                          onClick: () => void handleArchiveProject(selectedProject),
+                        },
+                      ]),
+                  {
+                    key: 'delete',
+                    label: 'Delete',
+                    icon: Trash2,
+                    tone: 'danger' as const,
+                    onClick: () => setProjectToDelete(selectedProject),
+                  },
+                ]}
+              />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 mb-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          {selectedProject.description && (
+            <p className="mb-3 text-sm text-gray-700 dark:text-gray-300 sm:text-base">
+              {selectedProject.description}
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 border-t border-gray-200 pt-3 dark:border-gray-700 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 mb-4">
             {selectedProject.impact > 0 && (
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Impact Score</div>
@@ -742,6 +1177,25 @@ export default function ProjectsPage() {
                 </div>
               </div>
             )}
+            {(selectedProject.completionBonusPoints ?? 0) > 0 &&
+            selectedProject.rewardLedgerStatus === 'awarded' ? (
+              <div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  Completion bonus
+                </div>
+                <div className="flex items-center gap-2">
+                  <PointBadge
+                    value={selectedProject.completionBonusPoints ?? 0}
+                    status={pointBadgeStatusFromProject(selectedProject)}
+                    size="md"
+                    showPlus
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Wallet credit for completing this project
+                  </span>
+                </div>
+              </div>
+            ) : null}
             {selectedProject.startDate && (
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Start Date</div>
@@ -769,6 +1223,50 @@ export default function ProjectsPage() {
             </div>
           )}
 
+          <EntityMemoryThreadPanel
+            entityType="project"
+            entityId={selectedProject.id}
+            fetchThread={projectsService.getMemoryThread}
+            onEmptyAction={openLogbookPicker}
+            reloadKey={memoryReloadKey}
+            isEmptyActionLoading={isLogbookLoading}
+          />
+
+          <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => setShowDependenciesPanel(!showDependenciesPanel)}
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              aria-expanded={showDependenciesPanel}
+            >
+              <GitBranch size={18} />
+              <span>Dependencies</span>
+              {detailDepEdgeCount > 0 ? (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium tabular-nums text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                  {detailDepEdgeCount}
+                </span>
+              ) : null}
+              {showDependenciesPanel ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+
+            {showDependenciesPanel && selectedProject && detailGraphNeighborhood ? (
+              <div className="mt-4 space-y-2">
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Finish-to-start links with this project. Drag the right connector on the Timeline
+                  to add new dependencies.
+                </p>
+                <ProjectDependencyMiniGraph
+                  focusProject={selectedProject}
+                  projects={detailGraphNeighborhood.projects}
+                  dependencies={detailGraphNeighborhood.dependencies}
+                  isLoading={isDetailDepsLoading}
+                  onProjectClick={handleDetailGraphProjectClick}
+                  onRemoveDependency={handleRemoveDetailDependency}
+                />
+              </div>
+            ) : null}
+          </div>
+
           {isAIConfigured && (
             <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
@@ -782,37 +1280,29 @@ export default function ProjectsPage() {
 
               {showAIAssist && (
                 <div className="mt-4 space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setAIMode('health')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${
-                        aiMode === 'health'
-                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Health Analysis
-                    </button>
-                    <button
-                      onClick={() => setAIMode('generate')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${
-                        aiMode === 'generate'
-                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Generate Tasks
-                    </button>
-                    <button
-                      onClick={() => setAIMode('risks')}
-                      className={`px-3 py-1.5 text-sm rounded-full transition ${
-                        aiMode === 'risks'
-                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      Risk Assessment
-                    </button>
+                  <div
+                    className="flex flex-wrap gap-2"
+                    role="tablist"
+                    aria-label="AI project tools"
+                  >
+                    {AI_PROJECT_TOOL_MODES.map(({ id, label }) => {
+                      const tabId = aiProjectToolTabId(id);
+                      const selected = aiMode === id;
+                      return (
+                        <button
+                          key={id}
+                          id={tabId}
+                          type="button"
+                          role="tab"
+                          aria-selected={selected}
+                          aria-controls={AI_PROJECT_ASSIST_PANEL_ID}
+                          onClick={() => setAIMode(id)}
+                          className={aiProjectToolPillClassName(selected)}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <AIProjectAssistPanel
@@ -821,6 +1311,11 @@ export default function ProjectsPage() {
                     tasks={projectTasks}
                     onClose={() => setShowAIAssist(false)}
                     onCreateTasks={handleCreateTasksFromAI}
+                    onCreateTaskFromAction={handleCreateTaskFromHealthAction}
+                    onLogActivityFromAction={handleLogActivityFromHealthAction}
+                    onRequestGenerateTasks={() => setAIMode('generate')}
+                    onWeeklyRiskPinChange={handleWeeklyRiskPinChange}
+                    labelledBy={aiProjectToolTabId(aiMode)}
                   />
                 </div>
               )}
@@ -887,35 +1382,16 @@ export default function ProjectsPage() {
                   </div>
                 )}
                 {doneTasks.length > 0 && mostRecentDoneTask && (
-                  <div className="space-y-2">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      Completed ({doneTasks.length})
-                    </h3>
-                    <div className="space-y-3">
-                      <TaskListItem
-                        key={mostRecentDoneTask.id}
-                        task={mostRecentDoneTask}
-                        onEdit={handleEditTask}
-                        onDelete={() =>
-                          handleUnlinkTaskFromProject(mostRecentDoneTask.id, selectedProject.id)
-                        }
-                        deleteLabel="Unlink task"
-                        deleteAriaLabel={`Unlink ${mostRecentDoneTask.title} from ${selectedProject.name}`}
-                        deleteIcon={<Link2Off className="w-4 h-4" />}
-                        deleteButtonClassName="hover:!bg-amber-50 hover:!text-amber-600 dark:hover:!bg-amber-900/20 dark:hover:!text-amber-400"
-                      />
-                      {olderDoneTasks.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setIsCompletedTasksModalOpen(true)}
-                          className="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:bg-gray-700/50 dark:hover:text-gray-200"
-                        >
-                          View {olderDoneTasks.length} more completed task
-                          {olderDoneTasks.length === 1 ? '' : 's'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <ProjectCompletedTasksSection
+                    key={selectedProject.id}
+                    doneTasks={doneTasks}
+                    mostRecentDoneTask={mostRecentDoneTask}
+                    olderDoneTasks={olderDoneTasks}
+                    projectName={selectedProject.name}
+                    onEdit={handleEditTask}
+                    onUnlink={(taskId) => handleUnlinkTaskFromProject(taskId, selectedProject.id)}
+                    onViewAllCompleted={() => setIsCompletedTasksModalOpen(true)}
+                  />
                 )}
               </div>
             )}
@@ -1016,6 +1492,14 @@ export default function ProjectsPage() {
                             </div>
 
                             <div className="flex items-center justify-end gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                              {depth === 0 && (
+                                <ProjectGoalContributionWeightField
+                                  value={goalLinkWeights[fullGoal.id] ?? 1}
+                                  onCommit={(weight) =>
+                                    handleGoalContributionWeightChange(fullGoal.id, weight)
+                                  }
+                                />
+                              )}
                               <Button
                                 variant="secondary"
                                 size="sm"
@@ -1076,7 +1560,9 @@ export default function ProjectsPage() {
           <ProjectEditForm
             key={selectedProject.id}
             project={selectedProject}
-            onSubmit={handleUpdateProject}
+            onSubmit={async (id, input) => {
+              await handleUpdateProject(id, input);
+            }}
             onCancel={() => setIsEditDialogOpen(false)}
             isLoading={isSubmitting}
           />
@@ -1096,6 +1582,7 @@ export default function ProjectsPage() {
           isSaving={isGoalSaving}
           saveError={goalSaveError}
           entityType="goal"
+          contextArea={selectedProject.area}
         />
 
         <RelationshipPicker
@@ -1107,6 +1594,23 @@ export default function ProjectsPage() {
           onSelectionChange={setSelectedTaskIds}
           onSave={handleTaskSave}
           entityType="task"
+          contextArea={selectedProject.area}
+        />
+
+        <RelationshipPicker
+          isOpen={isLogbookPickerOpen}
+          onClose={() => {
+            setIsLogbookPickerOpen(false);
+            setLogbookSaveError(null);
+          }}
+          title="Link logbook entries"
+          entities={logbookPickerEntities}
+          selectedIds={selectedLogbookIds}
+          onSelectionChange={setSelectedLogbookIds}
+          onSave={handleLogbookSave}
+          isSaving={isLogbookSaving}
+          saveError={logbookSaveError}
+          entityType="logbook"
         />
 
         <Dialog
@@ -1137,15 +1641,55 @@ export default function ProjectsPage() {
 
         <Dialog
           isOpen={isCreateTaskOpen}
-          onClose={() => setIsCreateTaskOpen(false)}
+          onClose={() => {
+            setIsCreateTaskOpen(false);
+            setCreateTaskInitialValues(null);
+          }}
           title={`Create Task in ${selectedProject.name}`}
           className="max-w-2xl"
         >
           <TaskCreateForm
+            key={createTaskFormKey}
+            initialValues={createTaskInitialValues ?? undefined}
             dependencyPickerEntities={allTasksForPicker}
             onSubmit={handleCreateTaskForProject}
-            onCancel={() => setIsCreateTaskOpen(false)}
+            onCancel={() => {
+              setIsCreateTaskOpen(false);
+              setCreateTaskInitialValues(null);
+            }}
             isLoading={isCreatingTask}
+          />
+        </Dialog>
+
+        <Dialog
+          isOpen={isLogActivityOpen}
+          onClose={() => {
+            setIsLogActivityOpen(false);
+            setLogActivitySeed(null);
+          }}
+          title="Log activity"
+          className="max-w-2xl"
+        >
+          <LogbookEditor
+            key={logActivitySeed?.notes ?? 'log-activity'}
+            defaultNotes={logActivitySeed?.notes}
+            defaultLinkedEntities={
+              selectedProject
+                ? [
+                    {
+                      entityType: 'project',
+                      entityId: selectedProject.id,
+                      entityName: selectedProject.name,
+                    },
+                  ]
+                : []
+            }
+            onSubmit={handleCreateLogActivityForProject}
+            onCancel={() => {
+              setIsLogActivityOpen(false);
+              setLogActivitySeed(null);
+            }}
+            isLoading={isCreatingLogActivity}
           />
         </Dialog>
 
@@ -1224,8 +1768,9 @@ export default function ProjectsPage() {
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">Projects</h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 sm:text-base">
-            Manage your projects and track progress
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 sm:text-base">
+            <span>Manage your projects and track progress</span>
+            <PriorityLegendInfoTip />
           </p>
         </div>
         <Button
@@ -1254,6 +1799,8 @@ export default function ProjectsPage() {
           variant="secondary"
           onClick={() => setShowFilters(!showFilters)}
           className="relative w-full shrink-0 sm:w-auto"
+          aria-expanded={showFilters}
+          aria-controls={PROJECTS_FILTERS_PANEL_ID}
         >
           <Filter className="w-4 h-4 mr-2" />
           Filters
@@ -1301,98 +1848,57 @@ export default function ProjectsPage() {
             <CalendarIcon className="w-4 h-4" />
             <span className="text-sm font-medium hidden sm:inline">Timeline</span>
           </button>
+          <button
+            onClick={() => setViewMode('matrix')}
+            className={`flex items-center gap-2 px-3 py-2 rounded transition-colors ${
+              viewMode === 'matrix'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+            }`}
+            title="Impact vs effort matrix"
+          >
+            <Grid2x2 className="w-4 h-4" />
+            <span className="text-sm font-medium hidden sm:inline">Matrix</span>
+          </button>
         </div>
       </div>
 
+      <ProjectsActiveFilterChips
+        selectedArea={filters.area}
+        selectedStatus={selectedStatusFilter}
+        selectedPriority={filters.priority}
+        onAreaChange={(area) => setFilters({ ...filters, area })}
+        onStatusChange={(status) => setFilters({ ...filters, status })}
+        onPriorityChange={(priority) => setFilters({ ...filters, priority })}
+        onClearAll={handleClearFilters}
+      />
+
       {showFilters && (
-        <div className="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Filters</h3>
-            <div className="flex items-center gap-2">
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={handleClearFilters}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Clear all
-                </button>
-              )}
-              <button
-                onClick={() => setShowFilters(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Area
-              </label>
-              <Select
-                value={filters.area || ''}
-                onChange={(e) =>
-                  setFilters({ ...filters, area: (e.target.value as Area) || undefined })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Areas</option>
-                {AREA_OPTIONS.map((area) => (
-                  <option key={area} value={area}>
-                    {AREA_LABELS[area]}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
-              </label>
-              <Select
-                value={filters.status || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    status: (e.target.value as ProjectStatus) || undefined,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Statuses</option>
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {PROJECT_STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Priority
-              </label>
-              <Select
-                value={filters.priority || ''}
-                onChange={(e) =>
-                  setFilters({
-                    ...filters,
-                    priority: (e.target.value as Priority) || undefined,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Priorities</option>
-                {PRIORITY_OPTIONS.map((priority) => (
-                  <option key={priority} value={priority}>
-                    {priority}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </div>
+        <div className="mb-4 min-w-0 overflow-hidden">
+          <ProjectsFiltersBar
+            selectedArea={filters.area}
+            onAreaChange={(area) => setFilters({ ...filters, area })}
+            selectedStatus={selectedStatusFilter}
+            onStatusChange={(status) => setFilters({ ...filters, status })}
+            selectedPriority={filters.priority}
+            onPriorityChange={(priority) => setFilters({ ...filters, priority })}
+            activeFilterCount={activeFilterCount}
+            onClearAll={handleClearFilters}
+            onClose={() => setShowFilters(false)}
+          />
         </div>
       )}
 
+      {!isLoading && projects.length > 0 ? (
+        <ProjectPortfolioHealthStrip
+          className="mb-4"
+          counts={portfolioBucketCounts}
+          portfolioHealthScore={portfolioHealthScore}
+          isLoading={isHealthLoading}
+        />
+      ) : null}
+
+      <AmbientPresenceStrip surface="growthProjects" />
       <AISuggestionBanner entityType="project" />
 
       {isLoading ? (
@@ -1415,6 +1921,21 @@ export default function ProjectsPage() {
         />
       ) : viewMode === 'grid' ? (
         <div className="space-y-8">
+          {selectedProjectIds.length > 0 ? (
+            <div className={projectGridSelectionStripClassName}>
+              <span className={projectGridSelectionCountClassName}>
+                {selectedProjectIds.length}{' '}
+                {selectedProjectIds.length === 1 ? 'project' : 'projects'} selected
+              </span>
+              <button
+                type="button"
+                onClick={handleClearProjectSelection}
+                className="text-xs font-medium text-blue-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:text-blue-300"
+              >
+                Clear
+              </button>
+            </div>
+          ) : null}
           {incompleteProjects.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 items-stretch">
               {incompleteProjects.map((project) => {
@@ -1428,6 +1949,9 @@ export default function ProjectsPage() {
                     viewMode="grid"
                     display={display}
                     linkedGoalCount={getLinkedGoalsFull(project).length}
+                    isSelected={selectedProjectIds.includes(project.id)}
+                    selectionActive={selectedProjectIds.length > 0}
+                    onToggleSelect={handleToggleProjectSelect}
                     {...stats}
                   />
                 );
@@ -1451,6 +1975,9 @@ export default function ProjectsPage() {
                       viewMode="grid"
                       display={display}
                       linkedGoalCount={getLinkedGoalsFull(project).length}
+                      isSelected={selectedProjectIds.includes(project.id)}
+                      selectionActive={selectedProjectIds.length > 0}
+                      onToggleSelect={handleToggleProjectSelect}
                       {...stats}
                     />
                   );
@@ -1480,6 +2007,8 @@ export default function ProjectsPage() {
                       setIsEditDialogOpen(true);
                     }}
                     onDelete={setProjectToDelete}
+                    onArchive={handleArchiveProject}
+                    onRevive={handleReviveProject}
                     display={display}
                     linkedGoalCount={getLinkedGoalsFull(project).length}
                     {...stats}
@@ -1506,6 +2035,8 @@ export default function ProjectsPage() {
                       setIsEditDialogOpen(true);
                     }}
                     onDelete={setProjectToDelete}
+                    onArchive={handleArchiveProject}
+                    onRevive={handleReviveProject}
                     display={display}
                     linkedGoalCount={getLinkedGoalsFull(project).length}
                     {...stats}
@@ -1515,6 +2046,13 @@ export default function ProjectsPage() {
             </div>
           )}
         </div>
+      ) : viewMode === 'matrix' ? (
+        <ImpactEffortMatrix
+          projects={incompleteProjects}
+          tasks={tasks}
+          onSelectProject={handleProjectClick}
+          selectedProjectId={activeSelectedProjectId}
+        />
       ) : (
         <ProjectTimelineView
           projects={filteredProjects}

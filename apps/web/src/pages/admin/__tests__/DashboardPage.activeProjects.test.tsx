@@ -67,6 +67,14 @@ vi.mock('@/contexts/BackendStatusContext', () => ({
   }),
 }));
 
+vi.mock('@/components/organisms/assistant/AmbientPresenceStrip', () => ({
+  AmbientPresenceStrip: () => null,
+}));
+
+vi.mock('@/components/organisms/HealthActionWidget', () => ({
+  HealthActionWidget: () => null,
+}));
+
 vi.mock('@/components/organisms/DailyPlanningAssistant', () => ({
   DailyPlanningAssistant: () => <div data-testid="daily-planning-assistant" />,
 }));

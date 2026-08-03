@@ -8,6 +8,8 @@ export type CopyIconButtonProps = {
   className?: string;
   /** When true, button stays visible instead of only on hover. */
   alwaysVisible?: boolean;
+  /** Called after a successful clipboard write. */
+  onCopied?: () => void;
 };
 
 export default function CopyIconButton({
@@ -15,6 +17,7 @@ export default function CopyIconButton({
   ariaLabel = 'Copy to clipboard',
   className,
   alwaysVisible = false,
+  onCopied,
 }: CopyIconButtonProps) {
   const [copied, setCopied] = useState(false);
 
@@ -23,6 +26,7 @@ export default function CopyIconButton({
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
+      onCopied?.();
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);

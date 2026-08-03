@@ -8,7 +8,9 @@ export type StatTileKey =
   | 'metricsLogged'
   | 'goalsActive'
   | 'goalsAtRisk'
-  | 'journalEntries';
+  | 'journalEntries'
+  | 'projectsCompleted'
+  | 'projectCompletionPoints';
 
 export type WeeklyDashboardWidgetType =
   | 'velocity'
@@ -66,6 +68,7 @@ export const DEFAULT_WEEKLY_DASHBOARD_CONFIG: WeeklyDashboardConfig = {
       config: {
         tiles: [
           'tasksCompleted',
+          'projectsCompleted',
           'habitCompletions',
           'goalsActive',
           'metricsLogged',
@@ -85,6 +88,8 @@ export const STAT_TILE_LABELS: Record<StatTileKey, string> = {
   goalsActive: 'Goals active',
   goalsAtRisk: 'Goals at risk',
   journalEntries: 'Journal',
+  projectsCompleted: 'Projects done',
+  projectCompletionPoints: 'Project bonus pts',
 };
 
 export function maxComparisonWeeks(config: WeeklyDashboardConfig): number {

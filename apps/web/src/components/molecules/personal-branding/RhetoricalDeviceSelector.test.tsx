@@ -13,6 +13,7 @@ const catalog: PlatformRuleCatalogEntry[] = [
     id: 'metaphor',
     label: 'Metaphor',
     definition: 'Direct comparison.',
+    example: 'Your LinkedIn profile is your storefront window.',
     enabledEffect: 'May use metaphors.',
     disabledEffect: 'Do not use metaphors.',
   },
@@ -33,6 +34,20 @@ describe('RhetoricalDeviceSelector', () => {
 
     await user.click(screen.getByRole('checkbox', { name: /metaphor/i }));
     expect(screen.getByText('May use metaphors.')).toBeInTheDocument();
+  });
+
+  it('shows example in info tip without toggling checkbox', async () => {
+    const user = userEvent.setup();
+    render(<ControlledDeviceSelector />);
+
+    const checkbox = screen.getByRole('checkbox', { name: /metaphor/i });
+    expect(checkbox).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: /metaphor definition and example/i }));
+    expect(screen.getByRole('tooltip')).toHaveTextContent(
+      'Example: Your LinkedIn profile is your storefront window.'
+    );
+    expect(checkbox).not.toBeChecked();
   });
 
   it('applies compact density with line-clamped definition when unchecked', () => {

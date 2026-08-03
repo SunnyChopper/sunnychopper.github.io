@@ -1,17 +1,50 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { ExternalLink, ChevronDown, ChevronUp, Sparkles, Trash2 } from 'lucide-react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
+import {
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Trash2,
+  HelpCircle,
+  ClipboardList,
+  BookMarked,
+} from 'lucide-react';
 import { useKnowledgeVault } from '@/contexts/KnowledgeVault';
 import Dialog from '@/components/molecules/Dialog';
 import type { Note, CreateNoteInput, UpdateNoteInput } from '@/types/knowledge-vault';
+import type { PracticeArtifactCreateKind } from '@/components/organisms/PracticeArtifactCreateDialog';
 import type { Area } from '@/types/growth-system';
 import MarkdownEditor from '@/components/molecules/MarkdownEditor';
 import TagInput from '@/components/molecules/TagInput';
 import LinkedItemsPicker from '@/components/molecules/LinkedItemsPicker';
 import NoteAIAssistPanel from '@/components/molecules/NoteAIAssistPanel';
 import { VaultKnowledgeToolsPanel } from '@/components/organisms/VaultKnowledgeToolsPanel';
+import UrlMetadataPreview from '@/components/molecules/knowledge-vault/UrlMetadataPreview';
+import { NoteUnsavedChangesDialog } from '@/components/molecules/knowledge-vault/NoteUnsavedChangesDialog';
+import {
+  buildNoteEditFormSnapshot,
+  buildNoteEditFormSnapshotFromNote,
+  listDirtyNoteEditFields,
+  noteEditFormSnapshotsEqual,
+  type NoteEditFormSnapshot,
+} from '@/lib/knowledge-vault/note-edit-form-snapshot';
 import { cn } from '@/lib/utils';
+import { useUrlMetadataPreview } from '@/hooks/useUrlMetadataPreview';
+import { isValidHttpUrl } from '@/lib/knowledge-vault/url-metadata';
 import { llmConfig } from '@/lib/llm';
 import { useDraftNote, useDraftNoteMutations } from '@/hooks/useDraftNotes';
+import {
+  EMPTY_METADATA_GUIDANCE_TEXT,
+  shouldShowEmptyMetadataGuidance,
+} from '@/lib/knowledge-vault/note-empty-metadata-guidance';
 import { Select } from '@/components/atoms/Select';
 
 const AREAS: Area[] = ['Health', 'Wealth', 'Love', 'Happiness', 'Operations', 'Day Job'];
@@ -20,9 +53,17 @@ interface NoteFormProps {
   note?: Note;
   onSuccess: () => void;
   onCancel: () => void;
+  onGenerateArtifact?: (kind: PracticeArtifactCreateKind) => void;
 }
 
-export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
+export interface NoteFormHandle {
+  requestClose: () => void;
+}
+
+const NoteForm = forwardRef<NoteFormHandle, NoteFormProps>(function NoteForm(
+  { note, onSuccess, onCancel, onGenerateArtifact },
+  ref
+) {
   const { createNote, updateNote, deleteItem } = useKnowledgeVault();
   const { draft } = useDraftNote();
   const { saveDraftNote, deleteDraftNote } = useDraftNoteMutations();
@@ -33,8 +74,21 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
   const [metadataExpanded, setMetadataExpanded] = useState(false);
   const [showAIPanel, setShowAIPanel] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const baselineRef = useRef<NoteEditFormSnapshot | null>(null);
+  const noteIdRef = useRef<string | null>(null);
+
+  if (note && note.id !== noteIdRef.current) {
+    noteIdRef.current = note.id;
+    baselineRef.current = buildNoteEditFormSnapshotFromNote(note);
+  }
+  if (!note) {
+    noteIdRef.current = null;
+    baselineRef.current = null;
+  }
 
   const [formData, setFormData] = useState({
     title: note?.title || '',
@@ -43,6 +97,39 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
     sourceUrl: (note as Note)?.sourceUrl || '',
     tags: note?.tags || [],
     linkedItems: note?.linkedItems || [],
+  });
+
+  const currentSnapshot = useMemo(
+    () =>
+      buildNoteEditFormSnapshot({
+        title: formData.title,
+        content: formData.content,
+        area: formData.area,
+        sourceUrl: formData.sourceUrl,
+        tags: formData.tags,
+        linkedItems: formData.linkedItems,
+      }),
+    [formData]
+  );
+
+  const isDirty =
+    note && baselineRef.current
+      ? !noteEditFormSnapshotsEqual(baselineRef.current, currentSnapshot)
+      : false;
+
+  const dirtyFields =
+    note && baselineRef.current
+      ? listDirtyNoteEditFields(baselineRef.current, currentSnapshot)
+      : [];
+
+  const focusContentEditor = useCallback(() => {
+    window.setTimeout(() => {
+      formRef.current?.querySelector('textarea')?.focus();
+    }, 0);
+  }, []);
+
+  const urlMetadataPreview = useUrlMetadataPreview(formData.sourceUrl, {
+    enabled: isValidHttpUrl(formData.sourceUrl) && !urlError,
   });
 
   // Load draft from React Query cache if creating new note
@@ -103,6 +190,42 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
     }
   }, [deleteDraftNote]);
 
+  const requestClose = useCallback(() => {
+    if (showUnsavedConfirm || showArchiveConfirm) {
+      return;
+    }
+
+    if (!note) {
+      void clearDraft();
+      onCancel();
+      return;
+    }
+
+    if (!isDirty) {
+      onCancel();
+      return;
+    }
+
+    setShowUnsavedConfirm(true);
+  }, [clearDraft, isDirty, note, onCancel, showArchiveConfirm, showUnsavedConfirm]);
+
+  useImperativeHandle(ref, () => ({ requestClose }), [requestClose]);
+
+  const handleDiscardUnsaved = useCallback(() => {
+    setShowUnsavedConfirm(false);
+    onCancel();
+  }, [onCancel]);
+
+  const handleKeepEditing = useCallback(() => {
+    setShowUnsavedConfirm(false);
+    focusContentEditor();
+  }, [focusContentEditor]);
+
+  const handleSaveAndClose = useCallback(() => {
+    setShowUnsavedConfirm(false);
+    formRef.current?.requestSubmit();
+  }, []);
+
   // Real-time validation
   const validateTitle = useCallback((title: string) => {
     if (!title.trim()) {
@@ -138,20 +261,25 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
       // Cmd/Ctrl + S to save
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
-        const form = document.querySelector('form');
-        if (form) {
-          form.requestSubmit();
-        }
+        formRef.current?.requestSubmit();
+        return;
       }
-      // Esc to cancel
       if (e.key === 'Escape' && !loading) {
-        onCancel();
+        if (showUnsavedConfirm || showArchiveConfirm) {
+          return;
+        }
+        if (showAIPanel) {
+          setShowAIPanel(false);
+          return;
+        }
+        e.preventDefault();
+        requestClose();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onCancel, loading]);
+  }, [loading, requestClose, showAIPanel, showArchiveConfirm, showUnsavedConfirm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,7 +349,7 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form ref={formRef} onSubmit={handleSubmit}>
       <fieldset
         disabled={loading}
         className="min-w-0 space-y-6 border-0 p-0 m-0 disabled:opacity-60"
@@ -340,6 +468,12 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
 
           {metadataExpanded && (
             <div className="space-y-6">
+              {shouldShowEmptyMetadataGuidance(formData.area, formData.tags) && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-snug">
+                  {EMPTY_METADATA_GUIDANCE_TEXT}
+                </p>
+              )}
+
               {/* Area */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -406,6 +540,16 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
                 {urlError && (
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{urlError}</p>
                 )}
+                <UrlMetadataPreview
+                  url={formData.sourceUrl}
+                  status={urlMetadataPreview.status}
+                  title={urlMetadataPreview.title}
+                  faviconUrl={urlMetadataPreview.faviconUrl}
+                  warning={urlMetadataPreview.warning}
+                  currentTitle={formData.title}
+                  applyLabel="Use title as note title"
+                  onApplyTitle={(title) => setFormData((prev) => ({ ...prev, title }))}
+                />
               </div>
 
               {/* Linked Items */}
@@ -421,43 +565,76 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
-          {note && (
+        <div className="space-y-3 border-t border-gray-200 pt-4 dark:border-gray-700">
+          {note && onGenerateArtifact ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Generate from this note
+              </span>
+              <button
+                type="button"
+                onClick={() => onGenerateArtifact('practice_question_set')}
+                disabled={loading || archiving}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <HelpCircle size={14} className="text-sky-600 dark:text-sky-400" />
+                Practice
+              </button>
+              <button
+                type="button"
+                onClick={() => onGenerateArtifact('quiz')}
+                disabled={loading || archiving}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <ClipboardList size={14} className="text-amber-600 dark:text-amber-400" />
+                Quiz
+              </button>
+              <button
+                type="button"
+                onClick={() => onGenerateArtifact('homework_assignment')}
+                disabled={loading || archiving}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <BookMarked size={14} className="text-violet-600 dark:text-violet-400" />
+                Homework
+              </button>
+            </div>
+          ) : null}
+          <div className="flex gap-3 justify-end">
+            {note && (
+              <button
+                type="button"
+                onClick={() => setShowArchiveConfirm(true)}
+                className="mr-auto px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition flex items-center gap-2"
+                disabled={loading || archiving}
+              >
+                <Trash2 size={16} />
+                <span>Archive</span>
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setShowArchiveConfirm(true)}
-              className="mr-auto px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition flex items-center gap-2"
+              onClick={requestClose}
+              className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
               disabled={loading || archiving}
             >
-              <Trash2 size={16} />
-              <span>Archive</span>
+              Cancel
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              clearDraft();
-              onCancel();
-            }}
-            className="px-6 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-            disabled={loading || archiving}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            disabled={loading || archiving || !!titleError || !!urlError}
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Saving...</span>
-              </>
-            ) : (
-              <span>{note ? 'Update Note' : 'Create Note'}</span>
-            )}
-          </button>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              disabled={loading || archiving || !!titleError || !!urlError}
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <span>{note ? 'Update Note' : 'Create Note'}</span>
+              )}
+            </button>
+          </div>
         </div>
       </fieldset>
 
@@ -502,6 +679,17 @@ export default function NoteForm({ note, onSuccess, onCancel }: NoteFormProps) {
           </div>
         </div>
       </Dialog>
+
+      <NoteUnsavedChangesDialog
+        isOpen={showUnsavedConfirm}
+        dirtyFields={dirtyFields}
+        saving={loading}
+        onDiscard={handleDiscardUnsaved}
+        onSaveAndClose={handleSaveAndClose}
+        onKeepEditing={handleKeepEditing}
+      />
     </form>
   );
-}
+});
+
+export default NoteForm;

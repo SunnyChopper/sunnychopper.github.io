@@ -8,6 +8,12 @@ import {
   type ChatMessageStreamingRun,
 } from '@/components/organisms/ChatMessageRow';
 import { cn } from '@/lib/utils';
+import {
+  getClusterGapClassName,
+  getClusterPosition,
+  type MessageRole,
+} from '@/lib/chat/message-cluster';
+import { chatTranscriptBgClassName } from '@/lib/chat/imessage-surfaces';
 import type { ChatMessage } from '@/types/chatbot';
 
 export type AssistantChatTranscriptProps = {
@@ -219,7 +225,10 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
     <div
       ref={scrollParentRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto min-h-0 px-2 py-3 sm:px-4 sm:py-4 lg:p-6"
+      className={cn(
+        'flex-1 overflow-y-auto min-h-0 px-2 py-3 sm:px-4 sm:py-4',
+        chatTranscriptBgClassName
+      )}
     >
       {isFetchingEarlierMessages && (
         <div className="flex items-center justify-center gap-2 py-2 text-xs text-gray-500 dark:text-gray-400">
@@ -248,6 +257,19 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
         <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
           {virtualizer.getVirtualItems().map((virtualRow) => {
             const message = transcript[virtualRow.index];
+            const prev = virtualRow.index > 0 ? transcript[virtualRow.index - 1] : null;
+            const next =
+              virtualRow.index < transcript.length - 1 ? transcript[virtualRow.index + 1] : null;
+            const role = message.role as MessageRole;
+            const clusterPosition = getClusterPosition(
+              (prev?.role as MessageRole | null) ?? null,
+              role,
+              (next?.role as MessageRole | null) ?? null
+            );
+            const gapClass = getClusterGapClassName(
+              (prev?.role as MessageRole | null) ?? null,
+              role
+            );
             const run =
               message.role === 'assistant' ? runByAssistantMessageId[message.id] : undefined;
             const isLastRow = virtualRow.index === transcript.length - 1;
@@ -256,7 +278,7 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
                 key={message.id}
                 data-index={virtualRow.index}
                 ref={virtualizer.measureElement}
-                className={cn('absolute left-0 top-0 w-full', !isLastRow && 'pb-3 sm:pb-4')}
+                className={cn('absolute left-0 top-0 w-full', gapClass, !isLastRow && 'pb-1')}
                 style={{
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
@@ -265,6 +287,7 @@ export const AssistantChatTranscript = memo(function AssistantChatTranscript({
                   message={message}
                   index={virtualRow.index}
                   transcriptLength={transcript.length}
+                  clusterPosition={clusterPosition}
                   run={run}
                   streamingRunForThisUserMessage={
                     message.role === 'user' ? streamingRunByUserMessageId[message.id] : undefined

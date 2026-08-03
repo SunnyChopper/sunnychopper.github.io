@@ -1,11 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Loader2, ChevronRight, ChevronDown, AlertCircle } from 'lucide-react';
 import Dialog from '@/components/molecules/Dialog';
 import Button from '@/components/atoms/Button';
-import { EntityLinkChip } from '@/components/atoms/EntityLinkChip';
 import { cn } from '@/lib/utils';
+import {
+  compareByRelevance,
+  DEFAULT_SUGGESTION_LIMIT,
+  partitionRelationshipPickerEntities,
+} from '@/lib/growth-system/relationship-picker-relevance';
 import { extractDateOnly, formatDateString, parseDateInput } from '@/utils/date-formatters';
-import type { EntitySummary } from '@/types/growth-system';
+import type { Area, EntitySummary } from '@/types/growth-system';
 
 interface RelationshipPickerProps {
   isOpen: boolean;
@@ -18,9 +22,15 @@ interface RelationshipPickerProps {
   isSaving?: boolean;
   saveError?: string | null;
   entityType: 'task' | 'project' | 'goal' | 'metric' | 'habit' | 'logbook';
+  /** When set, enables Suggested section ranked by area match + recency. */
+  contextArea?: Area;
+  suggestionSectionLabel?: string;
 }
 
 type GoalTreeNode = { entity: EntitySummary; children: GoalTreeNode[] };
+
+const SECTION_HEADER_CLASS =
+  'px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700';
 
 /** Earliest targetDate first; goals without a date sort after dated goals; title tie-breaker. */
 function compareGoalSummariesByTargetDate(a: EntitySummary, b: EntitySummary): number {
@@ -105,6 +115,91 @@ function collectIdsWithDescendants(nodes: GoalTreeNode[]): string[] {
   return ids;
 }
 
+function partitionGoalTreeNodes(
+  nodes: GoalTreeNode[],
+  baselineLinkedIds: string[],
+  contextArea: Area | undefined,
+  suggestionLimit = DEFAULT_SUGGESTION_LIMIT
+): { currentlyLinked: GoalTreeNode[]; suggested: GoalTreeNode[]; other: GoalTreeNode[] } {
+  const baselineSet = new Set(baselineLinkedIds);
+
+  const currentlyLinked = nodes
+    .filter((node) => baselineSet.has(node.entity.id))
+    .sort((a, b) =>
+      a.entity.title.localeCompare(b.entity.title, undefined, { sensitivity: 'base' })
+    );
+
+  const candidates = nodes.filter((node) => !baselineSet.has(node.entity.id));
+
+  if (!contextArea) {
+    const other = [...candidates].sort((a, b) =>
+      compareByRelevance(a.entity, b.entity, contextArea)
+    );
+    return { currentlyLinked, suggested: [], other };
+  }
+
+  const ranked = [...candidates].sort((a, b) =>
+    compareByRelevance(a.entity, b.entity, contextArea)
+  );
+  const suggested = ranked.slice(0, suggestionLimit);
+  const suggestedIds = new Set(suggested.map((node) => node.entity.id));
+  const other = ranked.filter((node) => !suggestedIds.has(node.entity.id));
+
+  return { currentlyLinked, suggested, other };
+}
+
+interface PickerSectionHeaderProps {
+  label: string;
+}
+
+function PickerSectionHeader({ label }: PickerSectionHeaderProps) {
+  return <div className={SECTION_HEADER_CLASS}>{label}</div>;
+}
+
+interface FlatEntityRowProps {
+  entity: EntitySummary;
+  isSelected: boolean;
+  isSaving: boolean;
+  onToggle: () => void;
+}
+
+function FlatEntityRow({ entity, isSelected, isSaving, onToggle }: FlatEntityRowProps) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={isSaving}
+      className={cn(
+        'w-full px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-800',
+        isSelected && 'bg-blue-50 dark:bg-blue-900/20'
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium text-gray-900 dark:text-white">{entity.title}</div>
+          <div className="mt-1 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <span className="capitalize">{entity.type}</span>
+            <span aria-hidden>•</span>
+            <span>{entity.area}</span>
+            <span aria-hidden>•</span>
+            <span className="capitalize">{entity.status}</span>
+          </div>
+        </div>
+        <div className="ml-4">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => {}}
+            disabled={isSaving}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600"
+            aria-label={`Select ${entity.title}`}
+          />
+        </div>
+      </div>
+    </button>
+  );
+}
+
 interface GoalAccordionRowsProps {
   nodes: GoalTreeNode[];
   depth: number;
@@ -140,12 +235,12 @@ function GoalAccordionRows({
           <div key={entity.id} className="border-b border-gray-200 dark:border-gray-700">
             <div
               className={cn(
-                'flex items-stretch min-h-[3.25rem] transition-colors',
+                'flex min-h-[3.25rem] items-stretch transition-colors',
                 isSelected &&
-                  'bg-blue-50/90 dark:bg-blue-900/25 hover:bg-blue-100/95 dark:hover:bg-blue-900/35',
+                  'bg-blue-50/90 hover:bg-blue-100/95 dark:bg-blue-900/25 dark:hover:bg-blue-900/35',
                 !isSelected &&
                   isOverdue &&
-                  'bg-amber-50/50 dark:bg-amber-950/30 hover:bg-amber-50/80 dark:hover:bg-amber-950/40',
+                  'bg-amber-50/50 hover:bg-amber-50/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/40',
                 !isSelected && !isOverdue && 'hover:bg-gray-50 dark:hover:bg-gray-800/80'
               )}
               style={{ paddingLeft: indentPx }}
@@ -162,7 +257,7 @@ function GoalAccordionRows({
                     className={cn(
                       'flex h-8 w-8 items-center justify-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-50',
                       isSelected
-                        ? 'text-blue-700 dark:text-blue-300 hover:bg-blue-200/60 dark:hover:bg-blue-800/45'
+                        ? 'text-blue-700 hover:bg-blue-200/60 dark:text-blue-300 dark:hover:bg-blue-800/45'
                         : 'text-gray-500 hover:bg-gray-200/80 dark:text-gray-400 dark:hover:bg-gray-700/80'
                     )}
                     aria-expanded={isExpanded}
@@ -189,10 +284,10 @@ function GoalAccordionRows({
                 className="flex min-w-0 flex-1 items-center justify-between gap-3 py-3 pr-4 text-left transition-colors"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-gray-900 dark:text-white truncate">
+                  <div className="truncate font-medium text-gray-900 dark:text-white">
                     {entity.title}
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-gray-500 dark:text-gray-400">
                     <span className="capitalize">{entity.type}</span>
                     <span aria-hidden>•</span>
                     <span>{entity.area}</span>
@@ -204,7 +299,7 @@ function GoalAccordionRows({
                         <span
                           className={cn(
                             isOverdue &&
-                              'font-medium text-amber-700 dark:text-amber-400 inline-flex items-center gap-1'
+                              'inline-flex items-center gap-1 font-medium text-amber-700 dark:text-amber-400'
                           )}
                         >
                           {isOverdue && (
@@ -232,13 +327,13 @@ function GoalAccordionRows({
                   checked={isSelected}
                   onChange={() => {}}
                   disabled={isSaving}
-                  className="w-4 h-4 shrink-0 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600"
+                  className="h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600"
                   aria-label={`Select ${entity.title}`}
                 />
               </button>
             </div>
             {hasChildren && isExpanded && (
-              <div className="border-t border-gray-100 dark:border-gray-700/90 bg-gray-50/40 dark:bg-gray-900/25">
+              <div className="border-t border-gray-100 bg-gray-50/40 dark:border-gray-700/90 dark:bg-gray-900/25">
                 <GoalAccordionRows
                   nodes={children}
                   depth={depth + 1}
@@ -257,6 +352,132 @@ function GoalAccordionRows({
   );
 }
 
+interface PickerListSectionsProps {
+  showGoalAccordion: boolean;
+  currentlyLinked: EntitySummary[];
+  suggested: EntitySummary[];
+  other: EntitySummary[];
+  currentlyLinkedGoals: GoalTreeNode[];
+  suggestedGoals: GoalTreeNode[];
+  otherGoals: GoalTreeNode[];
+  suggestionSectionLabel: string;
+  mergedExpandedGoalIds: Set<string>;
+  onToggleGoalExpand: (id: string) => void;
+  selectedIds: string[];
+  toggleSelection: (id: string) => void;
+  isSaving: boolean;
+}
+
+function PickerListSections({
+  showGoalAccordion,
+  currentlyLinked,
+  suggested,
+  other,
+  currentlyLinkedGoals,
+  suggestedGoals,
+  otherGoals,
+  suggestionSectionLabel,
+  mergedExpandedGoalIds,
+  onToggleGoalExpand,
+  selectedIds,
+  toggleSelection,
+  isSaving,
+}: PickerListSectionsProps) {
+  const sections: Array<{ key: string; label: string; count: number }> = [];
+
+  if (showGoalAccordion) {
+    if (currentlyLinkedGoals.length > 0) {
+      sections.push({
+        key: 'linked',
+        label: `Currently linked (${currentlyLinkedGoals.length})`,
+        count: currentlyLinkedGoals.length,
+      });
+    }
+    if (suggestedGoals.length > 0) {
+      sections.push({
+        key: 'suggested',
+        label: suggestionSectionLabel,
+        count: suggestedGoals.length,
+      });
+    }
+    if (otherGoals.length > 0) {
+      sections.push({ key: 'other', label: 'Other', count: otherGoals.length });
+    }
+  } else {
+    if (currentlyLinked.length > 0) {
+      sections.push({
+        key: 'linked',
+        label: `Currently linked (${currentlyLinked.length})`,
+        count: currentlyLinked.length,
+      });
+    }
+    if (suggested.length > 0) {
+      sections.push({
+        key: 'suggested',
+        label: suggestionSectionLabel,
+        count: suggested.length,
+      });
+    }
+    if (other.length > 0) {
+      sections.push({ key: 'other', label: 'Other', count: other.length });
+    }
+  }
+
+  if (sections.length === 0) {
+    return (
+      <div className="p-8 text-center text-gray-500 dark:text-gray-400">No entities found</div>
+    );
+  }
+
+  const goalAccordionProps = {
+    depth: 0 as const,
+    expandedIds: mergedExpandedGoalIds,
+    onToggleExpand: onToggleGoalExpand,
+    selectedIds,
+    toggleSelection,
+    isSaving,
+  };
+
+  return (
+    <div>
+      {sections.map((section) => (
+        <div key={section.key}>
+          <PickerSectionHeader label={section.label} />
+          {showGoalAccordion ? (
+            <GoalAccordionRows
+              nodes={
+                section.key === 'linked'
+                  ? currentlyLinkedGoals
+                  : section.key === 'suggested'
+                    ? suggestedGoals
+                    : otherGoals
+              }
+              {...goalAccordionProps}
+            />
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {(section.key === 'linked'
+                ? currentlyLinked
+                : section.key === 'suggested'
+                  ? suggested
+                  : other
+              ).map((entity) => (
+                <FlatEntityRow
+                  key={entity.id}
+                  entity={entity}
+                  isSelected={selectedIds.includes(entity.id)}
+                  isSaving={isSaving}
+                  onToggle={() => toggleSelection(entity.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function RelationshipPicker({
   isOpen,
   onClose,
@@ -268,9 +489,21 @@ export function RelationshipPicker({
   isSaving = false,
   saveError = null,
   entityType,
+  contextArea,
+  suggestionSectionLabel = 'Suggested for this project',
 }: RelationshipPickerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(() => new Set());
+  const [baselineLinkedIds, setBaselineLinkedIds] = useState<string[]>([]);
+  const selectedIdsRef = useRef(selectedIds);
+  selectedIdsRef.current = selectedIds;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setBaselineLinkedIds([...selectedIdsRef.current]);
+    setSearchQuery('');
+    setExpandedGoalIds(new Set());
+  }, [isOpen]);
 
   const goalTree = useMemo(() => {
     if (entityType !== 'goal') return [];
@@ -290,14 +523,26 @@ export function RelationshipPicker({
     return new Set([...expandedGoalIds, ...fromSearch]);
   }, [entityType, searchQuery, visibleGoalTree, expandedGoalIds]);
 
+  const flatPartitions = useMemo(
+    () =>
+      partitionRelationshipPickerEntities({
+        entities,
+        searchQuery,
+        baselineLinkedIds,
+        contextArea,
+      }),
+    [entities, searchQuery, baselineLinkedIds, contextArea]
+  );
+
+  const goalPartitions = useMemo(
+    () => partitionGoalTreeNodes(visibleGoalTree, baselineLinkedIds, contextArea),
+    [visibleGoalTree, baselineLinkedIds, contextArea]
+  );
+
   const resetPickerUi = () => {
     setSearchQuery('');
     setExpandedGoalIds(new Set());
   };
-
-  const filteredEntities = entities.filter((entity) =>
-    entity.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const toggleSelection = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -323,8 +568,6 @@ export function RelationshipPicker({
       resetPickerUi();
       onClose();
     } catch (error) {
-      // Error is handled by parent component via saveError prop
-      // Don't close the dialog so user can see the error and retry
       console.warn('Failed to save relationship selection:', error);
     }
   };
@@ -336,136 +579,64 @@ export function RelationshipPicker({
   };
 
   const showGoalAccordion = entityType === 'goal';
-  const goalListEmpty = showGoalAccordion && visibleGoalTree.length === 0;
-  const flatListEmpty = !showGoalAccordion && filteredEntities.length === 0;
 
   return (
     <Dialog isOpen={isOpen} onClose={handleClose} title={title} className="max-w-2xl">
       <div className="relative space-y-4">
-        {/* Saving Overlay */}
         {isSaving && (
           <div
-            className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-auto rounded-lg"
+            className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-sm dark:bg-gray-800/80"
             aria-live="polite"
             aria-busy="true"
           >
             <div className="flex flex-col items-center gap-4">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-blue-400" />
+              <Loader2 className="h-12 w-12 animate-spin text-blue-600 dark:text-blue-400" />
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Saving...</p>
             </div>
           </div>
         )}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search..."
             disabled={isSaving}
-            className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
           />
         </div>
 
-        {selectedIds.length > 0 && (
-          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Selected ({selectedIds.length})
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {selectedIds.map((id) => {
-                const entity = entities.find((e) => e.id === id);
-                if (!entity) return null;
-                return (
-                  <EntityLinkChip
-                    key={id}
-                    id={id}
-                    label={entity.title}
-                    type={entityType}
-                    area={entity.area}
-                    onRemove={() => toggleSelection(id)}
-                    size="sm"
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300" aria-live="polite">
+          Selected ({selectedIds.length})
+        </p>
 
         <div
-          className={`max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md ${
-            isSaving ? 'pointer-events-none opacity-60' : ''
-          }`}
-        >
-          {showGoalAccordion ? (
-            goalListEmpty ? (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                No entities found
-              </div>
-            ) : (
-              <div>
-                <GoalAccordionRows
-                  nodes={visibleGoalTree}
-                  depth={0}
-                  expandedIds={mergedExpandedGoalIds}
-                  onToggleExpand={toggleGoalExpand}
-                  selectedIds={selectedIds}
-                  toggleSelection={toggleSelection}
-                  isSaving={isSaving}
-                />
-              </div>
-            )
-          ) : flatListEmpty ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              No entities found
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredEntities.map((entity) => {
-                const isSelected = selectedIds.includes(entity.id);
-                return (
-                  <button
-                    key={entity.id}
-                    type="button"
-                    onClick={() => toggleSelection(entity.id)}
-                    disabled={isSaving}
-                    className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                      isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 dark:text-white truncate">
-                          {entity.title}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2 mt-1">
-                          <span className="capitalize">{entity.type}</span>
-                          <span>•</span>
-                          <span>{entity.area}</span>
-                          <span>•</span>
-                          <span className="capitalize">{entity.status}</span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}}
-                          disabled={isSaving}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+          className={cn(
+            'max-h-96 overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700',
+            isSaving && 'pointer-events-none opacity-60'
           )}
+        >
+          <PickerListSections
+            showGoalAccordion={showGoalAccordion}
+            currentlyLinked={flatPartitions.currentlyLinked}
+            suggested={flatPartitions.suggested}
+            other={flatPartitions.other}
+            currentlyLinkedGoals={goalPartitions.currentlyLinked}
+            suggestedGoals={goalPartitions.suggested}
+            otherGoals={goalPartitions.other}
+            suggestionSectionLabel={suggestionSectionLabel}
+            mergedExpandedGoalIds={mergedExpandedGoalIds}
+            onToggleGoalExpand={toggleGoalExpand}
+            selectedIds={selectedIds}
+            toggleSelection={toggleSelection}
+            isSaving={isSaving}
+          />
         </div>
 
         {saveError && <div className="text-sm text-red-600 dark:text-red-400">{saveError}</div>}
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
           <Button onClick={handleClose} variant="secondary" disabled={isSaving}>
             Cancel
           </Button>

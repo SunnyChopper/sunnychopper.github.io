@@ -8,8 +8,10 @@ import type {
   ProjectDependency,
   CascadedProjectUpdate,
   ProjectUpdateWithCascade,
+  EntityMemoryThread,
 } from '@/types/growth-system';
 import type { ApiResponse, ApiListResponse, ApiError } from '@/types/api-contracts';
+import type { ProjectHealthMetrics } from '@/types/project-health';
 import { goalsService } from '@/services/growth-system/goals.service';
 
 interface BackendPaginatedResponse<T> {
@@ -20,12 +22,7 @@ interface BackendPaginatedResponse<T> {
   hasMore: boolean;
 }
 
-interface ProjectHealth {
-  status: 'green' | 'yellow' | 'red';
-  tasksCompleted: number;
-  tasksTotal: number;
-  percentComplete: number;
-}
+type ProjectHealth = ProjectHealthMetrics;
 
 const isMissingEndpointError = (error?: ApiError | null) =>
   error?.code === 'HTTP_404' || error?.code === 'HTTP_405' || error?.code === 'HTTP_501';
@@ -35,11 +32,15 @@ export const projectsService = {
     area?: string;
     status?: string;
     priority?: string;
+    includeArchived?: boolean;
   }): Promise<ApiListResponse<Project>> {
     const queryParams = new URLSearchParams();
     if (filters?.area) queryParams.append('area', filters.area);
     if (filters?.status) queryParams.append('status', filters.status);
     if (filters?.priority) queryParams.append('priority', filters.priority);
+    if (filters?.includeArchived) {
+      queryParams.append('includeArchived', 'true');
+    }
 
     const endpoint = `/projects${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await apiClient.get<BackendPaginatedResponse<Project>>(endpoint);
@@ -225,10 +226,31 @@ export const projectsService = {
     throw new Error(response.error?.message || 'Failed to fetch linked goals');
   },
 
-  async linkToGoal(projectId: string, goalId: string): Promise<ApiResponse<void>> {
-    const response = await apiClient.post<void>(`/projects/${projectId}/goals`, { goalId });
+  async linkToGoal(
+    projectId: string,
+    goalId: string,
+    contributionWeight = 1
+  ): Promise<ApiResponse<void>> {
+    const response = await apiClient.post<void>(`/projects/${projectId}/goals`, {
+      goalId,
+      contributionWeight,
+    });
     if (!response.success && isMissingEndpointError(response.error)) {
-      return goalsService.linkProject(goalId, projectId);
+      return goalsService.linkProject(goalId, projectId, contributionWeight);
+    }
+    return response;
+  },
+
+  async updateGoalLinkWeight(
+    projectId: string,
+    goalId: string,
+    contributionWeight: number
+  ): Promise<ApiResponse<void>> {
+    const response = await apiClient.patch<void>(`/projects/${projectId}/goals/${goalId}`, {
+      contributionWeight,
+    });
+    if (!response.success && isMissingEndpointError(response.error)) {
+      return goalsService.updateProjectLinkWeight(goalId, projectId, contributionWeight);
     }
     return response;
   },
@@ -251,12 +273,22 @@ export const projectsService = {
     if (healthResponse.success && healthResponse.data) {
       return {
         success: true,
-        data: healthResponse.data.percentComplete,
+        data: healthResponse.data.completionPercentage,
       };
     }
     return {
       success: false,
       error: { code: 'FETCH_ERROR', message: 'Failed to calculate progress' },
     };
+  },
+
+  async getMemoryThread(projectId: string, days = 30): Promise<EntityMemoryThread | null> {
+    const response = await apiClient.get<EntityMemoryThread>(
+      `/projects/${projectId}/memory-thread?days=${days}`
+    );
+    if (response.success && response.data) {
+      return response.data;
+    }
+    return null;
   },
 };

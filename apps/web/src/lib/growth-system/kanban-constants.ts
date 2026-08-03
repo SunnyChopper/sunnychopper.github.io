@@ -12,6 +12,9 @@ export const KANBAN_CARD_DENSITY_STORAGE_KEY = 'kanban.card.density';
 /** Legacy key (Backlog-only toggle); read for migration only. */
 export const KANBAN_BACKLOG_DENSITY_STORAGE_KEY = 'kanban.backlog.density';
 
+/** Task count at or above which a column header count is styled as busy/overloaded. */
+export const KANBAN_COLUMN_BUSY_COUNT = 8;
+
 /** Column order on the board */
 export const KANBAN_STATUSES: TaskStatus[] = [
   'Backlog',

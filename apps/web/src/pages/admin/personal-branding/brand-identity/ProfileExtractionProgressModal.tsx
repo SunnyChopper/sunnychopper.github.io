@@ -11,6 +11,7 @@ import {
   extractionEffectiveStage,
   extractionIsTerminal,
   extractionPipelineSteps,
+  extractionProgressDetailSentence,
   extractionProgressPercent,
   extractionStatusLabel,
   extractionStepCaption,
@@ -88,6 +89,7 @@ export default function ProfileExtractionProgressModal({
   const sourceTypes = resolveExtractionSourceTypes(job, clientUploadProgress);
   const pipelineSteps = extractionPipelineSteps(resolveExtractionPipelineVariant(sourceTypes));
   const percent = extractionProgressPercent(job, clientUploadProgress);
+  const progressDetailSentence = extractionProgressDetailSentence(job);
   const currentStage = extractionEffectiveStage(job, clientUploadProgress);
   const currentStepIndex = pipelineSteps.findIndex((step) => step.id === currentStage);
 
@@ -123,6 +125,11 @@ export default function ProfileExtractionProgressModal({
               style={{ width: `${percent}%` }}
             />
           </div>
+          {progressDetailSentence ? (
+            <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+              {progressDetailSentence}
+            </p>
+          ) : null}
           <ExtractionMetricStrip job={job} />
         </div>
 
@@ -138,15 +145,21 @@ export default function ProfileExtractionProgressModal({
             const isLast = index === pipelineSteps.length - 1;
 
             return (
-              <li key={step.id} className="relative flex gap-3 pb-4 last:pb-0">
+              <li
+                key={step.id}
+                className={cn(
+                  'relative flex gap-3 rounded-lg pb-4 last:pb-0',
+                  isCurrent && !isFailed && 'bg-amber-50/80 px-2 py-2 -mx-2 dark:bg-amber-950/25'
+                )}
+              >
                 {!isLast ? (
                   <span
                     aria-hidden
                     className={cn(
                       'absolute left-[11px] top-6 bottom-0 w-px',
                       isComplete
-                        ? 'bg-green-300/80 dark:bg-green-800/60'
-                        : 'bg-gray-200 dark:bg-gray-700'
+                        ? 'bg-green-400/90 dark:bg-green-700/70'
+                        : 'bg-gray-200/70 dark:bg-gray-700/70'
                     )}
                   />
                 ) : null}
@@ -154,14 +167,14 @@ export default function ProfileExtractionProgressModal({
                   className={cn(
                     'relative z-[1] flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold',
                     isComplete &&
-                      'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-300',
+                      'bg-green-100 text-green-800 dark:bg-green-950/60 dark:text-green-200',
                     isCurrent &&
                       !isFailed &&
-                      'bg-amber-100 text-amber-800 ring-2 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-200 dark:ring-amber-900/60',
-                    isFailed && 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300',
+                      'bg-amber-200 text-amber-900 ring-2 ring-amber-300 dark:bg-amber-900/60 dark:text-amber-50 dark:ring-amber-700/80',
+                    isFailed && 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-200',
                     !isComplete &&
                       !isCurrent &&
-                      'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                      'bg-gray-100/70 text-gray-400 opacity-70 dark:bg-gray-800/50 dark:text-gray-500'
                   )}
                 >
                   {isComplete ? (
@@ -176,16 +189,18 @@ export default function ProfileExtractionProgressModal({
                   <span
                     className={cn(
                       'text-sm font-medium',
-                      isComplete && 'text-green-900 dark:text-green-100',
-                      isCurrent && !isFailed && 'text-amber-900 dark:text-amber-100',
+                      isComplete && 'text-green-800 dark:text-green-100',
+                      isCurrent && !isFailed && 'text-amber-950 dark:text-amber-50',
                       isFailed && 'text-red-900 dark:text-red-100',
-                      !isComplete && !isCurrent && 'text-gray-500 dark:text-gray-400'
+                      !isComplete && !isCurrent && 'text-gray-400 dark:text-gray-500'
                     )}
                   >
                     {step.label}
                   </span>
                   {isCurrent && caption ? (
-                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{caption}</p>
+                    <p className="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/80">
+                      {caption}
+                    </p>
                   ) : null}
                 </div>
               </li>

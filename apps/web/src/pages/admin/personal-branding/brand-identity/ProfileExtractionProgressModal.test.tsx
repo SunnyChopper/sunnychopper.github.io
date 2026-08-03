@@ -144,6 +144,27 @@ describe('ProfileExtractionProgressModal', () => {
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
   });
 
+  it('shows progress detail sentence under the bar when source counts are known', () => {
+    render(
+      <ProfileExtractionProgressModal
+        isOpen
+        job={{
+          ...makeQueuedJob(),
+          status: 'running',
+          stage: 'analyzing_sources',
+          processedSourceCount: 15,
+          totalChunkCount: 33,
+          processedChunkCount: 26,
+        }}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText('15 of 70 sources processed, 26 of 33 chunks analyzed')
+    ).toBeInTheDocument();
+  });
+
   it('shows X profile pipeline steps instead of PDF upload steps', () => {
     render(
       <ProfileExtractionProgressModal

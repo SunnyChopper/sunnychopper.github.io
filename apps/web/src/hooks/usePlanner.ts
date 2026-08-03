@@ -233,7 +233,8 @@ export function useSetOneThing() {
   return useMutation({
     mutationFn: async (body: { targetDate: string; taskId: string; selectionReason?: string }) =>
       requireData(await plannerService.setOneThing(body)),
-    onSuccess: (_data, body) => {
+    onSuccess: (data, body) => {
+      qc.setQueryData(queryKeys.growthSystem.planner.oneThing(body.targetDate), data);
       void qc.invalidateQueries({
         queryKey: queryKeys.growthSystem.planner.oneThing(body.targetDate),
       });

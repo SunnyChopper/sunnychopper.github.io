@@ -1,5 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import type {
+  CostGuardrailRuleInput,
+  CostGuardrailStatus,
   ObservabilityBurnBreakdown,
   ObservabilityBurnSummary,
   ObservabilityBurnTimeseries,
@@ -114,5 +116,40 @@ export const observabilityService = {
     );
     if (res.success && res.data) return res.data;
     throw new Error(res.error?.message || 'Replay failed');
+  },
+
+  async getCostGuardrails(): Promise<CostGuardrailStatus> {
+    const res = await apiClient.get<CostGuardrailStatus>('/observability/cost-guardrails');
+    if (res.success && res.data) return res.data;
+    throw new Error(res.error?.message || 'Failed to load cost guardrails');
+  },
+
+  async putCostGuardrails(payload: {
+    rules: CostGuardrailRuleInput[];
+    seedDefault?: boolean;
+  }): Promise<CostGuardrailStatus> {
+    const res = await apiClient.put<CostGuardrailStatus>('/observability/cost-guardrails', payload);
+    if (res.success && res.data) return res.data;
+    throw new Error(res.error?.message || 'Failed to save cost guardrails');
+  },
+
+  async resumeCostGuardrailFeature(feature: string): Promise<CostGuardrailStatus> {
+    return this.postCostGuardrailOverride({ feature, action: 'resume' });
+  },
+
+  async pauseCostGuardrailFeature(feature: string): Promise<CostGuardrailStatus> {
+    return this.postCostGuardrailOverride({ feature, action: 'pause' });
+  },
+
+  async postCostGuardrailOverride(payload: {
+    feature: string;
+    action: 'pause' | 'resume';
+  }): Promise<CostGuardrailStatus> {
+    const res = await apiClient.post<CostGuardrailStatus>(
+      '/observability/cost-guardrails/overrides',
+      payload
+    );
+    if (res.success && res.data) return res.data;
+    throw new Error(res.error?.message || 'Failed to update feature override');
   },
 };

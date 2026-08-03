@@ -10,6 +10,11 @@ import type {
   ProactiveSuggestion,
   ProactiveWebhookTestResult,
   RecoveryNotificationsConfig,
+  RecoveryMorningNudgeConfig,
+  AmbientStrictPlanConfig,
+  SetAmbientStrictPlanRequest,
+  CoachEscalationNotificationsConfig,
+  StaleEntityHunterPreferencesConfig,
 } from '@/types/api-contracts';
 
 export const proactiveService = {
@@ -102,5 +107,45 @@ export const proactiveService = {
     body: RecoveryNotificationsConfig
   ): Promise<ApiResponse<RecoveryNotificationsConfig>> {
     return apiClient.setRecoveryNotifications(body);
+  },
+
+  getRecoveryMorningNudge(): Promise<ApiResponse<RecoveryMorningNudgeConfig>> {
+    return apiClient.getRecoveryMorningNudge();
+  },
+
+  setRecoveryMorningNudge(
+    body: RecoveryMorningNudgeConfig
+  ): Promise<ApiResponse<RecoveryMorningNudgeConfig>> {
+    return apiClient.setRecoveryMorningNudge(body);
+  },
+
+  getAmbientStrictPlan(): Promise<ApiResponse<AmbientStrictPlanConfig>> {
+    return apiClient.getAmbientStrictPlan();
+  },
+
+  setAmbientStrictPlan(
+    body: SetAmbientStrictPlanRequest
+  ): Promise<ApiResponse<AmbientStrictPlanConfig>> {
+    return apiClient.setAmbientStrictPlan(body);
+  },
+
+  getCoachEscalationNotifications(): Promise<ApiResponse<CoachEscalationNotificationsConfig>> {
+    return apiClient.getCoachEscalationNotifications();
+  },
+
+  setCoachEscalationNotifications(
+    body: CoachEscalationNotificationsConfig
+  ): Promise<ApiResponse<CoachEscalationNotificationsConfig>> {
+    return apiClient.setCoachEscalationNotifications(body);
+  },
+
+  getStaleEntityHunterPreferences(): Promise<ApiResponse<StaleEntityHunterPreferencesConfig>> {
+    return apiClient.getStaleEntityHunterPreferences();
+  },
+
+  setStaleEntityHunterPreferences(
+    body: StaleEntityHunterPreferencesConfig
+  ): Promise<ApiResponse<StaleEntityHunterPreferencesConfig>> {
+    return apiClient.setStaleEntityHunterPreferences(body);
   },
 };

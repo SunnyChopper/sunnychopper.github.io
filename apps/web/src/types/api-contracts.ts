@@ -286,6 +286,7 @@ export type AssistantToolApprovalMode = 'dangerousOnly' | 'allWrites' | 'none';
 export interface AssistantToolApprovalConfig {
   mode: AssistantToolApprovalMode;
   dangerousTools: string[];
+  deniedReadTools: string[];
 }
 
 /** User-defined standout-fact filters for STM extraction and thread summarization. */
@@ -324,9 +325,11 @@ export interface AssistantToolRegistryEntry {
 export type ProactiveAutomationKind =
   | 'dailyBriefing'
   | 'logbookEvening'
+  | 'tomorrowPrep'
   | 'custom'
   | 'dailyLearningTrends'
-  | 'dailyLearningTheory';
+  | 'dailyLearningTheory'
+  | 'staleEntityHunter';
 
 export type ProactiveThreadStrategy = 'reuseFixedThread' | 'newThreadEachRun';
 
@@ -371,6 +374,66 @@ export interface ProactiveAutomation {
 
 export type ProactiveSuggestionStatus = 'pending' | 'approved' | 'rejected';
 
+export type AssistantInterventionKind =
+  | 'coachIntervention'
+  | 'escalation'
+  | 'opportunity'
+  | 'emailThreadSummary';
+
+export type AssistantInterventionSeverity = 'info' | 'attention' | 'critical';
+
+export type AssistantInterventionStatus = 'unread' | 'read' | 'replied' | 'dismissed' | 'converted';
+
+export interface AssistantIntervention {
+  id: string;
+  kind: AssistantInterventionKind;
+  severity: AssistantInterventionSeverity;
+  status: AssistantInterventionStatus;
+  title: string;
+  body: string;
+  summary?: string | null;
+  dedupeKey?: string | null;
+  threadId?: string | null;
+  messageId?: string | null;
+  decisionId?: string | null;
+  sourceModule?: string | null;
+  sourceRef?: string | null;
+  askPrompt?: string | null;
+  href?: string | null;
+  dismissalReason?: string | null;
+  dismissedAt?: string | null;
+  readAt?: string | null;
+  repliedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssistantInterventionListResult {
+  items: AssistantIntervention[];
+  total: number;
+  page: number;
+  pageSize: number;
+  unreadCount: number;
+}
+
+export interface AssistantThreadUnreadItem {
+  threadId: string;
+  threadKind: string;
+  unreadCount: number;
+  lastMessagePreview?: string | null;
+  lastMessageAt?: string | null;
+}
+
+export interface AssistantUnreadSummary {
+  totalUnread: number;
+  threads: AssistantThreadUnreadItem[];
+}
+
+export interface MarkThreadReadResult {
+  threadId: string;
+  unreadCount: number;
+}
+
 export interface ProactiveSuggestion {
   id: string;
   status: ProactiveSuggestionStatus;
@@ -380,6 +443,8 @@ export interface ProactiveSuggestion {
   createdAutomationId?: string | null;
   resolutionFeedback?: string | null;
   resolvedPayload?: Record<string, unknown> | null;
+  informationalOnly?: boolean | null;
+  contextKind?: string | null;
 }
 
 export interface ProactiveDispatchErrorItem {
@@ -424,6 +489,43 @@ export interface RecoveryNotificationsConfig {
   enabled: boolean;
   channelEmailEnabled: boolean;
   channelWebhookEnabled: boolean;
+}
+
+export interface RecoveryMorningNudgeConfig {
+  enabled: boolean;
+  morningWindowEnd: string;
+}
+
+export interface SleepDebtPreferencesConfig {
+  targetHours: number;
+}
+
+export type PauseHours = 1 | 4 | 'restOfDay';
+
+export interface AmbientStrictPlanConfig {
+  active: boolean;
+  strictPlanRequestedDate: string | null;
+  pausedUntil: string | null;
+  pausePresets: PauseHours[];
+}
+
+export interface SetAmbientStrictPlanRequest {
+  clear?: boolean;
+  pauseHours?: PauseHours;
+}
+
+export interface CoachEscalationNotificationsConfig {
+  enabled: boolean;
+  channelEmailEnabled: boolean;
+  channelWebhookEnabled: boolean;
+}
+
+export interface StaleEntityHunterPreferencesConfig {
+  staleDays: number;
+  maxCandidates: number;
+  includeProjects: boolean;
+  includeGoals: boolean;
+  includeHabits: boolean;
 }
 
 export interface RolodexFollowUpNotificationsConfig {

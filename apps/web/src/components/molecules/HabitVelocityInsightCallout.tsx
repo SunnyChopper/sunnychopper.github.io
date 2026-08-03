@@ -1,5 +1,8 @@
+import { Link } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import type { HabitVelocityCorrelation } from '@/types/growth-system';
+import { habitsDeepLinkHref } from '@/lib/growth-system/habits-deep-links';
+import { weeklyReviewWarningActionLinkClassName } from '@/lib/growth-system/weekly-review-warning-banner-surfaces';
 import { cn } from '@/lib/utils';
 
 interface HabitVelocityInsightCalloutProps {
@@ -40,7 +43,13 @@ function CorrelationLine({
           <span className="font-semibold">Kinetic Momentum:</span> Weeks with ≥{threshold}%{' '}
           <span className="font-semibold">{row.habitName}</span> consistency average{' '}
           <span className="font-semibold text-amber-800 dark:text-amber-200">+{uplift}%</span> story
-          points ({high} vs {low}). Based on the last {row.trailingWeeks} weeks.
+          points ({high} vs {low}). Based on the last {row.trailingWeeks} weeks.{' '}
+          <Link
+            to={habitsDeepLinkHref(row.habitId)}
+            className={weeklyReviewWarningActionLinkClassName}
+          >
+            Open {row.habitName}
+          </Link>
         </>
       ) : (
         <>

@@ -4,9 +4,16 @@ import { formatDateString } from '@/utils/date-formatters';
 import { VelocityDragBadge } from '@/components/molecules/VelocityDragInterventionCard';
 import { AreaBadge } from '@/components/atoms/AreaBadge';
 import { PointBadge } from '@/components/atoms/PointBadge';
+import { StoryPointsBadge } from '@/components/atoms/StoryPointsBadge';
 import { pointBadgeStatusFromTask } from '@/lib/point-badge';
 import { PriorityIndicator } from '@/components/atoms/PriorityIndicator';
-import { AlignLeft, Pencil } from 'lucide-react';
+import {
+  kanbanCardShellClassName,
+  kanbanMetaRowClassName,
+} from '@/lib/growth-system/kanban-card-surfaces';
+import { AlignLeft } from 'lucide-react';
+import { KanbanCardActionsMenu } from '@/components/molecules/KanbanCardActionsMenu';
+import { useEntityExplainChatOptional } from '@/contexts/EntityExplainChatContext';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 14, scale: 0.97 },
@@ -31,9 +38,14 @@ export interface KanbanCardProps {
   task: Task;
   taskIndex: number;
   isBeingDragged: boolean;
+  isSelected?: boolean;
+  trashMode?: boolean;
+  disableDrag?: boolean;
   onDragStart: (e: React.DragEvent, task: Task) => void;
   onDragEnd: () => void;
   onEdit: (task: Task) => void;
+  onDelete?: (task: Task) => void;
+  onRestore?: (task: Task) => void;
   onOpen?: (task: Task) => void;
 }
 
@@ -41,20 +53,29 @@ export function KanbanCard({
   task,
   taskIndex,
   isBeingDragged,
+  isSelected = false,
+  trashMode = false,
+  disableDrag = false,
   onDragStart,
   onDragEnd,
   onEdit,
+  onDelete,
+  onRestore,
   onOpen,
 }: KanbanCardProps) {
+  const explainChat = useEntityExplainChatOptional();
+  const interactive = Boolean(onOpen);
+
   return (
     <motion.div
       variants={cardVariants}
-      initial="hidden"
+      initial={false}
       animate="visible"
       exit="exit"
       transition={{ delay: taskIndex * 0.035 }}
-      draggable
+      draggable={!disableDrag}
       onDragStart={(e) => {
+        if (disableDrag) return;
         const dragEvent = e as unknown as React.DragEvent;
         onDragStart(dragEvent, task);
       }}
@@ -79,38 +100,32 @@ export function KanbanCard({
       role={onOpen ? 'button' : 'listitem'}
       tabIndex={onOpen ? 0 : undefined}
       aria-label={onOpen ? `View task details: ${task.title}` : `Task: ${task.title}`}
-      className={`group cursor-grab rounded-lg border border-gray-200/90 bg-white p-3 shadow-sm transition-[opacity,transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing dark:border-gray-700/90 dark:bg-gray-900 ${
-        isBeingDragged
-          ? 'z-10 -rotate-1 scale-[0.97] opacity-[0.48] shadow-lg ring-2 ring-blue-400/35 dark:ring-blue-500/40'
-          : onOpen
-            ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:ring-offset-2 dark:focus:ring-offset-gray-900'
-            : ''
-      } `}
+      className={kanbanCardShellClassName({
+        isDragging: isBeingDragged,
+        isSelected,
+        interactive,
+      })}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-start gap-2">
-          <PriorityIndicator priority={task.priority} size="sm" />
+        <div className="flex min-w-0 flex-1 items-start gap-1.5">
+          <PriorityIndicator priority={task.priority} size="sm" className="shrink-0" />
           <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100">
             {task.title}
           </h4>
         </div>
-        <motion.button
-          type="button"
-          whileTap={{ scale: 0.92 }}
-          whileHover={{ scale: 1.05 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(task);
-          }}
-          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-md p-1.5 opacity-0 transition-opacity hover:bg-gray-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500/60 group-hover:opacity-100 dark:hover:bg-gray-800"
-          title="Edit task"
-          aria-label={`Edit task: ${task.title}`}
-        >
-          <Pencil className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-        </motion.button>
+        <KanbanCardActionsMenu
+          taskTitle={task.title}
+          trashMode={trashMode}
+          onEdit={() => onEdit(task)}
+          onDelete={onDelete ? () => onDelete(task) : undefined}
+          onRestore={onRestore ? () => onRestore(task) : undefined}
+          onExplain={
+            explainChat ? () => explainChat.open({ entityType: 'task', entity: task }) : undefined
+          }
+        />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={kanbanMetaRowClassName}>
         <VelocityDragBadge rolloverCount={task.rolloverCount} />
         {task.description || task.extendedDescription ? (
           <span
@@ -122,14 +137,7 @@ export function KanbanCard({
           </span>
         ) : null}
         <AreaBadge area={task.area} size="sm" />
-        {task.size != null && task.size > 0 ? (
-          <span
-            className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-            title="Story points (Fibonacci)"
-          >
-            {task.size}pts
-          </span>
-        ) : null}
+        <StoryPointsBadge size={task.size} />
         {task.pointValue != null && task.pointValue > 0 ? (
           <PointBadge
             value={task.pointValue}
@@ -139,7 +147,7 @@ export function KanbanCard({
           />
         ) : null}
         {task.dueDate ? (
-          <span className="rounded-md bg-amber-100/90 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+          <span className="rounded-md bg-amber-100/90 px-1.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
             {formatDateString(task.dueDate, { month: 'short', day: 'numeric' }) ?? ''}
           </span>
         ) : null}

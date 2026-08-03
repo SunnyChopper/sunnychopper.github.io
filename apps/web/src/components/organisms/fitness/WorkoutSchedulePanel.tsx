@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { CalendarDays, AlertTriangle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { CalendarDays, AlertTriangle, GripVertical } from 'lucide-react';
 import Button from '@/components/atoms/Button';
 import { FormInput, formFieldClassName } from '@/components/atoms/FormInput';
 import {
@@ -10,21 +10,33 @@ import {
   usePatchScheduledWorkoutDayMutation,
   useSubmitWorkoutSkipReasonMutation,
   useFitnessTemplates,
-  defaultWeekdayEntries,
   WEEKDAY_LABELS,
+  cycleScheduleRole,
+  BEGINNER_SCHEDULE_ROLES,
+  rolesFromWeekdayEntries,
+  weekdayEntriesFromRoles,
+  swapScheduleRoles,
 } from '@/hooks/useFitness';
+import {
+  SCHEDULE_ROLE_LABELS,
+  formatScheduleStatusLabel,
+  resolveDayCellStatus,
+  type ScheduleRole,
+} from '@/lib/fitness/workout-schedule-roles';
 import { localCalendarDate, addCalendarDays } from '@/lib/date/local-calendar';
 import { cn } from '@/lib/utils';
-import type {
-  ScheduleDayType,
-  ScheduledWorkoutDay,
-  WorkoutScheduleWeekdayEntry,
-  WorkoutTemplate,
-} from '@/types/fitness';
+import {
+  fitnessSectionClassName,
+  fitnessSectionPaddingClassName,
+  fitnessCalloutClassName,
+} from '@/lib/fitness/fitness-surfaces';
+import type { ScheduleDayType, ScheduledWorkoutDay, WorkoutTemplate } from '@/types/fitness';
 import { Select } from '@/components/atoms/Select';
 import { Textarea } from '@/components/atoms/Textarea';
 
 const selectClassName = cn(formFieldClassName, 'block w-full min-w-0');
+const SAVE_NOTICE = 'Schedule saved · skip accountability armed';
+const SAVE_NOTICE_MS = 5000;
 
 function statusBadge(status: string) {
   const map: Record<string, string> = {
@@ -58,7 +70,10 @@ export default function WorkoutSchedulePanel() {
   const patchDay = usePatchScheduledWorkoutDayMutation();
   const submitSkip = useSubmitWorkoutSkipReasonMutation();
 
-  const [baselineDraft, setBaselineDraft] = useState<WorkoutScheduleWeekdayEntry[] | null>(null);
+  const [rolesDraft, setRolesDraft] = useState<ScheduleRole[] | null>(null);
+  const [templateOverrides, setTemplateOverrides] = useState<
+    Partial<Record<number, string | null>>
+  >({});
   const [penaltyMin, setPenaltyMin] = useState(25);
   const [penaltyMax, setPenaltyMax] = useState(100);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -67,18 +82,70 @@ export default function WorkoutSchedulePanel() {
   const [skipDate, setSkipDate] = useState<string | null>(null);
   const [skipReasonText, setSkipReasonText] = useState('');
   const [lastVerdict, setLastVerdict] = useState<string | null>(null);
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
+  const [dragSourceWeekday, setDragSourceWeekday] = useState<number | null>(null);
+  const [dragOverWeekday, setDragOverWeekday] = useState<number | null>(null);
+  const saveNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const effectiveBaseline = useMemo(() => {
-    if (baselineDraft) return baselineDraft;
-    if (schedule?.weekdays?.length) return schedule.weekdays;
-    return defaultWeekdayEntries();
-  }, [baselineDraft, schedule]);
+  useEffect(() => {
+    if (!schedule) return;
+    setPenaltyMin(schedule.penaltyMin);
+    setPenaltyMax(schedule.penaltyMax);
+  }, [schedule?.penaltyMin, schedule?.penaltyMax, schedule]);
+
+  useEffect(() => {
+    return () => {
+      if (saveNoticeTimerRef.current) clearTimeout(saveNoticeTimerRef.current);
+    };
+  }, []);
+
+  const clearSaveNotice = () => {
+    if (saveNoticeTimerRef.current) {
+      clearTimeout(saveNoticeTimerRef.current);
+      saveNoticeTimerRef.current = null;
+    }
+    setSaveNotice(null);
+  };
+
+  const showSaveNotice = () => {
+    clearSaveNotice();
+    setSaveNotice(SAVE_NOTICE);
+    saveNoticeTimerRef.current = setTimeout(() => {
+      setSaveNotice(null);
+      saveNoticeTimerRef.current = null;
+    }, SAVE_NOTICE_MS);
+  };
+
+  const markBaselineEdited = () => {
+    clearSaveNotice();
+  };
+
+  const effectiveRoles = useMemo((): ScheduleRole[] => {
+    if (rolesDraft) return rolesDraft;
+    if (schedule?.weekdays?.length) {
+      return rolesFromWeekdayEntries(schedule.weekdays, templates);
+    }
+    return [...BEGINNER_SCHEDULE_ROLES];
+  }, [rolesDraft, schedule, templates]);
+
+  const effectiveBaseline = useMemo(
+    () => weekdayEntriesFromRoles(effectiveRoles, templates, templateOverrides),
+    [effectiveRoles, templates, templateOverrides]
+  );
 
   const tplById = useMemo(() => {
     const m = new Map<string, WorkoutTemplate>();
     templates.forEach((t) => m.set(t.id, t));
     return m;
   }, [templates]);
+
+  const statusByWeekday = useMemo(() => {
+    const map = new Map<number, string>();
+    weekDays.forEach((d) => {
+      map.set(weekdayFromDate(d.date), d.status);
+    });
+    return map;
+  }, [weekDays]);
 
   const saveBaseline = async () => {
     await upsertSchedule.mutateAsync({
@@ -87,13 +154,62 @@ export default function WorkoutSchedulePanel() {
       penaltyMax,
       isActive: true,
     });
-    setBaselineDraft(null);
+    setRolesDraft(null);
+    setTemplateOverrides({});
+    showSaveNotice();
   };
 
-  const setWeekday = (weekday: number, patch: Partial<WorkoutScheduleWeekdayEntry>) => {
-    setBaselineDraft(
-      effectiveBaseline.map((e) => (e.weekday === weekday ? { ...e, ...patch } : e))
-    );
+  const cycleWeekdayRole = (weekday: number) => {
+    markBaselineEdited();
+    const roles = [...effectiveRoles];
+    roles[weekday] = cycleScheduleRole(roles[weekday]);
+    setRolesDraft(roles);
+    setTemplateOverrides((prev) => {
+      const next = { ...prev };
+      delete next[weekday];
+      return next;
+    });
+  };
+
+  const setWeekdayTemplate = (weekday: number, templateId: string | null) => {
+    markBaselineEdited();
+    setTemplateOverrides((prev) => ({ ...prev, [weekday]: templateId }));
+  };
+
+  const handleDragStart = (weekday: number) => {
+    setDragSourceWeekday(weekday);
+  };
+
+  const handleDragOver = (event: DragEvent, weekday: number) => {
+    event.preventDefault();
+    setDragOverWeekday(weekday);
+  };
+
+  const handleDrop = (weekday: number) => {
+    if (dragSourceWeekday === null || dragSourceWeekday === weekday) {
+      setDragSourceWeekday(null);
+      setDragOverWeekday(null);
+      return;
+    }
+    markBaselineEdited();
+    setRolesDraft(swapScheduleRoles(effectiveRoles, dragSourceWeekday, weekday));
+    setTemplateOverrides((prev) => {
+      const next = { ...prev };
+      const fromOverride = next[dragSourceWeekday];
+      const toOverride = next[weekday];
+      if (fromOverride !== undefined) next[weekday] = fromOverride;
+      else delete next[weekday];
+      if (toOverride !== undefined) next[dragSourceWeekday] = toOverride;
+      else delete next[dragSourceWeekday];
+      return next;
+    });
+    setDragSourceWeekday(null);
+    setDragOverWeekday(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragSourceWeekday(null);
+    setDragOverWeekday(null);
   };
 
   const applyDateOverride = async () => {
@@ -131,7 +247,7 @@ export default function WorkoutSchedulePanel() {
   }
 
   return (
-    <section className="space-y-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+    <section className={cn(fitnessSectionClassName, fitnessSectionPaddingClassName, 'space-y-6')}>
       <div className="flex items-center gap-2">
         <CalendarDays className="h-5 w-5 text-indigo-600" />
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -140,7 +256,7 @@ export default function WorkoutSchedulePanel() {
       </div>
 
       {pendingSkips.length > 0 ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+        <div className={fitnessCalloutClassName}>
           <div className="mb-2 flex items-center gap-2 text-amber-900 dark:text-amber-200">
             <AlertTriangle className="h-4 w-4" />
             <span className="font-medium">Pending skips ({pendingSkips.length})</span>
@@ -169,7 +285,7 @@ export default function WorkoutSchedulePanel() {
       ) : null}
 
       {skipDate ? (
-        <div className="space-y-2 rounded border border-gray-200 p-3 dark:border-gray-600">
+        <fieldset className="space-y-2">
           <p className="text-sm font-medium">Skip reason for {skipDate}</p>
           <Textarea
             className={cn(formFieldClassName, 'min-h-[80px] w-full')}
@@ -193,38 +309,85 @@ export default function WorkoutSchedulePanel() {
           {lastVerdict ? (
             <p className="text-xs text-gray-600 dark:text-gray-400">{lastVerdict}</p>
           ) : null}
-        </div>
+        </fieldset>
       ) : null}
 
       <div>
         <h3 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
           Weekly pattern (baseline)
         </h3>
+        <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+          Click to cycle · drag to swap days
+        </p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {WEEKDAY_LABELS.map((label, weekday) => {
-            const entry = effectiveBaseline.find((e) => e.weekday === weekday)!;
+            const entry = effectiveBaseline[weekday];
+            const role = effectiveRoles[weekday];
+            const roleLabel = SCHEDULE_ROLE_LABELS[role];
+            const isDragging = dragSourceWeekday === weekday;
+            const isDragOver = dragOverWeekday === weekday && dragSourceWeekday !== weekday;
+            const cellStatus = resolveDayCellStatus({
+              scheduleExists: Boolean(schedule),
+              weekDayStatus: statusByWeekday.get(weekday),
+              role,
+            });
+
             return (
-              <div key={label} className="rounded border border-gray-100 p-2 dark:border-gray-700">
-                <span className="text-xs font-semibold uppercase text-gray-500">{label}</span>
-                <Select
-                  className={cn(selectClassName, 'mt-1 text-sm')}
-                  value={entry.dayType}
-                  onChange={(e) =>
-                    setWeekday(weekday, { dayType: e.target.value as ScheduleDayType })
-                  }
+              <div
+                key={label}
+                draggable
+                onDragStart={() => handleDragStart(weekday)}
+                onDragOver={(event) => handleDragOver(event, weekday)}
+                onDragLeave={() => setDragOverWeekday(null)}
+                onDrop={() => handleDrop(weekday)}
+                onDragEnd={handleDragEnd}
+                className={cn(
+                  'group cursor-grab rounded border border-gray-100 p-2 transition-shadow active:cursor-grabbing dark:border-gray-700',
+                  isDragging && 'opacity-60',
+                  isDragOver && 'ring-2 ring-indigo-500 dark:ring-indigo-400'
+                )}
+              >
+                <div className="flex items-center gap-1.5">
+                  <GripVertical
+                    className={cn(
+                      'h-3.5 w-3.5 shrink-0 text-gray-400 transition-opacity dark:text-gray-500',
+                      isDragging
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                    )}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 flex-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {label}
+                  </span>
+                  {cellStatus ? (
+                    <span
+                      className={cn(
+                        'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight',
+                        statusBadge(cellStatus)
+                      )}
+                    >
+                      {formatScheduleStatusLabel(cellStatus)}
+                    </span>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => cycleWeekdayRole(weekday)}
+                  className={cn(
+                    'mt-1.5 w-full rounded-md px-1 py-0.5 text-left text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/60 dark:hover:text-gray-100'
+                  )}
+                  aria-label={`${label}: ${roleLabel}. Click to cycle role.`}
                 >
-                  <option value="rest">Rest</option>
-                  <option value="workout">Workout</option>
-                </Select>
-                {entry.dayType === 'workout' ? (
+                  {roleLabel}
+                </button>
+                {role !== 'rest' ? (
                   <Select
-                    className={cn(selectClassName, 'mt-1 text-sm')}
+                    className={cn(selectClassName, 'mt-1 text-xs text-gray-600 dark:text-gray-400')}
                     value={entry.templateId ?? ''}
-                    onChange={(e) =>
-                      setWeekday(weekday, {
-                        templateId: e.target.value || null,
-                      })
-                    }
+                    onChange={(e) => {
+                      setWeekdayTemplate(weekday, e.target.value || null);
+                    }}
                   >
                     <option value="">No template</option>
                     {templates.map((t) => (
@@ -245,7 +408,10 @@ export default function WorkoutSchedulePanel() {
               type="number"
               className="mt-1 w-24"
               value={penaltyMin}
-              onChange={(e) => setPenaltyMin(Number(e.target.value))}
+              onChange={(e) => {
+                markBaselineEdited();
+                setPenaltyMin(Number(e.target.value));
+              }}
             />
           </label>
           <label className="text-sm">
@@ -254,7 +420,10 @@ export default function WorkoutSchedulePanel() {
               type="number"
               className="mt-1 w-24"
               value={penaltyMax}
-              onChange={(e) => setPenaltyMax(Number(e.target.value))}
+              onChange={(e) => {
+                markBaselineEdited();
+                setPenaltyMax(Number(e.target.value));
+              }}
             />
           </label>
           <Button
@@ -266,6 +435,11 @@ export default function WorkoutSchedulePanel() {
             {schedule ? 'Update schedule' : 'Create schedule'}
           </Button>
         </div>
+        {saveNotice ? (
+          <p className="mt-2 text-sm text-green-700 dark:text-green-400" role="status">
+            {saveNotice}
+          </p>
+        ) : null}
       </div>
 
       {schedule ? (
@@ -292,7 +466,7 @@ export default function WorkoutSchedulePanel() {
                 <span
                   className={cn('rounded px-2 py-0.5 text-xs font-medium', statusBadge(d.status))}
                 >
-                  {d.status.replace(/_/g, ' ')}
+                  {formatScheduleStatusLabel(d.status)}
                 </span>
                 <Button
                   type="button"
@@ -316,7 +490,7 @@ export default function WorkoutSchedulePanel() {
       )}
 
       {selectedDate ? (
-        <div className="space-y-2 rounded border border-gray-200 p-3 dark:border-gray-600">
+        <fieldset className="space-y-2">
           <p className="text-sm font-medium">Override {selectedDate}</p>
           <Select
             className={selectClassName}
@@ -347,7 +521,7 @@ export default function WorkoutSchedulePanel() {
               Cancel
             </Button>
           </div>
-        </div>
+        </fieldset>
       ) : null}
     </section>
   );

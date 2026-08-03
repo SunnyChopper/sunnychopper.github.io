@@ -344,6 +344,36 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
     [invalidateKv]
   );
 
+  const updateFlashcardDeck = useCallback(
+    async (
+      id: string,
+      input: {
+        tags?: string[];
+        area?: import('@/types/growth-system').Area;
+        status?: 'active' | 'archived';
+      }
+    ): Promise<FlashcardDeck> => {
+      try {
+        setActionError(null);
+        const response = await vaultItemsService.updateFlashcardDeck(id, input);
+
+        if (response.success && response.data) {
+          await invalidateKv();
+          return response.data;
+        } else {
+          throw new Error(
+            vaultServiceErrorMessage(response.error, 'Failed to update flashcard deck')
+          );
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to update flashcard deck';
+        setActionError(errorMessage);
+        throw err;
+      }
+    },
+    [invalidateKv]
+  );
+
   const createCourse = useCallback(
     async (input: CreateCourseInput): Promise<Course> => {
       try {
@@ -457,6 +487,7 @@ export const KnowledgeVaultProvider = ({ children }: KnowledgeVaultProviderProps
     createFlashcard,
     createFlashcardDeck,
     updateFlashcard,
+    updateFlashcardDeck,
     createCourse,
     updateCourse,
     deleteItem,

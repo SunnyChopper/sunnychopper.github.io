@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { logger } from '@/lib/logger';
+import { reportClientError } from '@/lib/client-telemetry';
 
 interface Props {
   children: ReactNode;
@@ -38,6 +39,16 @@ export class ErrorBoundary extends Component<Props, State> {
       error,
       componentStack: errorInfo.componentStack,
     });
+    void reportClientError(
+      {
+        message: error.message,
+        source: 'web',
+        stack: error.stack,
+        componentStack: errorInfo.componentStack ?? undefined,
+        metadata: { boundary: 'ErrorBoundary' },
+      },
+      { flush: 'immediate' }
+    );
 
     this.setState({
       error,

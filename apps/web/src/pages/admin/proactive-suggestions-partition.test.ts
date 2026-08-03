@@ -30,4 +30,25 @@ describe('partitionProactiveSuggestions', () => {
     expect(accepted).toHaveLength(0);
     expect(rejected).toHaveLength(0);
   });
+
+  it('excludes coachAvoidance suggestions from all buckets', () => {
+    const coach: ProactiveSuggestion = {
+      ...base,
+      id: 'coach',
+      status: 'pending',
+      contextKind: 'coachAvoidance',
+      proposedPayload: {
+        title: 'Strict coach: stop avoiding "Lesson 4"',
+        kind: 'custom',
+      },
+    };
+    const ritual: ProactiveSuggestion = {
+      ...base,
+      id: 'ritual',
+      status: 'pending',
+      proposedPayload: { title: 'Mid-week priority reset', kind: 'custom' },
+    };
+    const { pending } = partitionProactiveSuggestions([coach, ritual]);
+    expect(pending.map((s) => s.id)).toEqual(['ritual']);
+  });
 });

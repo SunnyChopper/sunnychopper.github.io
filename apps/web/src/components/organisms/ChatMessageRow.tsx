@@ -1,19 +1,26 @@
 import { memo, useMemo } from 'react';
 import { getVisibleExecutionTraceEntries } from '@/lib/chat/assistant-execution-trace-entries';
-import { AlertTriangle, Loader2, Search, Sparkles } from 'lucide-react';
+import { AlertTriangle, Loader2, Search } from 'lucide-react';
 import MarkdownRenderer from '@/components/molecules/MarkdownRenderer';
+import { ChatBubble } from '@/components/molecules/chat/ChatBubble';
 import { AssistantExecutionTracePanel } from '@/components/molecules/AssistantExecutionTracePanel';
 import { AssistantThinkingPanel } from '@/components/molecules/AssistantThinkingPanel';
+import { AssistantKnowledgeSurfaceList } from '@/components/molecules/AssistantKnowledgeSurfaceList';
+import { AssistantSpecialistBriefsList } from '@/components/molecules/AssistantSpecialistBriefsList';
+import { AssistantDecisionCardList } from '@/components/molecules/assistant/AssistantDecisionCardList';
 import { ChatAssistantPendingRow } from '@/components/molecules/ChatAssistantPendingRow';
 import { ChatMessageSiblingNav } from '@/components/molecules/ChatMessageSiblingNav';
 import { ChatUserMessageToolbar } from '@/components/molecules/ChatUserMessageToolbar';
 import { formatRelativeChatTimestamp } from '@/lib/chat/format-relative-time';
+import { chatAssistantChromeWidthClassName } from '@/lib/chat/imessage-surfaces';
+import { cn } from '@/lib/utils';
 import { shouldShowAssistantErrorDetails } from '@/lib/chat/assistant-error-display';
 import { getRunProgressLabel } from '@/hooks/useAssistantStreaming';
 import {
   chatMessageMarkdownComponents,
   chatUserMessageMarkdownComponents,
 } from '@/lib/markdown/chat-message-markdown-components';
+import type { ClusterPosition } from '@/lib/chat/message-cluster';
 import type { AssistantStreamingRunState } from '@/lib/websocket/thinking-delta-cache';
 import type {
   ChatMessage,
@@ -40,7 +47,12 @@ export type ChatMessageStreamingRun = AssistantStreamingRunState & {
 /** Shown after runStarted until the first statusUpdate — execution trace is empty and the main bubble is hidden. */
 function StreamingAssistantPreTraceRow({ run }: { run: ChatMessageStreamingRun }) {
   return (
-    <div className="rounded-lg border border-gray-200/80 bg-white/50 px-3 py-2.5 dark:border-gray-700/60 dark:bg-gray-800/30 flex items-center gap-2">
+    <div
+      className={cn(
+        chatAssistantChromeWidthClassName,
+        'rounded-lg border border-gray-200/80 bg-white/50 px-3 py-2.5 dark:border-gray-700/60 dark:bg-gray-800/30 flex items-center gap-2'
+      )}
+    >
       <Loader2 size={14} className="animate-spin text-gray-500 dark:text-gray-400" />
       <span className="text-sm text-gray-600 dark:text-gray-400">
         {getRunProgressLabel(run) ?? 'Planning response'}
@@ -53,6 +65,7 @@ type ChatMessageRowProps = {
   message: ChatMessage;
   index: number;
   transcriptLength: number;
+  clusterPosition: ClusterPosition;
   run: ChatMessageStreamingRun | undefined;
   /** Active WS run whose user turn is this message — suppresses redundant pending strip under the user bubble. */
   streamingRunForThisUserMessage?: ChatMessageStreamingRun;
@@ -86,6 +99,7 @@ export const ChatMessageRow = memo(function ChatMessageRow({
   message,
   index,
   transcriptLength,
+  clusterPosition,
   run,
   streamingRunForThisUserMessage,
   getSiblings,
@@ -136,6 +150,15 @@ export const ChatMessageRow = memo(function ChatMessageRow({
     !awaitingWsFollowUp;
   const showRetryAction =
     (isLastMessage && message.clientStatus === 'failed') || isLatestUserMessageRetryable;
+
+  const burstIndex = message.metadata?.burstIndex;
+  const burstTotal = message.metadata?.burstTotal;
+  const isBurstContinuation = typeof burstIndex === 'number' && burstIndex > 0;
+  const showBurstTimestamp =
+    message.role !== 'assistant' ||
+    burstTotal == null ||
+    burstTotal <= 1 ||
+    burstIndex === burstTotal - 1;
 
   /** Live trace uses run state; after the run completes the trace must come from persisted message fields. */
   const executionTraceHistory =
@@ -205,49 +228,44 @@ export const ChatMessageRow = memo(function ChatMessageRow({
   );
 
   return (
-    <div className="group">
-      <div
-        className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-      >
-        {message.role === 'assistant' && (
-          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <Sparkles size={16} className="text-blue-600 dark:text-blue-400 max-sm:scale-90" />
-          </div>
-        )}
+    <div className={cn('group px-1 sm:px-2', isBurstContinuation && '-mt-1')}>
+      <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
         <div
           className={
-            message.role === 'user'
-              ? 'min-w-0 max-w-[min(100%,34rem)]'
-              : 'min-w-0 flex-1 max-w-full sm:max-w-[min(100%,48rem)]'
+            message.role === 'user' ? 'min-w-0 w-full max-w-full' : 'min-w-0 w-full max-w-full'
           }
         >
           {showExecutionTrace && (
-            <AssistantExecutionTracePanel
-              messageId={message.id}
-              statusHistory={executionTraceHistory}
-              isActive={Boolean(run)}
-              toolCallDetails={executionTraceToolDetails}
-              assistantThinkingText={assistantThinkingForTrace}
-              assistantThinkingStreaming={assistantThinkingStreaming}
-              reasoningStreamDisabledReason={reasoningDisabledMessage}
-              expanded={executionTracePanelExpanded}
-              onToggle={() => onToggleExecutionTrace(message.id)}
-              pendingToolApprovals={run?.pendingToolApprovals}
-              runId={run?.runId}
-              onRespondToToolApproval={onRespondToToolApproval}
-            />
+            <div className={chatAssistantChromeWidthClassName}>
+              <AssistantExecutionTracePanel
+                messageId={message.id}
+                statusHistory={executionTraceHistory}
+                isActive={Boolean(run)}
+                toolCallDetails={executionTraceToolDetails}
+                assistantThinkingText={assistantThinkingForTrace}
+                assistantThinkingStreaming={assistantThinkingStreaming}
+                reasoningStreamDisabledReason={reasoningDisabledMessage}
+                expanded={executionTracePanelExpanded}
+                onToggle={() => onToggleExecutionTrace(message.id)}
+                pendingToolApprovals={run?.pendingToolApprovals}
+                runId={run?.runId}
+                onRespondToToolApproval={onRespondToToolApproval}
+              />
+            </div>
           )}
           {message.role === 'assistant' &&
             !foldThinkingIntoTrace &&
             !hitlSuppressesThinking &&
             (Boolean(message.thinking?.trim()) || isStreamingThinking) && (
-              <AssistantThinkingPanel
-                messageId={message.id}
-                thinking={message.thinking}
-                expanded={thinkingPanelExpanded}
-                isStreamingThinking={isStreamingThinking}
-                onToggle={() => onToggleThinking(message.id)}
-              />
+              <div className={chatAssistantChromeWidthClassName}>
+                <AssistantThinkingPanel
+                  messageId={message.id}
+                  thinking={message.thinking}
+                  expanded={thinkingPanelExpanded}
+                  isStreamingThinking={isStreamingThinking}
+                  onToggle={() => onToggleThinking(message.id)}
+                />
+              </div>
             )}
 
           {message.metadata?.webSearch && (
@@ -287,28 +305,22 @@ export const ChatMessageRow = memo(function ChatMessageRow({
                 )}
               {!isEmptyStreamingAssistantPlaceholder && showAssistantReplyBubble && (
                 <>
-                  <div
-                    className={`min-w-0 w-full rounded-lg px-3 py-2.5 sm:px-4 sm:py-3 ${
-                      message.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                    }`}
-                  >
+                  <ChatBubble role={message.role} clusterPosition={clusterPosition}>
                     {message.role === 'assistant' && message.clientStatus === 'failed' ? (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-300">
                           <AlertTriangle size={14} />
                           <span className="font-medium">Assistant run failed</span>
                         </div>
                         {shouldShowAssistantErrorDetails(message.clientError) && (
-                          <pre className="text-xs leading-relaxed whitespace-pre-wrap break-words text-red-600 dark:text-red-200 font-mono">
+                          <pre className="text-xs leading-relaxed whitespace-pre-wrap break-words text-red-700 dark:text-red-200 font-mono">
                             {message.clientError}
                           </pre>
                         )}
                         <button
                           type="button"
                           onClick={() => onRetryAssistantRun(message.parentId, message.id)}
-                          className="text-sm underline underline-offset-2 hover:text-red-800 dark:hover:text-red-100"
+                          className="text-sm underline underline-offset-2 text-red-700 hover:text-red-800 dark:text-red-200 dark:hover:text-red-100"
                         >
                           Retry
                         </button>
@@ -319,11 +331,11 @@ export const ChatMessageRow = memo(function ChatMessageRow({
                           content={message.content}
                           variant="chat"
                           contentKey={message.id}
-                          className="prose-p:my-3 prose-ul:my-2 prose-li:my-1"
+                          className="prose-p:my-1.5 prose-ul:my-1 prose-li:my-0.5 dark:prose-invert"
                           components={chatMessageMarkdownComponents}
                         />
                       ) : (
-                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                        <p className="text-sm text-gray-400">
                           No reply text was returned for this run. Use the execution steps above to
                           see what ran.
                         </p>
@@ -333,11 +345,33 @@ export const ChatMessageRow = memo(function ChatMessageRow({
                         content={message.content}
                         variant="chat"
                         contentKey={message.id}
-                        className="prose-invert !prose-strong:text-white prose-p:my-3 prose-ul:my-2 prose-li:my-1"
+                        className="prose-invert !prose-strong:text-white prose-p:my-1.5 prose-ul:my-1 prose-li:my-0.5"
                         components={chatUserMessageMarkdownComponents}
                       />
                     )}
-                  </div>
+                  </ChatBubble>
+                  {message.role === 'assistant' &&
+                    !isStreaming &&
+                    (message.metadata?.specialistBriefs?.length ?? 0) > 0 && (
+                      <AssistantSpecialistBriefsList briefs={message.metadata!.specialistBriefs!} />
+                    )}
+                  {message.role === 'assistant' &&
+                    !isStreaming &&
+                    (message.metadata?.knowledgeSurfaces?.length ?? 0) > 0 && (
+                      <AssistantKnowledgeSurfaceList
+                        messageId={message.id}
+                        surfaces={message.metadata!.knowledgeSurfaces!}
+                      />
+                    )}
+                  {message.role === 'assistant' &&
+                    !isStreaming &&
+                    (message.decisionRequests?.length ?? 0) > 0 && (
+                      <AssistantDecisionCardList
+                        threadId={message.threadId}
+                        messageId={message.id}
+                        decisions={message.decisionRequests!}
+                      />
+                    )}
                   {message.role === 'user' ? (
                     <ChatUserMessageToolbar
                       message={message}
@@ -346,9 +380,11 @@ export const ChatMessageRow = memo(function ChatMessageRow({
                       onRetryClick={userRetryHandler}
                     />
                   ) : (
-                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-500">
-                      <span>{formatRelativeChatTimestamp(message.createdAt)}</span>
-                    </div>
+                    showBurstTimestamp && (
+                      <div className="mt-0.5 text-right text-[11px] text-gray-500 dark:text-gray-500 px-1">
+                        <span>{formatRelativeChatTimestamp(message.createdAt)}</span>
+                      </div>
+                    )
                   )}
                 </>
               )}

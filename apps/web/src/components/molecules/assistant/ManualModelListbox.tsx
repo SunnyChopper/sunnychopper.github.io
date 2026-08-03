@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { Brain, ChevronDown } from 'lucide-react';
+import { ModelTraitMicroBars } from '@/components/molecules/assistant/AssistantModelPickerPrimitives';
 import type { AssistantModelCatalogEntry } from '@/types/chatbot';
 import { providerLogoSrc } from '@/lib/assistant/model-picker-utils';
 
@@ -13,34 +14,6 @@ const CAPABILITY_ABBR: Record<string, string> = {
   realtimeWeb: 'Web',
   openWeight: 'Open',
 };
-
-function TraitMicroBars({
-  speedScore,
-  costScore,
-  qualityScore,
-}: Pick<AssistantModelCatalogEntry, 'speedScore' | 'costScore' | 'qualityScore'>) {
-  const bar = (v: number, abbrev: string, title: string) => (
-    <span
-      title={`${title}: ${v}/10`}
-      className="inline-flex items-center gap-0.5 text-[9px] text-gray-500 dark:text-gray-400 tabular-nums"
-    >
-      <span className="w-2 shrink-0">{abbrev}</span>
-      <span className="w-7 h-1 rounded bg-gray-200 dark:bg-gray-700 overflow-hidden inline-block align-middle">
-        <span
-          className="block h-full bg-emerald-600/85 dark:bg-emerald-500/80 rounded-sm"
-          style={{ width: `${(v / 10) * 100}%` }}
-        />
-      </span>
-    </span>
-  );
-  return (
-    <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
-      {bar(speedScore, 'S', 'Speed')}
-      {bar(costScore, 'C', 'Cost efficiency (higher = cheaper to run)')}
-      {bar(qualityScore, 'I', 'Intelligence')}
-    </div>
-  );
-}
 
 function CatalogMetaRow({ m }: { m: AssistantModelCatalogEntry }) {
   const tags = m.capabilityTags?.length
@@ -86,6 +59,8 @@ type ManualModelListboxProps = {
   value: string;
   onChange: (id: string) => void;
   disabled?: boolean;
+  /** Settings layout: slightly more label→control spacing and trigger padding. */
+  density?: 'default' | 'comfortable';
 };
 
 export function ManualModelListbox({
@@ -94,7 +69,9 @@ export function ManualModelListbox({
   value,
   onChange,
   disabled,
+  density = 'default',
 }: ManualModelListboxProps) {
+  const isComfortable = density === 'comfortable';
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -188,7 +165,9 @@ export function ManualModelListbox({
     <div className="relative" ref={rootRef}>
       <span
         id={`${listId}-label`}
-        className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+        className={`block text-xs font-medium text-gray-700 dark:text-gray-300 ${
+          isComfortable ? 'mb-1.5' : 'mb-1'
+        }`}
       >
         {label}
       </span>
@@ -201,7 +180,9 @@ export function ManualModelListbox({
         aria-labelledby={`${listId}-label`}
         aria-controls={listId}
         onClick={() => !disabled && setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 text-left text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 py-1.5 disabled:opacity-50"
+        className={`w-full flex items-center gap-2 text-left text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 disabled:opacity-50 ${
+          isComfortable ? 'py-2' : 'py-1.5'
+        }`}
       >
         {selected ? (
           <img
@@ -267,7 +248,7 @@ export function ManualModelListbox({
                           <span className="truncate">{m.label}</span>
                           {m.supportsReasoningStream ? <ReasoningStreamMark /> : null}
                         </div>
-                        <TraitMicroBars
+                        <ModelTraitMicroBars
                           speedScore={m.speedScore}
                           costScore={m.costScore}
                           qualityScore={m.qualityScore}

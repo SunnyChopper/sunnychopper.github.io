@@ -1,22 +1,15 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import {
-  Sun,
-  CheckSquare,
-  Repeat,
-  TrendingUp,
-  Sparkles,
-  ChevronRight,
-  Rocket,
-  AlertCircle,
-} from 'lucide-react';
+import { Sun, CheckSquare, Repeat, TrendingUp, Sparkles, Rocket, AlertCircle } from 'lucide-react';
 import { useTasks, useHabits, useMetrics } from '@/hooks/useGrowthSystem';
-import type { Task, Habit, Metric } from '@/types/growth-system';
+import type { Task, Habit, Metric, Priority } from '@/types/growth-system';
 import Button from '@/components/atoms/Button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/routes';
 import { usePlannerWeek } from '@/hooks/usePlanner';
 import { mondayISO, todayISOLocal } from '@/lib/planner/week';
 import { selectTop3TasksForToday } from '@/lib/planner/select-top3-tasks-for-today';
+import { EmptyState } from '@/components/molecules/EmptyState';
+import { cn } from '@/lib/utils';
 
 interface DailyPlan {
   topTasks: Task[];
@@ -31,10 +24,47 @@ interface DailyPlanningAssistantProps {
   onTopTasksChange?: (tasks: Task[]) => void;
 }
 
+const cardShellClassName =
+  'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800 shadow-md ring-1 ring-blue-300/60 dark:ring-blue-700/40 p-6';
+
+const tertiaryLinkClassName =
+  'text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline';
+
+function priorityBadgeClassName(priority: Priority): string {
+  switch (priority) {
+    case 'P1':
+      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+    case 'P2':
+      return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400';
+    case 'P3':
+      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
+    default:
+      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
+  }
+}
+
+function buildBriefing(
+  topTasksCount: number,
+  habitsCount: number,
+  metricsCount: number,
+  capHint: string
+): string {
+  if (topTasksCount === 0) {
+    return `No Top 3 yet — plan the day or rest.${capHint}`;
+  }
+
+  const taskLabel = topTasksCount === 1 ? 'focus task' : 'focus tasks';
+  const habitLabel = habitsCount === 1 ? 'habit' : 'habits';
+  const metricLabel = metricsCount === 1 ? 'metric' : 'metrics';
+
+  return `${topTasksCount} ${taskLabel} · ${habitsCount} ${habitLabel} · ${metricsCount} ${metricLabel}${capHint}`;
+}
+
 export function DailyPlanningAssistant({
   onStartDay,
   onTopTasksChange,
 }: DailyPlanningAssistantProps) {
+  const navigate = useNavigate();
   const [plan, setPlan] = useState<DailyPlan | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -46,13 +76,11 @@ export function DailyPlanningAssistant({
   const weekStart = useMemo(() => mondayISO(new Date()), []);
   const { data: plannerWeek } = usePlannerWeek(weekStart);
 
-  // Only show error if we have a genuine error AND we're not still loading (initial load)
   const hasNetworkError =
     (tasksError || habitsError || metricsError) &&
     !(tasksLoading || habitsLoading || metricsLoading);
   const isLoading = tasksLoading || habitsLoading || metricsLoading;
 
-  // Track previous data signatures to detect actual changes
   const prevDataRef = useRef<{
     tasksLength: number;
     activeTasksCount: number;
@@ -63,7 +91,6 @@ export function DailyPlanningAssistant({
   } | null>(null);
 
   const generateDailyPlan = useCallback(async () => {
-    // Actionable on-deck work only — exclude Backlog (capture bucket, not scheduled work).
     const activeTasks = tasks
       .filter((t: Task) => t.status === 'Not Started' || t.status === 'In Progress')
       .filter((t: Task) => t.status !== 'Blocked');
@@ -79,13 +106,12 @@ export function DailyPlanningAssistant({
       activeMetricsCount: activeMetrics.length,
     };
 
-    // Only regenerate if data actually changed (not just array reference)
     if (
       prevDataRef.current &&
       JSON.stringify(prevDataRef.current) === JSON.stringify(currentData) &&
       hasGenerated.current
     ) {
-      return; // Data hasn't changed, skip regeneration
+      return;
     }
 
     prevDataRef.current = currentData;
@@ -109,18 +135,17 @@ export function DailyPlanningAssistant({
     const todayDay = plannerWeek?.days.find((d) => d.date === todayKey);
 
     const capHint = todayDay?.isBlocked
-      ? ' Today is marked Out of Office / Trip — scheduling capacity is 0.'
+      ? ' · OOO today'
       : plannerWeek?.velocity
-        ? ` Capacity ~${plannerWeek.velocity.dailyCapacityStoryPoints} pts/day.`
+        ? ` · ~${plannerWeek.velocity.dailyCapacityStoryPoints} pts/day`
         : '';
-    let briefing = '';
-    if (energyLevel === 'morning') {
-      briefing = `Good morning! You have ${topTasks.length} priority tasks, ${dailyHabits.length} habits to build, and ${activeMetrics.length} metrics to track.${capHint} Start your day strong!`;
-    } else if (energyLevel === 'afternoon') {
-      briefing = `Good afternoon! ${topTasks.length} tasks await your focus. Don't forget your ${dailyHabits.length} daily habits!${capHint}`;
-    } else {
-      briefing = `Good evening! Wind down by completing ${topTasks.length} remaining tasks and logging your ${dailyHabits.length} habits for today.${capHint}`;
-    }
+
+    const briefing = buildBriefing(
+      topTasks.length,
+      dailyHabits.length,
+      activeMetrics.length,
+      capHint
+    );
 
     setPlan({
       topTasks,
@@ -137,9 +162,6 @@ export function DailyPlanningAssistant({
   }, [tasks, habits, metrics, plannerWeek, onTopTasksChange]);
 
   useEffect(() => {
-    // Only generate once data is loaded (not in error state) or after initial load
-    // Note: generateDailyPlan is memoized with useCallback and only runs when data actually changes
-    // due to our data signature comparison, so this pattern is safe and necessary for syncing with React Query data
     if (!hasNetworkError || hasGenerated.current) {
       generateDailyPlan();
     }
@@ -166,10 +188,7 @@ export function DailyPlanningAssistant({
 
   if (isLoading || isGeneratingPlan || !plan) {
     return (
-      <div
-        className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-6"
-        aria-busy="true"
-      >
+      <div className={cardShellClassName} aria-busy="true">
         <div className="flex items-center justify-between mb-4 gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg shrink-0">
@@ -181,14 +200,13 @@ export function DailyPlanningAssistant({
             </div>
           </div>
           <div
-            className="h-10 w-[7.5rem] rounded-lg bg-blue-200/90 dark:bg-blue-800/50 shrink-0 animate-pulse"
+            className="h-12 w-[8.5rem] rounded-full bg-blue-200/90 dark:bg-blue-800/50 shrink-0 animate-pulse"
             aria-hidden
           />
         </div>
 
-        <div className="mb-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg animate-pulse space-y-2">
-          <div className="h-4 bg-blue-100 dark:bg-gray-700 rounded w-full" />
-          <div className="h-4 bg-blue-100 dark:bg-gray-700 rounded w-[94%]" />
+        <div className="mb-4 px-1 animate-pulse">
+          <div className="h-4 bg-blue-100 dark:bg-gray-700 rounded w-full max-w-md" />
         </div>
 
         <div className="space-y-2 animate-pulse">
@@ -197,7 +215,7 @@ export function DailyPlanningAssistant({
               key={i}
               className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-blue-100 dark:border-gray-700 flex items-center gap-3"
             >
-              <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 shrink-0" />
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 shrink-0" />
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-[72%]" />
                 <div className="flex gap-2">
@@ -205,7 +223,6 @@ export function DailyPlanningAssistant({
                   <div className="h-4 w-11 bg-gray-200 dark:bg-gray-600 rounded self-end" />
                 </div>
               </div>
-              <div className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-600 shrink-0" />
             </div>
           ))}
         </div>
@@ -214,13 +231,13 @@ export function DailyPlanningAssistant({
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+    <div className={cardShellClassName}>
+      <div className="flex items-center justify-between mb-3 gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg shrink-0">
             <Sun className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Top 3 Tasks</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {plan.energyLevel === 'morning' && 'Start your day right'}
@@ -232,7 +249,8 @@ export function DailyPlanningAssistant({
         {onStartDay && (
           <Button
             onClick={onStartDay}
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
+            size="lg"
+            className="shrink-0 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all focus-visible:ring-blue-500"
           >
             <Rocket className="w-4 h-4" />
             Start Day
@@ -240,9 +258,12 @@ export function DailyPlanningAssistant({
         )}
       </div>
 
-      <div className="mb-4 p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-        <p className="text-gray-700 dark:text-gray-300 flex items-start gap-2">
-          <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+      <div className="mb-4 px-1">
+        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
+          <Sparkles
+            className="w-4 h-4 text-blue-500/70 dark:text-blue-400/70 flex-shrink-0 mt-0.5"
+            aria-hidden
+          />
           <span>{plan.briefing}</span>
         </p>
       </div>
@@ -250,68 +271,81 @@ export function DailyPlanningAssistant({
       <div className="space-y-4">
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <CheckSquare className="w-4 h-4" />
-              Top 3 Tasks for Today
-            </h3>
+            <span className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Today
+            </span>
             <div className="flex gap-3">
-              <Link
-                to={ROUTES.admin.planner}
-                className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
+              <Link to={ROUTES.admin.planner} className={tertiaryLinkClassName}>
                 Planner
               </Link>
-              <Link
-                to={ROUTES.admin.tasks}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              >
+              <Link to={ROUTES.admin.tasks} className={tertiaryLinkClassName}>
                 View All
               </Link>
             </div>
           </div>
           {plan.topTasks.length > 0 ? (
             <div className="space-y-2">
-              {plan.topTasks.map((task, idx) => (
-                <div
-                  key={task.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex items-center gap-3"
-                >
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold flex-shrink-0">
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-white truncate">
-                      {task.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded ${
-                          task.priority === 'P1'
-                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                            : task.priority === 'P2'
-                              ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
-                              : task.priority === 'P3'
-                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-                                : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                        }`}
+              {plan.topTasks.map((task, idx) => {
+                const isPrimary = idx === 0;
+
+                return (
+                  <div
+                    key={task.id}
+                    className={cn(
+                      'bg-white dark:bg-gray-800 rounded-lg p-3 border flex items-start gap-3',
+                      isPrimary
+                        ? 'border-blue-300 dark:border-blue-700/60 shadow-sm ring-1 ring-blue-200/80 dark:ring-blue-800/40'
+                        : 'border-gray-200 dark:border-gray-700'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-bold flex-shrink-0',
+                        isPrimary ? 'w-7 h-7 text-sm ring-2 ring-blue-500/60' : 'w-6 h-6 text-sm'
+                      )}
+                    >
+                      {idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={cn(
+                          'text-gray-900 dark:text-white line-clamp-2',
+                          isPrimary ? 'font-semibold text-base' : 'font-medium text-sm'
+                        )}
                       >
-                        {task.priority}
-                      </span>
-                      {task.size ? (
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
-                          {task.size}pts
+                        {task.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span
+                          className={cn(
+                            'text-xs px-2 py-0.5 rounded font-medium',
+                            priorityBadgeClassName(task.priority)
+                          )}
+                        >
+                          {task.priority}
                         </span>
-                      ) : null}
+                        {task.size ? (
+                          <span className="text-xs text-gray-600 dark:text-gray-400 tabular-nums">
+                            {task.size}pts
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
-              No tasks for today. Enjoy your free time!
-            </p>
+            <EmptyState
+              icon={CheckSquare}
+              title="No Top 3 for today"
+              description="Pick your focus in Planner or browse all tasks."
+              actionLabel="Open Planner"
+              onAction={() => navigate(ROUTES.admin.planner)}
+              secondaryActionLabel="View tasks"
+              onSecondaryAction={() => navigate(ROUTES.admin.tasks)}
+              className="py-8"
+            />
           )}
         </div>
 
@@ -323,10 +357,7 @@ export function DailyPlanningAssistant({
                   <Repeat className="w-4 h-4" />
                   Habits to Complete
                 </h3>
-                <Link
-                  to={ROUTES.admin.habits}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
+                <Link to={ROUTES.admin.habits} className={tertiaryLinkClassName}>
                   View All
                 </Link>
               </div>
@@ -360,10 +391,7 @@ export function DailyPlanningAssistant({
                   <TrendingUp className="w-4 h-4" />
                   Metrics to Log
                 </h3>
-                <Link
-                  to={ROUTES.admin.metrics}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                >
+                <Link to={ROUTES.admin.metrics} className={tertiaryLinkClassName}>
                   View All
                 </Link>
               </div>
@@ -390,8 +418,12 @@ export function DailyPlanningAssistant({
           </>
         )}
 
-        <Button variant="secondary" onClick={() => setIsExpanded(!isExpanded)} className="w-full">
-          {isExpanded ? 'Show Less' : 'Show More'}
+        <Button
+          variant="ghost"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+        >
+          {isExpanded ? 'Hide habits & metrics' : 'Habits & metrics'}
         </Button>
       </div>
     </div>

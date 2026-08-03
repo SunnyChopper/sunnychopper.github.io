@@ -166,6 +166,28 @@ export const vaultItemsService = {
     return { data: deckRes.data, error: null, success: true };
   },
 
+  async updateFlashcardDeck(
+    deckId: string,
+    patch: {
+      name?: string;
+      description?: string;
+      topic?: string;
+      area?: Area;
+      tags?: string[];
+      status?: 'active' | 'archived';
+    }
+  ): Promise<ApiResponse<FlashcardDeck>> {
+    const response = await apiClient.patch<FlashcardDeck>(`/knowledge/flashcards/${deckId}`, patch);
+    if (response.success && response.data) {
+      return { data: response.data, error: null, success: true };
+    }
+    return {
+      data: null,
+      error: response.error?.message || 'Failed to update flashcard deck',
+      success: false,
+    };
+  },
+
   async getFlashcardsForDeck(
     deckId: string,
     options: { area: Area; tags: string[]; sourceItemId?: string | null }

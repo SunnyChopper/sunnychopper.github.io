@@ -18,6 +18,7 @@ export interface VariantCardSummaryActionsProps {
   onReject: () => void;
   onRegenerate: () => void;
   onSuggestImprovements?: () => void;
+  onExplain?: () => void;
 }
 
 export function VariantCardSummaryActions({
@@ -36,6 +37,7 @@ export function VariantCardSummaryActions({
   onReject,
   onRegenerate,
   onSuggestImprovements,
+  onExplain,
   suggestImprovementsPending = false,
   suggestImprovementsDisabled = false,
 }: VariantCardSummaryActionsProps) {
@@ -76,6 +78,11 @@ export function VariantCardSummaryActions({
         <Button type="button" size="sm" variant="secondary" onClick={onCopy}>
           Copy
         </Button>
+        {onExplain ? (
+          <Button type="button" size="sm" variant="secondary" onClick={onExplain}>
+            Explain
+          </Button>
+        ) : null}
         {!isRejected && onSuggestImprovements ? (
           <Button
             type="button"

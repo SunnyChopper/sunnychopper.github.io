@@ -31,6 +31,8 @@ interface WeeklyDashboardGridProps {
   onEdit: () => void;
   editable?: boolean;
   onReorder?: (widgets: WeeklyDashboardWidget[]) => void;
+  onRunWeeklyReview?: () => void;
+  runWeeklyReviewPending?: boolean;
 }
 
 function SortableWidgetShell({
@@ -92,6 +94,8 @@ export function WeeklyDashboardGrid({
   onEdit,
   editable = false,
   onReorder,
+  onRunWeeklyReview,
+  runWeeklyReviewPending = false,
 }: WeeklyDashboardGridProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -131,10 +135,23 @@ export function WeeklyDashboardGrid({
           Week {data.weekStart} → {data.weekEnd}
           {editable ? ' · drag widgets to reorder' : ''}
         </p>
-        <Button variant="secondary" onClick={onEdit} className="inline-flex items-center gap-2">
-          <Settings2 className="h-4 w-4" />
-          Customize
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {onRunWeeklyReview ? (
+            <Button
+              variant="primary"
+              type="button"
+              onClick={onRunWeeklyReview}
+              disabled={runWeeklyReviewPending}
+              aria-busy={runWeeklyReviewPending}
+            >
+              {runWeeklyReviewPending ? 'Generating…' : 'Run weekly review now'}
+            </Button>
+          ) : null}
+          <Button variant="secondary" onClick={onEdit} className="inline-flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
+            Customize
+          </Button>
+        </div>
       </div>
       {editable && onReorder ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

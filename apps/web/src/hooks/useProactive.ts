@@ -5,7 +5,11 @@ import type {
   NotificationWebhookConfig,
   ProactiveAutomation,
   ProactiveSuggestion,
+  CoachEscalationNotificationsConfig,
   RecoveryNotificationsConfig,
+  RecoveryMorningNudgeConfig,
+  SetAmbientStrictPlanRequest,
+  StaleEntityHunterPreferencesConfig,
 } from '@/types/api-contracts';
 
 import { unwrapApiData } from '@/lib/api-client/unwrap-api-response';
@@ -45,7 +49,31 @@ export function useProactiveSettings() {
     queryKey: queryKeys.preferences.recoveryNotifications(),
     queryFn: async () => unwrapApiData(await proactiveService.getRecoveryNotifications()),
   });
-  return { timeZone, webhook, recovery };
+  const recoveryMorningNudge = useQuery({
+    queryKey: queryKeys.preferences.recoveryMorningNudge(),
+    queryFn: async () => unwrapApiData(await proactiveService.getRecoveryMorningNudge()),
+  });
+  const ambientStrictPlan = useQuery({
+    queryKey: queryKeys.preferences.ambientStrictPlan(),
+    queryFn: async () => unwrapApiData(await proactiveService.getAmbientStrictPlan()),
+  });
+  const coachEscalation = useQuery({
+    queryKey: queryKeys.preferences.coachEscalationNotifications(),
+    queryFn: async () => unwrapApiData(await proactiveService.getCoachEscalationNotifications()),
+  });
+  const staleEntityHunter = useQuery({
+    queryKey: queryKeys.preferences.staleEntityHunter(),
+    queryFn: async () => unwrapApiData(await proactiveService.getStaleEntityHunterPreferences()),
+  });
+  return {
+    timeZone,
+    webhook,
+    recovery,
+    recoveryMorningNudge,
+    ambientStrictPlan,
+    coachEscalation,
+    staleEntityHunter,
+  };
 }
 
 export function useProactiveMutations() {
@@ -130,6 +158,47 @@ export function useProactiveMutations() {
     },
   });
 
+  const setRecoveryMorningNudge = useMutation({
+    mutationFn: (body: RecoveryMorningNudgeConfig) =>
+      proactiveService.setRecoveryMorningNudge(body).then(unwrapApiData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.preferences.recoveryMorningNudge() });
+    },
+  });
+
+  const clearAmbientStrictPlan = useMutation({
+    mutationFn: () => proactiveService.setAmbientStrictPlan({ clear: true }).then(unwrapApiData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.preferences.ambientStrictPlan() });
+    },
+  });
+
+  const pauseAmbientStrictPlan = useMutation({
+    mutationFn: (body: SetAmbientStrictPlanRequest) =>
+      proactiveService.setAmbientStrictPlan(body).then(unwrapApiData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.preferences.ambientStrictPlan() });
+    },
+  });
+
+  const setCoachEscalationNotifications = useMutation({
+    mutationFn: (body: CoachEscalationNotificationsConfig) =>
+      proactiveService.setCoachEscalationNotifications(body).then(unwrapApiData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.preferences.coachEscalationNotifications(),
+      });
+    },
+  });
+
+  const setStaleEntityHunterPreferences = useMutation({
+    mutationFn: (body: StaleEntityHunterPreferencesConfig) =>
+      proactiveService.setStaleEntityHunterPreferences(body).then(unwrapApiData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.preferences.staleEntityHunter() });
+    },
+  });
+
   const sendTestEmail = useMutation({
     mutationFn: () => proactiveService.sendTestEmail().then(unwrapApiData),
   });
@@ -153,6 +222,11 @@ export function useProactiveMutations() {
     setTimeZone,
     setNotificationWebhook,
     setRecoveryNotifications,
+    setRecoveryMorningNudge,
+    clearAmbientStrictPlan,
+    pauseAmbientStrictPlan,
+    setCoachEscalationNotifications,
+    setStaleEntityHunterPreferences,
     sendTestEmail,
     sendTestWebhook,
     runAutomationDispatchTest,

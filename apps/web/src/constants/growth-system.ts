@@ -37,6 +37,17 @@ export const SUBCATEGORIES_BY_AREA: Record<Area, readonly SubCategory[]> = {
 
 export const PRIORITIES: readonly Priority[] = ['P1', 'P2', 'P3', 'P4'];
 
+export const PRIORITY_INTENT_LABELS: Record<Priority, string> = {
+  P1: 'Critical/Urgent',
+  P2: 'High',
+  P3: 'Medium',
+  P4: 'Low',
+};
+
+export function getPriorityAccessibleName(priority: Priority): string {
+  return `Priority ${priority}: ${PRIORITY_INTENT_LABELS[priority]}`;
+}
+
 export const TASK_STATUSES: readonly TaskStatus[] = [
   'Backlog',
   'Not Started',
@@ -63,6 +74,7 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   'On Hold': 'On Hold',
   Completed: 'Completed',
   Cancelled: 'Cancelled',
+  Archived: 'Archived',
 };
 
 export const GOAL_STATUS_LABELS: Record<GoalStatus, string> = {
@@ -140,7 +152,13 @@ export const PROJECT_STATUSES: readonly ProjectStatus[] = [
   'On Hold',
   'Completed',
   'Cancelled',
+  'Archived',
 ];
+
+/** Status options for create form — cannot create directly as archived. */
+export const PROJECT_CREATE_STATUSES: readonly ProjectStatus[] = PROJECT_STATUSES.filter(
+  (status) => status !== 'Archived'
+);
 
 export const HABIT_TYPES: readonly HabitType[] = ['Build', 'Maintain', 'Reduce', 'Quit'];
 export const HABIT_FREQUENCIES: readonly HabitFrequency[] = [

@@ -28,11 +28,7 @@ export function LogbookListView({
 }: LogbookListViewProps) {
   if (isLoading) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="grid grid-cols-1 md:grid-cols-2 gap-6"
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-4">
         <LogbookEntryCardSkeleton count={6} />
       </motion.div>
     );
@@ -70,7 +66,7 @@ export function LogbookListView({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+    <div className="flex flex-col gap-4">
       {entries.map((entry) => (
         <LogbookEntryCard key={entry.id} entry={entry} onClick={onEntryClick} />
       ))}

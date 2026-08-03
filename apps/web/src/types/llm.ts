@@ -99,6 +99,13 @@ export interface ProjectHealthInput {
 /** Matches backend ProjectHealthAnalysis (camelCase wire). */
 export type ProjectOverallHealth = 'excellent' | 'good' | 'atRisk' | 'critical';
 
+export type PriorityActionKind = 'createTask' | 'logActivity';
+
+export interface ProjectHealthPriorityAction {
+  text: string;
+  kind: PriorityActionKind;
+}
+
 export interface ProjectHealthFactor {
   factorName: string;
   status: 'good' | 'warning' | 'critical';
@@ -112,7 +119,7 @@ export interface ProjectHealthOutput {
   healthFactors: ProjectHealthFactor[];
   positiveIndicators: string[];
   concerns: string[];
-  priorityActions: string[];
+  priorityActions: ProjectHealthPriorityAction[];
   trajectory: 'improving' | 'stable' | 'declining';
 }
 
