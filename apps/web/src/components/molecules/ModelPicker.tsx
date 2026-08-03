@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Gauge, Sparkles, Zap } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { ProviderBrandBadge } from '@/components/atoms/ProviderBrandBadge';
+import { ModelScoreChipsFromEntry } from '@/components/molecules/ModelScoreChips';
 import { formatModelDisplayLabel } from '@/lib/settings/assistantMemoryIngestionDisplay';
 import { cn } from '@/lib/utils';
 import type { AssistantModelCatalogEntry } from '@/types/chatbot';
@@ -13,6 +14,9 @@ export type ModelPickerProps = {
   /** Show color-coded provider badge beside model names (multi-provider matrices). */
   showProviderBadge?: boolean;
   emptyMessage?: string;
+  /** Softer trigger styling when nested inside another bordered unit. */
+  variant?: 'default' | 'embedded';
+  className?: string;
 };
 
 function modelTitle(entry: AssistantModelCatalogEntry, showProviderBadge: boolean): string {
@@ -54,9 +58,12 @@ export function ModelPicker({
   disabled,
   showProviderBadge = false,
   emptyMessage = 'No models in catalog for this provider.',
+  variant = 'default',
+  className,
 }: ModelPickerProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const isEmbedded = variant === 'embedded';
 
   const selected =
     models.find((m) => m.apiModelId === valueApiModelId) ??
@@ -83,15 +90,16 @@ export function ModelPicker({
   const displayTitle = displayEntry ? modelTitle(displayEntry, showProviderBadge) : valueApiModelId;
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className={cn('relative', className)}>
       <button
         type="button"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg border text-left text-sm',
-          'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100',
-          'hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
+          'w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left text-sm',
+          isEmbedded
+            ? 'border-0 bg-transparent text-gray-900 dark:text-gray-100 hover:bg-gray-50/80 dark:hover:bg-gray-900/40 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400'
+            : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       >
@@ -103,23 +111,7 @@ export function ModelPicker({
             <span className="font-medium truncate">{displayTitle}</span>
           </div>
           {displayEntry ? (
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-              <span className="inline-flex items-center gap-0.5">
-                <Sparkles className="w-3 h-3" />
-                Quality {displayEntry.qualityScore}/10
-              </span>
-              <span className="inline-flex items-center gap-0.5">
-                <Zap className="w-3 h-3" />
-                Speed {displayEntry.speedScore}/10
-              </span>
-              <span className="inline-flex items-center gap-0.5">
-                <Gauge className="w-3 h-3" />
-                Cost {displayEntry.costScore}/10
-              </span>
-              {displayEntry.contextTokens ? (
-                <span>{(displayEntry.contextTokens / 1000).toFixed(0)}k ctx</span>
-              ) : null}
-            </div>
+            <ModelScoreChipsFromEntry entry={displayEntry} className="mt-1.5" />
           ) : null}
         </div>
         <ChevronDown className={cn('w-4 h-4 shrink-0 opacity-60', open && 'rotate-180')} />

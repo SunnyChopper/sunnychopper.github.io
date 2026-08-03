@@ -10,6 +10,7 @@ import {
   Loader2,
   MessageSquare,
   ShieldAlert,
+  Users,
   Wrench,
   type LucideIcon,
 } from 'lucide-react';
@@ -62,6 +63,11 @@ const STAGE_CONFIG: Record<StatusEntry['stage'], StageConfig> = {
     icon: Wrench,
     color: 'text-amber-500 dark:text-amber-400',
     defaultLabel: 'Running tools',
+  },
+  consultingSpecialists: {
+    icon: Users,
+    color: 'text-teal-600 dark:text-teal-400',
+    defaultLabel: 'Consulting specialists',
   },
   responding: {
     icon: MessageSquare,
